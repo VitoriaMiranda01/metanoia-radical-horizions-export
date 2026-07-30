@@ -1,0 +1,1 @@
+<!-- Deprecated: Stripe integration has been completely removed from the project. -->

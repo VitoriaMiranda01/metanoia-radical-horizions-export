@@ -1,0 +1,15 @@
+## Pages
+- [Aprovação de Equipantes - Metanoia Radical](/aprovacoes): Aprove ou rejeite as inscrições de equipantes do projeto Metanoia Radical
+- [Área do Parceiro - Metanoia Radical](/parceiros): Área exclusiva para parceiros do projeto Metanoia Radical
+- [Configurações do Organizador](/organizerconfig): No description available
+- [Forma de Pagamento - Metanoia Radical](/paymentmethodselection): No description available
+- [Geração de Escalas - Organizador](/organizerscales): No description available
+- [Gerenciar Inscrições - Metanoia Radical](/gerenciarinscricoes): Gerencie todas as inscrições do projeto Metanoia Radical
+- [Gestão de Workflows - Metanoia Radical](/adminworkflows): No description available
+- [Inscrição Acampante - Metanoia Radical](/acampante): No description available
+- [Inscrição Equipante - Metanoia Radical](/equipante): No description available
+- [Login - Metanoia Radical](/login): Faça login no sistema de inscrições
+- [Metanoia Radical Serra - Home](/home): Bem-vindo ao Metanoia Radical Serra. Amar com o amor de Jesus!
+- [Pagamento Manual - Metanoia Radical](/manualpayment): No description available
+- [Pagamento PIX - Metanoia Radical](/inscricaopix): No description available
+- [Pagamentos Pendentes - Metanoia Radical](/pagamentospendentes): No description available

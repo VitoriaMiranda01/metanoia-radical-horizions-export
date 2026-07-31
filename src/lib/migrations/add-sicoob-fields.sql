@@ -1,0 +1,2 @@
+-- DEPRECATED: This migration file is no longer used.
+-- See add-stripe-fields.sql for current schema.

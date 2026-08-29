@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    --workflow-ok: 142 71% 45%;
+    --workflow-em-processo: 217 91% 60%;
+    --workflow-pendente: 0 84% 60%;
+
+    /* Enhanced Modal and Button Design Tokens */
+    --modal-background: 0 0% 100%;
+    --modal-border-color: 214.3 31.8% 91.4%;
+    --modal-shadow: 0 10px 40px -10px rgba(0,0,0,0.15);
+    --modal-radius: 1rem;
+    --modal-backdrop-blur: 8px;
+    --modal-backdrop-bg: 0 0% 0% / 0.4;
+    
+    --btn-hover-opacity: 0.9;
+    --btn-active-scale: 0.98;
+    --btn-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    --background: 222.2 47.4% 11.2%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 47.4% 11.2%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 47.4% 11.2%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+
+    /* Enhanced Modal and Button Design Tokens (Dark Mode) */
+    --modal-background: 222.2 47.4% 8%;
+    --modal-border-color: 217.2 32.6% 17.5%;
+    --modal-shadow: 0 20px 50px -10px rgba(0,0,0,0.5), 0 0 0 1px hsla(217.2, 32.6%, 17.5%, 0.5);
+    --modal-radius: 1.25rem;
+    --modal-backdrop-blur: 12px;
+    --modal-backdrop-bg: 0 0% 0% / 0.6;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* Mobile-first baseline typography improvements */
+  h1 { @apply text-3xl font-bold tracking-tight md:text-4xl; }
+  h2 { @apply text-2xl font-semibold tracking-tight md:text-3xl; }
+  h3 { @apply text-xl font-semibold tracking-tight md:text-2xl; }
+  p { @apply leading-relaxed; }
+}
+
+.glass-effect {
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes floating {
+  0% { transform: translate(0,  0px); }
+  50% { transform: translate(10px, 10px); }
+  100% { transform: translate(0, -0px); }
+}
+
+.floating-animation {
+  animation: floating 6s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 0px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0px rgba(255, 255, 255, 0.1);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 3s infinite ease-in-out;
+}
+
+/* Workflow Classes */
+.workflow-badge-ok {
+  background-color: hsl(var(--workflow-ok) / 0.2);
+  color: hsl(var(--workflow-ok));
+  border: 1px solid hsl(var(--workflow-ok) / 0.5);
+}
+
+.workflow-badge-em-processo {
+  background-color: hsl(var(--workflow-em-processo) / 0.2);
+  color: hsl(var(--workflow-em-processo));
+  border: 1px solid hsl(var(--workflow-em-processo) / 0.5);
+}
+
+.workflow-badge-pendente {
+  background-color: hsl(var(--workflow-pendente) / 0.2);
+  color: hsl(var(--workflow-pendente));
+  border: 1px solid hsl(var(--workflow-pendente) / 0.5);
+}
+
+.dropzone {
+  border: 2px dashed hsl(var(--muted-foreground) / 0.5);
+  transition: all 0.2s ease;
+}
+.dropzone.active {
+  border-color: hsl(var(--primary));
+  background-color: hsl(var(--primary) / 0.1);
+}
+
+/* Custom Modal Animations */
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-content-animated {
+  animation: modal-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Responsive utilities helpers for specific card touch targets */
+@layer utilities {
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}

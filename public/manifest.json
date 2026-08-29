@@ -1,0 +1,25 @@
+{
+  "short_name": "Metanoia",
+  "name": "Metanoia Radical - Serra",
+  "icons": [
+    {
+      "src": "https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/dcfb8952301a7112d5ecef4775d0734f.png",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/dcfb8952301a7112d5ecef4775d0734f.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/dcfb8952301a7112d5ecef4775d0734f.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#000000"
+}

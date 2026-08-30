@@ -116,14 +116,17 @@ export const finalizeZeroValuePayment = async (inscriptionType, inscriptionId, c
     if (paymentError) throw paymentError;
 
     // 2. Update inscription table
+    // Nota: acampantes/equipantes não têm coluna updated_at (só a tabela
+    // pagamentos, usada acima, tem de verdade) — incluí-la aqui fazia esse
+    // update falhar sempre, deixando o pagamento registrado mas o status do
+    // acampante/equipante nunca virava 'completed'/'isento'.
     const table = inscriptionType === 'equipante' ? 'equipantes' : 'acampantes';
     const { error: updateError } = await supabase
       .from(table)
       .update({
         status: 'completed',
         status_pagamento: 'completed',
-        metodo_pagamento: 'isento',
-        updated_at: new Date().toISOString()
+        metodo_pagamento: 'isento'
       })
       .eq('id', inscriptionId);
 

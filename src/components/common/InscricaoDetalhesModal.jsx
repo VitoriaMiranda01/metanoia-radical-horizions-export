@@ -421,10 +421,6 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
                 <p className="text-white font-medium">{formatarData(inscricao.parental_auth_uploaded_at)}</p>
               </div>
               <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Status Autorização Pastoral:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.pastoral_auth_status)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">Status da Escala:</span>
                 <p className="text-white font-medium">{displayValue(inscricao.scale_status)}</p>
               </div>

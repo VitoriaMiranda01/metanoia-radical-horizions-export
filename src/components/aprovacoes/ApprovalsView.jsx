@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AprovacoesStatsCards from '@/components/aprovacoes/AprovacoesStatsCards';
 import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
 import AprovacoesTable from '@/components/aprovacoes/AprovacoesTable';
-import { updatePastoralAuthStatus, updatePastoralAuthOnApproval, fetchEquipantesRaw, updateEquipanteStatus } from '@/services/equipantesService';
+import { fetchEquipantesRaw, updateEquipanteStatus } from '@/services/equipantesService';
 import { fetchAcampantesRaw, updateAcampanteStatus } from '@/services/acampantesService';
 
 const ApprovalsView = ({ 
@@ -133,65 +133,24 @@ const ApprovalsView = ({
     if (!success) return;
 
     try {
-      // Handle equipante approval - update pastoral auth status directly
+      // Aprovação da inscrição do equipante É a autorização pastoral — não há
+      // mais um campo/ação separados para isso.
       if (inscricao.tipo === 'equipante') {
-        await updatePastoralAuthStatus(id, 'ok');
-        
-        setInscricoes(prev => prev.map(insc => 
-          insc.id === id ? { ...insc, status: 'aprovado', pastoral_auth_status: 'ok' } : insc
-        ));
-
         toast({ 
           title: "Equipante aprovado!", 
-          description: "A inscrição foi aprovada e a autorização pastoral confirmada com sucesso.", 
+          description: "A inscrição foi aprovada com sucesso.", 
           className: "bg-green-600 text-white" 
         });
       } 
-      // Handle acampante approval - update linked equipante's pastoral auth by CPF
+      // Acampantes não passam por vínculo com equipante: uma pessoa nunca se
+      // inscreve como acampante e equipante ao mesmo tempo, então não existe
+      // "equipante vinculado por CPF" a atualizar aqui.
       else if (inscricao.tipo === 'acampante') {
-        const cpf = inscricao.cpf;
-        
-        if (cpf) {
-          // Call the new helper function to update equipante pastoral auth
-          const result = await updatePastoralAuthOnApproval(cpf);
-          
-          if (result.success) {
-            if (result.noMatch) {
-              // No linked equipante - this is normal
-              toast({ 
-                title: "Acampante aprovado!", 
-                description: "A inscrição foi aprovada com sucesso.", 
-                className: "bg-green-600 text-white" 
-              });
-            } else {
-              // Successfully updated linked equipante
-              toast({ 
-                title: "Acampante e Equipante aprovados!", 
-                description: `A inscrição foi aprovada. Autorização pastoral do equipante ${result.equipanteName || ''} também foi confirmada automaticamente.`, 
-                className: "bg-green-600 text-white" 
-              });
-              
-              // Refresh data to show updated equipante status
-              carregarInscricoes(false);
-            }
-          } else {
-            // Error updating equipante - but acampante is still approved
-            console.error('Error updating linked equipante:', result.message);
-            toast({ 
-              title: "Acampante aprovado com ressalva", 
-              description: "A inscrição foi aprovada, mas houve um erro ao atualizar a autorização pastoral do equipante vinculado.", 
-              variant: "default",
-              className: "bg-yellow-600 text-white"
-            });
-          }
-        } else {
-          // No CPF available
-          toast({ 
-            title: "Acampante aprovado!", 
-            description: "A inscrição foi aprovada com sucesso.", 
-            className: "bg-green-600 text-white" 
-          });
-        }
+        toast({ 
+          title: "Acampante aprovado!", 
+          description: "A inscrição foi aprovada com sucesso.", 
+          className: "bg-green-600 text-white" 
+        });
       }
     } catch (err) {
       console.error('Error in approval process:', err);

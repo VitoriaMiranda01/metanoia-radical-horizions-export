@@ -86,11 +86,17 @@ export const useEquipanteWorkflow = (equipante_id, age) => {
       });
     }
 
-    // 3. Autorização Pastoral
+    // 3. Autorização Pastoral (é a mesma aprovação/rejeição da inscrição do
+    // equipante feita pelos organizadores/pastor na tela de Aprovações — não
+    // existe mais um campo separado para isso)
     stages.push({
       id: 'pastoral_auth',
       label: 'Autorização Pastoral',
-      status: workflowData.pastoral_auth_status || 'pendente',
+      status: workflowData.status === 'aprovado'
+        ? 'ok'
+        : workflowData.status === 'rejeitado'
+          ? 'rejeitado'
+          : 'pendente',
     });
 
     // 4. Escala

@@ -150,8 +150,7 @@ export const uploadParentalAuthFile = async (equipante_id, file) => {
     const { data, error } = await supabase
       .from('equipantes')
       .update({
-        parental_auth_file_url: publicUrlData.publicUrl,
-        pastoral_auth_status: 'pendente'
+        parental_auth_file_url: publicUrlData.publicUrl
       })
       .eq('id', equipante_id)
       .eq('tipo', 'equipante')
@@ -171,7 +170,7 @@ export const getEquipanteWorkflow = async (equipante_id) => {
   try {
     const { data, error } = await supabase
       .from('equipantes')
-      .select('id, nome, cpf, idade, parental_auth_file_url, pastoral_auth_status, scale_status, status_pagamento')
+      .select('id, nome, cpf, idade, parental_auth_file_url, status, scale_status, status_pagamento')
       .eq('id', equipante_id)
       .eq('tipo', 'equipante')
       .maybeSingle();
@@ -188,7 +187,7 @@ export const getEquipantesByWorkflowStage = async () => {
   try {
     const { data, error } = await supabase
       .from('equipantes')
-      .select('id, nome, cpf, idade, parental_auth_file_url, pastoral_auth_status, scale_status, status_pagamento')
+      .select('id, nome, cpf, idade, parental_auth_file_url, status, scale_status, status_pagamento')
       .eq('tipo', 'equipante')
 
     if (error) throw error;
@@ -196,75 +195,6 @@ export const getEquipantesByWorkflowStage = async () => {
   } catch (err) {
     console.error('equipanteApi - getEquipantesByWorkflowStage', err);
     throw new Error('Falha ao buscar equipantes para workflow');
-  }
-};
-
-export const updatePastoralAuthStatus = async (equipanteId, status) => {
-  if (!equipanteId) throw new Error("ID de equipante ausente");
-  try {
-    const { data, error } = await supabase
-      .from('equipantes')
-      .update({ pastoral_auth_status: status })
-      .eq('id', equipanteId)
-      .eq('tipo', 'equipante')
-      .select()
-      .single();
-
-    if (error) throw error;
-    
-    return data;
-  } catch (err) {
-    console.error('equipanteApi - updatePastoralAuthStatus', err, { equipanteId, status });
-    throw new Error('Erro ao atualizar autorização pastoral');
-  }
-};
-
-export const updatePastoralAuthOnApproval = async (cpf) => {
-  try {
-    if (!cpf || cpf.length < 11) {
-      console.error('equipanteApi - updatePastoralAuthOnApproval: CPF inválido fornecido', { cpf });
-      return { success: false, message: 'CPF inválido fornecido' };
-    }
-
-    const { data: equipante, error: searchError } = await supabase
-      .from('equipantes')
-      .select('id, nome, cpf, pastoral_auth_status')
-      .eq('cpf', cpf)
-      .eq('tipo', 'equipante')
-      .maybeSingle();
-
-    if (searchError) {
-      console.error('equipanteApi - updatePastoralAuthOnApproval search', searchError, { cpf });
-      return { success: false, message: 'Erro ao buscar equipante no banco de dados', error: searchError };
-    }
-
-    if (!equipante) {
-      return { success: true, message: 'Nenhum equipante encontrado com este CPF', noMatch: true };
-    }
-
-    const { data, error: updateError } = await supabase
-      .from('equipantes')
-      .update({ pastoral_auth_status: 'ok' })
-      .eq('id', equipante.id)
-      .eq('tipo', 'equipante')
-      .select()
-      .single();
-
-    if (updateError) {
-      console.error('equipanteApi - updatePastoralAuthOnApproval update', updateError, { equipanteId: equipante.id });
-      return { success: false, message: 'Erro ao atualizar autorização pastoral do equipante', error: updateError };
-    }
-    
-    return { 
-      success: true, 
-      message: 'Autorização pastoral atualizada com sucesso',
-      data,
-      equipanteName: equipante.nome
-    };
-
-  } catch (err) {
-    console.error('equipanteApi - updatePastoralAuthOnApproval', err);
-    return { success: false, message: 'Erro inesperado ao atualizar autorização pastoral', error: err };
   }
 };
 
@@ -310,15 +240,19 @@ export const updateEquipanteStatus = async (id, newStatus) => {
   return supabase.from('equipantes').update({ status: newStatus }).eq('id', id);
 };
 
+// Tabela geral dos organizadores: só mostra equipantes cuja inscrição já foi
+// aprovada (pelo pastor/organizador, na tela de Aprovações). Inscrições
+// pendentes ou rejeitadas ficam visíveis apenas na tela de Aprovações.
 export const fetchEquipantesInscritos = async () => {
-  return supabase.from('equipantes').select('*').eq('inscrito', true);
+  return supabase.from('equipantes').select('*').eq('inscrito', true).eq('status', 'aprovado');
 };
 
 export const countEquipantesInscritos = async () => {
   return supabase
     .from('equipantes')
     .select('*', { count: 'exact', head: true })
-    .eq('inscrito', true);
+    .eq('inscrito', true)
+    .eq('status', 'aprovado');
 };
 
 export const desativarEquipanteInscricao = async (equipanteId) => {
@@ -329,7 +263,7 @@ export const resetEquipantesInscricoes = async () => {
   try {
     const { data, error } = await supabase
       .from('equipantes')
-      .update({inscrito: false, status_pagamento: 'pendente', scale_status: 'pendente', pastoral_auth_status: 'pendente', status: 'pendente', parental_auth_file_url: null})
+      .update({inscrito: false, status_pagamento: 'pendente', scale_status: 'pendente', status: 'pendente', parental_auth_file_url: null})
       .eq('tipo', 'equipante')
       .select('id');
       

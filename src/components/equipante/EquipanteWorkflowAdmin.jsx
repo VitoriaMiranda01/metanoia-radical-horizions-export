@@ -45,7 +45,7 @@ const EquipanteWorkflowAdmin = () => {
       CPF: w.cpf,
       'Grupo (Idade)': (Number(w.idade) < 18) ? 'Menor' : 'Adulto',
       'Autorização Pais': w.parental_auth_file_url ? 'Enviado' : 'Pendente',
-      'Autorização Pastoral': w.pastoral_auth_status,
+      'Status Aprovação': w.status,
       Pagamento: w.status_pagamento,
       Escala: w.scale_status
     })));
@@ -75,7 +75,7 @@ const EquipanteWorkflowAdmin = () => {
               <TableHead className="text-gray-300 md:sticky md:left-0 md:bg-slate-900 md:z-10 md:shadow-[2px_0_5px_rgba(0,0,0,0.3)]">Equipante</TableHead>
               <TableHead className="text-gray-300">Faixa Etária</TableHead>
               <TableHead className="text-gray-300">Autorização Pais</TableHead>
-              <TableHead className="text-gray-300">Autorização Pastoral</TableHead>
+              <TableHead className="text-gray-300">Status Aprovação</TableHead>
               <TableHead className="text-gray-300">Pagamento</TableHead>
               <TableHead className="text-gray-300">Escala</TableHead>
             </TableRow>
@@ -108,19 +108,13 @@ const EquipanteWorkflowAdmin = () => {
                   )}
                 </TableCell>
                 <TableCell>
-                  <Select 
-                    value={w.pastoral_auth_status || 'pendente'} 
-                    onValueChange={(val) => handleUpdateStatus(w.id, 'pastoral_auth_status', val)}
-                  >
-                    <SelectTrigger className="h-8 w-[130px] bg-transparent border-white/20 text-white text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pendente">Pendente</SelectItem>
-                      <SelectItem value="em_processo">Em Processo</SelectItem>
-                      <SelectItem value="ok">Concluído</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Badge className={
+                    w.status === 'aprovado' ? 'bg-green-500/20 text-green-400 border-green-500/50' :
+                    w.status === 'rejeitado' ? 'bg-red-500/20 text-red-400 border-red-500/50' :
+                    'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
+                  }>
+                    {w.status === 'aprovado' ? 'Aprovado' : w.status === 'rejeitado' ? 'Rejeitado' : 'Pendente'}
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   <Badge className={`workflow-badge-${(w.status_pagamento === 'pago' || w.status_pagamento === 'confirmado') ? 'ok' : 'pendente'}`}>

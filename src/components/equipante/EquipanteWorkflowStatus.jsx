@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useEquipanteWorkflow } from '@/hooks/useEquipanteWorkflow';
-import { CheckCircle2, Clock, AlertCircle, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, XCircle, ArrowRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import ParentalAuthUpload from './ParentalAuthUpload';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,8 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, onProceedToPayment }) => {
         return <CheckCircle2 className="w-5 h-5 text-green-500" />;
       case 'em_processo': 
         return <Clock className="w-5 h-5 text-blue-500" />;
+      case 'rejeitado':
+        return <XCircle className="w-5 h-5 text-red-500" />;
       case 'pendente': default: 
         return <AlertCircle className="w-5 h-5 text-red-500" />;
     }
@@ -39,6 +41,8 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, onProceedToPayment }) => {
         return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">Concluído</Badge>;
       case 'em_processo':
         return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20">Em Processo</Badge>;
+      case 'rejeitado':
+        return <Badge className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20">Rejeitado</Badge>;
       case 'pendente': default:
         return <Badge className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20">Pendente</Badge>;
     }
@@ -70,6 +74,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, onProceedToPayment }) => {
               className={`flex items-center justify-between p-4 rounded-lg border ${
                   stage.status === 'ok' || stage.status === 'concluído' ? 'border-green-500/30 bg-green-500/5' :
                   stage.status === 'em_processo' ? 'border-blue-500/30 bg-blue-500/5' :
+                  stage.status === 'rejeitado' ? 'border-red-500/30 bg-red-500/5' :
                     'border-white/5 bg-white/5'
                 }`}
             >

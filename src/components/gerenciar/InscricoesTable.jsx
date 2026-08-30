@@ -51,9 +51,6 @@ const getColumnValue = (item, filterKey) => {
   if (filterKey === 'area_trabalho') {
     return formatAreaTrabalho(item);
   }
-  if (filterKey === 'created_at') {
-    return formatarData(item[filterKey]);
-  }
   if (typeof item[filterKey] === 'boolean') {
     return item[filterKey] ? 'Sim' : 'Não';
   }
@@ -222,7 +219,6 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExcluir, onEx
     if (key === 'status') return getStatusBadge(item.status);
     if (key === 'endereco_completo') return formatEnderecoCompleto(item) || '-';
     if (key === 'area_trabalho') return formatAreaTrabalho(item) || '-';
-    if (key === 'created_at') return formatarData(item[key]);
     if (typeof item[key] === 'boolean') return item[key] ? 'Sim' : 'Não';
     return item[key] || '-';
   };

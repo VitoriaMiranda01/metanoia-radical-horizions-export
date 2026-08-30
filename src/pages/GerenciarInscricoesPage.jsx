@@ -239,7 +239,6 @@ const GerenciarInscricoesPage = () => {
     const adapted = {
       ...acampante,
       telefone: acampante.whatsapp,
-      dataInscricao: acampante.created_at,
       contatoEmergencia: acampante.contato_emergencia_nome,
       telefoneEmergencia: acampante.contato_emergencia_telefone,
       experienciaAnterior: acampante.experiencia_anterior,

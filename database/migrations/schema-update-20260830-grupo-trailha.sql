@@ -14,11 +14,14 @@ ALTER TABLE acampantes ADD COLUMN IF NOT EXISTS grupo_trailha TEXT;
 
 -- 2. Backfill: aloca quem já está aprovado hoje e ainda não tem grupo salvo.
 --    Usa exatamente a mesma regra que o código da aplicação usará dali pra frente:
---    para cada pessoa, em ordem de aprovação (data_pagamento, ou created_at se não
---    houver), escolhe o grupo com menos gente do MESMO SEXO já alocada nele
---    (empate resolvido pela ordem fixa Vermelho, Amarelo, Verde, Azul, Roxo).
---    Isso garante que o backfill produza o mesmo resultado que a alocação
---    incremental teria produzido se já estivesse ativa desde o início.
+--    para cada pessoa, escolhe o grupo com menos gente do MESMO SEXO já alocada
+--    nele (empate resolvido pela ordem fixa Vermelho, Amarelo, Verde, Azul, Roxo).
+--    A ordem de processamento usa data_pagamento (quando existe) e, como
+--    critério estável de desempate/fallback, o próprio id — a tabela não tem
+--    coluna de data de criação (created_at), então não há um "quem se inscreveu
+--    primeiro" real e confiável pra usar aqui. Isso não afeta o equilíbrio por
+--    sexo entre os grupos, só decide, entre pessoas do mesmo sexo, qual delas
+--    "passa primeiro" nesta rodada única de backfill.
 DO $$
 DECLARE
   grupos TEXT[] := ARRAY['Vermelho', 'Amarelo', 'Verde', 'Azul', 'Roxo'];
@@ -33,7 +36,7 @@ BEGIN
     FROM acampantes
     WHERE status = 'aprovado'
       AND grupo_trailha IS NULL
-    ORDER BY COALESCE(data_pagamento, created_at) ASC
+    ORDER BY data_pagamento ASC NULLS LAST, id ASC
   LOOP
     escolhido := NULL;
     menor_contagem := NULL;

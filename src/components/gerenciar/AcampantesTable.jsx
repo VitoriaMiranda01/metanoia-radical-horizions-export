@@ -50,9 +50,6 @@ const getColumnValue = (item, filterKey) => {
   if (filterKey === 'endereco_completo') {
     return formatEnderecoCompleto(item);
   }
-  if (filterKey === 'created_at') {
-    return formatarData(item[filterKey]);
-  }
   if (typeof item[filterKey] === 'boolean') {
     return item[filterKey] ? 'Sim' : 'Não';
   }
@@ -248,7 +245,6 @@ const AcampantesTable = ({
   const renderCellContent = (item, key) => {
     if (key === 'status') return getStatusBadge(item.status);
     if (key === 'endereco_completo') return formatEnderecoCompleto(item) || '-';
-    if (key === 'created_at') return formatarData(item[key]);
     if (typeof item[key] === 'boolean') return item[key] ? 'Sim' : 'Não';
     return item[key] || '-';
   };

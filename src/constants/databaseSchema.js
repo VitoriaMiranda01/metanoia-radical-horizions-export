@@ -1,13 +1,17 @@
 export const SCHEMA_DEFINITIONS = {
   acampantes: {
+    // telefone não existe na tabela real — a coluna de telefone de acampante
+    // é whatsapp (mesma correção já aplicada em columnVisibility.js).
     fields: [
-      'id', 'nome', 'email', 'telefone', 'sexo', 'igreja',
+      'id', 'nome', 'email', 'whatsapp', 'sexo', 'igreja',
       'numero_edicao', 'status', 'status_pagamento', 'cpf'
     ]
   },
   equipantes: {
+    // email não existe na tabela real de equipantes (mesma correção já
+    // aplicada em columnVisibility.js).
     fields: [
-      'id', 'nome', 'email', 'whatsapp', 'sexo', 'igreja',
+      'id', 'nome', 'whatsapp', 'sexo', 'igreja',
       'area_trabalho_opcao1', 'area_trabalho_opcao2', 'area_trabalho_opcao3',
       'numero_edicao', 'status', 'status_pagamento',
       'cpf'

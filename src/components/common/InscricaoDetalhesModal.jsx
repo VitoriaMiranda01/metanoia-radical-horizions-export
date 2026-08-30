@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
+import { getEquipanteStageLabel } from '@/utils/equipanteWorkflow';
 
 const getStatusBadge = (status) => {
   const variants = {
@@ -409,7 +410,7 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">Estágio Atual:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.current_stage)}</p>
+                <p className="text-white font-medium">{displayValue(getEquipanteStageLabel(inscricao))}</p>
               </div>
               <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">Arquivo Autorização Parental:</span>

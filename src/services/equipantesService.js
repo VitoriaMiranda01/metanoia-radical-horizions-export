@@ -110,32 +110,6 @@ export const searchEquipanteByCPF = async (cpf) => {
   }
 };
 
-export const initEquipanteWorkflow = async (equipante_id, age) => {
-  if (!equipante_id) throw new Error("ID de equipante ausente");
-  
-  const isMinor = Number(age) < 18;
-
-  try {
-    const { data, error } = await supabase
-      .from('equipantes')
-      .update({
-        current_stage: isMinor ? 'parental_auth' : 'pastoral_auth',
-        pastoral_auth_status: 'pendente',
-        scale_status: 'pendente',
-      })
-      .eq('id', equipante_id)
-      .eq('tipo', 'equipante')
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error('equipanteApi - initEquipanteWorkflow', err, { equipante_id });
-    throw new Error('Não foi possível inicializar o workflow do equipante');
-  }
-};
-
 export const updateWorkflowStage = async (equipante_id, updates) => {
   if (!equipante_id) throw new Error("ID de equipante ausente");
   
@@ -177,8 +151,7 @@ export const uploadParentalAuthFile = async (equipante_id, file) => {
       .from('equipantes')
       .update({
         parental_auth_file_url: publicUrlData.publicUrl,
-        pastoral_auth_status: 'pendente',
-        current_stage: 'pastoral_auth'
+        pastoral_auth_status: 'pendente'
       })
       .eq('id', equipante_id)
       .eq('tipo', 'equipante')
@@ -198,7 +171,7 @@ export const getEquipanteWorkflow = async (equipante_id) => {
   try {
     const { data, error } = await supabase
       .from('equipantes')
-      .select('id, nome, cpf, idade, current_stage, parental_auth_file_url, pastoral_auth_status, scale_status, status_pagamento')
+      .select('id, nome, cpf, idade, parental_auth_file_url, pastoral_auth_status, scale_status, status_pagamento')
       .eq('id', equipante_id)
       .eq('tipo', 'equipante')
       .maybeSingle();
@@ -215,7 +188,7 @@ export const getEquipantesByWorkflowStage = async () => {
   try {
     const { data, error } = await supabase
       .from('equipantes')
-      .select('id, nome, cpf, idade, current_stage, parental_auth_file_url, pastoral_auth_status, scale_status, status_pagamento')
+      .select('id, nome, cpf, idade, parental_auth_file_url, pastoral_auth_status, scale_status, status_pagamento')
       .eq('tipo', 'equipante')
 
     if (error) throw error;
@@ -356,7 +329,7 @@ export const resetEquipantesInscricoes = async () => {
   try {
     const { data, error } = await supabase
       .from('equipantes')
-      .update({inscrito: false, status_pagamento: 'pendente', scale_status: 'pendente', pastoral_auth_status: 'pendente', status: 'pendente', parental_auth_file_url: null, current_stage: null})
+      .update({inscrito: false, status_pagamento: 'pendente', scale_status: 'pendente', pastoral_auth_status: 'pendente', status: 'pendente', parental_auth_file_url: null})
       .eq('tipo', 'equipante')
       .select('id');
       

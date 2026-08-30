@@ -16,7 +16,7 @@ import DadosComplementaresEquipante from '@/components/inscricao/DadosComplement
 import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao } from '@/services/inscricoesService';
-import { initEquipanteWorkflow, updateEquipanteInscrito } from '@/services/equipantesService';
+import { updateEquipanteInscrito } from '@/services/equipantesService';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
 
@@ -190,7 +190,6 @@ const EquipantePage = () => {
         const equipanteId = result.data.id;
         
         try {
-          await initEquipanteWorkflow(equipanteId, formData.idade);
           await updateEquipanteInscrito(equipanteId);
           
           toast({ 
@@ -198,7 +197,7 @@ const EquipantePage = () => {
             description: "Iniciando acompanhamento da inscrição e status atualizado." 
           });
         } catch (wfErr) {
-          console.warn('[Equipante Form] Workflow/Inscrito init error:', wfErr.message);
+          console.warn('[Equipante Form] Inscrito update error:', wfErr.message);
           toast({ 
             title: "Aviso", 
             description: "A inscrição foi salva, mas ocorreu um erro ao atualizar algumas etapas adicionais. O suporte pode verificar isso mais tarde.", 

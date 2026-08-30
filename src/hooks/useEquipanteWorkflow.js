@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  initEquipanteWorkflow,
   getEquipanteWorkflow,
   uploadParentalAuthFile,
   updateWorkflowStage
@@ -21,18 +20,14 @@ export const useEquipanteWorkflow = (equipante_id, age) => {
     if (!equipante_id) return;
     try {
       setIsLoading(true);
-      let data = await getEquipanteWorkflow(equipante_id);
-
-      if (!data?.current_stage) {
-        data = await initEquipanteWorkflow(equipante_id, age);
-      }
+      const data = await getEquipanteWorkflow(equipante_id);
       setWorkflowData(data);
     } catch (err) {
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
-  }, [equipante_id, age]);
+  }, [equipante_id]);
 
   useEffect(() => {
     fetchWorkflow();
@@ -118,7 +113,6 @@ export const useEquipanteWorkflow = (equipante_id, age) => {
   return {
     age: resolvedAge,
     isMinor,
-    currentStage: workflowData?.current_stage,
     workflowData,
     workflowStages: getWorkflowStages(),
     isLoading,

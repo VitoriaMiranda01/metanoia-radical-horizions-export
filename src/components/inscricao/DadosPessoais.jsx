@@ -44,9 +44,22 @@ const DadosPessoais = ({
       handleCpfBlur(e);
     }
 
-    // 2. Trigger lookup ONLY for equipantes
-    if (isEquipante && setFormData) {
+    // 2. Trigger lookup ONLY for equipantes que informaram CPF
+    if (isEquipante && setFormData && !formData.semCpf) {
       lookupEquipanteByCPF(e.target.value);
+    }
+  };
+
+  const onSemCpfChange = (checked) => {
+    if (typeof handleCheckboxChange === 'function') {
+      handleCheckboxChange('semCpf', checked);
+    } else if (typeof handleChange === 'function') {
+      handleChange({ target: { name: 'semCpf', value: checked, type: 'checkbox', checked } });
+    }
+    // Ao marcar que não tem CPF, limpa o campo pra não enviar um valor
+    // desatualizado ou inválido junto com a inscrição.
+    if (checked && typeof handleChange === 'function') {
+      handleChange({ target: { name: 'cpf', value: '', type: 'text' } });
     }
   };
 
@@ -56,7 +69,7 @@ const DadosPessoais = ({
         {/* CPF - Primeiro campo */}
         <div className="space-y-2 relative flex flex-col h-full">
           <div className="flex justify-between items-center h-5 mb-1">
-            <Label htmlFor="cpf" className="text-white">CPF *</Label>
+            <Label htmlFor="cpf" className="text-white">CPF {!formData.semCpf && '*'}</Label>
 
             <AnimatePresence>
               {showRecoveryMessage && (
@@ -80,10 +93,11 @@ const DadosPessoais = ({
               value={formData.cpf || ''}
               onChange={handleChange}
               onBlur={handleLocalCpfBlur}
-              required
+              required={!formData.semCpf}
+              disabled={!!formData.semCpf}
               maxLength={14}
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 pr-10"
-              placeholder="000.000.000-00"
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 pr-10 disabled:opacity-50"
+              placeholder={formData.semCpf ? 'Sem CPF' : '000.000.000-00'}
             />
             {isLoading && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -91,10 +105,25 @@ const DadosPessoais = ({
               </div>
             )}
           </div>
+
+          <div className="flex items-center space-x-2 mt-1">
+            <Checkbox
+              id="semCpf"
+              checked={!!formData.semCpf}
+              onCheckedChange={onSemCpfChange}
+              className="border-white/50 data-[state=checked]:bg-red-700 data-[state=checked]:text-white h-3.5 w-3.5"
+            />
+            <label htmlFor="semCpf" className="text-[10px] text-white/70 cursor-pointer select-none leading-none">
+              Não tenho CPF (documento estrangeiro)
+            </label>
+          </div>
+
           <p className="text-[10px] text-blue-200/70 mt-auto pt-1">
-            {isEquipante
-              ? "Digite o CPF para buscar dados de edições anteriores."
-              : "Digite o CPF para preencher automaticamente dados anteriores."}
+            {formData.semCpf
+              ? "Sem problema — você poderá se inscrever sem informar um CPF."
+              : (isEquipante
+                ? "Digite o CPF para buscar dados de edições anteriores."
+                : "Digite o CPF para preencher automaticamente dados anteriores.")}
           </p>
         </div>
 

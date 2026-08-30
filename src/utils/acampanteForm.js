@@ -9,7 +9,7 @@ export const mapFormDataToDb = (formData, user) => {
 
     // Dados Pessoais
     nome: formData.nome,
-    cpf: formData.cpf,
+    cpf: formData.cpf || null,
     email: formData.email || null,
     telefone: formData.whatsapp || null,
     whatsapp: formData.whatsapp || null,

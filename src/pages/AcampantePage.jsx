@@ -33,7 +33,7 @@ const AcampantePage = () => {
 
   const [formData, setFormData] = useState({
     adminResponsavel: '',
-    cpf: '', nome: '', sexo: '',
+    cpf: '', semCpf: false, nome: '', sexo: '',
     tamanho_camisa: '',
     whatsapp: '', telefoneResidencial: '', idade: '',
     autorizacaoImagem: false,
@@ -56,6 +56,7 @@ const AcampantePage = () => {
   const handleVerificationComplete = (result) => {
     if (result.cpf) setFormData(prev => ({ ...prev, cpf: result.cpf }));
     if (result.nome) setFormData(prev => ({ ...prev, nome: result.nome }));
+    if (result.semCpf) setFormData(prev => ({ ...prev, semCpf: true }));
     
     if (result.existe && result.dados) {
       setInscricaoData(result.dados);

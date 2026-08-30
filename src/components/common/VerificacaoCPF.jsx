@@ -66,6 +66,7 @@ const VerificacaoCPF = ({
         if (onVerificationComplete) {
           onVerificationComplete({
             nome,
+            semCpf: true,
             ...result
           });
         }
@@ -85,6 +86,7 @@ const VerificacaoCPF = ({
         if (onVerificationComplete) {
           onVerificationComplete({
             cpf,
+            semCpf: false,
             ...result
           });
         }

@@ -113,7 +113,7 @@ const EquipantePage = () => {
   const [inscricaoData, setInscricaoData] = useState(null);
 
   const [formData, setFormData] = useState({
-    cpf: '', nome: '', dataNascimento: '', sexo: '',
+    cpf: '', semCpf: false, nome: '', dataNascimento: '', sexo: '',
     tamanhoCamisa: '',
     email: '', whatsapp: '', telefoneResidencial: '', idade: '',
     cep: '', endereco: '', numero: '', complemento: '',
@@ -140,6 +140,8 @@ const EquipantePage = () => {
   const [loading, setLoading] = useState(false);
 
   const handleVerificationComplete = (result) => {
+    if (result.semCpf) setFormData(prev => ({ ...prev, semCpf: true }));
+
     const isFound = result.found || result.existe;
     const isEnrolled = result.inscrito;
     const hasPaid = result.pagou;
@@ -279,7 +281,7 @@ const EquipantePage = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <DadosPessoais formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} isEquipante={true} setFormData={setFormData} />
+                <DadosPessoais formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} isEquipante={true} setFormData={setFormData} />
                 <Endereco formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
                 <InfoSaude formData={formData} handleChange={handleChange} />
                 <InfoEclesiasticas formData={formData} handleChange={handleChange} isEquipante={true} />

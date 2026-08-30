@@ -8,7 +8,7 @@ const mapEquipanteToDb = (formData) => ({
   scale_status: 'pendente',
   tipo: 'equipante',
   nome: formData.nome,
-  cpf: formData.cpf,
+  cpf: formData.cpf || null,
   email: formData.email,
   whatsapp: formData.whatsapp,
   telefone_residencial: formData.telefoneResidencial,

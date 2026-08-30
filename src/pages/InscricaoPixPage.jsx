@@ -12,14 +12,11 @@ import { Loader2, Copy, QrCode, CheckCircle2, AlertCircle, ArrowLeft, Tag } from
 import { gerarPixSicoob } from '@/services/sicoobService';
 import { QRCodeSVG } from 'qrcode.react';
 import { validateCPF } from '@/utils/validation';
+import { formatCPF } from '@/utils/formatters';
 import { useCurrentPrice } from '@/hooks/useCurrentPrice';
 import { useCouponValidation } from '@/hooks/useCouponValidation';
 import { finalizeZeroValuePayment } from '@/services/paymentService';
 import { updateEquipantePaymentStatus, updateAcampantePaymentStatus } from '@/services/inscricoesService';
-
-const formatCPF = value => {
-  return value.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').replace(/(-\d{2})\d+?$/, '$1');
-};
 
 const formatCurrency = value => {
   if (value === null || value === undefined) return 'R$ 0,00';

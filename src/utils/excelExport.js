@@ -93,11 +93,6 @@ export const exportAllEquipantes = (allocations) => {
 export const exportAcampantesToExcel = (acampantes) => {
   try {
     const formatBool = (val) => val ? 'Sim' : 'Não';
-    
-    const formatCPF = (cpf) => {
-      if (!cpf) return '';
-      return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-    };
 
     const dataToExport = acampantes.map(a => ({
       'ID': a.id,

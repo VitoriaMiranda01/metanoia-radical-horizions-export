@@ -101,14 +101,6 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
                 <p className="text-white font-medium">{displayValue(inscricao.sexo)}</p>
               </div>
               <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Estado Civil:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.estado_civil)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Profissão:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.profissao)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">Tamanho da Camisa:</span>
                 <p className="text-white font-medium">{displayValue(inscricao.tamanho_camisa)}</p>
               </div>

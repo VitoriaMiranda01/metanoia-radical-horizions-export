@@ -112,8 +112,6 @@ export const exportAcampantesToExcel = (acampantes) => {
       'WhatsApp': a.whatsapp,
       'Data Nascimento': formatDate(a.data_nascimento),
       'Gênero': a.genero,
-      'Estado Civil': a.estado_civil,
-      'Profissão': a.profissao,
       'Tamanho Camisa': a.tamanho_camisa,
       'Problema de Saúde': formatBool(a.tem_problema_saude),
       'Usa Medicamento': formatBool(a.usa_medicamento),

@@ -114,7 +114,7 @@ const EquipantePage = () => {
 
   const [formData, setFormData] = useState({
     cpf: '', nome: '', dataNascimento: '', sexo: '',
-    estadoCivil: '', profissao: '', tamanhoCamisa: '',
+    tamanhoCamisa: '',
     email: '', whatsapp: '', telefoneResidencial: '', idade: '',
     cep: '', endereco: '', numero: '', complemento: '',
     bairro: '', cidade: '', estado: '',

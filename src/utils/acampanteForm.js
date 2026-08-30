@@ -14,8 +14,6 @@ export const mapFormDataToDb = (formData, user) => {
     telefone: formData.whatsapp || null,
     whatsapp: formData.whatsapp || null,
     sexo: formData.sexo || null,
-    estado_civil: formData.estadoCivil || null,
-    profissao: formData.profissao || null,
     tamanho_camisa: formData.tamanho_camisa || null,
     idade: formData.idade ? parseInt(formData.idade) : null,
 

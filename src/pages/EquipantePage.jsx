@@ -141,6 +141,10 @@ const EquipantePage = () => {
 
   const handleVerificationComplete = (result) => {
     if (result.semCpf) setFormData(prev => ({ ...prev, semCpf: true }));
+    // Preenche o Nome já com o que foi digitado na busca por nome (tela
+    // anterior), pra não pedir a mesma informação de novo — mesmo padrão já
+    // usado em AcampantePage.jsx.
+    if (result.nome) setFormData(prev => ({ ...prev, nome: result.nome }));
 
     const isFound = result.found || result.existe;
     const isEnrolled = result.inscrito;

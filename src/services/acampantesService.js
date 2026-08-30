@@ -51,17 +51,13 @@ export const getAcampantes = async () => {
   }
 };
 
-export const fetchAcampantesRaw = async () => {
-  return supabase.from('acampantes').select('*');
-};
-
 const GRUPOS_TRILHA = ['Vermelho', 'Amarelo', 'Verde', 'Azul', 'Roxo'];
 
 // Escolhe, entre os 5 grupos fixos, o que tem menos integrantes aprovados do mesmo
-// sexo do acampante que está sendo alocado agora. Só é chamada uma vez por pessoa,
-// no momento da aprovação (ver updateAcampanteStatus abaixo) — quem já tem grupo
-// nunca é realocado.
-const escolherGrupoTrailha = async (sexo) => {
+// sexo do acampante que está sendo alocado agora. Chamada uma vez por pessoa, no
+// momento do cadastro (ver criarInscricao em inscricoesService.js) — acampante já
+// nasce com status 'aprovado' e não passa por uma aprovação manual separada.
+export const escolherGrupoTrailha = async (sexo) => {
   let grupoEscolhido = GRUPOS_TRILHA[0];
   let menorContagem = Infinity;
 
@@ -82,33 +78,6 @@ const escolherGrupoTrailha = async (sexo) => {
   }
 
   return grupoEscolhido;
-};
-
-export const updateAcampanteStatus = async (id, newStatus) => {
-  const updatePayload = { status: newStatus };
-
-  if (newStatus === 'aprovado') {
-    try {
-      const { data: atual, error: erroConsulta } = await supabase
-        .from('acampantes')
-        .select('sexo, grupo_trailha')
-        .eq('id', id)
-        .single();
-
-      if (erroConsulta) throw erroConsulta;
-
-      // Só aloca grupo se ainda não tiver um salvo (nunca realoca quem já foi definido).
-      if (!atual?.grupo_trailha) {
-        updatePayload.grupo_trailha = await escolherGrupoTrailha(atual?.sexo);
-      }
-    } catch (error) {
-      console.error('Erro ao alocar grupo de trilha:', error);
-      // Não bloqueia a aprovação por causa disso; a pessoa fica sem grupo e pode
-      // ser alocada manualmente depois.
-    }
-  }
-
-  return supabase.from('acampantes').update(updatePayload).eq('id', id);
 };
 
 export const countAcampantes = async () => {

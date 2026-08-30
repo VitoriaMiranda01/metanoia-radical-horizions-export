@@ -1,6 +1,7 @@
 import { supabase } from '@/services/supabaseClient';
 import { mapFormDataToDb as mapAcampanteToDb } from '@/utils/acampanteForm';
 import { toBoolean } from '@/utils/formatters';
+import { escolherGrupoTrailha } from '@/services/acampantesService';
 
 const mapEquipanteToDb = (formData) => ({
   status: 'pendente',
@@ -170,6 +171,19 @@ export const criarInscricao = async (formData, tipo) => {
   const mappedData = tipo === 'equipante'
     ? mapEquipanteToDb(formData)
     : mapAcampanteToDb(formData, null);
+
+  // Acampante já nasce com status 'aprovado' (não existe mais uma etapa manual
+  // de aprovação pra ele), então o grupo de trilha precisa ser sorteado aqui,
+  // no cadastro — não dá mais pra depender de uma transição de status.
+  if (tipo === 'acampante') {
+    try {
+      mappedData.grupo_trailha = await escolherGrupoTrailha(mappedData.sexo);
+    } catch (error) {
+      console.error('inscricaoApi - criarInscricao: erro ao alocar grupo de trilha', error);
+      // Não bloqueia o cadastro por causa disso; a pessoa fica sem grupo e pode
+      // ser alocada manualmente depois.
+    }
+  }
 
   const processedMethod = formData.metodoPagamento || mappedData.metodo_pagamento || null;
 

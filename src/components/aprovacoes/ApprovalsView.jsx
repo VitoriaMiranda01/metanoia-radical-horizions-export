@@ -5,7 +5,6 @@ import AprovacoesStatsCards from '@/components/aprovacoes/AprovacoesStatsCards';
 import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
 import AprovacoesTable from '@/components/aprovacoes/AprovacoesTable';
 import { fetchEquipantesRaw, updateEquipanteStatus } from '@/services/equipantesService';
-import { fetchAcampantesRaw, updateAcampanteStatus } from '@/services/acampantesService';
 
 const ApprovalsView = ({ 
   pageTitle = "Aprovações de Equipantes", 
@@ -35,17 +34,14 @@ const ApprovalsView = ({
   const carregarInscricoes = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      // Fetch both equipantes and acampantes directly without relying on email parameters
-      const [equipantesResult, acampantesResult] = await Promise.all([
-        fetchEquipantesRaw(),
-        fetchAcampantesRaw(),
-      ]);
+      // Esta tela é só para inscrições de equipante: acampante já nasce com
+      // status 'aprovado' (não passa por aprovação manual) e vai direto pra
+      // tabela geral em Gerenciar Inscrições.
+      const { data, error } = await fetchEquipantesRaw();
 
-      if (equipantesResult.error) throw equipantesResult.error;
-      if (acampantesResult.error) throw acampantesResult.error;
+      if (error) throw error;
 
-      // Map Equipantes to unified structure
-      const mappedEquipantes = (equipantesResult.data || []).map(e => ({
+      const mappedEquipantes = (data || []).map(e => ({
         ...e,
         tipo: 'equipante',
         telefone: e.whatsapp,
@@ -55,21 +51,7 @@ const ApprovalsView = ({
         experienciaAnterior: e.ja_trabalhou_equipe ? `Já trabalhou em: ${e.edicao_trabalhou || 'N/A'}` : 'Primeira vez na equipe'
       }));
 
-      // Map Acampantes to unified structure
-      const mappedAcampantes = (acampantesResult.data || []).map(a => ({
-        ...a,
-        tipo: 'acampante',
-        nome: a.nome_completo || a.nome || a.full_name,
-        telefone: a.telefone || a.whatsapp,
-        pastor: a.pastor_nome || a.pastor,
-        motivacao: a.conhecido_no_projeto ? `Conheceu através de: ${a.nome_familiar_conhecido || 'N/A'}` : 'Primeira experiência',
-        experienciaAnterior: a.problemas_saude ? 'Possui condições médicas informadas' : 'Sem restrições informadas'
-      }));
-
-      // Combine both arrays
-      const todasInscricoes = [...mappedEquipantes, ...mappedAcampantes];
-
-      setInscricoes(todasInscricoes);
+      setInscricoes(mappedEquipantes);
     } catch (error) {
       console.error("Erro ao carregar inscrições:", error);
       if (showLoading) {
@@ -86,9 +68,7 @@ const ApprovalsView = ({
   
   const updateInscricaoStatus = async (id, tipo, newStatus) => {
     try {
-      const { error } = tipo === 'equipante'
-        ? await updateEquipanteStatus(id, newStatus)
-        : await updateAcampanteStatus(id, newStatus);
+      const { error } = await updateEquipanteStatus(id, newStatus);
 
       if (error) throw error;
 
@@ -132,34 +112,11 @@ const ApprovalsView = ({
     
     if (!success) return;
 
-    try {
-      // Aprovação da inscrição do equipante É a autorização pastoral — não há
-      // mais um campo/ação separados para isso.
-      if (inscricao.tipo === 'equipante') {
-        toast({ 
-          title: "Equipante aprovado!", 
-          description: "A inscrição foi aprovada com sucesso.", 
-          className: "bg-green-600 text-white" 
-        });
-      } 
-      // Acampantes não passam por vínculo com equipante: uma pessoa nunca se
-      // inscreve como acampante e equipante ao mesmo tempo, então não existe
-      // "equipante vinculado por CPF" a atualizar aqui.
-      else if (inscricao.tipo === 'acampante') {
-        toast({ 
-          title: "Acampante aprovado!", 
-          description: "A inscrição foi aprovada com sucesso.", 
-          className: "bg-green-600 text-white" 
-        });
-      }
-    } catch (err) {
-      console.error('Error in approval process:', err);
-      toast({ 
-        title: "Aviso", 
-        description: "Inscrição aprovada, mas houve um erro no processamento adicional.", 
-        variant: "destructive" 
-      });
-    }
+    toast({ 
+      title: "Equipante aprovado!", 
+      description: "A inscrição foi aprovada com sucesso.", 
+      className: "bg-green-600 text-white" 
+    });
   };
 
   const rejeitarInscricao = async (id) => {

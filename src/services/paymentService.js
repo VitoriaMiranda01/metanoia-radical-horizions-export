@@ -140,9 +140,11 @@ export const finalizeZeroValuePayment = async (inscriptionType, inscriptionId, c
 };
 
 export const fetchAcampantesPendentesPagamento = async () => {
+  // acampantes não tem coluna telefone — o telefone do acampante é whatsapp
+  // (mesma correção já aplicada em columnVisibility.js/databaseSchema.js).
   return supabase
     .from('acampantes')
-    .select('id, nome, cpf, status_pagamento, metodo_pagamento, status, telefone, cidade, igreja')
+    .select('id, nome, cpf, status_pagamento, metodo_pagamento, status, whatsapp, cidade, igreja')
     .in('metodo_pagamento', ['manual', 'isento']);
 };
 

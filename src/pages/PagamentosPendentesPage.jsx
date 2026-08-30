@@ -49,7 +49,7 @@ const PagamentosPendentesPage = () => {
         id: item.id,
         nome: item.nome || 'Sem Nome',
         cpf: item.cpf || 'Não informado',
-        telefone: item.telefone || 'Não informado',
+        telefone: item.whatsapp || 'Não informado',
         cidade: item.cidade || 'Não informada',
         igreja: item.igreja || 'Não informada',
         tipo: 'acampante',

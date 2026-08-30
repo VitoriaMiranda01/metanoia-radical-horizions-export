@@ -4,6 +4,8 @@ import { toBoolean } from '@/utils/formatters';
 
 const mapEquipanteToDb = (formData) => ({
   status: 'pendente',
+  pastoral_auth_status: 'pendente',
+  scale_status: 'pendente',
   tipo: 'equipante',
   nome: formData.nome,
   cpf: formData.cpf,

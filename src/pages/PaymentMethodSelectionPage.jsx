@@ -5,7 +5,7 @@ import Layout from '@/components/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { QrCode, CreditCard, ArrowRight, Zap } from 'lucide-react';
+import { QrCode, CreditCard, ArrowRight, Zap, AlertCircle } from 'lucide-react';
 import { atualizarStatusPagamento } from '@/services/inscricoesService';
 
 const PaymentMethodSelectionPage = () => {
@@ -16,6 +16,11 @@ const PaymentMethodSelectionPage = () => {
   if (!location.state) {
     return <Navigate to="/" replace />;
   }
+
+  // PIX exige CPF válido (é repassado direto pra API do Sicoob pra gerar a
+  // cobrança), então quem se inscreveu sem CPF (documento estrangeiro) só
+  // pode pagar pela opção manual.
+  const hasCpf = !!location.state?.cpf;
 
   const handleSelect = async (path, method) => {
     // Update the method in database before proceeding
@@ -54,8 +59,16 @@ const PaymentMethodSelectionPage = () => {
           <p className="text-gray-400 text-lg">Escolha como deseja realizar o pagamento da sua inscrição.</p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {!hasCpf && (
+          <div className="flex items-start gap-2 p-3 mb-6 bg-blue-900/20 border border-blue-500/30 rounded text-sm text-blue-200 max-w-xl mx-auto">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <p>Como sua inscrição foi feita sem CPF, o pagamento por PIX não está disponível. Use a opção de pagamento manual abaixo.</p>
+          </div>
+        )}
+
+        <div className={`grid grid-cols-1 gap-6 ${hasCpf ? 'md:grid-cols-2' : 'max-w-md mx-auto'}`}>
           {/* PIX Option */}
+          {hasCpf && (
           <motion.div 
             initial={{ opacity: 0, x: -20 }} 
             animate={{ opacity: 1, x: 0 }} 
@@ -83,6 +96,7 @@ const PaymentMethodSelectionPage = () => {
               </CardContent>
             </Card>
           </motion.div>
+          )}
 
           {/* Manual Option */}
           <motion.div 

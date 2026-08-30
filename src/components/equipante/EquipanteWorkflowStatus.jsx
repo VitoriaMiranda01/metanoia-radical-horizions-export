@@ -104,7 +104,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, onProceedToPayment }) => {
 
         <div className="mt-8 pt-6 border-t border-white/10">
           <Button
-            onClick={onProceedToPayment}
+            onClick={() => onProceedToPayment?.({ nome: workflowData?.nome, cpf: workflowData?.cpf })}
             disabled={!canProceedToPayment}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg disabled:opacity-50"
           >

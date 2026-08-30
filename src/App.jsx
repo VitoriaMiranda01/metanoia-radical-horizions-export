@@ -28,7 +28,9 @@ function EquipanteWorkflowRoute() {
   return (
     <EquipanteWorkflowStatus
       equipanteId={equipante_id}
-      onProceedToPayment={() => navigate('/payment-method-selection', { state: { equipanteId: equipante_id } })}
+      onProceedToPayment={(dados) => navigate('/payment-method-selection', {
+        state: { id: equipante_id, tipo: 'equipante', nome: dados?.nome, cpf: dados?.cpf }
+      })}
     />
   );
 }

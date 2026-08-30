@@ -1,33 +1,29 @@
 export const COLUMN_DEFINITIONS = {
   equipantes: [
     // Identificação
-    { key: 'email', label: 'Email', group: 'Contato' },
     { key: 'cpf', label: 'CPF', group: 'Pessoal' },
     { key: 'telefone', label: 'Telefone', group: 'Contato' },
-    { key: 'data_nascimento', label: 'Data Nascimento', group: 'Pessoal' },
-    { key: 'genero', label: 'Gênero', group: 'Pessoal' },
-    
-    // Endereço
+    { key: 'idade', label: 'Idade', group: 'Pessoal' },
+    { key: 'sexo', label: 'Gênero', group: 'Pessoal' },
+
+    // Endereço (campo calculado: junta endereco + numero + complemento + bairro)
     { key: 'endereco_completo', label: 'Endereço Completo', group: 'Endereço' },
     { key: 'cidade', label: 'Cidade', group: 'Endereço' },
     { key: 'estado', label: 'Estado', group: 'Endereço' },
     { key: 'cep', label: 'CEP', group: 'Endereço' },
-    
+
     // Eclesiástico
     { key: 'igreja', label: 'Igreja', group: 'Eclesiástico' },
-    { key: 'funcao_igreja', label: 'Função na Igreja', group: 'Eclesiástico' },
-    
-    // Serviço
+    { key: 'cargo_igreja', label: 'Função na Igreja', group: 'Eclesiástico' },
+
+    // Serviço (campo calculado: junta area_trabalho_opcao1/2/3)
     { key: 'area_trabalho', label: 'Área de Trabalho', group: 'Serviço' },
-    { key: 'experiencia', label: 'Experiência', group: 'Serviço' },
-    { key: 'motivacao', label: 'Motivação', group: 'Serviço' },
-    
+
     // Emergência
     { key: 'contato_emergencia_nome', label: 'Contato Emergência', group: 'Emergência' },
     { key: 'contato_emergencia_telefone', label: 'Tel. Emergência', group: 'Emergência' },
-    
+
     // Status
-    { key: 'data_inscricao', label: 'Data Inscrição', group: 'Sistema' },
     { key: 'status_pagamento', label: 'Status Pagamento', group: 'Sistema' },
     { key: 'metodo_pagamento', label: 'Método Pagamento', group: 'Sistema' },
     { key: 'status', label: 'Status', group: 'Sistema' }
@@ -36,47 +32,55 @@ export const COLUMN_DEFINITIONS = {
     // Identificação
     { key: 'email', label: 'Email', group: 'Contato' },
     { key: 'cpf', label: 'CPF', group: 'Pessoal' },
-    { key: 'telefone', label: 'Telefone', group: 'Contato' },
-    { key: 'data_nascimento', label: 'Data Nascimento', group: 'Pessoal' },
-    { key: 'genero', label: 'Gênero', group: 'Pessoal' },
-    
-    // Responsável
-    { key: 'responsavel_nome', label: 'Responsável', group: 'Responsável' },
-    { key: 'responsavel_telefone', label: 'Tel. Responsável', group: 'Responsável' },
-    { key: 'responsavel_email', label: 'Email Responsável', group: 'Responsável' },
-    
-    // Endereço
+    { key: 'whatsapp', label: 'WhatsApp', group: 'Contato' },
+    { key: 'idade', label: 'Idade', group: 'Pessoal' },
+    { key: 'sexo', label: 'Gênero', group: 'Pessoal' },
+
+    // Endereço (campo calculado: junta endereco + numero + complemento + bairro)
     { key: 'endereco_completo', label: 'Endereço Completo', group: 'Endereço' },
     { key: 'cidade', label: 'Cidade', group: 'Endereço' },
     { key: 'estado', label: 'Estado', group: 'Endereço' },
     { key: 'cep', label: 'CEP', group: 'Endereço' },
-    
+
     // Acampamento
     { key: 'igreja', label: 'Igreja', group: 'Eclesiástico' },
-    { key: 'grupo_trailha', label: 'Grupo Trailha', group: 'Acampamento' },
-    { key: 'grupo_alocado', label: 'Grupo Alocado', group: 'Acampamento' },
-    { key: 'tamanho_camiseta', label: 'Camiseta', group: 'Acampamento' },
-    
+    { key: 'grupo_trailha', label: 'Grupo de Trilha', group: 'Acampamento' },
+    { key: 'tamanho_camisa', label: 'Camiseta', group: 'Acampamento' },
+
     // Saúde
-    { key: 'alergias', label: 'Alergias', group: 'Saúde' },
+    { key: 'condicoes_medicas', label: 'Condições Médicas', group: 'Saúde' },
     { key: 'medicamentos', label: 'Medicamentos', group: 'Saúde' },
     { key: 'restricoes_alimentares', label: 'Restrições Alim.', group: 'Saúde' },
-    
+
     // Emergência
     { key: 'contato_emergencia_nome', label: 'Contato Emergência', group: 'Emergência' },
     { key: 'contato_emergencia_telefone', label: 'Tel. Emergência', group: 'Emergência' },
-    
+
     // Status
-    { key: 'data_inscricao', label: 'Data Inscrição', group: 'Sistema' },
     { key: 'status_pagamento', label: 'Status Pagamento', group: 'Sistema' },
     { key: 'metodo_pagamento', label: 'Método Pagamento', group: 'Sistema' },
     { key: 'status', label: 'Status', group: 'Sistema' }
   ]
 };
 
+// Concatena os campos reais de endereço num único valor de exibição.
+// Não existe coluna "endereco_completo" no banco — é montado aqui a partir de
+// endereco, numero, complemento e bairro (as 4 colunas existem em ambas as tabelas).
+export const formatEnderecoCompleto = (item) => {
+  const partes = [item.endereco, item.numero, item.complemento, item.bairro].filter(Boolean);
+  return partes.length > 0 ? partes.join(', ') : '';
+};
+
+// Concatena as 3 opções de área de trabalho do equipante num único valor de exibição.
+// Não inclui area_trabalho_extra (campo de observação livre, não é uma 4ª opção de área).
+export const formatAreaTrabalho = (item) => {
+  const areas = [item.area_trabalho_opcao1, item.area_trabalho_opcao2, item.area_trabalho_opcao3].filter(Boolean);
+  return areas.length > 0 ? areas.join(', ') : '';
+};
+
 const DEFAULT_VISIBLE_COLUMNS = {
-  equipantes: ['email', 'telefone', 'cidade', 'igreja', 'area_trabalho', 'status'],
-  acampantes: ['email', 'telefone', 'cidade', 'igreja', 'responsavel_nome', 'status']
+  equipantes: ['telefone', 'cidade', 'igreja', 'area_trabalho', 'status'],
+  acampantes: ['email', 'whatsapp', 'cidade', 'igreja', 'grupo_trailha', 'status']
 };
 
 export const getVisibleColumnsFromStorage = (type) => {

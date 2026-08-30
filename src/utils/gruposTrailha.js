@@ -55,20 +55,17 @@ export const getGroupColor = (groupName) => {
 
 export const getGroupStats = (groupAcampantes) => {
   if (!groupAcampantes) return { total: 0, homens: 0, mulheres: 0 };
-  const homens = groupAcampantes.filter(a => a.genero?.toLowerCase() === 'masculino').length;
-  const mulheres = groupAcampantes.filter(a => a.genero?.toLowerCase() === 'feminino').length;
+  const homens = groupAcampantes.filter(a => a.sexo?.toLowerCase() === 'masculino').length;
+  const mulheres = groupAcampantes.filter(a => a.sexo?.toLowerCase() === 'feminino').length;
   return { total: groupAcampantes.length, homens, mulheres };
 };
 
-export const allocateAcampantesToGroups = (acampantes) => {
-  // Only consider approved or confirmed acampantes
-  const approved = acampantes.filter(a => 
-    a.status === 'aprovado' || a.status === 'confirmado'
-  );
-  
-  const homens = approved.filter(a => a.genero?.toLowerCase() === 'masculino');
-  const mulheres = approved.filter(a => a.genero?.toLowerCase() === 'feminino');
-  
+// Agrupa acampantes pelo grupo de trilha já persistido no banco (coluna
+// acampantes.grupo_trailha, preenchida uma única vez no momento da aprovação por
+// src/services/acampantesService.js). Substitui a antiga allocateAcampantesToGroups,
+// que recalculava tudo em memória a cada carregamento — agora só exibe o que já
+// foi decidido e salvo.
+export const groupAcampantesByTrilha = (acampantes) => {
   const groups = {
     'Verde': [],
     'Amarelo': [],
@@ -76,18 +73,12 @@ export const allocateAcampantesToGroups = (acampantes) => {
     'Roxo': [],
     'Vermelho': []
   };
-  
-  // Distribute Homens (Round Robin)
-  homens.forEach((h, index) => {
-    const groupName = GROUPS[index % 5];
-    groups[groupName].push(h);
+
+  (acampantes || []).forEach(a => {
+    if (a.grupo_trailha && groups[a.grupo_trailha]) {
+      groups[a.grupo_trailha].push(a);
+    }
   });
-  
-  // Distribute Mulheres (Round Robin)
-  mulheres.forEach((m, index) => {
-    const groupName = GROUPS[index % 5];
-    groups[groupName].push(m);
-  });
-  
+
   return groups;
 };

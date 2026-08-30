@@ -18,7 +18,9 @@ import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDro
 import { 
   getVisibleColumnsFromStorage, 
   saveVisibleColumnsToStorage,
-  COLUMN_DEFINITIONS
+  COLUMN_DEFINITIONS,
+  formatEnderecoCompleto,
+  formatAreaTrabalho
 } from '@/utils/columnVisibility';
 
 const getStatusBadge = (status) => {
@@ -43,7 +45,13 @@ const formatarData = (dataString) => {
 };
 
 const getColumnValue = (item, filterKey) => {
-  if (filterKey === 'created_at' || filterKey === 'data_nascimento' || filterKey === 'data_inscricao') {
+  if (filterKey === 'endereco_completo') {
+    return formatEnderecoCompleto(item);
+  }
+  if (filterKey === 'area_trabalho') {
+    return formatAreaTrabalho(item);
+  }
+  if (filterKey === 'created_at') {
     return formatarData(item[filterKey]);
   }
   if (typeof item[filterKey] === 'boolean') {
@@ -212,7 +220,9 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExcluir, onEx
 
   const renderCellContent = (item, key) => {
     if (key === 'status') return getStatusBadge(item.status);
-    if (key === 'created_at' || key === 'data_nascimento' || key === 'data_inscricao') return formatarData(item[key]);
+    if (key === 'endereco_completo') return formatEnderecoCompleto(item) || '-';
+    if (key === 'area_trabalho') return formatAreaTrabalho(item) || '-';
+    if (key === 'created_at') return formatarData(item[key]);
     if (typeof item[key] === 'boolean') return item[key] ? 'Sim' : 'Não';
     return item[key] || '-';
   };

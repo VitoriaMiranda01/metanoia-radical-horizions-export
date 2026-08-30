@@ -19,7 +19,9 @@ import InscricaoCard from '@/components/aprovacoes/InscricaoCard';
 import { 
   getVisibleColumnsFromStorage, 
   saveVisibleColumnsToStorage,
-  COLUMN_DEFINITIONS
+  COLUMN_DEFINITIONS,
+  formatEnderecoCompleto,
+  formatAreaTrabalho
 } from '@/utils/columnVisibility';
 
 export const getStatusBadge = (status) => {
@@ -44,7 +46,9 @@ const formatarData = (dataString) => {
 };
 
 const getColumnValue = (item, key) => {
-  if (key === 'created_at' || key === 'data_nascimento') return formatarData(item[key]);
+  if (key === 'endereco_completo') return formatEnderecoCompleto(item);
+  if (key === 'area_trabalho') return formatAreaTrabalho(item);
+  if (key === 'created_at') return formatarData(item[key]);
   if (typeof item[key] === 'boolean') return item[key] ? 'Sim' : 'Não';
   return String(item[key] || '');
 };

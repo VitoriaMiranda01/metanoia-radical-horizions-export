@@ -92,12 +92,6 @@ export const exportAllEquipantes = (allocations) => {
 // Exporta acampantes para Excel
 export const exportAcampantesToExcel = (acampantes) => {
   try {
-    const formatDate = (dateStr) => {
-      if (!dateStr) return '';
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('pt-BR');
-    };
-
     const formatBool = (val) => val ? 'Sim' : 'Não';
     
     const formatCPF = (cpf) => {
@@ -110,8 +104,8 @@ export const exportAcampantesToExcel = (acampantes) => {
       'Nome': a.nome_completo || a.nome,
       'CPF': formatCPF(a.cpf),
       'WhatsApp': a.whatsapp,
-      'Data Nascimento': formatDate(a.data_nascimento),
-      'Gênero': a.genero,
+      'Idade': a.idade,
+      'Sexo': a.sexo,
       'Tamanho Camisa': a.tamanho_camisa,
       'Problema de Saúde': formatBool(a.tem_problema_saude),
       'Usa Medicamento': formatBool(a.usa_medicamento),

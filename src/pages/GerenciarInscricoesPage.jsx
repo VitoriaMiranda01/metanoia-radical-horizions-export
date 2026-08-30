@@ -25,7 +25,7 @@ import AcampantesStatsCards from '@/components/gerenciar/AcampantesStatsCards';
 import AcampantesDetailModal from '@/components/gerenciar/AcampantesDetailModal';
 import { deleteAcampante, getAcampantes, countAcampantes } from '@/services/acampantesService';
 import { fetchEquipantesInscritos, countEquipantesInscritos, desativarEquipanteInscricao } from '@/services/equipantesService';
-import { allocateAcampantesToGroups } from '@/utils/gruposTrailha';
+import { groupAcampantesByTrilha } from '@/utils/gruposTrailha';
 
 const GerenciarInscricoesPage = () => {
   const { toast } = useToast();
@@ -232,7 +232,7 @@ const GerenciarInscricoesPage = () => {
   }, [inscricoes, searchTermEquipantes]);
 
   const allocatedGroups = useMemo(() => {
-    return allocateAcampantesToGroups(acampantesList);
+    return groupAcampantesByTrilha(acampantesList);
   }, [acampantesList]);
 
   const handleViewDetails = (acampante) => {

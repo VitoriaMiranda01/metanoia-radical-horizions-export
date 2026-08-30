@@ -12,7 +12,7 @@ import { User, MapPin, Phone } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 
 const AcampanteItem = ({ acampante }) => {
-  const isMale = acampante.genero?.toLowerCase() === 'masculino';
+  const isMale = acampante.sexo?.toLowerCase() === 'masculino';
   
   return (
     <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">

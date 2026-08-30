@@ -9,6 +9,23 @@
 -- aplicação (src/services/acampantesService.js) passa a preencher essa coluna
 -- automaticamente no momento da aprovação, uma única vez por acampante.
 
+-- 0. Remove o trigger update_acampantes_updated_at (definido em
+--    database/database-setup.sql), que tenta fazer NEW.updated_at = now() a
+--    cada UPDATE em acampantes. A tabela real não tem a coluna updated_at
+--    (nem created_at — ver comentário mais abaixo), então esse trigger
+--    quebra TODO UPDATE na tabela, não só o desta migração: aprovação de
+--    acampante, confirmação de pagamento manual, finalização de pagamento
+--    zerado por cupom, etc. Nada no código da aplicação lê updated_at de
+--    acampantes hoje, então removê-lo não tira nenhuma funcionalidade real.
+DROP TRIGGER IF EXISTS update_acampantes_updated_at ON acampantes;
+
+-- Defensivo: só o trigger de acampantes está documentado no repositório
+-- (database-setup.sql), mas como o banco real já provou divergir do que está
+-- documentado, removo também o equivalente em equipantes SE ele existir, pelo
+-- mesmo motivo (equipantes também não tem updated_at). DROP...IF EXISTS não
+-- faz nada se o trigger não existir com esse nome — seguro de rodar de qualquer forma.
+DROP TRIGGER IF EXISTS update_equipantes_updated_at ON equipantes;
+
 -- 1. Nova coluna (nullable: quem ainda não foi aprovado não tem grupo).
 ALTER TABLE acampantes ADD COLUMN IF NOT EXISTS grupo_trailha TEXT;
 

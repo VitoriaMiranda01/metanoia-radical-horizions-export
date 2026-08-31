@@ -89,6 +89,7 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
                   checked={isSelected}
                   onChange={handleChange}
                   disabled={disabled}
+                  required
                   className="w-4 h-4 mt-1 text-red-600 focus:ring-red-500 bg-black/40 border-white/30 disabled:opacity-50"
                 />
                 <span className={cn(

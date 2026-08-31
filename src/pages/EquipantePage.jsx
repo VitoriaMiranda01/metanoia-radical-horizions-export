@@ -183,6 +183,20 @@ const EquipantePage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    // As 3 opções de área de trabalho agora são obrigatórias: sem isso, a
+    // futura alocação automática (feita na aprovação, seguindo a ordem de
+    // preferência) não teria o que processar pra essa pessoa.
+    if (!formData.areaTrabalhoOpcao1 || !formData.areaTrabalhoOpcao2 || !formData.areaTrabalhoOpcao3) {
+      toast({
+        title: "Áreas de trabalho obrigatórias",
+        description: "Selecione suas 3 opções de área de trabalho (1ª, 2ª e 3ª) antes de continuar.",
+        variant: "destructive"
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       let submissionData = { ...formData };
       if (submissionData.estaAfastado === 'NÃO') {

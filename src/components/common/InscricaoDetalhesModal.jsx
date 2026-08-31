@@ -307,10 +307,6 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
                 <span className="text-sm text-gray-400 block mb-1">Edição que Trabalhou:</span>
                 <p className="text-white font-medium">{displayValue(inscricao.edicao_trabalhou)}</p>
               </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Deseja Trabalhar nesta Edição?</span>
-                <p className="text-white font-medium">{displayValue(inscricao.deseja_trabalhar_edicao)}</p>
-              </div>
             </div>
           </div>
 

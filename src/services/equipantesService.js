@@ -78,7 +78,6 @@ export const searchEquipanteByCPF = async (cpf) => {
       numeroEdicaoParticipou: data.numero_edicao_participou,
       jaTrabalhouEquipe: data.ja_trabalhou_equipe,
       edicaoTrabalhou: data.edicao_trabalhou,
-      desejaTrabalharEdicao: data.deseja_trabalhar_edicao,
 
       // Autorização
       autorizacaoImagemEquipante: data.autorizacao_imagem,

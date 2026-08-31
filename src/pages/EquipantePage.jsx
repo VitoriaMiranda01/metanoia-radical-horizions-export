@@ -79,7 +79,6 @@ const mapDbToFormData = (dbData) => {
     numeroEdicaoParticipou: dbData.numero_edicao_participou || '',
     jaTrabalhouEquipe: dbData.ja_trabalhou_equipe ?? '',
     edicaoTrabalhou: dbData.edicao_trabalhou || '',
-    desejaTrabalharEdicao: dbData.deseja_trabalhar_edicao || '',
 
     // Autorização
     autorizacaoImagemEquipante: dbData.autorizacao_imagem ?? false,
@@ -125,7 +124,7 @@ const EquipantePage = () => {
     parentesco: '', familiarNome: '',
     qualRadicalAcampante: '', qualRadicalAcampanteOutro: '',
     numeroEdicaoParticipou: '', jaTrabalhouEquipe: '',
-    edicaoTrabalhou: '', desejaTrabalharEdicao: '',
+    edicaoTrabalhou: '',
     autorizacaoImagemEquipante: false,
     autorizacaoImagem: false,
     contatoEmergencia: '', telefoneEmergencia: '',

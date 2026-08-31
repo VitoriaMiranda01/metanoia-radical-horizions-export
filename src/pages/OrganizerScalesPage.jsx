@@ -10,10 +10,12 @@ import { fetchLimitesAreas, saveLimiteAreaComGenero, getLimiteAreaComGenero } fr
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { exportEquipantesByArea, exportAllEquipantes } from '@/utils/excelExport';
 import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
+import { alocarEquipanteManualmente } from '@/services/equipanteAllocationService';
 import { Grid, Play, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
 import EquipantesGridDisplay from '@/components/scales/EquipantesGridDisplay';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const OrganizerScalesPage = () => {
   const [loading, setLoading] = useState(false);
@@ -28,6 +30,14 @@ const OrganizerScalesPage = () => {
   });
   const [saveStatus, setSaveStatus] = useState('idle');
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Lista de espera "de verdade": aprovados que ainda nao tem linha em
+  // escalas, recalculada a cada fetchBackgroundData (nao depende de clicar
+  // em "Gerar escalas"). Substitui o antigo `unallocated`, que so existia
+  // depois de um clique manual e se perdia ao recarregar a pagina.
+  const [waitlist, setWaitlist] = useState([]);
+  const [manualAreaChoice, setManualAreaChoice] = useState({});
+  const [manualAllocating, setManualAllocating] = useState({});
   
   const previousAllocationsRef = useRef([]);
   const saveTimeoutRef = useRef(null);
@@ -48,7 +58,10 @@ const OrganizerScalesPage = () => {
       ]);
       
       setLimitsMap(limitsData);
-      
+
+      const idsAlocados = new Set((existingAllocations || []).map(a => a.id));
+      setWaitlist((equipantes || []).filter(eq => !idsAlocados.has(eq.id)));
+
       if (existingAllocations && existingAllocations.length > 0) {
         const changed = detectAllocationChanges(existingAllocations, previousAllocationsRef.current);
         if (changed.length > 0 || allocations.length !== existingAllocations.length) {
@@ -200,6 +213,38 @@ const OrganizerScalesPage = () => {
         description: error.message,
         variant: "destructive"
       });
+    }
+  };
+
+  // Alocacao manual de quem esta na lista de espera. A funcao do banco
+  // confere a vaga de novo, na hora (mesma trava de concorrencia da
+  // automatica) — por isso "sucesso: false" pode acontecer mesmo que a tela
+  // achasse que havia vaga (ex: outro organizador ocupou um instante antes).
+  const handleManualAllocate = async (equipanteId, nomeEquipante) => {
+    const area = manualAreaChoice[equipanteId];
+    if (!area) {
+      toast({ title: "Selecione uma área", variant: "destructive" });
+      return;
+    }
+    setManualAllocating(prev => ({ ...prev, [equipanteId]: true }));
+    try {
+      const resultado = await alocarEquipanteManualmente(equipanteId, area);
+      if (resultado.success) {
+        toast({
+          title: "Alocado com sucesso",
+          description: `${nomeEquipante} foi alocado em ${area}.`,
+          className: "bg-green-600 text-white"
+        });
+        fetchBackgroundData(false);
+      } else {
+        toast({
+          title: "Não foi possível alocar",
+          description: resultado.error,
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setManualAllocating(prev => ({ ...prev, [equipanteId]: false }));
     }
   };
 
@@ -384,6 +429,14 @@ const OrganizerScalesPage = () => {
           </div>
         </div>
 
+        <div className="bg-orange-900/20 border border-orange-500/40 p-3 rounded-md flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-orange-400 shrink-0 mt-0.5" />
+          <p className="text-orange-200 text-sm">
+            A alocação agora acontece automaticamente assim que um equipante é aprovado, respeitando a ordem de preferência e o limite por sexo de cada área.
+            O botão "Gerar escalas" ainda usa o algoritmo antigo (recalcula todo mundo do zero, sem checar sexo) — evite clicar nele, pois pode reorganizar quem já foi alocado corretamente. Ele continua aqui só até confirmarmos que não é mais necessário.
+          </p>
+        </div>
+
         {dbVerification.checked && !dbVerification.valid && <div className="bg-red-900/30 border border-red-500/50 p-4 rounded-md flex items-center gap-3">
              <AlertTriangle className="h-5 w-5 text-red-400" />
              <p className="text-red-200 text-sm">Atenção: A estrutura do banco de dados parece estar incompleta.</p>
@@ -407,15 +460,42 @@ const OrganizerScalesPage = () => {
             </Card>
           </motion.div>}
 
-        {unallocated.length > 0 && <Card className="bg-yellow-900/10 border-yellow-900/30">
+        {waitlist.length > 0 && <Card className="bg-yellow-900/10 border-yellow-900/30">
             <div className="p-4 border-b border-yellow-900/30 flex items-center gap-2">
-              <AlertTriangle className="text-yellow-500 h-5 w-5" /><h3 className="font-semibold text-white">Pendentes de Alocação Manual ({unallocated.length})</h3>
+              <AlertTriangle className="text-yellow-500 h-5 w-5" /><h3 className="font-semibold text-white">Lista de Espera — sem vaga nas 3 opções ({waitlist.length})</h3>
             </div>
-            <div className="p-4 flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-              {unallocated.map((u, idx) => <div key={idx} className="bg-yellow-900/40 text-yellow-200 px-3 py-1 rounded-full text-sm border border-yellow-700/50 flex items-center gap-1">
-                  <span>{u.nome}</span>
-                  <span className="text-yellow-500/50 text-[10px] ml-1">({(u.areaTrabalhoOpcao1 || '').slice(0, 3)}/{(u.areaTrabalhoOpcao2 || '').slice(0, 3)})</span>
-                </div>)}
+            <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+              {waitlist.map((eq) => (
+                <div key={eq.id} className="bg-yellow-900/20 border border-yellow-700/30 rounded-md p-3 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="flex-1">
+                    <p className="text-white font-medium">{eq.nome} <span className="text-xs text-yellow-500/70">({eq.sexo})</span></p>
+                    <p className="text-xs text-yellow-200/70">
+                      1ª: {eq.area_trabalho_opcao1 || '—'} · 2ª: {eq.area_trabalho_opcao2 || '—'} · 3ª: {eq.area_trabalho_opcao3 || '—'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={manualAreaChoice[eq.id] || ''}
+                      onValueChange={(val) => setManualAreaChoice(prev => ({ ...prev, [eq.id]: val }))}
+                    >
+                      <SelectTrigger className="h-9 w-[200px] bg-black/40 border-white/20 text-white text-xs">
+                        <SelectValue placeholder="Escolher área" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {WORK_AREAS.map(area => <SelectItem key={area} value={area}>{area}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      onClick={() => handleManualAllocate(eq.id, eq.nome)}
+                      disabled={!manualAreaChoice[eq.id] || manualAllocating[eq.id]}
+                      className="bg-blue-600 hover:bg-blue-700 text-white h-9"
+                    >
+                      {manualAllocating[eq.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Alocar'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </Card>}
 

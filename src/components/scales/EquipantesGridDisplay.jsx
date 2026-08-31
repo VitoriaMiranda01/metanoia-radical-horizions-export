@@ -7,7 +7,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatCPF } from '@/utils/formatters';
 import { User, Download } from 'lucide-react';
@@ -42,10 +41,9 @@ const EquipantesGridDisplay = ({ equipantes = [], areaName, onExport }) => {
         <Table>
           <TableHeader className="bg-white/5 hover:bg-white/5">
             <TableRow className="border-white/10 hover:bg-transparent">
-              <TableHead className="text-gray-300 w-[40%]">Nome</TableHead>
-              <TableHead className="text-gray-300 w-[25%] hidden sm:table-cell">CPF</TableHead>
-              <TableHead className="text-gray-300 w-[20%] hidden md:table-cell">Igreja</TableHead>
-              <TableHead className="text-gray-300 w-[15%] text-right">Status</TableHead>
+              <TableHead className="text-gray-300 w-[45%]">Nome</TableHead>
+              <TableHead className="text-gray-300 w-[30%] hidden sm:table-cell">CPF</TableHead>
+              <TableHead className="text-gray-300 w-[25%] hidden md:table-cell">Igreja</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -65,17 +63,6 @@ const EquipantesGridDisplay = ({ equipantes = [], areaName, onExport }) => {
                 </TableCell>
                 <TableCell className="text-gray-400 hidden md:table-cell text-sm">
                   {eq.igreja || '-'}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Badge 
-                    className={
-                      eq.statusAllocation === 'Alocado' || eq.area_alocada
-                        ? "bg-green-900/50 text-green-300 hover:bg-green-900/70 border-green-800"
-                        : "bg-yellow-900/50 text-yellow-300 hover:bg-yellow-900/70 border-yellow-800"
-                    }
-                  >
-                    {eq.statusAllocation || 'Confirmado'}
-                  </Badge>
                 </TableCell>
               </TableRow>
             ))}

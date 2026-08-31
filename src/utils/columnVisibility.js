@@ -78,9 +78,12 @@ export const formatAreaTrabalho = (item) => {
   return areas.length > 0 ? areas.join(', ') : '';
 };
 
+// "Nome" nao entra aqui: ja e sempre a primeira coluna, fixa, em ambas as
+// tabelas (InscricoesTable.jsx trata 'nome' separado do resto). Essa lista
+// define o que vem depois dela, na ordem em que aparece aqui.
 const DEFAULT_VISIBLE_COLUMNS = {
-  equipantes: ['telefone', 'cidade', 'igreja', 'area_trabalho', 'status'],
-  acampantes: ['email', 'whatsapp', 'cidade', 'igreja', 'grupo_trailha', 'status']
+  equipantes: ['cpf', 'igreja'],
+  acampantes: ['cpf', 'igreja']
 };
 
 export const getVisibleColumnsFromStorage = (type) => {

@@ -8,7 +8,9 @@ const InscricaoCard = ({
   onSelect, 
   onAprovar, 
   onRejeitar, 
-  showActions 
+  showActions, 
+  onCancelar, 
+  showCancelAction 
 }) => {
   return (
     <div className="bg-white/5 border border-white/10 rounded-lg p-4 flex flex-col gap-4 relative overflow-hidden transition-all hover:bg-white/10">
@@ -72,6 +74,15 @@ const InscricaoCard = ({
               <XCircle className="w-5 h-5" />
             </Button>
           </>
+        )}
+        {showCancelAction && (
+          <Button 
+            onClick={() => onCancelar(inscricao.id)} 
+            className="h-11 px-4 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 transition-colors"
+            aria-label="Cancelar aprovação"
+          >
+            <XCircle className="w-5 h-5" />
+          </Button>
         )}
       </div>
     </div>

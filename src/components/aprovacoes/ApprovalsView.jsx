@@ -5,7 +5,8 @@ import AprovacoesStatsCards from '@/components/aprovacoes/AprovacoesStatsCards';
 import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
 import AprovacoesTable from '@/components/aprovacoes/AprovacoesTable';
 import { fetchEquipantesRaw, updateEquipanteStatus } from '@/services/equipantesService';
-import { alocarEquipanteAutomaticamente } from '@/services/equipanteAllocationService';
+import { alocarEquipanteAutomaticamente, liberarVagaERealocar } from '@/services/equipanteAllocationService';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const ApprovalsView = ({ 
   pageTitle = "Aprovações de Equipantes", 
@@ -15,6 +16,7 @@ const ApprovalsView = ({
   const { toast } = useToast();
   const [inscricoes, setInscricoes] = useState([]);
   const [selectedInscricao, setSelectedInscricao] = useState(null);
+  const [inscricaoParaCancelar, setInscricaoParaCancelar] = useState(null);
   const [loading, setLoading] = useState(true);
   
   // Global Search states
@@ -163,6 +165,67 @@ const ApprovalsView = ({
     }
   };
 
+  // Cancelamento de quem ja esta aprovado (aba "Aprovadas"). Diferente de
+  // rejeitarInscricao (que so age sobre pendentes, sem confirmacao), esta
+  // acao pode desalocar alguem que ja esta escalado numa area de trabalho —
+  // por isso passa por uma confirmacao explicita antes de executar
+  // (solicitarCancelamento abre o dialogo; confirmarCancelamento e quem
+  // efetivamente muda o status e libera a vaga).
+  const solicitarCancelamento = (id) => {
+    const inscricao = inscricoes.find(i => i.id === id);
+
+    if (!inscricao) {
+      toast({
+        title: "Erro",
+        description: "Inscrição não encontrada.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setInscricaoParaCancelar(inscricao);
+  };
+
+  const confirmarCancelamento = async () => {
+    if (!inscricaoParaCancelar) return;
+
+    const inscricao = inscricaoParaCancelar;
+    setInscricaoParaCancelar(null);
+
+    const success = await updateInscricaoStatus(inscricao.id, inscricao.tipo, 'rejeitado');
+
+    if (!success) return;
+
+    toast({
+      title: "Aprovação cancelada",
+      description: `A inscrição de ${inscricao.nome} foi cancelada.`,
+      variant: "destructive"
+    });
+
+    // Libera a vaga em escalas (se ela tinha uma) e tenta realocar o
+    // primeiro compativel da lista de espera nela. Nao bloqueia o
+    // cancelamento se falhar por qualquer motivo de infra — o cancelamento
+    // em si ja aconteceu (mesmo espirito do resto desta tela).
+    const liberacao = await liberarVagaERealocar(inscricao.id);
+
+    if (liberacao.success && liberacao.vagaLiberada) {
+      if (liberacao.novoAlocadoNome) {
+        toast({
+          title: "Vaga realocada",
+          description: `A vaga em ${liberacao.areaLiberada} foi liberada e ${liberacao.novoAlocadoNome} foi alocado automaticamente.`,
+          className: "bg-blue-600 text-white"
+        });
+      } else {
+        toast({
+          title: "Vaga liberada",
+          description: `A vaga em ${liberacao.areaLiberada} foi liberada. Ninguém na lista de espera se encaixou nela por enquanto.`
+        });
+      }
+    } else if (!liberacao.success) {
+      console.error('Falha ao tentar liberar vaga / realocar após cancelamento:', liberacao.error);
+    }
+  };
+
   const filterInscricoes = (inscricoes, searchTerm) => {
     if (!searchTerm.trim()) return inscricoes;
     
@@ -236,6 +299,8 @@ const ApprovalsView = ({
             onAprovar={aprovarInscricao} 
             onRejeitar={rejeitarInscricao} 
             showActions={false}
+            showCancelAction={true}
+            onCancelar={solicitarCancelamento}
             searchTerm={searchTermAprovadas}
             onSearchChange={setSearchTermAprovadas}
           />
@@ -262,6 +327,47 @@ const ApprovalsView = ({
           onRejeitar={rejeitarInscricao}
         />
       )}
+
+      <AlertDialog
+        open={!!inscricaoParaCancelar}
+        onOpenChange={(open) => {
+          if (!open) setInscricaoParaCancelar(null);
+        }}
+      >
+        <AlertDialogContent className="bg-zinc-900 border border-gray-800 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Cancelar aprovação
+            </AlertDialogTitle>
+
+            <AlertDialogDescription className="text-gray-400">
+              Tem certeza que deseja cancelar a aprovação
+              {inscricaoParaCancelar?.nome && (
+                <>
+                  {' de '}
+                  <strong className="text-white">
+                    {inscricaoParaCancelar.nome}
+                  </strong>
+                </>
+              )}
+              ? Se já estiver alocado em alguma área de trabalho, a vaga será liberada e o primeiro compatível da lista de espera poderá ser alocado automaticamente nela.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
+              Voltar
+            </AlertDialogCancel>
+
+            <AlertDialogAction
+              onClick={confirmarCancelamento}
+              className="bg-red-600 hover:bg-red-700 text-white border-none"
+            >
+              Sim, cancelar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

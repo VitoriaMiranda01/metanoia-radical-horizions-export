@@ -24,7 +24,7 @@ import GruposTrailhaModal from '@/components/gerenciar/GruposTrailhaModal';
 import AcampantesStatsCards from '@/components/gerenciar/AcampantesStatsCards';
 import AcampantesDetailModal from '@/components/gerenciar/AcampantesDetailModal';
 import { deleteAcampante, getAcampantes, countAcampantes } from '@/services/acampantesService';
-import { fetchEquipantesInscritos, countEquipantesInscritos, desativarEquipanteInscricao } from '@/services/equipantesService';
+import { fetchEquipantesInscritos, countEquipantesInscritos } from '@/services/equipantesService';
 import { groupAcampantesByTrilha } from '@/utils/gruposTrailha';
 
 const GerenciarInscricoesPage = () => {
@@ -42,7 +42,6 @@ const GerenciarInscricoesPage = () => {
   const [selectedInscricao, setSelectedInscricao] = useState(null);
   const [searchTermEquipantes, setSearchTermEquipantes] = useState('');
 
-  const [equipanteToDeactivate, setEquipanteToDeactivate] = useState(null);
   const [acampanteToDeactivate, setAcampanteToDeactivate] = useState(null);
   
   const [selectedGroup, setSelectedGroup] = useState(null);
@@ -107,39 +106,6 @@ const GerenciarInscricoesPage = () => {
       setTotalAcampantes(acampantesCount || 0);
     } catch (error) {
       console.error('Erro ao buscar totais:', error);
-    }
-  };
-
-  const desativarInscricaoEquipante = (inscricao) => {
-    setEquipanteToDeactivate(inscricao);
-  };
-
-  const handleDesativarEquipante = async () => {
-    if (!equipanteToDeactivate) return;
-
-    try {
-      const { error } = await desativarEquipanteInscricao(equipanteToDeactivate.id);
-
-      if (error) throw error;
-
-      setInscricoes(prev =>
-        prev.filter(i => i.id !== equipanteToDeactivate.id)
-      );
-
-      setEquipanteToDeactivate(null);
-
-      toast({
-        title: "Inscrição desativada",
-        description: "O equipante foi desativado.",
-      });
-    } catch (error) {
-      console.error('Erro ao desativar inscrição:', error);
-
-      toast({
-        title: "Erro",
-        description: "Não foi possível desativar a inscrição.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -333,7 +299,6 @@ const GerenciarInscricoesPage = () => {
                 dados={filteredEquipantes} 
                 tipo="equipantes" 
                 onSelect={setSelectedInscricao} 
-                onExcluir={desativarInscricaoEquipante} 
                 onExportar={exportarDados}
                 searchTerm={searchTermEquipantes}
                 onSearchChange={setSearchTermEquipantes}
@@ -360,47 +325,6 @@ const GerenciarInscricoesPage = () => {
             title={statsModalTitle}
             acampantes={statsModalData}
           />
-
-          <AlertDialog
-            open={!!equipanteToDeactivate}
-            onOpenChange={(open) => {
-              if (!open) setEquipanteToDeactivate(null);
-            }}
-          >
-            <AlertDialogContent className="bg-zinc-900 border border-gray-800 text-white">
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  Desativar inscrição
-                </AlertDialogTitle>
-
-                <AlertDialogDescription className="text-gray-400">
-                  Tem certeza que deseja desativar a inscrição
-                  {equipanteToDeactivate?.nome && (
-                    <>
-                      {' do equipante '}
-                      <strong className="text-white">
-                        {equipanteToDeactivate.nome}
-                      </strong>
-                    </>
-                  )}
-                  ? Esta ação removerá o equipante da lista de inscritos.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-
-              <AlertDialogFooter>
-                <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
-                  Cancelar
-                </AlertDialogCancel>
-
-                <AlertDialogAction
-                  onClick={handleDesativarEquipante}
-                  className="bg-red-600 hover:bg-red-700 text-white border-none"
-                >
-                  Desativar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
 
           <AlertDialog
             open={!!acampanteToDeactivate}

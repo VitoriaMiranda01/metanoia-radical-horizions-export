@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Eye, Trash2, Download, Search, Filter, X } from 'lucide-react';
+import { Users, Eye, Download, Search, Filter, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -150,7 +150,7 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data }) =
   );
 };
 
-const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExcluir, onExportar, searchTerm, onSearchChange }) => {
+const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, searchTerm, onSearchChange }) => {
   const [filters, setFilters] = useState({});
   const [visibleColumns, setVisibleColumns] = useState([]);
   
@@ -328,14 +328,6 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExcluir, onEx
                       <Eye className="w-4 h-4 mr-2" />
                       Detalhes
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => onExcluir(item)}
-                      className="flex-1 min-h-[44px] bg-transparent border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors shadow-sm"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Excluir
-                    </Button>
                   </div>
                 </div>
               ))}
@@ -399,9 +391,6 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExcluir, onEx
                         <div className="flex justify-end space-x-2">
                           <Button variant="ghost" size="sm" onClick={() => onSelect(item)} className="hover:bg-blue-500/20 text-blue-300 transition-colors">
                             <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => onExcluir(item.id)} className="hover:bg-red-500/20 text-red-300 transition-colors">
-                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </TableCell>

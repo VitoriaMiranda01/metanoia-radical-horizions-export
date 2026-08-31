@@ -255,10 +255,6 @@ export const countEquipantesInscritos = async () => {
     .eq('status', 'aprovado');
 };
 
-export const desativarEquipanteInscricao = async (equipanteId) => {
-  return supabase.from('equipantes').update({ inscrito: false }).eq('id', equipanteId);
-};
-
 export const resetEquipantesInscricoes = async () => {
   try {
     const { data, error } = await supabase

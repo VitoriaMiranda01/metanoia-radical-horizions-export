@@ -68,6 +68,46 @@ export const alocarEquipanteManualmente = async (equipanteId, area) => {
   }
 };
 
+// Cancelamento de um equipante ja aprovado (organizador clica em "Rejeitar"
+// na aba "Aprovadas" da tela de Aprovacoes, apos confirmar num dialogo).
+// Chamada pelo app logo apos o UPDATE que muda equipantes.status pra
+// 'rejeitado'. Se o equipante tinha uma linha em escalas, ela e apagada
+// (libera a vaga) e em seguida a funcao tenta alocar o primeiro compativel
+// da lista de espera (por ordem de chegada) nessa vaga liberada — tudo
+// dentro da funcao do banco (liberar_vaga_e_realocar, ver
+// database/migrations/schema-update-20260901-liberacao-vaga-cancelamento.sql),
+// protegido pela mesma trava usada nas outras alocacoes. Nunca lanca
+// excecao pro chamador — mesmo espirito das outras funcoes desta camada: o
+// cancelamento em si ja aconteceu e nao deve ficar bloqueado por causa de
+// uma falha aqui.
+export const liberarVagaERealocar = async (equipanteId) => {
+  if (!equipanteId) {
+    return { success: false, error: 'ID de equipante ausente' };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('liberar_vaga_e_realocar', {
+      p_equipante_id: equipanteId
+    });
+
+    if (error) throw error;
+
+    const resultado = Array.isArray(data) ? data[0] : data;
+
+    return {
+      success: true,
+      vagaLiberada: !!resultado?.vaga_liberada,
+      areaLiberada: resultado?.area_liberada || null,
+      novoAlocadoId: resultado?.novo_alocado_id || null,
+      novoAlocadoNome: resultado?.novo_alocado_nome || null,
+      novoAlocadoArea: resultado?.novo_alocado_area || null
+    };
+  } catch (error) {
+    console.error('equipanteAllocationApi - liberarVagaERealocar', error, { equipanteId });
+    return { success: false, error: error.message || 'Erro ao tentar liberar vaga e realocar' };
+  }
+};
+
 // Lista de espera: equipantes aprovados que ainda nao tem linha em escalas.
 // Calculada ao vivo (nao persistida em lugar nenhum) a partir de duas
 // consultas que ja existiam (fetchApprovedEquipantes/fetchAllAllocations,

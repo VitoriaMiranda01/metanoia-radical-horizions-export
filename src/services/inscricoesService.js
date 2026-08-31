@@ -3,6 +3,48 @@ import { mapFormDataToDb as mapAcampanteToDb } from '@/utils/acampanteForm';
 import { toBoolean } from '@/utils/formatters';
 import { escolherGrupoTrailha } from '@/services/acampantesService';
 
+// Reenvia automaticamente inserções que falharam por erro passageiro (ex:
+// sobrecarga momentânea do banco/pooler quando muita gente se inscreve ao
+// mesmo tempo — cenário real com equipantes, cujas inscrições costumam ser
+// bem concentradas no tempo). A espera entre tentativas cresce a cada
+// tentativa (backoff exponencial), pra não bater no banco de novo logo depois
+// de já estar sobrecarregado.
+//
+// Erros de dado/regra de negócio (ex: CPF duplicado, coluna inexistente no
+// schema) NÃO são reenviados — tentar de novo não resolveria, só atrasaria a
+// pessoa ver o erro real.
+const NON_RETRYABLE_ERROR_PREFIXES = [
+  'PGRST', // erros de configuração/schema do PostgREST (ex: PGRST204 - coluna inexistente)
+  '23',    // violação de integridade (ex: 23505 - CPF duplicado)
+  '22',    // dado inválido
+  '42',    // erro de sintaxe/permissão
+];
+
+const isRetryableError = (error) => {
+  const code = error?.code || '';
+  return !NON_RETRYABLE_ERROR_PREFIXES.some(prefix => code.startsWith(prefix));
+};
+
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const insertWithRetry = async (table, payload, { maxAttempts = 3, baseDelayMs = 800 } = {}) => {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const { data, error } = await supabase.from(table).insert(payload).select().single();
+    if (!error) return { data, error: null };
+
+    lastError = error;
+    if (attempt === maxAttempts || !isRetryableError(error)) {
+      return { data: null, error };
+    }
+
+    const delay = baseDelayMs * 2 ** (attempt - 1) + Math.random() * 300;
+    console.warn(`inscricaoApi - insertWithRetry: tentativa ${attempt} falhou (codigo: ${error.code || 'sem codigo'}), tentando novamente em ${Math.round(delay)}ms`, error);
+    await wait(delay);
+  }
+  return { data: null, error: lastError };
+};
+
 const mapEquipanteToDb = (formData) => ({
   status: 'pendente',
   scale_status: 'pendente',
@@ -193,11 +235,7 @@ export const criarInscricao = async (formData, tipo) => {
   };
 
   try {
-    const { data, error } = await supabase
-      .from(table)
-      .insert(payload)
-      .select()
-      .single();
+    const { data, error } = await insertWithRetry(table, payload);
 
     if (error) throw error;
 

@@ -56,10 +56,11 @@ export const COLUMN_DEFINITIONS = {
     { key: 'contato_emergencia_nome', label: 'Contato Emergência', group: 'Emergência' },
     { key: 'contato_emergencia_telefone', label: 'Tel. Emergência', group: 'Emergência' },
 
-    // Status
+    // Status (removido em 2026-09-01 a pedido da usuaria -- coluna "status"
+    // nao aparece mais como opcao pra acampantes; continua existindo pra
+    // equipantes, acima)
     { key: 'status_pagamento', label: 'Status Pagamento', group: 'Sistema' },
-    { key: 'metodo_pagamento', label: 'Método Pagamento', group: 'Sistema' },
-    { key: 'status', label: 'Status', group: 'Sistema' }
+    { key: 'metodo_pagamento', label: 'Método Pagamento', group: 'Sistema' }
   ]
 };
 

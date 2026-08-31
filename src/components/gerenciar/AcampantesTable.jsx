@@ -160,7 +160,11 @@ const AcampantesTable = ({
   const [filters, setFilters] = useState({});
 
   useEffect(() => {
-    const loadedColumns = getVisibleColumnsFromStorage('acampantes');
+    // Coluna "status" removida das opcoes de acampantes em 2026-09-01 (ver
+    // COLUMN_DEFINITIONS.acampantes em columnVisibility.js) -- filtra aqui
+    // tambem pra usuarios que tinham essa coluna salva no localStorage antes
+    // dessa mudanca, pra ela realmente sumir da tabela.
+    const loadedColumns = getVisibleColumnsFromStorage('acampantes').filter(c => c !== 'status');
     setVisibleColumns(loadedColumns);
   }, []);
 

@@ -27,7 +27,6 @@ export const searchEquipanteByCPF = async (cpf) => {
       // Dados pessoais
       nome: data.nome,
       cpf: data.cpf,
-      email: data.email,
       sexo: data.sexo,
       whatsapp: data.whatsapp,
       telefoneResidencial: data.telefone_residencial,
@@ -95,7 +94,6 @@ export const searchEquipanteByCPF = async (cpf) => {
       areaTrabalhoExtra: data.area_trabalho_extra,
 
       // Outros
-      tamanhoCamisa: data.tamanho_camisa || data.tamanho_camiseta,
       metodoPagamento: data.metodo_pagamento,
 
       // Status
@@ -195,21 +193,6 @@ export const getEquipantesByWorkflowStage = async () => {
   } catch (err) {
     console.error('equipanteApi - getEquipantesByWorkflowStage', err);
     throw new Error('Falha ao buscar equipantes para workflow');
-  }
-};
-
-export const getAllEquipantes = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('equipantes')
-      .select('id, nome, email, whatsapp, sexo, igreja, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, tamanho_camiseta, numero_edicao, status, status_pagamento, cpf')
-      .eq('tipo', 'equipante')
-
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error('equipanteApi - getAllEquipantes', err);
-    throw new Error('Falha ao obter todos os equipantes');
   }
 };
 

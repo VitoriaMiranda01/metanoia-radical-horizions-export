@@ -28,7 +28,6 @@ const mapDbToFormData = (dbData) => {
     id: dbData.id || '',
     cpf: dbData.cpf || '',
     nome: dbData.nome || '',
-    email: dbData.email || '',
     sexo: dbData.sexo || '',
     whatsapp: dbData.whatsapp || '',
     telefoneResidencial: dbData.telefone_residencial || '',
@@ -98,7 +97,6 @@ const mapDbToFormData = (dbData) => {
     areasTrabalhoExtra: dbData.area_trabalho_extra || [],
 
     // Outros
-    tamanhoCamisa: dbData.tamanho_camisa || dbData.tamanho_camiseta || '',
     metodoPagamento: dbData.metodo_pagamento || '',
   };
 };
@@ -114,8 +112,7 @@ const EquipantePage = () => {
 
   const [formData, setFormData] = useState({
     cpf: '', semCpf: false, nome: '', dataNascimento: '', sexo: '',
-    tamanhoCamisa: '',
-    email: '', whatsapp: '', telefoneResidencial: '', idade: '',
+    whatsapp: '', telefoneResidencial: '', idade: '',
     cep: '', endereco: '', numero: '', complemento: '',
     bairro: '', cidade: '', estado: '',
     temProblemaSaude: '', condicoesMedicas: '',

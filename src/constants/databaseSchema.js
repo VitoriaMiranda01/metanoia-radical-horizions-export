@@ -33,6 +33,6 @@ export const SCHEMA_DEFINITIONS = {
     fields: ['id', 'area_nome', 'limite_maximo', 'updated_at']
   },
   escalas: {
-    fields: ['id', 'equipante_id', 'equipante_nome', 'area_alocada', 'is_manual', 'created_at']
+    fields: ['id', 'equipante_id', 'area_alocada', 'created_at']
   }
 };

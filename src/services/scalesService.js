@@ -38,10 +38,7 @@ export const saveScales = async (allocations) => {
     for (const a of allocations) {
       const record = {
         equipante_id: a.id || a.equipante_id,
-        equipante_nome: a.nome || a.equipante_nome || 'Sem nome',
-        area_alocada: a.allocatedArea || a.area_alocada,
-        is_manual: a.isManual !== undefined ? a.isManual : true,
-        updated_at: new Date()
+        area_alocada: a.allocatedArea || a.area_alocada
       };
       const validation = validateEscala(record);
       if (validation.isValid) validRecords.push(record);
@@ -58,16 +55,15 @@ export const saveScales = async (allocations) => {
 export const fetchAllAllocations = async () => {
   return withRetry(async () => {
     try {
-      let query = supabase.from('escalas').select(`id, equipante_id, area_alocada, is_manual, equipante_nome, equipantes!inner (id, nome, whatsapp, sexo, igreja, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, numero_edicao, status, status_pagamento, cpf)`);
+      let query = supabase.from('escalas').select(`id, equipante_id, area_alocada, equipantes!inner (id, nome, whatsapp, sexo, igreja, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, numero_edicao, status, status_pagamento, cpf)`);
       const { data, error } = await query;
       if (error) throw error;
       return data.map(item => ({
         ...item.equipantes,
         id: item.equipantes?.id || item.equipante_id,
-        nome: item.equipantes?.nome || item.equipante_nome,
+        nome: item.equipantes?.nome,
         allocatedArea: item.area_alocada,
-        statusAllocation: 'Alocado',
-        isManual: item.is_manual
+        statusAllocation: 'Alocado'
       }));
     } catch (error) {
       return [];

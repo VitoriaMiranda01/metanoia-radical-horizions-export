@@ -5,6 +5,7 @@ import AprovacoesStatsCards from '@/components/aprovacoes/AprovacoesStatsCards';
 import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
 import AprovacoesTable from '@/components/aprovacoes/AprovacoesTable';
 import { fetchEquipantesRaw, updateEquipanteStatus } from '@/services/equipantesService';
+import { alocarEquipanteAutomaticamente } from '@/services/equipanteAllocationService';
 
 const ApprovalsView = ({ 
   pageTitle = "Aprovações de Equipantes", 
@@ -117,6 +118,27 @@ const ApprovalsView = ({
       description: "A inscrição foi aprovada com sucesso.", 
       className: "bg-green-600 text-white" 
     });
+
+    // Alocacao automatica em area de trabalho, seguindo a ordem de
+    // preferencia do equipante. Nao bloqueia a aprovacao se falhar (mesmo
+    // espirito do sorteio de grupo de trilha do acampante) — so avisa o
+    // organizador do resultado.
+    const alocacao = await alocarEquipanteAutomaticamente(id);
+    if (alocacao.success && alocacao.alocado) {
+      toast({
+        title: "Alocado automaticamente",
+        description: `${inscricao.nome} foi alocado em: ${alocacao.area}`,
+        className: "bg-blue-600 text-white"
+      });
+    } else if (alocacao.success && !alocacao.alocado) {
+      toast({
+        title: "Sem vaga nas 3 opções",
+        description: `${inscricao.nome} ficou na lista de espera. Aloque manualmente em Geração de Escalas.`,
+        variant: "destructive"
+      });
+    } else if (!alocacao.success) {
+      console.error('Falha ao tentar alocar equipante automaticamente:', alocacao.error);
+    }
   };
 
   const rejeitarInscricao = async (id) => {

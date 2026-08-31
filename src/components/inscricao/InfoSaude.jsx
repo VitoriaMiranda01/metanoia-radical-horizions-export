@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import FormSection from './FormSection';
 import { toBoolean } from '@/utils/formatters';
 
-const InfoSaude = ({ formData, handleChange }) => {
+const InfoSaude = ({ formData, handleChange, isEquipante }) => {
   
   // Helper to check if a value matches the option (handling both boolean and string 'SIM'/'NÃO')
   const isChecked = (fieldValue, option) => {
@@ -56,28 +56,33 @@ const InfoSaude = ({ formData, handleChange }) => {
         {/* Usa Medicamento (controle Sim/Nao adicionado em 2026-09-01: a
             pergunta ja existia no fluxo de dados -- formData.usaMedicamento,
             mapeada pra usa_medicamento em acampantes -- mas nunca tinha um
-            campo de formulario que a respondesse, entao ficava sempre vazia). */}
-        <div className="space-y-2">
-          <Label className="text-white block mb-2">Usa medicamento? *</Label>
-          <div className="flex space-x-6">
-            {['SIM', 'NÃO'].map((opt) => (
-              <label key={`medic-${opt}`} className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="usaMedicamento"
-                  value={opt}
-                  checked={isChecked(formData.usaMedicamento, opt)}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-white/10 border-white/30"
-                  required
-                />
-                <span className="text-white">{opt}</span>
-              </label>
-            ))}
+            campo de formulario que a respondesse, entao ficava sempre vazia).
+            Escondida pra equipante a pedido da usuaria: essa informacao nao
+            e coletada pra equipante (tabela equipantes nao tem colunas
+            usa_medicamento/medicamentos). */}
+        {!isEquipante && (
+          <div className="space-y-2">
+            <Label className="text-white block mb-2">Usa medicamento? *</Label>
+            <div className="flex space-x-6">
+              {['SIM', 'NÃO'].map((opt) => (
+                <label key={`medic-${opt}`} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="usaMedicamento"
+                    value={opt}
+                    checked={isChecked(formData.usaMedicamento, opt)}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-white/10 border-white/30"
+                    required
+                  />
+                  <span className="text-white">{opt}</span>
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {toBoolean(formData.usaMedicamento) && (
+        {!isEquipante && toBoolean(formData.usaMedicamento) && (
           <div className="space-y-2">
             <Label htmlFor="medicamentos" className="text-white">Qual medicamento?</Label>
             <Input 

@@ -297,7 +297,7 @@ const EquipantePage = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <DadosPessoais formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} isEquipante={true} setFormData={setFormData} />
                 <Endereco formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
-                <InfoSaude formData={formData} handleChange={handleChange} />
+                <InfoSaude formData={formData} handleChange={handleChange} isEquipante={true} />
                 <InfoEclesiasticas formData={formData} handleChange={handleChange} isEquipante={true} />
                 <DadosComplementaresEquipante formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} />
                 <AreasDeTrabalho formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />

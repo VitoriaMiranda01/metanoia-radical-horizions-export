@@ -179,7 +179,7 @@ const AcampantePage = () => {
                   <AdminResponsavel formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
                   <DadosPessoais formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} isEquipante={false} setFormData={setFormData} />
                   <Endereco formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
-                  <InfoSaude formData={formData} handleChange={handleChange} />
+                  <InfoSaude formData={formData} handleChange={handleChange} isEquipante={false} />
                   <InfoEclesiasticas formData={formData} handleChange={handleChange} isEquipante={false} />
                   <ContatoEmergencia formData={formData} handleChange={handleChange} />
                   <QuemIndicou formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />

@@ -6,7 +6,7 @@ export const fetchApprovedEquipantes = async () => {
   return withRetry(async () => {
     try {
       let query = supabase.from('equipantes')
-        .select('id, nome, email, whatsapp, sexo, igreja, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, tamanho_camiseta, numero_edicao, status, status_pagamento, cpf')
+        .select('id, nome, whatsapp, sexo, igreja, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, numero_edicao, status, status_pagamento, cpf')
         .eq('status', 'aprovado');
       const { data, error } = await query;
       if (error) throw error;
@@ -58,7 +58,7 @@ export const saveScales = async (allocations) => {
 export const fetchAllAllocations = async () => {
   return withRetry(async () => {
     try {
-      let query = supabase.from('escalas').select(`id, equipante_id, area_alocada, is_manual, equipante_nome, equipantes!inner (id, nome, email, whatsapp, sexo, igreja, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, tamanho_camiseta, numero_edicao, status, status_pagamento, cpf)`);
+      let query = supabase.from('escalas').select(`id, equipante_id, area_alocada, is_manual, equipante_nome, equipantes!inner (id, nome, whatsapp, sexo, igreja, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, numero_edicao, status, status_pagamento, cpf)`);
       const { data, error } = await query;
       if (error) throw error;
       return data.map(item => ({

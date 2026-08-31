@@ -11,7 +11,7 @@ import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { exportEquipantesByArea, exportAllEquipantes } from '@/utils/excelExport';
 import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
 import { alocarEquipanteManualmente } from '@/services/equipanteAllocationService';
-import { Grid, Play, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle } from 'lucide-react';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
 import EquipantesGridDisplay from '@/components/scales/EquipantesGridDisplay';
@@ -20,8 +20,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const OrganizerScalesPage = () => {
   const [loading, setLoading] = useState(false);
   const [allocations, setAllocations] = useState([]);
-  const [unallocated, setUnallocated] = useState([]);
-  const [stats, setStats] = useState(null);
   const [limitsMap, setLimitsMap] = useState({});
   const [loadingLimits, setLoadingLimits] = useState(true);
   const [dbVerification, setDbVerification] = useState({
@@ -248,97 +246,6 @@ const OrganizerScalesPage = () => {
     }
   };
 
-  const handleRunAlgorithm = async () => {
-    setLoading(true);
-    setStats(null);
-    try {
-      const [equipantes, fetchedLimits] = await Promise.all([
-        fetchApprovedEquipantes(), 
-        fetchLimitesAreas()
-      ]);
-      setLimitsMap(fetchedLimits);
-      if (!equipantes.length) {
-        toast({
-          title: "Sem dados",
-          description: "Não há equipantes aprovados.",
-          variant: "warning"
-        });
-        setLoading(false);
-        return;
-      }
-      const buckets = new Map();
-      WORK_AREAS.forEach(area => buckets.set(area, []));
-      const pendingAllocation = [];
-      const newAllocations = [];
-      equipantes.forEach(equipante => {
-        let allocated = false;
-        let allocatedArea = null;
-        const tryAllocate = areaName => {
-          if (!areaName) return false;
-          const currentBucket = buckets.get(areaName);
-          const limitObj = getLimiteAreaComGenero(areaName, fetchedLimits, DEFAULT_AREA_CAPACITY);
-          if (currentBucket && currentBucket.length < limitObj.limiteMaximo) {
-            currentBucket.push(equipante);
-            allocatedArea = areaName;
-            return true;
-          }
-          return false;
-        };
-        const op1 = equipante.area_trabalho_opcao1;
-        const op2 = equipante.area_trabalho_opcao2;
-        const op3 = equipante.area_trabalho_opcao3;
-        if (tryAllocate(op1)) allocated = true;else if (tryAllocate(op2)) allocated = true;else if (tryAllocate(op3)) allocated = true;
-        const displayName = equipante.nome;
-        
-        if (allocated) {
-          newAllocations.push({
-            ...equipante,
-            nome: displayName,
-            allocatedArea,
-            statusAllocation: 'Alocado',
-            isManual: false
-          });
-        } else {
-          pendingAllocation.push({
-            ...equipante,
-            nome: displayName,
-            areaTrabalhoOpcao1: op1,
-            areaTrabalhoOpcao2: op2,
-            allocatedArea: 'Pendente de Alocação Manual',
-            statusAllocation: 'Pendente',
-            isManual: false
-          });
-        }
-      });
-      setAllocations(newAllocations);
-      setUnallocated(pendingAllocation);
-      setStats({
-        total: equipantes.length,
-        allocated: newAllocations.length,
-        pending: pendingAllocation.length
-      });
-
-      if (newAllocations.length > 0) {
-        console.log(`[handleRunAlgorithm] Updating scale_status for ${newAllocations.length} allocated equipantes`);
-        await updateWorkScheduleForAllocations(newAllocations);
-      }
-      toast({
-        title: "Escalas Geradas",
-        description: `${newAllocations.length} equipantes alocados com sucesso.`,
-        className: "bg-green-600 text-white"
-      });
-    } catch (error) {
-      console.error('[handleRunAlgorithm] Error:', error);
-      toast({
-        title: "Erro na execução",
-        description: "Falha ao executar o algoritmo.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleExportArea = (areaName, areaEquipantes) => {
     try {
       exportEquipantesByArea(areaName, areaEquipantes);
@@ -420,45 +327,16 @@ const OrganizerScalesPage = () => {
             <p className="text-gray-400">Distribuição automática.</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto flex-wrap justify-end">
-            <Button onClick={handleRunAlgorithm} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white">
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />} Gerar escalas
-            </Button>
             <Button onClick={handleExportAll} disabled={allocations.length === 0} variant="outline" className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300">
               <Download className="mr-2 h-4 w-4" /> Exportar
             </Button>
           </div>
         </div>
 
-        <div className="bg-orange-900/20 border border-orange-500/40 p-3 rounded-md flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-orange-400 shrink-0 mt-0.5" />
-          <p className="text-orange-200 text-sm">
-            A alocação agora acontece automaticamente assim que um equipante é aprovado, respeitando a ordem de preferência e o limite por sexo de cada área.
-            O botão "Gerar escalas" ainda usa o algoritmo antigo (recalcula todo mundo do zero, sem checar sexo) — evite clicar nele, pois pode reorganizar quem já foi alocado corretamente. Ele continua aqui só até confirmarmos que não é mais necessário.
-          </p>
-        </div>
-
         {dbVerification.checked && !dbVerification.valid && <div className="bg-red-900/30 border border-red-500/50 p-4 rounded-md flex items-center gap-3">
              <AlertTriangle className="h-5 w-5 text-red-400" />
              <p className="text-red-200 text-sm">Atenção: A estrutura do banco de dados parece estar incompleta.</p>
           </div>}
-
-        {stats && <motion.div initial={{
-        opacity: 0,
-        height: 0
-      }} animate={{
-        opacity: 1,
-        height: 'auto'
-      }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-blue-900/20 border-blue-900/50 p-4">
-              <p className="text-sm text-blue-400">Total Processado</p><p className="text-2xl font-bold text-white">{stats.total}</p>
-            </Card>
-            <Card className="bg-green-900/20 border-green-900/50 p-4">
-              <p className="text-sm text-green-400">Alocados com Sucesso</p><p className="text-2xl font-bold text-white">{stats.allocated}</p>
-            </Card>
-            <Card className="bg-yellow-900/20 border-yellow-900/50 p-4">
-              <p className="text-sm text-yellow-400">Pendentes (Sem Vaga)</p><p className="text-2xl font-bold text-white">{stats.pending}</p>
-            </Card>
-          </motion.div>}
 
         {waitlist.length > 0 && <Card className="bg-yellow-900/10 border-yellow-900/30">
             <div className="p-4 border-b border-yellow-900/30 flex items-center gap-2">

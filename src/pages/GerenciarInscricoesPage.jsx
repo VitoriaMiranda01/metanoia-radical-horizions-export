@@ -288,7 +288,6 @@ const GerenciarInscricoesPage = () => {
                     loading={loadingAcampantes}
                     onViewDetails={handleViewDetails}
                     onDelete={handleDeleteAcampante}
-                    onRefresh={fetchAcampantesSupabase}
                   />
                 </>
               )}

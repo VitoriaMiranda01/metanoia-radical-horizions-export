@@ -8,7 +8,6 @@ import { Eye, Trash2, Search, RefreshCw, UserCheck, Download, Filter, X } from '
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
   DropdownMenuLabel,
@@ -153,12 +152,10 @@ const AcampantesTable = ({
   data, 
   loading, 
   onViewDetails, 
-  onDelete, 
-  onRefresh 
+  onDelete 
 }) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('todos');
   const [visibleColumns, setVisibleColumns] = useState([]);
   const [filters, setFilters] = useState({});
 
@@ -178,10 +175,9 @@ const AcampantesTable = ({
 
   const clearAllFilters = () => {
     setFilters({});
-    setStatusFilter('todos');
   };
 
-  const hasActiveFilters = Object.values(filters).some(vals => vals && vals.length > 0) || statusFilter !== 'todos';
+  const hasActiveFilters = Object.values(filters).some(vals => vals && vals.length > 0);
 
   const filteredData = useMemo(() => {
     return data.filter(item => {
@@ -200,11 +196,7 @@ const AcampantesTable = ({
       
       if (!matchesSearch) return false;
 
-      // 2. Status Quick Filter (External)
-      const matchesStatus = statusFilter === 'todos' || item.status === statusFilter;
-      if (!matchesStatus) return false;
-
-      // 3. Column Specific Filters
+      // 2. Column Specific Filters
       return Object.keys(filters).every(key => {
         const selectedValues = filters[key];
         if (!selectedValues || selectedValues.length === 0) return true;
@@ -213,7 +205,7 @@ const AcampantesTable = ({
         return selectedValues.includes(itemValue);
       });
     });
-  }, [data, searchTerm, statusFilter, filters]);
+  }, [data, searchTerm, filters]);
 
   const handleExport = () => {
     if (filteredData.length === 0) {
@@ -290,15 +282,6 @@ const AcampantesTable = ({
                   <Download className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                   Exportar
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={onRefresh} 
-                  disabled={loading} 
-                  className="bg-white/5 text-white hover:bg-white/10 border-white/20 h-8 md:h-9"
-                >
-                  <RefreshCw className={`w-3 h-3 md:w-4 md:h-4 ${loading ? 'animate-spin' : ''}`} />
-                </Button>
               </div>
           </div>
         </div>
@@ -314,23 +297,6 @@ const AcampantesTable = ({
               className="pl-8 md:pl-10 h-9 md:h-10 text-xs md:text-sm bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          {/* Responsive: Hidden on mobile, shown on desktop */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="hidden md:flex w-full md:w-[180px] h-9 md:h-10 text-xs md:text-sm border-white/20 bg-white/5 text-white"
-              >
-                Status: {statusFilter === 'todos' ? 'Todos' : statusFilter}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-black border-white/20 text-white">
-              <DropdownMenuItem onClick={() => setStatusFilter('todos')}>Todos</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('pendente')}>Pendente</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('aprovado')}>Aprovado</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('rejeitado')}>Rejeitado</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </CardHeader>
       

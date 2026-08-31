@@ -1,0 +1,38 @@
+-- Migration: Adiciona colunas que faltavam pra salvar respostas reais do
+-- formulario de acampante (cargo na igreja e "congrega em alguma igreja?")
+-- Date: 2026-09-01
+--
+-- Contexto: investigando a pedido da usuaria (Vitoria) se a tela de
+-- detalhes (InscricaoDetalhesModal.jsx) mostra tudo que a pessoa preencheu,
+-- encontramos que o formulario de ACAMPANTE pergunta duas coisas
+-- obrigatorias que nunca chegavam a ser salvas, porque a funcao que monta o
+-- registro pro banco (mapFormDataToDb, em acampanteForm.js) simplesmente
+-- nao inclui esses campos no que envia — e a tabela acampantes nunca teve
+-- coluna nenhuma pra recebe-los:
+--
+--   1. "Congrega em alguma igreja? *" (componente InfoEclesiasticas.jsx,
+--      campo formData.estaAfastado) — pergunta inicial que decide se as
+--      perguntas de igreja/pastor aparecem. Sem essa resposta salva, nao da
+--      pra saber se um campo "Igreja" vazio significa "nao congrega" ou
+--      "nao respondeu".
+--   2. "Cargo na igreja *" (mesmo componente, campos formData.ePastor /
+--      formData.ePastorOutro) — pergunta com as MESMAS opcoes que ja
+--      existem pra equipante em equipantes.cargo_igreja/cargo_igreja_outro
+--      (NAO TENHO CARGO, DANCA, DIACONO/DIACONISA, LOUVOR, PASTOR(A),
+--      PASTOR(A) AUXILIAR, PROFESSOR, SECRETARIA, TEATRO, TESOUREIRO,
+--      OUTRO) — so que os nomes das variaveis no formulario de acampante
+--      (ePastor/ePastorOutro) ficaram de um design antigo diferente. Por
+--      isso reaproveitamos aqui os MESMOS nomes de coluna que equipantes ja
+--      usa (cargo_igreja/cargo_igreja_outro) em vez de criar nomes novos —
+--      assim as linhas que a tela de detalhes ja mostra pra equipante
+--      ("Cargo na Igreja", "Cargo Igreja (Outro)", "Esta afastado da
+--      igreja?") passam a mostrar dado real pra acampante tambem, sem
+--      precisar mudar o modal pra esses 3 campos especificamente.
+--
+-- Analise de dependencias feita e aprovada pela usuaria antes de aplicar
+-- (ela pediu explicitamente pra corrigir os bugs de perda de dado
+-- encontrados nessa investigacao). Aditivo, nullable, nao quebra nada que
+-- ja existe.
+ALTER TABLE acampantes ADD COLUMN IF NOT EXISTS esta_afastado boolean;
+ALTER TABLE acampantes ADD COLUMN IF NOT EXISTS cargo_igreja text;
+ALTER TABLE acampantes ADD COLUMN IF NOT EXISTS cargo_igreja_outro text;

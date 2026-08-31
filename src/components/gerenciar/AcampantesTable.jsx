@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, Trash2, Search, RefreshCw, UserCheck, Download, Filter, X } from 'lucide-react';
@@ -23,22 +22,6 @@ import {
   COLUMN_DEFINITIONS,
   formatEnderecoCompleto
 } from '@/utils/columnVisibility';
-
-const getStatusBadge = (status) => {
-  const variants = {
-    pendente: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
-    aprovado: 'bg-green-500/20 text-green-400 border-green-500/50',
-    rejeitado: 'bg-red-500/20 text-red-400 border-red-500/50',
-  };
-  const labels = {
-    pendente: 'Pendente',
-    aprovado: 'Aprovado',
-    rejeitado: 'Rejeitado',
-  };
-  
-  const className = `border text-xs md:text-sm ${variants[status] || variants.pendente}`;
-  return <Badge className={className} variant="outline">{labels[status] || status}</Badge>;
-};
 
 const formatarData = (dataString) => {
   if (!dataString) return '';
@@ -239,7 +222,6 @@ const AcampantesTable = ({
   const getColDef = (key) => COLUMN_DEFINITIONS.acampantes.find(c => c.key === key);
 
   const renderCellContent = (item, key) => {
-    if (key === 'status') return getStatusBadge(item.status);
     if (key === 'endereco_completo') return formatEnderecoCompleto(item) || '-';
     if (typeof item[key] === 'boolean') return item[key] ? 'Sim' : 'Não';
     return item[key] || '-';
@@ -326,14 +308,9 @@ const AcampantesTable = ({
               {filteredData.map((item) => (
                 <div key={item.id} className="bg-white/5 border border-white/10 rounded-lg overflow-hidden flex flex-col">
                   <div className="p-4 flex-1">
-                    <div className="flex justify-between items-start gap-2 mb-4">
-                      <h3 className="font-bold text-white text-lg leading-tight break-words">
-                        {item.nome}
-                      </h3>
-                      <div className="shrink-0">
-                        {getStatusBadge(item.status)}
-                      </div>
-                    </div>
+                    <h3 className="font-bold text-white text-lg leading-tight break-words mb-4">
+                      {item.nome}
+                    </h3>
                     
                     <div className="space-y-2">
                       {visibleColumns.filter(col => col !== 'nome').map(colKey => {

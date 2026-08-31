@@ -17,7 +17,7 @@ const getStatusBadge = (status) => {
     rejeitada: 'Rejeitada',
     rejeitado: 'Rejeitado',
   };
-  
+
   const className = `border text-xs md:text-sm ${variants[status] || variants.pendente}`;
   return <Badge className={className} variant="outline">{labels[status] || status}</Badge>;
 };
@@ -35,7 +35,16 @@ const formatBoolean = (value) => {
   return value || '-';
 };
 
+// Campos exclusivos de cada tipo: as tabelas `acampantes` e `equipantes`
+// nao tem as mesmas colunas (ex: so acampante tem tamanho_camisa/
+// esta_gravida, so equipante tem area_trabalho_opcao1/habilidades). Antes,
+// essa tela mostrava as mesmas ~45 linhas pros dois tipos, entao metade
+// sempre aparecia em branco dependendo de quem estava sendo visualizado.
+// Agora cada secao/campo so aparece quando existe de verdade pro tipo em
+// questao (checado direto contra o schema real das duas tabelas).
 const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
+  const isEquipante = inscricao?.tipo === 'equipante';
+
   const displayValue = (value) => {
     if (value === null || value === undefined || value === '') return '-';
     if (typeof value === 'boolean') return formatBoolean(value);
@@ -57,8 +66,8 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-white/10 bg-zinc-900">
           <h3 className="text-xl md:text-2xl font-bold text-white">Detalhes da Inscrição</h3>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             onClick={onClose}
             className="text-white hover:bg-white/10 h-8 w-8 p-0"
@@ -69,19 +78,21 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
 
         {/* Content */}
         <div className="overflow-y-auto p-6 space-y-6">
-          
-          {/* Responsável pela Ficha */}
-          <div className="space-y-3">
-            <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
-              Responsável pela Ficha
-            </h4>
-            <div className="grid grid-cols-1 gap-3">
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Igreja:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.admin_responsavel)}</p>
+
+          {/* Responsável pela Ficha (só acampante — admin_responsavel não existe em equipantes) */}
+          {!isEquipante && (
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
+                Responsável pela Ficha
+              </h4>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Igreja:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.admin_responsavel)}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Dados Pessoais */}
           <div className="space-y-3">
@@ -101,14 +112,19 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
                 <span className="text-sm text-gray-400 block mb-1">Sexo:</span>
                 <p className="text-white font-medium">{displayValue(inscricao.sexo)}</p>
               </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Tamanho da Camisa:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.tamanho_camisa)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">E-mail:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.email)}</p>
-              </div>
+              {/* tamanho_camisa e email só existem na tabela acampantes */}
+              {!isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Tamanho da Camisa:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.tamanho_camisa)}</p>
+                </div>
+              )}
+              {!isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">E-mail:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.email)}</p>
+                </div>
+              )}
               <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">WhatsApp:</span>
                 <p className="text-white font-medium">{displayValue(inscricao.whatsapp)}</p>
@@ -175,14 +191,19 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
                 <span className="text-sm text-gray-400 block mb-1">Condições Médicas:</span>
                 <p className="text-white font-medium">{displayValue(inscricao.condicoes_medicas)}</p>
               </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Usa algum medicamento?</span>
-                <p className="text-white font-medium">{formatBoolean(inscricao.usa_medicamento)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md md:col-span-2">
-                <span className="text-sm text-gray-400 block mb-1">Medicamentos:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.medicamentos)}</p>
-              </div>
+              {/* usa_medicamento/medicamentos só existem na tabela acampantes */}
+              {!isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Usa algum medicamento?</span>
+                  <p className="text-white font-medium">{formatBoolean(inscricao.usa_medicamento)}</p>
+                </div>
+              )}
+              {!isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md md:col-span-2">
+                  <span className="text-sm text-gray-400 block mb-1">Medicamentos:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.medicamentos)}</p>
+                </div>
+              )}
               <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">Tem restrição alimentar?</span>
                 <p className="text-white font-medium">{formatBoolean(inscricao.tem_restricao_alimentar)}</p>
@@ -191,10 +212,13 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
                 <span className="text-sm text-gray-400 block mb-1">Restrições Alimentares:</span>
                 <p className="text-white font-medium">{displayValue(inscricao.restricoes_alimentares)}</p>
               </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Está grávida?</span>
-                <p className="text-white font-medium">{formatBoolean(inscricao.esta_gravida)}</p>
-              </div>
+              {/* esta_gravida só existe na tabela acampantes */}
+              {!isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Está grávida?</span>
+                  <p className="text-white font-medium">{formatBoolean(inscricao.esta_gravida)}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -209,19 +233,7 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
                 <p className="text-white font-medium">{displayValue(inscricao.igreja || inscricao.nome_igreja)}</p>
               </div>
               <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">É Pastor?</span>
-                <p className="text-white font-medium">{formatBoolean(inscricao.e_pastor)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Pastor (Outro):</span>
-                <p className="text-white font-medium">{displayValue(inscricao.e_pastor_outro)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Pastor Responsável:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.pastor_nome || inscricao.pastor)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Está afastado da igreja?</span>
+                <span className="text-sm text-gray-400 block mb-1">Congrega em alguma igreja?</span>
                 <p className="text-white font-medium">{formatBoolean(inscricao.esta_afastado)}</p>
               </div>
               <div className="bg-white/5 p-3 rounded-md">
@@ -233,84 +245,145 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
                 <p className="text-white font-medium">{displayValue(inscricao.cargo_igreja_outro)}</p>
               </div>
               <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Frequenta EBD?</span>
-                <p className="text-white font-medium">{formatBoolean(inscricao.frequenta_ebd)}</p>
+                <span className="text-sm text-gray-400 block mb-1">Pastor Responsável:</span>
+                <p className="text-white font-medium">{displayValue(inscricao.pastor_nome || inscricao.pastor)}</p>
               </div>
+              {/* frequenta_ebd/frequenta_grupo_cuidado/e_pastor só existem na tabela equipantes */}
+              {isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Frequenta EBD?</span>
+                  <p className="text-white font-medium">{formatBoolean(inscricao.frequenta_ebd)}</p>
+                </div>
+              )}
+              {isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Frequenta Grupo de Cuidado?</span>
+                  <p className="text-white font-medium">{formatBoolean(inscricao.frequenta_grupo_cuidado)}</p>
+                </div>
+              )}
+              {isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">É Pastor?</span>
+                  <p className="text-white font-medium">{formatBoolean(inscricao.e_pastor)}</p>
+                </div>
+              )}
+              {isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Pastor (Outro):</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.e_pastor_outro)}</p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Habilidades */}
-          <div className="space-y-3">
-            <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
-              Habilidades
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Você Canta?</span>
-                <p className="text-white font-medium">{formatBoolean(inscricao.voce_canta)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Toca Instrumento?</span>
-                <p className="text-white font-medium">{formatBoolean(inscricao.toca_instrumento)}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Familiar */}
-          <div className="space-y-3">
-            <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
-              Familiar
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Familiar Trabalhando?</span>
-                <p className="text-white font-medium">{displayValue(inscricao.familiar_trabalhando)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Familiar Trabalhando (Outro):</span>
-                <p className="text-white font-medium">{displayValue(inscricao.familiar_trabalhando_outro)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Parentesco:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.parentesco)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Nome do Familiar:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.familiar_nome)}</p>
+          {/* Habilidades (só equipante — voce_canta/toca_instrumento não existem em acampantes) */}
+          {isEquipante && (
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
+                Habilidades
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Você Canta?</span>
+                  <p className="text-white font-medium">{formatBoolean(inscricao.voce_canta)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Toca Instrumento?</span>
+                  <p className="text-white font-medium">{formatBoolean(inscricao.toca_instrumento)}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Experiência */}
-          <div className="space-y-3">
-            <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
-              Experiência
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Qual Radical Acampante?</span>
-                <p className="text-white font-medium">{displayValue(inscricao.qual_radical_acampante)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Qual Radical Acampante (Outro):</span>
-                <p className="text-white font-medium">{displayValue(inscricao.qual_radical_acampante_outro)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Número Edição Participou:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.numero_edicao_participou)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Já Trabalhou na Equipe?</span>
-                <p className="text-white font-medium">{formatBoolean(inscricao.ja_trabalhou_equipe)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Edição que Trabalhou:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.edicao_trabalhou)}</p>
+          {/* Familiar (só equipante — familiar_trabalhando/parentesco/familiar_nome não existem em acampantes) */}
+          {isEquipante && (
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
+                Familiar
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Familiar Trabalhando?</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.familiar_trabalhando)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Familiar Trabalhando (Outro):</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.familiar_trabalhando_outro)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Parentesco:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.parentesco)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Nome do Familiar:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.familiar_nome)}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Contato de Emergência */}
+          {/* Quem Indicou e Conhecidos (só acampante — quem_indicou_nome/telefone,
+              conhecido_no_projeto e nome_familiar_conhecido não existem em
+              equipantes). Seção nova: essas respostas já eram salvas, mas
+              nunca apareciam aqui. */}
+          {!isEquipante && (
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
+                Quem Indicou e Conhecidos
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Nome de Quem Indicou:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.quem_indicou_nome)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Telefone de Quem Indicou:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.quem_indicou_telefone)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Conhecido/Familiar no Projeto:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.conhecido_no_projeto)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Nome do Conhecido/Familiar:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.nome_familiar_conhecido)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Experiência (só equipante — esses campos não existem em acampantes) */}
+          {isEquipante && (
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
+                Experiência
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Qual Radical Acampante?</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.qual_radical_acampante)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Qual Radical Acampante (Outro):</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.qual_radical_acampante_outro)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Número Edição Participou:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.numero_edicao_participou)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Já Trabalhou na Equipe?</span>
+                  <p className="text-white font-medium">{formatBoolean(inscricao.ja_trabalhou_equipe)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Edição que Trabalhou:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.edicao_trabalhou)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Contato de Emergência (coluna existe nas duas tabelas) */}
           <div className="space-y-3">
             <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
               Contato de Emergência
@@ -327,30 +400,49 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
             </div>
           </div>
 
-          {/* Áreas de Trabalho */}
-          <div className="space-y-3">
-            <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
-              Áreas de Trabalho
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Área de Trabalho - Opção 1:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.area_trabalho_opcao1)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Área de Trabalho - Opção 2:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.area_trabalho_opcao2)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Área de Trabalho - Opção 3:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.area_trabalho_opcao3)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Áreas de Trabalho Extra:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.area_trabalho_extra)}</p>
+          {/* Áreas de Trabalho (só equipante — não existe em acampantes) */}
+          {isEquipante && (
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
+                Áreas de Trabalho
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Área de Trabalho - Opção 1:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.area_trabalho_opcao1)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Área de Trabalho - Opção 2:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.area_trabalho_opcao2)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Área de Trabalho - Opção 3:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.area_trabalho_opcao3)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Áreas de Trabalho Extra:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.area_trabalho_extra)}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Acampamento (só acampante — grupo_trailha não existe em equipantes).
+              Seção nova: o grupo sorteado no cadastro já era salvo, mas
+              nunca aparecia aqui. */}
+          {!isEquipante && (
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
+                Acampamento
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Grupo de Trilha:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.grupo_trailha)}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Termos e Responsabilidade */}
           <div className="space-y-3">
@@ -362,6 +454,14 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
                 <span className="text-sm text-gray-400 block mb-1">Autorização de Imagem:</span>
                 <p className="text-white font-medium">{formatBoolean(inscricao.autorizacao_imagem)}</p>
               </div>
+              {/* termo_responsabilidade_aceito só existe na tabela acampantes.
+                  Campo novo: já era salvo, nunca aparecia aqui. */}
+              {!isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Termo de Responsabilidade Aceito:</span>
+                  <p className="text-white font-medium">{formatBoolean(inscricao.termo_responsabilidade_aceito)}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -404,22 +504,31 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
               Sistema
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Estágio Atual:</span>
-                <p className="text-white font-medium">{displayValue(getEquipanteStageLabel(inscricao))}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Arquivo Autorização Parental:</span>
-                <p className="text-white font-medium text-xs break-all">{displayValue(inscricao.parental_auth_file_url)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Data Upload Autorização Parental:</span>
-                <p className="text-white font-medium">{formatarData(inscricao.parental_auth_uploaded_at)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Status da Escala:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.scale_status)}</p>
-              </div>
+              {/* Estágio/autorização parental/status da escala só existem/fazem sentido pra equipante */}
+              {isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Estágio Atual:</span>
+                  <p className="text-white font-medium">{displayValue(getEquipanteStageLabel(inscricao))}</p>
+                </div>
+              )}
+              {isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Arquivo Autorização Parental:</span>
+                  <p className="text-white font-medium text-xs break-all">{displayValue(inscricao.parental_auth_file_url)}</p>
+                </div>
+              )}
+              {isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Data Upload Autorização Parental:</span>
+                  <p className="text-white font-medium">{formatarData(inscricao.parental_auth_uploaded_at)}</p>
+                </div>
+              )}
+              {isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Status da Escala:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.scale_status)}</p>
+                </div>
+              )}
               <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">Número da Edição:</span>
                 <p className="text-white font-medium">{displayValue(inscricao.numero_edicao)}</p>

@@ -38,6 +38,16 @@ export const mapFormDataToDb = (formData, user) => {
     igreja: formData.igreja || null,
     pastor_nome: formData.pastor || null,
     pastor: formData.pastor || null,
+    // Adicionados em 2026-09-01: o formulario (InfoEclesiasticas.jsx) ja
+    // perguntava isso ha tempos, mas essa funcao nunca incluia no que
+    // manda pro banco — a resposta era descartada. cargo_igreja/
+    // cargo_igreja_outro reaproveitam os mesmos nomes de coluna que
+    // equipantes ja usa pra pergunta identica (mesmas opcoes), formData.
+    // ePastor/ePastorOutro que dao nome ao campo no formulario de
+    // acampante e que sao, na pratica, a mesma pergunta de "cargo".
+    esta_afastado: toBoolean(formData.estaAfastado),
+    cargo_igreja: formData.ePastor || null,
+    cargo_igreja_outro: formData.ePastorOutro || null,
 
     // Admin / Indicação
     admin_responsavel: formData.adminResponsavel || null,

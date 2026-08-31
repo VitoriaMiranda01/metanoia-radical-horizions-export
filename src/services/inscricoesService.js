@@ -92,7 +92,15 @@ const mapEquipanteToDb = (formData) => ({
   area_trabalho_opcao1: formData.areaTrabalhoOpcao1,
   area_trabalho_opcao2: formData.areaTrabalhoOpcao2,
   area_trabalho_opcao3: formData.areaTrabalhoOpcao3,
-  area_trabalho_extra: formData.areaTrabalhoExtra,
+  // Bug corrigido em 2026-09-01: o formulario grava a escolha em
+  // formData.areasTrabalhoExtra (plural, array de ate 3 opcoes via
+  // checkbox — ver AreasDeTrabalho.jsx), mas aqui lia areaTrabalhoExtra
+  // (singular) por engano, que nunca existiu — sempre undefined, entao
+  // essa informacao nunca era salva. A coluna e text (nao array), entao
+  // varias opcoes marcadas sao unidas em uma string.
+  area_trabalho_extra: Array.isArray(formData.areasTrabalhoExtra)
+    ? formData.areasTrabalhoExtra.join('; ') || null
+    : (formData.areasTrabalhoExtra || null),
   metodo_pagamento: formData.metodoPagamento,
 });
 

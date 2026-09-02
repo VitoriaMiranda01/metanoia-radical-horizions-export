@@ -3,16 +3,28 @@
 // no campo "Igreja que frequenta" do formulario de equipante. Extraida
 // originalmente de AdminResponsavel.jsx (2026-09-02).
 //
-// Numerada a pedido da usuaria em 2026-09-02: cada nome ja vem com um
-// prefixo "01 - ", "02 - " etc, seguindo a MESMA ordem alfabetica em que
-// a lista ja era exibida (o array abaixo foi gerado rodando o antigo
-// `.sort()` uma unica vez e congelando o resultado com os numeros).
+// Numerada a pedido da usuaria ("01 - ", "02 - " etc, ate "141 - ").
+//
+// A ordem foi corrigida em 2026-09-02: o `.sort()` padrao do JavaScript
+// compara letras pelo codigo Unicode bruto, entao letras acentuadas
+// (Á, Ã, Ç, É...) nao ficam "coladas" na letra sem acento como deveriam
+// numa ordem alfabetica de verdade -- ex: "MINISTERIO" (sem acento)
+// ordenava antes de todos os "MINISTÉRIO" (com acento). A ordem abaixo
+// usa comparacao de locale pt-BR (a.localeCompare(b, "pt-BR")), que
+// ignora acento na comparacao principal e so usa ele como criterio de
+// desempate -- e assim que dicionario/lista telefonica ordena.
+//
+// Tambem foram corrigidos 9 nomes que estavam faltando acentuacao
+// (confirmado comparando com o mesmo nome/palavra ja escrita certa em
+// outras entradas da propria lista): AGUA->ÁGUA (x2), FAMILIA->FAMÍLIA,
+// FE->FÉ, FILADELFIA->FILADÉLFIA, IMBUI->IMBUÍ, MINISTERIO->MINISTÉRIO
+// (x2), MISSIONARIA->MISSIONÁRIA, PETROPOLIS->PETRÓPOLIS.
 //
 // IMPORTANTE: este array NAO deve ser "`.sort()`"-ado de novo em tempo de
-// execucao -- os prefixos numericos ("01", "02", ..., "10", ..., "141")
-// nao ordenam corretamente como texto ("100" vem antes de "11" na
-// comparacao de strings), entao um `.sort()` bagunçaria a ordem numerica.
-// A ordem aqui embaixo E a ordem final, de proposito.
+// execucao -- os prefixos numericos ("01", ..., "10", ..., "141") nao
+// ordenam corretamente como texto ("100" vem antes de "11"), e um
+// `.sort()` simples tambem voltaria a bagunçar a ordem por acento (ver
+// acima). A ordem aqui embaixo E a ordem final, de proposito.
 export const IGREJAS_PARCEIRAS = [
   "01 - A CASA DO MESTRE",
   "02 - AD FAMÍLIA EM CRISTO",
@@ -35,7 +47,7 @@ export const IGREJAS_PARCEIRAS = [
   "19 - ASSEMBLEIA DE DEUS EM SALINAS",
   "20 - ASSEMBLEIA DE DEUS FILADÉLFIA",
   "21 - ASSEMBLEIA DE DEUS IDE - SJVRP",
-  "22 - ASSEMBLEIA DE DEUS MINISTERIO BETEL",
+  "22 - ASSEMBLEIA DE DEUS MINISTÉRIO BETEL",
   "23 - ASSEMBLEIA DE DEUS MINISTÉRIO FORÇA E HONRA",
   "24 - ASSEMBLEIA DE DEUS MINISTÉRIO INTEGRAÇÃO",
   "25 - ASSEMBLEIA DE DEUS MONTE CARMELO",
@@ -47,21 +59,21 @@ export const IGREJAS_PARCEIRAS = [
   "31 - ASSEMBLEIA DE DEUS VINDE A MIM RIO DAS OSTRAS",
   "32 - ASSEMBLEIA DE DEUS VISÃO MISSIONÁRIA (ADVM)",
   "33 - ASSEMBLEIA DO AMOR",
-  "34 - BATISTA AGUA VIVA",
+  "34 - BATISTA ÁGUA VIVA",
   "35 - BATISTA APARECIDA",
   "36 - BATISTA BETEL EM VENDA NOVA",
   "37 - BATISTA DA FAMÍLIA EM BONSUCESSO",
   "38 - BATISTA DE BALANÇA",
   "39 - BATISTA DE SOLEDADE",
   "40 - BATISTA EBENEZER EM MOTAS",
-  "41 - BATISTA EM AGUA QUENTE",
-  "42 - BATISTA EM BARRA DO IMBUI",
+  "41 - BATISTA EM ÁGUA QUENTE",
+  "42 - BATISTA EM BARRA DO IMBUÍ",
   "43 - BATISTA EM RENOVAÇÃO ESPIRITUAL MONTE SINAI",
   "44 - BATISTA EM TERESÓPOLIS",
   "45 - BATISTA EM TERESÓPOLIS",
   "46 - BATISTA JERUEL",
   "47 - BATISTA JERUEL EM SAPUCAIA",
-  "48 - BATISTA JERUEL PETROPOLIS",
+  "48 - BATISTA JERUEL PETRÓPOLIS",
   "49 - BATISTA JERUEL TRÊS RIOS",
   "50 - BATISTA MONTE DAS OLIVEIRAS - MISSÃO CORÉIA.",
   "51 - BATISTA MONTE DAS OLIVEIRAS SEDE",
@@ -79,21 +91,21 @@ export const IGREJAS_PARCEIRAS = [
   "63 - CASA DO PAI",
   "64 - COLHEITA CHURCH",
   "65 - COMUNIDADE CRISTÃ ENCONTRO ROSÁRIO",
-  "66 - COMUNIDADE EVANGÉLICA MINISTÉRIO INTERNACIONAL ALIANÇA EM CRISTO",
-  "67 - COMUNIDADE EVANGÉLICA VIDA EM COMUNHÃO",
-  "68 - COMUNIDADE INTERNACIONAL GENESIS",
-  "69 - COMUNIDADE KADOSH",
-  "70 - COMUNIDADE PENTECOSTAL É HORA DE AVIVAMENTO",
-  "71 - COMUNIDADE É TEMPLO DA FÉ",
-  "72 - CONGREGACIONAL VEM VIVER",
-  "73 - CONGREGAÇÃO CRISTÃ ATITUDE FÉ",
-  "74 - CONGREGAÇÃO METODISTA PRATA",
+  "66 - COMUNIDADE É TEMPLO DA FÉ",
+  "67 - COMUNIDADE EVANGÉLICA MINISTÉRIO INTERNACIONAL ALIANÇA EM CRISTO",
+  "68 - COMUNIDADE EVANGÉLICA VIDA EM COMUNHÃO",
+  "69 - COMUNIDADE INTERNACIONAL GENESIS",
+  "70 - COMUNIDADE KADOSH",
+  "71 - COMUNIDADE PENTECOSTAL É HORA DE AVIVAMENTO",
+  "72 - CONGREGAÇÃO CRISTÃ ATITUDE FÉ",
+  "73 - CONGREGAÇÃO METODISTA PRATA",
+  "74 - CONGREGACIONAL VEM VIVER",
   "75 - COPETE",
   "76 - CRISTÃ MUNDIAL",
   "77 - DIVERSOS",
   "78 - EDIÇÕES ANTERIORES",
   "79 - ESPAÇO VIDA",
-  "80 - FILADELFIA",
+  "80 - FILADÉLFIA",
   "81 - HEBROM CHURCH",
   "82 - IGREJA BATISTA DE MOTTAS",
   "83 - IGREJA BATISTA DO RECREIO DOS BANDEIRANTES RJ",
@@ -105,8 +117,8 @@ export const IGREJAS_PARCEIRAS = [
   "89 - JAT - PIMENTEL",
   "90 - JAT - QUINTA LEBRÃO",
   "91 - JAT - SEDE",
-  "92 - JAT MEUDON",
-  "93 - JAT – CONGREGAÇÃO UNAMAR",
+  "92 - JAT – CONGREGAÇÃO UNAMAR",
+  "93 - JAT MEUDON",
   "94 - JESURUM",
   "95 - JESUS É ALIANÇA",
   "96 - LUUZ CHURCH",
@@ -124,19 +136,19 @@ export const IGREJAS_PARCEIRAS = [
   "108 - METODISTA EM SERRA DO CAPIM",
   "109 - METODISTA EM VILA DO PIÃO",
   "110 - METODISTA NOVA SUÍÇA",
-  "111 - MINISTERIO FAMILIA EM GRAÇA",
-  "112 - MINISTÉRIO AJOELHAR",
-  "113 - MINISTÉRIO APOSTÓLICO CASA DE LOUVOR",
-  "114 - MINISTÉRIO ARCA DA ALIANÇA",
-  "115 - MINISTÉRIO BENDITO EU SOU",
-  "116 - MINISTÉRIO DA FÉ",
-  "117 - MINISTÉRIO DEUS DAR VIDA",
+  "111 - MINISTÉRIO AJOELHAR",
+  "112 - MINISTÉRIO APOSTÓLICO CASA DE LOUVOR",
+  "113 - MINISTÉRIO ARCA DA ALIANÇA",
+  "114 - MINISTÉRIO BENDITO EU SOU",
+  "115 - MINISTÉRIO DA FÉ",
+  "116 - MINISTÉRIO DEUS DAR VIDA",
+  "117 - MINISTÉRIO FAMÍLIA EM GRAÇA",
   "118 - MINISTÉRIO PROFÉTICO KEMUEL",
   "119 - MINISTÉRIO RECOMEÇAR EM CRISTO",
   "120 - MINISTÉRIO VINDE A MIM – CASIMIRO DE ABREU",
-  "121 - MISSIONARIA EVANGÉLICA DEUS É PRIORIDADE",
-  "122 - MISSIONÁRIA NOVO ISRAEL",
-  "123 - MISSÃO METODISTA MEUDON",
+  "121 - MISSÃO METODISTA MEUDON",
+  "122 - MISSIONÁRIA EVANGÉLICA DEUS É PRIORIDADE",
+  "123 - MISSIONÁRIA NOVO ISRAEL",
   "124 - NOVA ASSEMBLEIA DE DEUS EM TERESÓPOLIS",
   "125 - NOVA IGREJA DE CRISTO DA BARRA",
   "126 - PARQUE FLUMINENSE BELFORD ROXO",
@@ -153,6 +165,6 @@ export const IGREJAS_PARCEIRAS = [
   "137 - PROJETO SEMEAR EM CRUZEIRO",
   "138 - PROJETO SEMEAR SANTA CECÍLIA",
   "139 - SEGUNDA IGREJA BATISTA DO MEUDON",
-  "140 - UNIDOS PELA FE EM DEUS",
+  "140 - UNIDOS PELA FÉ EM DEUS",
   "141 - VIDA ABUNDANTE",
 ];

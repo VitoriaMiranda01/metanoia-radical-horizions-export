@@ -5,20 +5,26 @@
 //
 // Numerada a pedido da usuaria ("01 - ", "02 - " etc, ate "141 - ").
 //
-// A ordem foi corrigida em 2026-09-02: o `.sort()` padrao do JavaScript
-// compara letras pelo codigo Unicode bruto, entao letras acentuadas
-// (Á, Ã, Ç, É...) nao ficam "coladas" na letra sem acento como deveriam
-// numa ordem alfabetica de verdade -- ex: "MINISTERIO" (sem acento)
-// ordenava antes de todos os "MINISTÉRIO" (com acento). A ordem abaixo
-// usa comparacao de locale pt-BR (a.localeCompare(b, "pt-BR")), que
-// ignora acento na comparacao principal e so usa ele como criterio de
-// desempate -- e assim que dicionario/lista telefonica ordena.
+// Ordem corrigida em 2026-09-02 com comparacao de locale pt-BR
+// (a.localeCompare(b, "pt-BR")) em vez do `.sort()` padrao do JavaScript
+// (que compara pelo codigo Unicode bruto e separa letra acentuada da sem
+// acento, ex: "MINISTERIO" antes de todos os "MINISTÉRIO"). Locale pt-BR
+// ignora acento na comparacao principal e so usa como desempate -- e
+// assim que dicionario/lista telefonica ordena.
 //
-// Tambem foram corrigidos 9 nomes que estavam faltando acentuacao
-// (confirmado comparando com o mesmo nome/palavra ja escrita certa em
-// outras entradas da propria lista): AGUA->ÁGUA (x2), FAMILIA->FAMÍLIA,
-// FE->FÉ, FILADELFIA->FILADÉLFIA, IMBUI->IMBUÍ, MINISTERIO->MINISTÉRIO
-// (x2), MISSIONARIA->MISSIONÁRIA, PETROPOLIS->PETRÓPOLIS.
+// Correcoes de conteudo feitas em 2026-09-02 (confirmadas com a usuaria
+// antes de aplicar, uma a uma):
+//   Acentuacao faltando (confirmado comparando com a mesma palavra ja
+//   escrita certa em outra entrada da propria lista): AGUA->ÁGUA (x2),
+//   FAMILIA->FAMÍLIA, FE->FÉ, FILADELFIA->FILADÉLFIA, IMBUI->IMBUÍ,
+//   MINISTERIO->MINISTÉRIO (x2), MISSIONARIA->MISSIONÁRIA,
+//   PETROPOLIS->PETRÓPOLIS.
+//   Erro de digitacao: "ASSASSEMBLEIA" -> "ASSEMBLEIA" (AS duplicado).
+//   Acento faltando em nome proprio: "GENESIS" -> "GÊNESIS".
+// NAO alterado (nomes de lugar genuinamente diferentes, confirmado pela
+// usuaria): "IGREJA BATISTA DE MOTTAS" (2 T mesmo) permanece diferente
+// de "BATISTA EBENEZER EM MOTAS" (1 T) -- sao grafias distintas, nao um
+// erro pra unificar.
 //
 // IMPORTANTE: este array NAO deve ser "`.sort()`"-ado de novo em tempo de
 // execucao -- os prefixos numericos ("01", ..., "10", ..., "141") nao
@@ -30,26 +36,26 @@ export const IGREJAS_PARCEIRAS = [
   "02 - AD FAMÍLIA EM CRISTO",
   "03 - AD NOVA GERAÇÃO CEMAE",
   "04 - ADEC",
-  "05 - ASSASSEMBLEIA DE DEUS MINISTÉRIO VINDE A MIM UNAMAR",
-  "06 - ASSEMBLEIA DE DEUS ADORAI",
-  "07 - ASSEMBLEIA DE DEUS CAMINHO CELESTE",
-  "08 - ASSEMBLEIA DE DEUS CELEBRANDO AO SENHOR",
-  "09 - ASSEMBLEIA DE DEUS CENTRO CRISTÃO MISSIONÁRIO EM VIEIRA",
-  "10 - ASSEMBLEIA DE DEUS CENTRO MISSIONÁRIO CRISTÃO",
-  "11 - ASSEMBLEIA DE DEUS DA CASCATA DO IMBUÍ",
-  "12 - ASSEMBLEIA DE DEUS DA FAMÍLIA",
-  "13 - ASSEMBLEIA DE DEUS DE TERESÓPOLIS - SEDE",
-  "14 - ASSEMBLEIA DE DEUS DE TERESÓPOLIS - SUBSEDE BARRA IMBUÍ",
-  "15 - ASSEMBLEIA DE DEUS DE TERESÓPOLIS - SUBSEDE PESSEGUEIROS",
-  "16 - ASSEMBLEIA DE DEUS DE TERESÓPOLIS - SUBSEDE SÃO PEDRO",
-  "17 - ASSEMBLEIA DE DEUS DE VARGEM GRANDE CONGREGAÇÃO SERRINHA",
-  "18 - ASSEMBLEIA DE DEUS DO UNIVERSO",
-  "19 - ASSEMBLEIA DE DEUS EM SALINAS",
-  "20 - ASSEMBLEIA DE DEUS FILADÉLFIA",
-  "21 - ASSEMBLEIA DE DEUS IDE - SJVRP",
-  "22 - ASSEMBLEIA DE DEUS MINISTÉRIO BETEL",
-  "23 - ASSEMBLEIA DE DEUS MINISTÉRIO FORÇA E HONRA",
-  "24 - ASSEMBLEIA DE DEUS MINISTÉRIO INTEGRAÇÃO",
+  "05 - ASSEMBLEIA DE DEUS ADORAI",
+  "06 - ASSEMBLEIA DE DEUS CAMINHO CELESTE",
+  "07 - ASSEMBLEIA DE DEUS CELEBRANDO AO SENHOR",
+  "08 - ASSEMBLEIA DE DEUS CENTRO CRISTÃO MISSIONÁRIO EM VIEIRA",
+  "09 - ASSEMBLEIA DE DEUS CENTRO MISSIONÁRIO CRISTÃO",
+  "10 - ASSEMBLEIA DE DEUS DA CASCATA DO IMBUÍ",
+  "11 - ASSEMBLEIA DE DEUS DA FAMÍLIA",
+  "12 - ASSEMBLEIA DE DEUS DE TERESÓPOLIS - SEDE",
+  "13 - ASSEMBLEIA DE DEUS DE TERESÓPOLIS - SUBSEDE BARRA IMBUÍ",
+  "14 - ASSEMBLEIA DE DEUS DE TERESÓPOLIS - SUBSEDE PESSEGUEIROS",
+  "15 - ASSEMBLEIA DE DEUS DE TERESÓPOLIS - SUBSEDE SÃO PEDRO",
+  "16 - ASSEMBLEIA DE DEUS DE VARGEM GRANDE CONGREGAÇÃO SERRINHA",
+  "17 - ASSEMBLEIA DE DEUS DO UNIVERSO",
+  "18 - ASSEMBLEIA DE DEUS EM SALINAS",
+  "19 - ASSEMBLEIA DE DEUS FILADÉLFIA",
+  "20 - ASSEMBLEIA DE DEUS IDE - SJVRP",
+  "21 - ASSEMBLEIA DE DEUS MINISTÉRIO BETEL",
+  "22 - ASSEMBLEIA DE DEUS MINISTÉRIO FORÇA E HONRA",
+  "23 - ASSEMBLEIA DE DEUS MINISTÉRIO INTEGRAÇÃO",
+  "24 - ASSEMBLEIA DE DEUS MINISTÉRIO VINDE A MIM UNAMAR",
   "25 - ASSEMBLEIA DE DEUS MONTE CARMELO",
   "26 - ASSEMBLEIA DE DEUS NO MEUDON",
   "27 - ASSEMBLEIA DE DEUS NOVA ALIANÇA COM CRISTO",
@@ -94,7 +100,7 @@ export const IGREJAS_PARCEIRAS = [
   "66 - COMUNIDADE É TEMPLO DA FÉ",
   "67 - COMUNIDADE EVANGÉLICA MINISTÉRIO INTERNACIONAL ALIANÇA EM CRISTO",
   "68 - COMUNIDADE EVANGÉLICA VIDA EM COMUNHÃO",
-  "69 - COMUNIDADE INTERNACIONAL GENESIS",
+  "69 - COMUNIDADE INTERNACIONAL GÊNESIS",
   "70 - COMUNIDADE KADOSH",
   "71 - COMUNIDADE PENTECOSTAL É HORA DE AVIVAMENTO",
   "72 - CONGREGAÇÃO CRISTÃ ATITUDE FÉ",

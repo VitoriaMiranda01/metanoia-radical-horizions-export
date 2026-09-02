@@ -21,10 +21,9 @@
 //   PETROPOLIS->PETRÓPOLIS.
 //   Erro de digitacao: "ASSASSEMBLEIA" -> "ASSEMBLEIA" (AS duplicado).
 //   Acento faltando em nome proprio: "GENESIS" -> "GÊNESIS".
-// NAO alterado (nomes de lugar genuinamente diferentes, confirmado pela
-// usuaria): "IGREJA BATISTA DE MOTTAS" (2 T mesmo) permanece diferente
-// de "BATISTA EBENEZER EM MOTAS" (1 T) -- sao grafias distintas, nao um
-// erro pra unificar.
+//   Grafia: "BATISTA EBENEZER EM MOTAS" -> "...MOTTAS" (2 T, confirmado
+//   com a usuaria -- mesmo nome de "IGREJA BATISTA DE MOTTAS", nao um
+//   lugar diferente como se pensou antes).
 //
 // IMPORTANTE: este array NAO deve ser "`.sort()`"-ado de novo em tempo de
 // execucao -- os prefixos numericos ("01", ..., "10", ..., "141") nao
@@ -71,7 +70,7 @@ export const IGREJAS_PARCEIRAS = [
   "37 - BATISTA DA FAMÍLIA EM BONSUCESSO",
   "38 - BATISTA DE BALANÇA",
   "39 - BATISTA DE SOLEDADE",
-  "40 - BATISTA EBENEZER EM MOTAS",
+  "40 - BATISTA EBENEZER EM MOTTAS",
   "41 - BATISTA EM ÁGUA QUENTE",
   "42 - BATISTA EM BARRA DO IMBUÍ",
   "43 - BATISTA EM RENOVAÇÃO ESPIRITUAL MONTE SINAI",

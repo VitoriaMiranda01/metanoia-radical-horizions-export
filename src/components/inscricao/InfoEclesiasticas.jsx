@@ -47,14 +47,16 @@ const InfoEclesiasticas = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 pb-2">
                   <div className="space-y-2">
                     <Label htmlFor="igreja" className="text-white">Igreja que frequenta *</Label>
-                    <Input 
-                      id="igreja" 
-                      name="igreja" 
-                      value={formData.igreja} 
-                      onChange={handleChange} 
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
-                      placeholder="Nome da sua igreja" 
-                    />
+                    <Select value={formData.igreja} onValueChange={value => handleChange({ target: { name: 'igreja', value } })}>
+                      <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                        <SelectValue placeholder="Selecione sua igreja..." />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {IGREJAS_PARCEIRAS.map((option, index) => (
+                          <SelectItem key={index} value={option}>{option}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">

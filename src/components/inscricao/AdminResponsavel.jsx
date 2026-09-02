@@ -7,16 +7,16 @@ import { IGREJAS_PARCEIRAS } from '@/constants/igrejas';
 
 const AdminResponsavel = ({ formData, handleChange, handleSelectChange }) => {
   return (
-    <FormSection title="Administrador Responsável">
+    <FormSection title="Igreja Responsável">
       <div className="grid grid-cols-1 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="adminResponsavel" className="text-white">Administrador Responsável pela Ficha *</Label>
+          <Label htmlFor="adminResponsavel" className="text-white">Igreja Responsável pela Inscrição *</Label>
           <Select
             value={formData.adminResponsavel}
             onValueChange={(value) => handleSelectChange('adminResponsavel', value)}
           >
             <SelectTrigger className="bg-white/10 border-white/20 text-white">
-              <SelectValue placeholder="Selecione o administrador..." />
+              <SelectValue placeholder="Selecione a igreja..." />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
               {IGREJAS_PARCEIRAS.map((option, index) => (

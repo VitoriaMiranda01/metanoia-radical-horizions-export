@@ -624,10 +624,10 @@ const OrganizerConfigPage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
                   <Users className="w-5 h-5 text-cyan-400" />
-                  <span>Alocação Manual — Áreas Especiais</span>
+                  <span>Áreas de Trabalho Especiais</span>
                 </CardTitle>
                 <CardDescription className="text-gray-400">
-                  Guia, Inimigo e Espírito Santo não aparecem no formulário de inscrição de equipante. Informe abaixo os CPFs dos equipantes que serão alocados manualmente em cada uma dessas áreas. Por enquanto isso apenas registra a informação — nenhuma alocação automática é feita a partir daqui.
+                  Gerencie os equipantes que farão parte de cada área de trabalho especial.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">

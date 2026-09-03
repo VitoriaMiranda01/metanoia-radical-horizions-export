@@ -129,7 +129,7 @@ const CpfsAreaEspecialManager = ({ areaLabel, cpfs = [], onSave }) => {
           onClick={handleAdd}
           disabled={isSaving}
           variant="outline"
-          className="border-dashed border-white/20 text-gray-200 hover:bg-white/10 hover:text-white hover:border-white/40 whitespace-nowrap"
+          className="border-dashed border-white/20 text-black hover:bg-white/10 hover:text-white hover:border-white/40 whitespace-nowrap"
         >
           {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
           Adicionar CPF

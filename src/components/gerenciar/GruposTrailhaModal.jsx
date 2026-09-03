@@ -8,20 +8,29 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getGroupColor, GROUPS } from '@/utils/gruposTrailha';
-import { User, MapPin, Phone, Loader2, ArrowRightLeft } from 'lucide-react';
+import { User, MapPin, Phone, Loader2, ArrowRightLeft, Save } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 // Realocacao manual de grupo de trilha (organizador corrige quem ja esta
 // alocado -- ex: juntar amigos/familia no mesmo grupo). Mesmo padrao de UI
 // usado pra realocacao de area de trabalho de equipante (CpfsAreaEspecial-
 // Manager.jsx / botao "Alocar Áreas Especiais"): seleciona o novo valor e
 // confirma com um botao dedicado, sem precisar sair do card.
-const AcampanteItem = ({ acampante, onRealocar }) => {
+const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao }) => {
   const isMale = acampante.sexo?.toLowerCase() === 'masculino';
   const [novoGrupo, setNovoGrupo] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Observacao breve do organizador sobre este acampante (coluna
+  // acampantes.observacoes_organizador). lastSavedObs guarda o valor que
+  // realmente esta salvo no banco, pra habilitar o botao de salvar so
+  // quando o texto digitado difere do que ja foi persistido.
+  const [observacao, setObservacao] = useState(acampante.observacoes_organizador || '');
+  const [lastSavedObs, setLastSavedObs] = useState(acampante.observacoes_organizador || '');
+  const [isSavingObs, setIsSavingObs] = useState(false);
 
   const outrosGrupos = GROUPS.filter(g => g !== acampante.grupo_trailha);
 
@@ -33,6 +42,17 @@ const AcampanteItem = ({ acampante, onRealocar }) => {
       setNovoGrupo('');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSalvarObservacao = async () => {
+    if (!onSalvarObservacao || observacao === lastSavedObs) return;
+    setIsSavingObs(true);
+    try {
+      await onSalvarObservacao(acampante, observacao);
+      setLastSavedObs(observacao);
+    } finally {
+      setIsSavingObs(false);
     }
   };
 
@@ -89,11 +109,35 @@ const AcampanteItem = ({ acampante, onRealocar }) => {
           </Button>
         </div>
       )}
+
+      {onSalvarObservacao && (
+        <div className="flex items-start gap-2 pl-11">
+          <Textarea
+            value={observacao}
+            onChange={e => setObservacao(e.target.value)}
+            disabled={isSavingObs}
+            rows={2}
+            placeholder="Observações sobre este acampante..."
+            className="h-auto min-h-0 resize-none bg-white/5 border-white/10 text-white placeholder:text-gray-500 text-xs flex-1 py-1.5"
+          />
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            onClick={handleSalvarObservacao}
+            disabled={observacao === lastSavedObs || isSavingObs}
+            className="h-8 w-8 shrink-0 border-dashed border-white/20 text-black hover:bg-white/10 hover:text-white hover:border-white/40"
+            aria-label="Salvar observação"
+          >
+            {isSavingObs ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
 
-const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onRealocar }) => {
+const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onRealocar, onSalvarObservacao }) => {
   const colors = getGroupColor(groupName);
 
   return (
@@ -114,7 +158,7 @@ const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onReal
             <div className="space-y-2">
               {groupData.length > 0 ? (
                 groupData.map((acampante, idx) => (
-                  <AcampanteItem key={acampante.id || idx} acampante={acampante} onRealocar={onRealocar} />
+                  <AcampanteItem key={acampante.id || idx} acampante={acampante} onRealocar={onRealocar} onSalvarObservacao={onSalvarObservacao} />
                 ))
               ) : (
                 <div className="text-center py-10 text-gray-500">

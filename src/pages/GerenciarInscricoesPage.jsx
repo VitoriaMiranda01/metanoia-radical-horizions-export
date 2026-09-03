@@ -23,7 +23,7 @@ import GruposTrailhaCards from '@/components/gerenciar/GruposTrailhaCards';
 import GruposTrailhaModal from '@/components/gerenciar/GruposTrailhaModal';
 import AcampantesStatsCards from '@/components/gerenciar/AcampantesStatsCards';
 import AcampantesDetailModal from '@/components/gerenciar/AcampantesDetailModal';
-import { deleteAcampante, getAcampantes, countAcampantes, realocarGrupoTrailha } from '@/services/acampantesService';
+import { deleteAcampante, getAcampantes, countAcampantes, realocarGrupoTrailha, salvarObservacaoAcampante } from '@/services/acampantesService';
 import { fetchEquipantesInscritos, countEquipantesInscritos } from '@/services/equipantesService';
 import { groupAcampantesByTrilha } from '@/utils/gruposTrailha';
 
@@ -254,6 +254,45 @@ const GerenciarInscricoesPage = () => {
     return result;
   };
 
+  // Salva a observacao breve escrita pelo organizador sobre um acampante,
+  // direto no card dele dentro do modal de um grupo de trilha. Atualiza os
+  // dois lugares que guardam uma copia do acampante em memoria
+  // (acampantesList e selectedGroup.data) na hora, sem refetch -- e so um
+  // campo de texto, diferente de handleRealocarGrupoTrailha (que muda o
+  // agrupamento em si e por isso precisa buscar tudo de novo).
+  const handleSalvarObservacaoAcampante = async (acampante, observacao) => {
+    const result = await salvarObservacaoAcampante(acampante.id, observacao);
+
+    if (result.success) {
+      toast({
+        title: "Observação salva",
+        description: `Observação de ${acampante.nome} foi atualizada.`,
+      });
+
+      setAcampantesList(prev =>
+        prev.map(a => (a.id === acampante.id ? { ...a, observacoes_organizador: observacao } : a))
+      );
+
+      setSelectedGroup(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          data: prev.data.map(a =>
+            a.id === acampante.id ? { ...a, observacoes_organizador: observacao } : a
+          ),
+        };
+      });
+    } else {
+      toast({
+        title: "Erro ao salvar observação",
+        description: result.error || "Não foi possível salvar a observação.",
+        variant: "destructive",
+      });
+    }
+
+    return result;
+  };
+
   const handleStatsCardClick = (title, data) => {
     setStatsModalTitle(title);
     setStatsModalData(data);
@@ -350,6 +389,7 @@ const GerenciarInscricoesPage = () => {
               groupName={selectedGroup.name}
               groupData={selectedGroup.data}
               onRealocar={handleRealocarGrupoTrailha}
+              onSalvarObservacao={handleSalvarObservacaoAcampante}
             />
           )}
 

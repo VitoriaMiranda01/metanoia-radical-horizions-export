@@ -109,3 +109,26 @@ export const realocarGrupoTrailha = async (acampanteId, novoGrupo) => {
     return { success: false, error: error.message || 'Erro ao tentar realocar grupo de trilha.' };
   }
 };
+
+// Salva a observacao breve que o organizador escreveu sobre um acampante
+// (campo livre no card dele, dentro do modal de um grupo de trilha).
+// Coluna acampantes.observacoes_organizador -- ver migration
+// schema-update-20260903-observacoes-acampante.sql.
+export const salvarObservacaoAcampante = async (acampanteId, observacao) => {
+  if (!acampanteId) {
+    return { success: false, error: 'Acampante não informado' };
+  }
+
+  try {
+    const { error } = await supabase
+      .from('acampantes')
+      .update({ observacoes_organizador: observacao || null })
+      .eq('id', acampanteId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('acampantesApi - salvarObservacaoAcampante', error, { acampanteId });
+    return { success: false, error: error.message || 'Erro ao tentar salvar a observação.' };
+  }
+};

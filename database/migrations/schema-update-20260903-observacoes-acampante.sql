@@ -1,0 +1,11 @@
+-- Migration: Adiciona coluna de observacoes do organizador sobre o acampante
+-- Date: 2026-09-03
+--
+-- Contexto: a pedido da usuaria (Vitoria), pra permitir que o organizador
+-- escreva observacoes breves sobre um acampante diretamente no card dele,
+-- dentro do modal de um grupo de trilha (Gerenciar Inscricoes > Grupos de
+-- Trilha > clicar num grupo). Nao existia nenhuma coluna livre pra isso na
+-- tabela acampantes.
+--
+-- Aditivo, nullable, nao quebra nada que ja existe.
+ALTER TABLE acampantes ADD COLUMN IF NOT EXISTS observacoes_organizador text;

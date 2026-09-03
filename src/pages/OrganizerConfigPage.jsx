@@ -10,15 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, subscribeToConfiguracoesChanges } from '@/services/organizerConfigService';
+import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateCpfsAreaEspecial, subscribeToConfiguracoesChanges } from '@/services/organizerConfigService';
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
 import { resetEquipantesInscricoes } from '@/services/equipantesService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
-import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw } from 'lucide-react';
+import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
+import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import { Button } from '@/components/ui/button';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
 
@@ -53,6 +54,18 @@ const parseDateString = dateStr => {
   };
 };
 
+// As 3 areas de trabalho que existem em WORK_AREAS (src/constants/workAreas.js)
+// e ja aparecem na tela de escalas, mas foram deliberadamente excluidas do
+// formulario de equipante -- ninguem se inscreve pra elas diretamente. O
+// organizador informa aqui quais CPFs serao alocados manualmente em cada
+// uma. Chave = sufixo usado nas colunas cpfs_area_* / no service; label =
+// nome exibido (igual ao usado em WORK_AREAS).
+const AREAS_ESPECIAIS = [
+  { key: 'guia', label: 'Guia' },
+  { key: 'inimigo', label: 'Inimigo' },
+  { key: 'espirito_santo', label: 'Espírito Santo' }
+];
+
 const OrganizerConfigPage = () => {
   const { organizadorId, organizadorUser, user, isAuthenticated } = useAuth();
   
@@ -70,7 +83,10 @@ const OrganizerConfigPage = () => {
     horario_retorno_sitio: '',
     data_limite_inscricao_pagamento: '',
     equipante_pricing_periods: [],
-    acampante_pricing_periods: []
+    acampante_pricing_periods: [],
+    cpfs_area_guia: [],
+    cpfs_area_inimigo: [],
+    cpfs_area_espirito_santo: []
   });
   
   const [loadingConfig, setLoadingConfig] = useState(true);
@@ -153,7 +169,10 @@ const OrganizerConfigPage = () => {
         horario_retorno_sitio: data.horario_retorno_sitio || '',
         data_limite_inscricao_pagamento: data.data_limite_inscricao_pagamento || '',
         equipante_pricing_periods: data.equipante_pricing_periods || [],
-        acampante_pricing_periods: data.acampante_pricing_periods || []
+        acampante_pricing_periods: data.acampante_pricing_periods || [],
+        cpfs_area_guia: data.cpfs_area_guia || [],
+        cpfs_area_inimigo: data.cpfs_area_inimigo || [],
+        cpfs_area_espirito_santo: data.cpfs_area_espirito_santo || []
       });
     } catch (error) {
       console.error("[OrganizerConfigPage] Error loading config data:", error);
@@ -223,14 +242,24 @@ const OrganizerConfigPage = () => {
     }
   };
 
+  const handleSaveCpfsAreaEspecial = async (areaKey, cpfs) => {
+    await updateCpfsAreaEspecial(areaKey, cpfs);
+    setConfig(prev => ({
+      ...prev,
+      [`cpfs_area_${areaKey}`]: cpfs
+    }));
+  };
+
   const handleSaveAll = async () => {
     setIsSavingAll(true);
     try {
       const dateInicioStr = buildDateString(config.data_edicao_dia_inicio, config.data_edicao_mes, config.data_edicao_ano);
       const dateFimStr = buildDateString(config.data_edicao_dia_fim, config.data_edicao_mes, config.data_edicao_ano);
       
-      // Deliberately extracting out pricing periods so they aren't included in the global save.
-      const { equipante_pricing_periods, acampante_pricing_periods, ...otherConfigs } = config;
+      // Deliberately extracting out pricing periods and the special-area CPF
+      // lists so they aren't included in the global save -- both are saved
+      // independently (updatePricingPeriods / updateCpfsAreaEspecial).
+      const { equipante_pricing_periods, acampante_pricing_periods, cpfs_area_guia, cpfs_area_inimigo, cpfs_area_espirito_santo, ...otherConfigs } = config;
       
       const payloadToSave = {
         ...otherConfigs,
@@ -622,6 +651,32 @@ const OrganizerConfigPage = () => {
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
+                  <Users className="w-5 h-5 text-cyan-400" />
+                  <span>Alocação Manual — Áreas Especiais</span>
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Guia, Inimigo e Espírito Santo não aparecem no formulário de inscrição de equipante. Informe abaixo os CPFs dos equipantes que serão alocados manualmente em cada uma dessas áreas. Por enquanto isso apenas registra a informação — nenhuma alocação automática é feita a partir daqui.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                {AREAS_ESPECIAIS.map(area => (
+                  <div key={area.key} className="space-y-4">
+                    <h3 className="text-lg font-medium text-white border-b border-white/10 pb-2">{area.label}</h3>
+                    <CpfsAreaEspecialManager
+                      areaLabel={area.label}
+                      cpfs={config[`cpfs_area_${area.key}`] || []}
+                      onSave={(cpfs) => handleSaveCpfsAreaEspecial(area.key, cpfs)}
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className="glass-effect border-white/10 bg-black/40">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-white">
                   <Tag className="w-5 h-5 text-purple-400" />
                   <span>Cupons de Desconto</span>
                 </CardTitle>
@@ -706,7 +761,7 @@ const OrganizerConfigPage = () => {
             </Card>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">

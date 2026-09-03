@@ -6,7 +6,7 @@ export const fetchConfiguracoes = async (organizadorId) => {
     try {
       if (!navigator.onLine) return { max_equipantes: 0, max_acampantes: 0, max_acampantes_homens: 0, max_acampantes_mulheres: 0, equipante_pricing_periods: [], acampante_pricing_periods: [], edicao_numero: '' };
       
-      let configQuery = supabase.from('configuracoes').select('id, data_evento_inicio, data_evento_fim, horario_saida_igreja, horario_retorno_sitio, data_limite_inscricao_pagamento, descricao, max_equipantes, max_acampantes, updated_at, equipante_pricing_periods, acampante_pricing_periods, max_acampantes_homens, max_acampantes_mulheres, edicao_numero');
+      let configQuery = supabase.from('configuracoes').select('id, data_evento_inicio, data_evento_fim, horario_saida_igreja, horario_retorno_sitio, data_limite_inscricao_pagamento, descricao, max_equipantes, max_acampantes, updated_at, equipante_pricing_periods, acampante_pricing_periods, max_acampantes_homens, max_acampantes_mulheres, edicao_numero, cpfs_area_guia, cpfs_area_inimigo, cpfs_area_espirito_santo');
       
       const { data, error } = await configQuery.order('updated_at', { ascending: false }).limit(1).maybeSingle();
       if (error && !['PGRST205', '42P01', '42703'].includes(error.code)) {
@@ -42,6 +42,9 @@ export const fetchConfiguracoes = async (organizadorId) => {
         updated_at: data?.updated_at,
         equipante_pricing_periods: data?.equipante_pricing_periods || [],
         acampante_pricing_periods: data?.acampante_pricing_periods || [],
+        cpfs_area_guia: data?.cpfs_area_guia || [],
+        cpfs_area_inimigo: data?.cpfs_area_inimigo || [],
+        cpfs_area_espirito_santo: data?.cpfs_area_espirito_santo || [],
         data_evento_inicio: data?.data_evento_inicio || '',
         data_evento_fim: data?.data_evento_fim || '',
         data_edicao_dia_inicio: dateData.data_edicao_dia_inicio || '',
@@ -53,7 +56,7 @@ export const fetchConfiguracoes = async (organizadorId) => {
       return mergedConfig;
     } catch (error) {
       console.error("[fetchConfiguracoes] Fatal load error:", error);
-      return { max_equipantes: 0, max_acampantes: 0, max_acampantes_homens: 0, max_acampantes_mulheres: 0, equipante_pricing_periods: [], acampante_pricing_periods: [], edicao_numero: '' };
+      return { max_equipantes: 0, max_acampantes: 0, max_acampantes_homens: 0, max_acampantes_mulheres: 0, equipante_pricing_periods: [], acampante_pricing_periods: [], cpfs_area_guia: [], cpfs_area_inimigo: [], cpfs_area_espirito_santo: [], edicao_numero: '' };
     }
   });
 };
@@ -92,6 +95,58 @@ export const updatePricingPeriods = async (type, periods) => {
     return data;
   } catch (error) {
     console.error(`[updatePricingPeriods] Error updating ${type} periods:`, error);
+    throw error;
+  }
+};
+
+// Salva a lista de CPFs escolhidos pro organizador pra uma das 3 areas
+// especiais (Guia, Inimigo, Espirito Santo), que nao aparecem no
+// formulario de equipante. Mesmo padrao de updatePricingPeriods: salva
+// direto na tabela configuracoes, de forma independente do botao "Salvar
+// Configuracoes Gerais". Por enquanto isso so registra a informacao --
+// nenhuma logica de alocacao usa esses dados ainda (pedido explicito da
+// usuaria nesta etapa).
+const CPFS_AREA_COLUMN_MAP = {
+  guia: 'cpfs_area_guia',
+  inimigo: 'cpfs_area_inimigo',
+  espirito_santo: 'cpfs_area_espirito_santo'
+};
+
+export const updateCpfsAreaEspecial = async (area, cpfs) => {
+  try {
+    if (!navigator.onLine) throw new Error("Você está offline. Verifique sua conexão.");
+
+    const column = CPFS_AREA_COLUMN_MAP[area];
+    if (!column) throw new Error(`Área especial desconhecida: ${area}`);
+
+    const { data: existing, error: checkError } = await supabase
+      .from('configuracoes')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+
+    let data, error;
+    if (existing?.id) {
+      ({ data, error } = await supabase
+        .from('configuracoes')
+        .update({ [column]: cpfs, updated_at: new Date().toISOString() })
+        .eq('id', existing.id)
+        .select()
+        .single());
+    } else {
+      ({ data, error } = await supabase
+        .from('configuracoes')
+        .insert({ [column]: cpfs, updated_at: new Date().toISOString() })
+        .select()
+        .single());
+    }
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error(`[updateCpfsAreaEspecial] Error updating ${area} CPFs:`, error);
     throw error;
   }
 };

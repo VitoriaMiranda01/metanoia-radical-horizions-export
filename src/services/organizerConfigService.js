@@ -151,6 +151,34 @@ export const updateCpfsAreaEspecial = async (area, cpfs) => {
   }
 };
 
+// Busca so os CPFs configurados pras 3 areas especiais (Guia, Inimigo,
+// Espirito Santo), usado pelo botao "Alocar Áreas Especiais" na tela de
+// escalas (src/pages/OrganizerScalesPage.jsx) -- select enxuto, sem trazer
+// o resto da configuracao geral que essa tela nao usa. Chaves batem com
+// AREAS_ESPECIAIS (src/constants/workAreas.js): guia, inimigo,
+// espirito_santo.
+export const fetchCpfsAreasEspeciais = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('configuracoes')
+      .select('cpfs_area_guia, cpfs_area_inimigo, cpfs_area_espirito_santo')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    return {
+      guia: data?.cpfs_area_guia || [],
+      inimigo: data?.cpfs_area_inimigo || [],
+      espirito_santo: data?.cpfs_area_espirito_santo || []
+    };
+  } catch (error) {
+    console.error('[fetchCpfsAreasEspeciais] Error:', error);
+    return { guia: [], inimigo: [], espirito_santo: [] };
+  }
+};
+
 export const saveConfiguracoes = async (config) => {
   try {
     if (!navigator.onLine) throw new Error("Você está offline. Verifique sua conexão.");

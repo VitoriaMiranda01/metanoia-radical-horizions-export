@@ -20,6 +20,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
 import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
+import { AREAS_ESPECIAIS } from '@/constants/workAreas';
 import { Button } from '@/components/ui/button';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
 
@@ -53,18 +54,6 @@ const parseDateString = dateStr => {
     year: year
   };
 };
-
-// As 3 areas de trabalho que existem em WORK_AREAS (src/constants/workAreas.js)
-// e ja aparecem na tela de escalas, mas foram deliberadamente excluidas do
-// formulario de equipante -- ninguem se inscreve pra elas diretamente. O
-// organizador informa aqui quais CPFs serao alocados manualmente em cada
-// uma. Chave = sufixo usado nas colunas cpfs_area_* / no service; label =
-// nome exibido (igual ao usado em WORK_AREAS).
-const AREAS_ESPECIAIS = [
-  { key: 'guia', label: 'Guia' },
-  { key: 'inimigo', label: 'Inimigo' },
-  { key: 'espirito_santo', label: 'Espírito Santo' }
-];
 
 const OrganizerConfigPage = () => {
   const { organizadorId, organizadorUser, user, isAuthenticated } = useAuth();

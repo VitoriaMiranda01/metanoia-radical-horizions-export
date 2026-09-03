@@ -4,14 +4,15 @@ import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { WORK_AREAS, DEFAULT_AREA_CAPACITY } from '@/constants/workAreas';
+import { WORK_AREAS, DEFAULT_AREA_CAPACITY, AREAS_ESPECIAIS } from '@/constants/workAreas';
 import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges } from '@/services/scalesService';
 import { fetchLimitesAreas, saveLimiteAreaComGenero, getLimiteAreaComGenero } from '@/services/limiteAreasService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { exportEquipantesByArea, exportAllEquipantes } from '@/utils/excelExport';
 import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
-import { alocarEquipanteManualmente, realocarEquipante } from '@/services/equipanteAllocationService';
-import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle } from 'lucide-react';
+import { alocarEquipanteManualmente, realocarEquipante, alocarAreasEspeciaisPorCpf } from '@/services/equipanteAllocationService';
+import { fetchCpfsAreasEspeciais } from '@/services/organizerConfigService';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Shuffle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
 import EquipantesGridDisplay from '@/components/scales/EquipantesGridDisplay';
@@ -36,6 +37,7 @@ const OrganizerScalesPage = () => {
   const [waitlist, setWaitlist] = useState([]);
   const [manualAreaChoice, setManualAreaChoice] = useState({});
   const [manualAllocating, setManualAllocating] = useState({});
+  const [isAllocatingAreasEspeciais, setIsAllocatingAreasEspeciais] = useState(false);
   
   const previousAllocationsRef = useRef([]);
   const saveTimeoutRef = useRef(null);
@@ -319,6 +321,64 @@ const OrganizerScalesPage = () => {
     }
   };
 
+  // Botao "Alocar Áreas Especiais": compara os CPFs configurados em
+  // Configuracoes (uma das 3 areas especiais -- Guia, Inimigo, Espirito
+  // Santo) com os equipantes aprovados e realoca quem bater, da area em
+  // que esta hoje pra area especial configurada. Toda a logica de
+  // comparacao/decisao mora em alocarAreasEspeciaisPorCpf
+  // (equipanteAllocationService.js); aqui so busca os dados de entrada,
+  // chama a funcao e traduz o resultado num toast pro organizador.
+  const handleAlocarAreasEspeciais = async () => {
+    setIsAllocatingAreasEspeciais(true);
+    try {
+      const [cpfsPorArea, equipantesAprovados, allocationsAtuais] = await Promise.all([
+        fetchCpfsAreasEspeciais(),
+        fetchApprovedEquipantes(),
+        fetchAllAllocations()
+      ]);
+
+      const totalConfigurado = AREAS_ESPECIAIS.reduce((acc, area) => acc + (cpfsPorArea[area.key]?.length || 0), 0);
+      if (totalConfigurado === 0) {
+        toast({
+          title: "Nada para alocar",
+          description: "Nenhum CPF foi configurado nas Áreas Especiais ainda. Configure em Configurações primeiro.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const resultado = await alocarAreasEspeciaisPorCpf(cpfsPorArea, equipantesAprovados, allocationsAtuais);
+
+      const partes = [];
+      if (resultado.movidos.length > 0) partes.push(`${resultado.movidos.length} realocado(s)`);
+      if (resultado.jaNaAreaCorreta.length > 0) partes.push(`${resultado.jaNaAreaCorreta.length} já estava(m) na área certa`);
+      if (resultado.aindaNaoAlocados.length > 0) partes.push(`${resultado.aindaNaoAlocados.length} aprovado(s) mas ainda sem alocação (serão movidos ao rodar de novo depois de alocados)`);
+      if (resultado.naoEncontrados.length > 0) partes.push(`${resultado.naoEncontrados.length} CPF(s) não encontrado(s) entre os equipantes aprovados`);
+      if (resultado.falhas.length > 0) partes.push(`${resultado.falhas.length} falha(s) ao realocar (ex: área cheia)`);
+
+      const houveProblema = resultado.falhas.length > 0 && resultado.movidos.length === 0;
+
+      toast({
+        title: resultado.movidos.length > 0 ? "Áreas especiais atualizadas" : "Nenhuma realocação feita",
+        description: partes.length > 0 ? partes.join(' · ') : "Nada a fazer.",
+        variant: houveProblema ? "destructive" : undefined,
+        className: houveProblema ? undefined : "bg-blue-600 text-white border-none"
+      });
+
+      if (resultado.movidos.length > 0) {
+        fetchBackgroundData(false);
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao alocar áreas especiais",
+        description: error.message || "Ocorreu um erro inesperado.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAllocatingAreasEspeciais(false);
+    }
+  };
+
   const getEquipantesByArea = areaName => {
     return allocations.filter(a => a.allocatedArea === areaName);
   };
@@ -365,6 +425,10 @@ const OrganizerScalesPage = () => {
             <p className="text-gray-400">Distribuição automática.</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto flex-wrap justify-end">
+            <Button onClick={handleAlocarAreasEspeciais} disabled={isAllocatingAreasEspeciais} className="bg-blue-600 hover:bg-blue-700 text-white">
+              {isAllocatingAreasEspeciais ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shuffle className="mr-2 h-4 w-4" />}
+              Alocar Áreas Especiais
+            </Button>
             <Button onClick={handleExportAll} disabled={allocations.length === 0} variant="outline" className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300">
               <Download className="mr-2 h-4 w-4" /> Exportar
             </Button>

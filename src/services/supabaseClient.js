@@ -3,16 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Task 1 & 7: Comprehensive logging for environment variables
-console.log('[Supabase Init] Checking environment variables...');
+// Validacao critica: sem essas variaveis o app nao tem como falar com o
+// banco. Nao lanca excecao aqui de proposito (ver createMockClient logo
+// abaixo) pra nao derrubar a tela inteira -- so loga o erro claramente.
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('[Supabase Init Error] Missing Supabase environment variables. Please check your .env file.');
-  // Throwing as requested in Task 7
-  // throw new Error("Missing Supabase environment variables"); 
-  // Note: Commented out throw to prevent complete app crash on load if env is missing, but error is logged clearly.
-} else {
-  console.log(`[Supabase Init] URL loaded correctly: ${supabaseUrl}`);
-  console.log('[Supabase Init] Anon key loaded correctly (hidden for security)');
 }
 
 // Validate environment variables
@@ -91,7 +86,3 @@ export const supabase = isConfigValid
       },
     })
   : createMockClient();
-
-if (isConfigValid) {
-  console.log('[Supabase Init] Client initialized successfully without errors.');
-}

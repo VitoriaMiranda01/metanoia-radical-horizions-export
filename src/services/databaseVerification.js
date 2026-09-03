@@ -12,8 +12,6 @@ export const verifyDatabaseSchema = async () => {
     suggestions: []
   };
 
-  console.log("Starting Database Schema Verification...");
-
   if (!SCHEMA_DEFINITIONS) {
     report.valid = false;
     report.errors.push("SCHEMA_DEFINITIONS is missing or undefined.");
@@ -61,9 +59,7 @@ export const verifyDatabaseSchema = async () => {
     }
   }
 
-  if (report.valid) {
-    console.log("Database Verification Passed ✅");
-  } else {
+  if (!report.valid) {
     console.error("Database Verification Failed ❌", report.errors);
     if (report.suggestions.length > 0) {
       console.info("Suggestions:", report.suggestions);

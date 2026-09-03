@@ -134,20 +134,16 @@ const OrganizerScalesPage = () => {
     try {
       const cpfsToUpdate = [...new Set(savedAllocations.filter(allocation => allocation.cpf && allocation.allocatedArea && allocation.allocatedArea !== 'Pendente de Alocação Manual').map(allocation => allocation.cpf))];
       if (cpfsToUpdate.length === 0) {
-        console.log('[updateWorkScheduleForAllocations] No CPFs to update');
         return {
           success: true,
           message: 'Nenhum CPF para atualizar'
         };
       }
-      console.log(`[updateWorkScheduleForAllocations] Updating scale_status for ${cpfsToUpdate.length} equipantes`);
 
       const result = await batchUpdateWorkScheduleStatus(cpfsToUpdate);
       if (result.success) {
         const totalProcessed = result.updated + result.alreadyUpdated;
         if (totalProcessed > 0) {
-          console.log(`[updateWorkScheduleForAllocations] Successfully updated ${result.updated} equipantes, ${result.alreadyUpdated} already updated`);
-
           if (result.updated > 0) {
             toast({
               title: "Status de Escala Atualizado",

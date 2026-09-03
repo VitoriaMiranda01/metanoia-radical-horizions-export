@@ -2,6 +2,16 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
@@ -52,6 +62,7 @@ const AcampantePage = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const handleVerificationComplete = (result) => {
     if (result.cpf) setFormData(prev => ({ ...prev, cpf: result.cpf }));
@@ -86,14 +97,22 @@ const AcampantePage = () => {
   const handleSelectChange = (name, value) => setFormData(prev => ({ ...prev, [name]: value }));
   const handleCheckboxChange = (name, checked) => setFormData(prev => ({ ...prev, [name]: checked }));
 
-  const handleSubmit = async (e) => {
+  // So valida e abre o dialogo de confirmacao -- o envio de verdade so
+  // acontece se o usuario confirmar em confirmarEnvio, abaixo. Pedido
+  // explicito da usuaria pra evitar envio acidental, ja que a inscricao
+  // nao pode mais ser editada depois de enviada.
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
     if (!formData.termoAceito) {
       toast({ title: "Atenção", description: "Aceite os termos para continuar.", variant: "destructive" });
-      setLoading(false);
       return;
     }
+    setShowConfirmDialog(true);
+  };
+
+  const confirmarEnvio = async () => {
+    setShowConfirmDialog(false);
+    setLoading(true);
 
     try {
       let submissionData = { ...formData };
@@ -186,7 +205,7 @@ const AcampantePage = () => {
                   <TermosResponsabilidade formData={formData} handleChange={handleChange} handleCheckboxChange={handleCheckboxChange} />
 
                   <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4" disabled={loading}>
-                    {loading ? <RefreshCw className="animate-spin mr-2" /> : "Prosseguir para Pagamento"}
+                    {loading ? <RefreshCw className="animate-spin mr-2" /> : "Enviar Inscrição"}
                   </Button>
                 </form>
               </CardContent>
@@ -204,6 +223,30 @@ const AcampantePage = () => {
             <Button variant="outline" className="mt-4" onClick={() => navigate('/')}>Voltar para o Início</Button>
           </motion.div>
         )}
+
+        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <AlertDialogContent className="bg-zinc-900 border border-gray-800 text-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Enviar inscrição</AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-400">
+                Certeza que deseja enviar a inscrição?
+                <br />
+                Não haverá como editar as informações após o envio.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmarEnvio}
+                className="bg-blue-600 hover:bg-blue-700 text-white border-none"
+              >
+                Enviar Inscrição
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
       </motion.div>
     </Layout>

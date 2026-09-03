@@ -2,6 +2,16 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
@@ -134,6 +144,7 @@ const EquipantePage = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const handleVerificationComplete = (result) => {
     if (result.semCpf) setFormData(prev => ({ ...prev, semCpf: true }));
@@ -176,9 +187,12 @@ const EquipantePage = () => {
   const handleSelectChange = (name, value) => setFormData(prev => ({ ...prev, [name]: value }));
   const handleCheckboxChange = (name, checked) => setFormData(prev => ({ ...prev, [name]: checked }));
 
-  const handleSubmit = async (e) => {
+  // So valida e abre o dialogo de confirmacao -- o envio de verdade so
+  // acontece se o usuario confirmar em confirmarEnvio, abaixo. Pedido
+  // explicito da usuaria pra evitar envio acidental, ja que a inscricao
+  // nao pode mais ser editada depois de enviada.
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
 
     // As 3 opções de área de trabalho agora são obrigatórias: sem isso, a
     // futura alocação automática (feita na aprovação, seguindo a ordem de
@@ -189,9 +203,15 @@ const EquipantePage = () => {
         description: "Selecione suas 3 opções de área de trabalho (1ª, 2ª e 3ª) antes de continuar.",
         variant: "destructive"
       });
-      setLoading(false);
       return;
     }
+
+    setShowConfirmDialog(true);
+  };
+
+  const confirmarEnvio = async () => {
+    setShowConfirmDialog(false);
+    setLoading(true);
 
     try {
       let submissionData = { ...formData };
@@ -302,7 +322,7 @@ const EquipantePage = () => {
                 <DadosComplementaresEquipante formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} />
                 <AreasDeTrabalho formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg" disabled={loading}>
-                  {loading ? <RefreshCw className="animate-spin mr-2" /> : "Salvar e Continuar"}
+                  {loading ? <RefreshCw className="animate-spin mr-2" /> : "Enviar Inscrição"}
                 </Button>
               </form>
             </CardContent>
@@ -327,6 +347,30 @@ const EquipantePage = () => {
             <Button variant="outline" className="mt-4" onClick={() => navigate('/')}>Voltar para o Início</Button>
           </motion.div>
         )}
+
+        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <AlertDialogContent className="bg-zinc-900 border border-gray-800 text-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Enviar inscrição</AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-400">
+                Certeza que deseja enviar a inscrição?
+                <br />
+                Não haverá como editar as informações após o envio.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmarEnvio}
+                className="bg-blue-600 hover:bg-blue-700 text-white border-none"
+              >
+                Enviar Inscrição
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </motion.div>
     </Layout>
   );

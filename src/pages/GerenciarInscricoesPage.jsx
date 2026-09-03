@@ -23,7 +23,7 @@ import GruposTrailhaCards from '@/components/gerenciar/GruposTrailhaCards';
 import GruposTrailhaModal from '@/components/gerenciar/GruposTrailhaModal';
 import AcampantesStatsCards from '@/components/gerenciar/AcampantesStatsCards';
 import AcampantesDetailModal from '@/components/gerenciar/AcampantesDetailModal';
-import { deleteAcampante, getAcampantes, countAcampantes } from '@/services/acampantesService';
+import { deleteAcampante, getAcampantes, countAcampantes, realocarGrupoTrailha } from '@/services/acampantesService';
 import { fetchEquipantesInscritos, countEquipantesInscritos } from '@/services/equipantesService';
 import { groupAcampantesByTrilha } from '@/utils/gruposTrailha';
 
@@ -220,6 +220,40 @@ const GerenciarInscricoesPage = () => {
     setIsGroupModalOpen(true);
   };
 
+  // Realocacao manual de grupo de trilha, chamada pelo botao "Realocar" no
+  // modal de um grupo (GruposTrailhaModal.jsx). Depois de salvar, busca a
+  // lista de acampantes de novo (mesmo padrao ja usado em
+  // confirmarDesativacaoAcampante) e atualiza o snapshot do grupo aberto no
+  // modal -- selectedGroup.data e uma copia tirada no momento do clique no
+  // card, entao nao acompanha sozinha as mudancas em acampantesList.
+  const handleRealocarGrupoTrailha = async (acampante, novoGrupo) => {
+    const result = await realocarGrupoTrailha(acampante.id, novoGrupo);
+
+    if (result.success) {
+      toast({
+        title: "Acampante realocado",
+        description: `${acampante.nome} foi movido para o grupo ${novoGrupo}.`,
+      });
+
+      const data = await getAcampantes();
+      setAcampantesList(data || []);
+
+      setSelectedGroup(prev => {
+        if (!prev) return prev;
+        const gruposAtualizados = groupAcampantesByTrilha(data || []);
+        return { name: prev.name, data: gruposAtualizados[prev.name] || [] };
+      });
+    } else {
+      toast({
+        title: "Erro ao realocar",
+        description: result.error || "Não foi possível realocar o acampante.",
+        variant: "destructive",
+      });
+    }
+
+    return result;
+  };
+
   const handleStatsCardClick = (title, data) => {
     setStatsModalTitle(title);
     setStatsModalData(data);
@@ -315,6 +349,7 @@ const GerenciarInscricoesPage = () => {
               onClose={() => setIsGroupModalOpen(false)}
               groupName={selectedGroup.name}
               groupData={selectedGroup.data}
+              onRealocar={handleRealocarGrupoTrailha}
             />
           )}
 

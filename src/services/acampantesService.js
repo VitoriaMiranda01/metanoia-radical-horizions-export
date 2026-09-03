@@ -83,3 +83,29 @@ export const escolherGrupoTrailha = async (sexo) => {
 export const countAcampantes = async () => {
   return supabase.from('acampantes').select('*', { count: 'exact', head: true });
 };
+
+// Realoca um acampante ja aprovado pra outro grupo de trilha (organizador
+// corrige manualmente pela tela de Gerenciar Inscricoes -- ex: quer colocar
+// amigos/familia no mesmo grupo). Diferente da alocacao de equipante em
+// area de trabalho, os grupos de trilha nao tem capacidade maxima fixa
+// (escolherGrupoTrailha, acima, so tenta balancear por sexo no momento do
+// cadastro) -- por isso aqui e so um UPDATE direto na coluna
+// grupo_trailha, sem trava de concorrencia/capacidade no banco.
+export const realocarGrupoTrailha = async (acampanteId, novoGrupo) => {
+  if (!acampanteId || !novoGrupo) {
+    return { success: false, error: 'Acampante ou grupo não informados' };
+  }
+
+  try {
+    const { error } = await supabase
+      .from('acampantes')
+      .update({ grupo_trailha: novoGrupo })
+      .eq('id', acampanteId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('acampantesApi - realocarGrupoTrailha', error, { acampanteId, novoGrupo });
+    return { success: false, error: error.message || 'Erro ao tentar realocar grupo de trilha.' };
+  }
+};

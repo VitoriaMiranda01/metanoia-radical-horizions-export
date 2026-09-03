@@ -8,10 +8,20 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCPF } from '@/utils/formatters';
-import { User, Download } from 'lucide-react';
+import { User, Download, Loader2 } from 'lucide-react';
+import { WORK_AREAS } from '@/constants/workAreas';
 
-const EquipantesGridDisplay = ({ equipantes = [], areaName, onExport }) => {
+const EquipantesGridDisplay = ({
+  equipantes = [],
+  areaName,
+  onExport,
+  onRealocar,
+  realocarAreaChoice = {},
+  onRealocarAreaChoiceChange,
+  realocando = {}
+}) => {
   if (!equipantes || equipantes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-gray-500 bg-white/5 rounded-md border border-white/5 border-dashed">
@@ -41,9 +51,10 @@ const EquipantesGridDisplay = ({ equipantes = [], areaName, onExport }) => {
         <Table>
           <TableHeader className="bg-white/5 hover:bg-white/5">
             <TableRow className="border-white/10 hover:bg-transparent">
-              <TableHead className="text-gray-300 w-[45%]">Nome</TableHead>
-              <TableHead className="text-gray-300 w-[30%] hidden sm:table-cell">CPF</TableHead>
-              <TableHead className="text-gray-300 w-[25%] hidden md:table-cell">Igreja</TableHead>
+              <TableHead className="text-gray-300 w-[30%]">Nome</TableHead>
+              <TableHead className="text-gray-300 w-[18%] hidden sm:table-cell">CPF</TableHead>
+              <TableHead className="text-gray-300 w-[17%] hidden md:table-cell">Igreja</TableHead>
+              {onRealocar && <TableHead className="text-gray-300 w-[35%]">Ação</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -64,6 +75,34 @@ const EquipantesGridDisplay = ({ equipantes = [], areaName, onExport }) => {
                 <TableCell className="text-gray-400 hidden md:table-cell text-sm">
                   {eq.igreja || '-'}
                 </TableCell>
+                {onRealocar && (
+                  <TableCell>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <Select
+                        value={realocarAreaChoice[eq.id] || ''}
+                        onValueChange={(val) => onRealocarAreaChoiceChange(eq.id, val)}
+                      >
+                        <SelectTrigger className="h-8 w-full sm:w-[180px] bg-black/40 border-white/20 text-white text-xs">
+                          <SelectValue placeholder="Nova área..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {WORK_AREAS.filter(area => area !== areaName).map(area => (
+                            <SelectItem key={area} value={area}>{area}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onRealocar(eq.id, eq.nome, areaName)}
+                        disabled={!realocarAreaChoice[eq.id] || realocando[eq.id]}
+                        className="h-8 text-xs bg-white/5 border-white/20 text-white hover:bg-white/10 whitespace-nowrap"
+                      >
+                        {realocando[eq.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Realocar'}
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

@@ -10,7 +10,7 @@ import { fetchLimitesAreas, saveLimiteAreaComGenero, getLimiteAreaComGenero } fr
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { exportEquipantesByArea, exportAllEquipantes } from '@/utils/excelExport';
 import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
-import { alocarEquipanteManualmente } from '@/services/equipanteAllocationService';
+import { alocarEquipanteManualmente, realocarEquipante } from '@/services/equipanteAllocationService';
 import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
@@ -246,6 +246,44 @@ const OrganizerScalesPage = () => {
     }
   };
 
+  // Realocacao de quem JA esta alocado (diferente de handleManualAllocate,
+  // que so serve pra lista de espera). Reaproveita os mesmos states
+  // manualAreaChoice/manualAllocating (chaveados por equipanteId) -- nao ha
+  // colisao possivel entre um id da lista de espera e um id ja alocado, e
+  // assim evita duplicar state so pra isso.
+  const handleRealocar = async (equipanteId, nomeEquipante, areaAtual) => {
+    const novaArea = manualAreaChoice[equipanteId];
+    if (!novaArea) {
+      toast({ title: "Selecione a nova área", variant: "destructive" });
+      return;
+    }
+    setManualAllocating(prev => ({ ...prev, [equipanteId]: true }));
+    try {
+      const resultado = await realocarEquipante(equipanteId, novaArea);
+      if (resultado.success) {
+        toast({
+          title: "Realocado com sucesso",
+          description: `${nomeEquipante} foi movido de ${areaAtual} para ${novaArea}.`,
+          className: "bg-green-600 text-white"
+        });
+        setManualAreaChoice(prev => {
+          const next = { ...prev };
+          delete next[equipanteId];
+          return next;
+        });
+        fetchBackgroundData(false);
+      } else {
+        toast({
+          title: "Não foi possível realocar",
+          description: resultado.error,
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setManualAllocating(prev => ({ ...prev, [equipanteId]: false }));
+    }
+  };
+
   const handleExportArea = (areaName, areaEquipantes) => {
     try {
       exportEquipantesByArea(areaName, areaEquipantes);
@@ -389,7 +427,7 @@ const OrganizerScalesPage = () => {
                 </div>
                 
                 <div className="p-4 max-h-[400px] overflow-y-auto">
-                  {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={areaEquipantes} areaName={area} onExport={handleExportArea} />}
+                  {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={areaEquipantes} areaName={area} onExport={handleExportArea} onRealocar={handleRealocar} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={(id, val) => setManualAreaChoice(prev => ({ ...prev, [id]: val }))} realocando={manualAllocating} />}
                 </div>
               </div>;
         })}

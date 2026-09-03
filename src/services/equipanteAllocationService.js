@@ -108,6 +108,41 @@ export const liberarVagaERealocar = async (equipanteId) => {
   }
 };
 
+// Realocacao: organizador troca a area de um equipante que JA esta alocado
+// (diferente de alocarEquipanteManualmente, que so serve pra quem ainda esta
+// na lista de espera -- a funcao do banco recusa explicitamente qualquer
+// equipante que ja tenha linha em escalas). A funcao do banco
+// (realocar_equipante, ver database/migrations/schema-update-20260903-
+// realocar-equipante.sql) confere vaga na area de destino (capacidade +
+// limite por sexo) com a mesma trava de concorrencia das outras alocacoes,
+// e so entao atualiza a linha existente em escalas (mesma linha, so troca
+// area_alocada -- nao apaga e recria).
+export const realocarEquipante = async (equipanteId, novaArea) => {
+  if (!equipanteId || !novaArea) {
+    return { success: false, error: 'Equipante ou área não informados' };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('realocar_equipante', {
+      p_equipante_id: equipanteId,
+      p_nova_area: novaArea
+    });
+
+    if (error) throw error;
+
+    const resultado = Array.isArray(data) ? data[0] : data;
+
+    if (!resultado?.sucesso) {
+      return { success: false, error: resultado?.mensagem || 'Não foi possível realocar' };
+    }
+
+    return { success: true, areaAnterior: resultado?.area_anterior || null };
+  } catch (error) {
+    console.error('equipanteAllocationApi - realocarEquipante', error, { equipanteId, novaArea });
+    return { success: false, error: error.message || 'Erro ao tentar realocar equipante' };
+  }
+};
+
 // Lista de espera: equipantes aprovados que ainda nao tem linha em escalas.
 // Calculada ao vivo (nao persistida em lugar nenhum) a partir de duas
 // consultas que ja existiam (fetchApprovedEquipantes/fetchAllAllocations,

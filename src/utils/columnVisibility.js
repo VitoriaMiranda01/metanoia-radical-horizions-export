@@ -2,7 +2,12 @@ export const COLUMN_DEFINITIONS = {
   equipantes: [
     // Identificação
     { key: 'cpf', label: 'CPF', group: 'Pessoal' },
-    { key: 'telefone', label: 'Telefone', group: 'Contato' },
+    // "Telefone" aponta pra whatsapp -- nao existe coluna "telefone" na
+    // tabela equipantes (o telefone informado no formulario vira o campo
+    // whatsapp). Mesma correcao que ja tinha sido feita aqui pra
+    // acampantes; faltava replicar pra equipantes (ate 2026-09-03 essa
+    // coluna sempre aparecia vazia).
+    { key: 'whatsapp', label: 'Telefone', group: 'Contato' },
     { key: 'idade', label: 'Idade', group: 'Pessoal' },
     { key: 'sexo', label: 'Gênero', group: 'Pessoal' },
 
@@ -30,7 +35,9 @@ export const COLUMN_DEFINITIONS = {
   ],
   acampantes: [
     // Identificação
-    { key: 'email', label: 'Email', group: 'Contato' },
+    // "Email" (que existia aqui) foi removido em 2026-09-03: a tabela
+    // acampantes tem a coluna, mas nenhum formulario atual (equipante ou
+    // acampante) pede email, entao a opcao sempre aparecia vazia.
     { key: 'cpf', label: 'CPF', group: 'Pessoal' },
     { key: 'whatsapp', label: 'WhatsApp', group: 'Contato' },
     { key: 'idade', label: 'Idade', group: 'Pessoal' },
@@ -44,6 +51,10 @@ export const COLUMN_DEFINITIONS = {
 
     // Acampamento
     { key: 'igreja', label: 'Igreja', group: 'Eclesiástico' },
+    // cargo_igreja existe na tabela desde a migration schema-update-
+    // 20260901c (o formulario de acampante ja pergunta isso); a opcao so
+    // nao tinha sido adicionada aqui ainda -- adicionada em 2026-09-03.
+    { key: 'cargo_igreja', label: 'Função na Igreja', group: 'Eclesiástico' },
     { key: 'grupo_trailha', label: 'Grupo de Trilha', group: 'Acampamento' },
     { key: 'tamanho_camisa', label: 'Camiseta', group: 'Acampamento' },
 

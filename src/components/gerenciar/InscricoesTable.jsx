@@ -224,7 +224,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
   };
 
   return (
-    <Card className="glass-effect border-white/20">
+    <Card className="bg-black/60 glass-effect border-white/10">
       <CardHeader>
         <div className="flex flex-col space-y-4">
           <div className="flex justify-between items-center flex-wrap gap-4">
@@ -334,7 +334,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
             </div>
 
             {/* Desktop View - Table (md+) */}
-            <div className="hidden md:block overflow-x-auto relative rounded-md border border-white/10">
+            <div className="hidden md:block overflow-x-auto relative">
               <Table>
                 <TableHeader className="bg-white/5">
                   <TableRow className="hover:bg-transparent border-white/10">

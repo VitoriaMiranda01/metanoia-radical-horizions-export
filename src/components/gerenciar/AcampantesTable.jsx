@@ -228,7 +228,7 @@ const AcampantesTable = ({
   };
 
   return (
-    <Card className="glass-effect border-white/20">
+    <Card className="bg-black/60 glass-effect border-white/10">
       <CardHeader className="p-4 md:p-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-4">
           <div>
@@ -348,7 +348,7 @@ const AcampantesTable = ({
             </div>
 
             {/* Desktop View (Table) */}
-            <div className="hidden md:block overflow-x-auto relative rounded-md border border-white/10 scroll-smooth">
+            <div className="hidden md:block overflow-x-auto relative scroll-smooth">
               <Table>
                 <TableHeader className="bg-white/5">
                   <TableRow className="hover:bg-transparent border-white/10">

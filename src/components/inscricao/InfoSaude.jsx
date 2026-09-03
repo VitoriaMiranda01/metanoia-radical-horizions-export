@@ -131,26 +131,31 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
           </div>
         )}
 
-        {/* Gravidez */}
-        <div className="space-y-2">
-          <Label className="text-white block mb-2">Está grávida? *</Label>
-          <div className="flex space-x-6">
-            {['SIM', 'NÃO'].map((opt) => (
-              <label key={`gravida-${opt}`} className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="estaGravida"
-                  value={opt}
-                  checked={isChecked(formData.estaGravida, opt)}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-white/10 border-white/30"
-                  required
-                />
-                <span className="text-white">{opt}</span>
-              </label>
-            ))}
+        {/* Gravidez (a pedido da usuaria, 2026-09-03: removida do formulario
+            de equipante -- a tabela equipantes nao tem coluna esta_gravida,
+            entao a resposta so era descartada -- e, no de acampante, so
+            aparece quando o sexo informado for Feminino). */}
+        {!isEquipante && formData.sexo === 'Feminino' && (
+          <div className="space-y-2">
+            <Label className="text-white block mb-2">Está grávida? *</Label>
+            <div className="flex space-x-6">
+              {['SIM', 'NÃO'].map((opt) => (
+                <label key={`gravida-${opt}`} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="estaGravida"
+                    value={opt}
+                    checked={isChecked(formData.estaGravida, opt)}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-white/10 border-white/30"
+                    required
+                  />
+                  <span className="text-white">{opt}</span>
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </FormSection>
   );

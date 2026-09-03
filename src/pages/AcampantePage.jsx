@@ -235,14 +235,14 @@ const AcampantePage = () => {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
+              <AlertDialogCancel className="bg-red-600 hover:bg-red-700 text-white border-none">
                 Cancelar
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={confirmarEnvio}
-                className="bg-blue-600 hover:bg-blue-700 text-white border-none"
+                className="bg-green-600 hover:bg-green-700 text-white border-none"
               >
-                Enviar Inscrição
+                Confirmar
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

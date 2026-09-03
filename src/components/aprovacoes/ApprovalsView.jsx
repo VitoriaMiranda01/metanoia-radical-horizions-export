@@ -5,6 +5,7 @@ import AprovacoesStatsCards from '@/components/aprovacoes/AprovacoesStatsCards';
 import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
 import AprovacoesTable from '@/components/aprovacoes/AprovacoesTable';
 import { fetchEquipantesRaw, updateEquipanteStatus } from '@/services/equipantesService';
+import { useAuth } from '@/contexts/AuthContext';
 import { alocarEquipanteAutomaticamente, liberarVagaERealocar } from '@/services/equipanteAllocationService';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
@@ -14,6 +15,7 @@ const ApprovalsView = ({
   showStatistics = true 
 }) => {
   const { toast } = useToast();
+  const { isParceiro, igrejaUser } = useAuth();
   const [inscricoes, setInscricoes] = useState([]);
   const [selectedInscricao, setSelectedInscricao] = useState(null);
   const [inscricaoParaCancelar, setInscricaoParaCancelar] = useState(null);
@@ -44,7 +46,7 @@ const ApprovalsView = ({
 
       if (error) throw error;
 
-      const mappedEquipantes = (data || []).map(e => ({
+      let mappedEquipantes = (data || []).map(e => ({
         ...e,
         tipo: 'equipante',
         telefone: e.whatsapp,
@@ -53,6 +55,20 @@ const ApprovalsView = ({
         motivacao: `Área desejada: ${e.area_trabalho_opcao1}`,
         experienciaAnterior: e.ja_trabalhou_equipe ? `Já trabalhou em: ${e.edicao_trabalhou || 'N/A'}` : 'Primeira vez na equipe'
       }));
+
+      // Parceiro (igreja logada) só vê as inscrições de equipante que
+      // marcaram a própria igreja no campo "Igreja que frequenta". O código
+      // de login da igreja (igrejaUser.codigo, ex: "01") é o mesmo número
+      // que prefixa cada nome em IGREJAS_PARCEIRAS (ex: "01 - A CASA DO
+      // MESTRE"), então a correspondência é por prefixo exato "<codigo> - ".
+      // Inscrições sem igreja informada (campo vazio — pergunta "Congrega em
+      // alguma igreja?" respondida NÃO) nunca batem com nenhum código e por
+      // isso nunca aparecem pra nenhum parceiro; só os organizadores (sem
+      // esse filtro) continuam vendo essas.
+      if (isParceiro && igrejaUser?.codigo) {
+        const prefixoIgreja = `${igrejaUser.codigo} - `;
+        mappedEquipantes = mappedEquipantes.filter(e => e.igreja && e.igreja.startsWith(prefixoIgreja));
+      }
 
       setInscricoes(mappedEquipantes);
     } catch (error) {

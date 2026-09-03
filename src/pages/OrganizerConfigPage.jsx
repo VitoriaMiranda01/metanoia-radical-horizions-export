@@ -570,23 +570,6 @@ const OrganizerConfigPage = () => {
                   </div>
                 </div>
 
-                <div className="pt-8 mt-4 border-t border-red-500/20 space-y-4">
-                  <h3 className="text-lg font-medium text-red-400 flex items-center space-x-2">
-                    <AlertCircle className="w-5 h-5" />
-                    <span>Ações de Risco</span>
-                  </h3>
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                      <h4 className="text-white font-medium mb-1">Resetar Inscrições de Equipantes</h4>
-                      <p className="text-sm text-gray-400">Marca todos os equipantes atuais como "não inscritos". Isso forçará todos a passarem pelo fluxo de inscrição novamente. Esta ação não pode ser desfeita.</p>
-                    </div>
-                    <Button onClick={() => setShowResetConfirmDialog(true)} variant="destructive" className="bg-red-600 hover:bg-red-700 text-white font-bold whitespace-nowrap">
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Resetar Inscrições
-                    </Button>
-                  </div>
-                </div>
-                
               </CardContent>
               <CardFooter className="bg-black/20 border-t border-white/10 pt-6">
                 <Button onClick={handleSaveAll} disabled={loadingConfig || isSavingAll} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 ml-auto">
@@ -778,6 +761,30 @@ const OrganizerConfigPage = () => {
                     </div>
                   </div>
                   <Switch checked={statusControl.acampantes} onCheckedChange={c => handleToggleInscriptionStatus('acampantes', c)} disabled={savingStatus} />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+            <Card className="glass-effect border-red-500/20 bg-black/40">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-red-400">
+                  <AlertCircle className="w-5 h-5" />
+                  <span>Ações de Risco</span>
+                </CardTitle>
+                <CardDescription className="text-gray-400">Ações irreversíveis. Use com cuidado.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="text-white font-medium mb-1">Resetar Inscrições de Equipantes</h4>
+                    <p className="text-sm text-gray-400">Marca todos os equipantes atuais como "não inscritos". Isso forçará todos a passarem pelo fluxo de inscrição novamente. Esta ação não pode ser desfeita.</p>
+                  </div>
+                  <Button onClick={() => setShowResetConfirmDialog(true)} variant="destructive" className="bg-red-600 hover:bg-red-700 text-white font-bold whitespace-nowrap">
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Resetar Inscrições
+                  </Button>
                 </div>
               </CardContent>
             </Card>

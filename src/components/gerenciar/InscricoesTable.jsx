@@ -336,10 +336,10 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
             {/* Desktop View - Table (md+) */}
             <div className="hidden md:block overflow-x-auto relative rounded-md border border-white/10">
               <Table>
-                <TableHeader className="bg-zinc-900-900/90 backdrop-blur supports-[backdrop-filter]:bg-zinc-900-900/50">
+                <TableHeader className="bg-white/5">
                   <TableRow className="hover:bg-transparent border-white/10">
                     {/* Fixed Name Column */}
-                    <TableHead className="min-w-[200px] h-12 sticky left-0 z-20 bg-zinc-900 border-r border-white/10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                    <TableHead className="min-w-[200px] h-12 sticky left-0 z-20 bg-neutral-950">
                       <ColumnHeader 
                         title="Nome" 
                         filterKey="nome" 
@@ -354,7 +354,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
                       if (colKey === 'nome') return null;
                       const def = getColDef(colKey);
                       return (
-                        <TableHead key={colKey} className="min-w-[150px] h-12 bg-zinc-900">
+                        <TableHead key={colKey} className="min-w-[150px] h-12">
                             <ColumnHeader 
                               title={def ? def.label : colKey} 
                               filterKey={colKey} 
@@ -366,7 +366,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
                       );
                     })}
 
-                        <TableHead className="text-white text-right h-12 sticky right-0 z-20 bg-zinc-900 border-l border-white/10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                        <TableHead className="text-white text-right h-12 sticky right-0 z-20 bg-neutral-950">
                         Ações
                     </TableHead>
                   </TableRow>
@@ -374,7 +374,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
                 <TableBody>
                   {filteredData.map((item) => (
                     <TableRow key={item.id} className="hover:bg-white/5 transition-colors border-white/10 group">
-                      <TableCell className="text-white font-medium sticky left-0 z-10 bg-zinc-900 group-hover:bg-zinc-900-900 border-r border-white/10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                      <TableCell className="text-white font-medium sticky left-0 z-10 bg-neutral-950 group-hover:bg-neutral-900">
                           {item.nome}
                       </TableCell>
 
@@ -387,7 +387,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
                         );
                       })}
                       
-                      <TableCell className="sticky right-0 z-10 bg-zinc-900 group-hover:bg-zinc-900-900 border-l border-white/10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                      <TableCell className="sticky right-0 z-10 bg-neutral-950 group-hover:bg-neutral-900">
                         <div className="flex justify-end space-x-2">
                           <Button variant="ghost" size="sm" onClick={() => onSelect(item)} className="hover:bg-blue-500/20 text-blue-300 transition-colors">
                             <Eye className="w-4 h-4" />

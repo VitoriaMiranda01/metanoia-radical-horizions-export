@@ -211,7 +211,7 @@ const AprovacoesTable = ({
   const getColDef = (key) => COLUMN_DEFINITIONS[tableType].find(c => c.key === key);
 
   return (
-    <Card className="glass-effect border-white/20">
+    <Card className="bg-black/60 glass-effect border-white/10">
       <CardHeader>
         <div className="flex flex-col space-y-4">
           <div className="flex justify-between items-center flex-wrap gap-4">
@@ -296,11 +296,11 @@ const AprovacoesTable = ({
             </div>
 
             {/* Desktop View - Table (md+) */}
-            <div className="hidden md:block overflow-x-auto relative rounded-md border border-white/10 max-h-[600px]">
+            <div className="hidden md:block overflow-x-auto relative max-h-[600px]">
               <Table>
                 <TableHeader className="bg-slate-900/90 backdrop-blur supports-[backdrop-filter]:bg-slate-900/50 sticky top-0 z-20">
                   <TableRow className="hover:bg-transparent border-white/10">
-                    <TableHead className="min-w-[200px] h-12 sticky left-0 z-20 bg-zinc-900 border-r border-white/10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                    <TableHead className="min-w-[200px] h-12 sticky left-0 z-20 bg-neutral-900">
                        <ColumnHeader 
                         title="Nome" 
                         filterKey="nome" 
@@ -326,7 +326,7 @@ const AprovacoesTable = ({
                       );
                     })}
                     
-                    <TableHead className="text-white text-right h-12 sticky right-0 z-20 bg-zinc-900 border-l border-white/10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                    <TableHead className="text-white text-right h-12 sticky right-0 z-20 bg-neutral-900">
                       Ações
                     </TableHead>
                   </TableRow>
@@ -349,7 +349,7 @@ const AprovacoesTable = ({
                   ) : (
                     filteredData.map((inscricao) => (
                       <TableRow key={inscricao.id} className="hover:bg-white/5 transition-colors border-white/10 group">
-                        <TableCell className="text-white font-medium sticky left-0 z-10 bg-zinc-900 group-hover:bg-zinc-900 border-r border-white/10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                        <TableCell className="text-white font-medium sticky left-0 z-10 bg-black group-hover:bg-neutral-900">
                             {inscricao.nome}
                         </TableCell>
                         
@@ -362,7 +362,7 @@ const AprovacoesTable = ({
                           );
                         })}
 
-                        <TableCell className="sticky right-0 z-10 bg-zinc-900 group-hover:bg-zinc-900 border-l border-white/10 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                        <TableCell className="sticky right-0 z-10 bg-black group-hover:bg-neutral-900">
                           <div className="flex justify-end space-x-2">
                             <Button variant="ghost" size="sm" onClick={() => onSelect(inscricao)} className="hover:bg-blue-500/20 text-blue-300 transition-colors">
                               <Eye className="w-4 h-4" />

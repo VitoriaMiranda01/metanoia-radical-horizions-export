@@ -48,6 +48,7 @@ const formatarData = (dataString) => {
 const getColumnValue = (item, key) => {
   if (key === 'endereco_completo') return formatEnderecoCompleto(item);
   if (key === 'area_trabalho') return formatAreaTrabalho(item);
+  if (key === 'data_pagamento') return formatarData(item[key]);
   if (typeof item[key] === 'boolean') return item[key] ? 'Sim' : 'Não';
   return String(item[key] || '');
 };

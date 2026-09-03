@@ -10,6 +10,7 @@ export const COLUMN_DEFINITIONS = {
     { key: 'whatsapp', label: 'Telefone', group: 'Contato' },
     { key: 'idade', label: 'Idade', group: 'Pessoal' },
     { key: 'sexo', label: 'Gênero', group: 'Pessoal' },
+    { key: 'autorizacao_imagem', label: 'Autorização de Imagem', group: 'Pessoal' },
 
     // Endereço (campo calculado: junta endereco + numero + complemento + bairro)
     { key: 'endereco_completo', label: 'Endereço Completo', group: 'Endereço' },
@@ -17,20 +18,42 @@ export const COLUMN_DEFINITIONS = {
     { key: 'estado', label: 'Estado', group: 'Endereço' },
     { key: 'cep', label: 'CEP', group: 'Endereço' },
 
+    // Saúde (perguntado no formulario de equipante desde sempre, so nao
+    // estava disponivel aqui no seletor -- adicionado em 2026-09-03)
+    { key: 'tem_problema_saude', label: 'Tem Problema de Saúde', group: 'Saúde' },
+    { key: 'tem_restricao_alimentar', label: 'Tem Restrição Alimentar', group: 'Saúde' },
+
     // Eclesiástico
     { key: 'igreja', label: 'Igreja', group: 'Eclesiástico' },
     { key: 'cargo_igreja', label: 'Função na Igreja', group: 'Eclesiástico' },
+    { key: 'esta_afastado', label: 'Congrega em Igreja', group: 'Eclesiástico' },
+    { key: 'pastor_nome', label: 'Nome do Pastor', group: 'Eclesiástico' },
+    { key: 'frequenta_ebd', label: 'Frequenta EBD', group: 'Eclesiástico' },
+    { key: 'frequenta_grupo_cuidado', label: 'Frequenta Grupo de Cuidado', group: 'Eclesiástico' },
+    { key: 'voce_canta', label: 'Canta', group: 'Eclesiástico' },
+    { key: 'toca_instrumento', label: 'Toca Instrumento', group: 'Eclesiástico' },
 
     // Serviço (campo calculado: junta area_trabalho_opcao1/2/3)
     { key: 'area_trabalho', label: 'Área de Trabalho', group: 'Serviço' },
+    { key: 'area_trabalho_extra', label: 'Área de Trabalho Extra', group: 'Serviço' },
 
-    // Emergência
-    { key: 'contato_emergencia_nome', label: 'Contato Emergência', group: 'Emergência' },
-    { key: 'contato_emergencia_telefone', label: 'Tel. Emergência', group: 'Emergência' },
+    // Dados do Equipante no Projeto (seção "Dados do Equipante no Projeto" do formulário)
+    { key: 'familiar_trabalhando', label: 'Familiar Trabalhando no Projeto', group: 'Projeto' },
+    { key: 'parentesco', label: 'Parentesco c/ Acampante', group: 'Projeto' },
+    { key: 'familiar_nome', label: 'Nome do Familiar/Conhecido', group: 'Projeto' },
+    { key: 'qual_radical_acampante', label: 'Qual Radical Fez como Acampante', group: 'Projeto' },
+    { key: 'numero_edicao_participou', label: 'Nº Edição que Participou', group: 'Projeto' },
+    { key: 'ja_trabalhou_equipe', label: 'Já Trabalhou em Equipe', group: 'Projeto' },
+    { key: 'edicao_trabalhou', label: 'Edição que Trabalhou', group: 'Projeto' },
 
     // Status
+    // "Contato Emergência" / "Tel. Emergência" foram removidos daqui em
+    // 2026-09-03: a tabela equipantes tem essas colunas, mas o formulário
+    // de equipante (diferente do de acampante) não tem uma seção que
+    // pergunte isso -- sempre apareciam vazias.
     { key: 'status_pagamento', label: 'Status Pagamento', group: 'Sistema' },
     { key: 'metodo_pagamento', label: 'Método Pagamento', group: 'Sistema' },
+    { key: 'data_pagamento', label: 'Data do Pagamento', group: 'Sistema' },
     { key: 'status', label: 'Status', group: 'Sistema' }
   ],
   acampantes: [
@@ -42,6 +65,7 @@ export const COLUMN_DEFINITIONS = {
     { key: 'whatsapp', label: 'WhatsApp', group: 'Contato' },
     { key: 'idade', label: 'Idade', group: 'Pessoal' },
     { key: 'sexo', label: 'Gênero', group: 'Pessoal' },
+    { key: 'autorizacao_imagem', label: 'Autorização de Imagem', group: 'Pessoal' },
 
     // Endereço (campo calculado: junta endereco + numero + complemento + bairro)
     { key: 'endereco_completo', label: 'Endereço Completo', group: 'Endereço' },
@@ -55,23 +79,37 @@ export const COLUMN_DEFINITIONS = {
     // 20260901c (o formulario de acampante ja pergunta isso); a opcao so
     // nao tinha sido adicionada aqui ainda -- adicionada em 2026-09-03.
     { key: 'cargo_igreja', label: 'Função na Igreja', group: 'Eclesiástico' },
+    { key: 'esta_afastado', label: 'Congrega em Igreja', group: 'Eclesiástico' },
+    { key: 'pastor_nome', label: 'Nome do Pastor', group: 'Eclesiástico' },
+    { key: 'admin_responsavel', label: 'Igreja Responsável pela Inscrição', group: 'Eclesiástico' },
     { key: 'grupo_trailha', label: 'Grupo de Trilha', group: 'Acampamento' },
     { key: 'tamanho_camisa', label: 'Camiseta', group: 'Acampamento' },
 
     // Saúde
+    { key: 'tem_problema_saude', label: 'Tem Problema de Saúde', group: 'Saúde' },
     { key: 'condicoes_medicas', label: 'Condições Médicas', group: 'Saúde' },
+    { key: 'usa_medicamento', label: 'Usa Medicamento', group: 'Saúde' },
     { key: 'medicamentos', label: 'Medicamentos', group: 'Saúde' },
+    { key: 'tem_restricao_alimentar', label: 'Tem Restrição Alimentar', group: 'Saúde' },
     { key: 'restricoes_alimentares', label: 'Restrições Alim.', group: 'Saúde' },
+    { key: 'esta_gravida', label: 'Está Grávida', group: 'Saúde' },
 
     // Emergência
     { key: 'contato_emergencia_nome', label: 'Contato Emergência', group: 'Emergência' },
     { key: 'contato_emergencia_telefone', label: 'Tel. Emergência', group: 'Emergência' },
 
+    // Quem Indicou e Conhecidos (seção "Quem Indicou e Conhecidos" do formulário)
+    { key: 'quem_indicou_nome', label: 'Nome de Quem Indicou', group: 'Indicação' },
+    { key: 'quem_indicou_telefone', label: 'Telefone de Quem Indicou', group: 'Indicação' },
+    { key: 'conhecido_no_projeto', label: 'Conhecido no Projeto', group: 'Indicação' },
+    { key: 'nome_familiar_conhecido', label: 'Nome do Familiar/Conhecido', group: 'Indicação' },
+
     // Status (removido em 2026-09-01 a pedido da usuaria -- coluna "status"
     // nao aparece mais como opcao pra acampantes; continua existindo pra
     // equipantes, acima)
     { key: 'status_pagamento', label: 'Status Pagamento', group: 'Sistema' },
-    { key: 'metodo_pagamento', label: 'Método Pagamento', group: 'Sistema' }
+    { key: 'metodo_pagamento', label: 'Método Pagamento', group: 'Sistema' },
+    { key: 'data_pagamento', label: 'Data do Pagamento', group: 'Sistema' }
   ]
 };
 

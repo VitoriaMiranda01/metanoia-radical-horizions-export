@@ -51,6 +51,9 @@ const getColumnValue = (item, filterKey) => {
   if (filterKey === 'area_trabalho') {
     return formatAreaTrabalho(item);
   }
+  if (filterKey === 'data_pagamento') {
+    return formatarData(item[filterKey]);
+  }
   if (typeof item[filterKey] === 'boolean') {
     return item[filterKey] ? 'Sim' : 'Não';
   }

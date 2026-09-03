@@ -32,6 +32,9 @@ const getColumnValue = (item, filterKey) => {
   if (filterKey === 'endereco_completo') {
     return formatEnderecoCompleto(item);
   }
+  if (filterKey === 'data_pagamento') {
+    return formatarData(item[filterKey]);
+  }
   if (typeof item[filterKey] === 'boolean') {
     return item[filterKey] ? 'Sim' : 'Não';
   }

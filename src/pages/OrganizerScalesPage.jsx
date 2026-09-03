@@ -323,9 +323,10 @@ const OrganizerScalesPage = () => {
 
   // Botao "Alocar Áreas Especiais": compara os CPFs configurados em
   // Configuracoes (uma das 3 areas especiais -- Guia, Inimigo, Espirito
-  // Santo) com os equipantes aprovados e realoca quem bater, da area em
-  // que esta hoje pra area especial configurada. Toda a logica de
-  // comparacao/decisao mora em alocarAreasEspeciaisPorCpf
+  // Santo) com os equipantes aprovados. Quem ja tem area, realoca da area
+  // atual pra area especial configurada; quem ainda esta na lista de
+  // espera (aprovado, sem area nenhuma), aloca direto na area especial.
+  // Toda a logica de comparacao/decisao mora em alocarAreasEspeciaisPorCpf
   // (equipanteAllocationService.js); aqui so busca os dados de entrada,
   // chama a funcao e traduz o resultado num toast pro organizador.
   const handleAlocarAreasEspeciais = async () => {
@@ -349,23 +350,25 @@ const OrganizerScalesPage = () => {
 
       const resultado = await alocarAreasEspeciaisPorCpf(cpfsPorArea, equipantesAprovados, allocationsAtuais);
 
+      const houveMudanca = resultado.movidos.length > 0 || resultado.alocadosDiretamente.length > 0;
+
       const partes = [];
       if (resultado.movidos.length > 0) partes.push(`${resultado.movidos.length} realocado(s)`);
+      if (resultado.alocadosDiretamente.length > 0) partes.push(`${resultado.alocadosDiretamente.length} alocado(s) direto na área especial (estavam na lista de espera)`);
       if (resultado.jaNaAreaCorreta.length > 0) partes.push(`${resultado.jaNaAreaCorreta.length} já estava(m) na área certa`);
-      if (resultado.aindaNaoAlocados.length > 0) partes.push(`${resultado.aindaNaoAlocados.length} aprovado(s) mas ainda sem alocação (serão movidos ao rodar de novo depois de alocados)`);
       if (resultado.naoEncontrados.length > 0) partes.push(`${resultado.naoEncontrados.length} CPF(s) não encontrado(s) entre os equipantes aprovados`);
-      if (resultado.falhas.length > 0) partes.push(`${resultado.falhas.length} falha(s) ao realocar (ex: área cheia)`);
+      if (resultado.falhas.length > 0) partes.push(`${resultado.falhas.length} falha(s) ao alocar/realocar (ex: área cheia)`);
 
-      const houveProblema = resultado.falhas.length > 0 && resultado.movidos.length === 0;
+      const houveProblema = resultado.falhas.length > 0 && !houveMudanca;
 
       toast({
-        title: resultado.movidos.length > 0 ? "Áreas especiais atualizadas" : "Nenhuma realocação feita",
+        title: houveMudanca ? "Áreas especiais atualizadas" : "Nenhuma alocação feita",
         description: partes.length > 0 ? partes.join(' · ') : "Nada a fazer.",
         variant: houveProblema ? "destructive" : undefined,
         className: houveProblema ? undefined : "bg-blue-600 text-white border-none"
       });
 
-      if (resultado.movidos.length > 0) {
+      if (houveMudanca) {
         fetchBackgroundData(false);
       }
     } catch (error) {

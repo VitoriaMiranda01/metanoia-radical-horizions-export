@@ -158,18 +158,20 @@ export const realocarEquipante = async (equipanteId, novaArea) => {
 //   - se ja esta alocado NA PROPRIA area especial, nao faz nada (conta
 //     como "ja estava correto", nao e erro);
 //   - se o equipante ainda nao tem nenhuma alocacao (esta na lista de
-//     espera), esta acao NAO mexe nele -- "realocar" pressupoe uma area
-//     de origem. Ele so sera movido numa proxima execucao deste botao,
-//     depois de ganhar uma alocacao inicial (automatica ao ser aprovado,
-//     ou manual). Isso e reportado separadamente pro organizador saber
-//     que precisa de uma acao antes.
+//     espera, aprovado mas sem linha em escalas), aloca ele DIRETO na
+//     area especial configurada via alocarEquipanteManualmente -- decisao
+//     explicita do organizador (a versao anterior desta acao so mexia em
+//     quem ja tinha alocacao e deixava esse caso de fora; foi confirmado
+//     que nao ha necessidade de passar por uma area anterior antes).
+//     Passa pela mesma checagem de vaga/limite de sexo que qualquer outra
+//     alocacao manual;
 //   - se o CPF configurado nao bate com nenhum equipante aprovado
 //     (pessoa nao inscrita, ainda pendente de aprovacao, ou CPF digitado
 //     errado em Configuracoes), e reportado como "nao encontrado".
-// Roda uma realocacao de cada vez (sequencial, nao em paralelo) -- alem de
-// mais simples, evita qualquer disputa entre chamadas desta mesma acao em
-// lote (a checagem de vaga em si ja e protegida pela trava do banco,
-// igual as outras alocacoes).
+// Roda uma alocacao/realocacao de cada vez (sequencial, nao em paralelo)
+// -- alem de mais simples, evita qualquer disputa entre chamadas desta
+// mesma acao em lote (a checagem de vaga em si ja e protegida pela trava
+// do banco, igual as outras alocacoes).
 export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovados, allocations) => {
   const normalizarCpf = (cpf) => (cpf || '').replace(/\D/g, '');
 
@@ -187,8 +189,8 @@ export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovado
 
   const resultado = {
     movidos: [],
+    alocadosDiretamente: [],
     jaNaAreaCorreta: [],
-    aindaNaoAlocados: [],
     naoEncontrados: [],
     falhas: []
   };
@@ -207,7 +209,13 @@ export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovado
       const alocacaoAtual = alocacaoPorEquipanteId.get(equipante.id);
 
       if (!alocacaoAtual) {
-        resultado.aindaNaoAlocados.push({ nome: equipante.nome, cpf: cpfConfigurado, area: area.label });
+        const alocacao = await alocarEquipanteManualmente(equipante.id, area.label);
+        if (alocacao.success) {
+          resultado.alocadosDiretamente.push({ nome: equipante.nome, area: area.label });
+          alocacaoPorEquipanteId.set(equipante.id, { id: equipante.id, allocatedArea: area.label });
+        } else {
+          resultado.falhas.push({ nome: equipante.nome, area: area.label, erro: alocacao.error });
+        }
         continue;
       }
 

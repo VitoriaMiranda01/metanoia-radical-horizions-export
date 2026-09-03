@@ -352,7 +352,7 @@ const AcampantesTable = ({
               <Table>
                 <TableHeader className="bg-white/5">
                   <TableRow className="hover:bg-transparent border-white/10">
-                        <TableHead className="text-white md:sticky md:left-0 md:z-20 min-w-[140px] md:min-w-[200px] md:bg-neutral-950 p-2 md:p-4">
+                        <TableHead className="text-white md:sticky md:left-0 md:z-20 min-w-[140px] md:min-w-[200px] md:bg-neutral-900 p-2 md:p-4">
                       <ColumnHeader 
                         title="Nome" 
                         filterKey="nome" 
@@ -378,7 +378,7 @@ const AcampantesTable = ({
                       );
                     })}
                     
-                        <TableHead className="text-right text-white sticky right-0 z-20 bg-neutral-950 p-2 md:p-4 text-xs md:text-sm">
+                        <TableHead className="text-right text-white sticky right-0 z-20 bg-neutral-900 p-2 md:p-4 text-xs md:text-sm">
                       Ações
                     </TableHead>
                   </TableRow>
@@ -386,7 +386,7 @@ const AcampantesTable = ({
                 <TableBody>
                   {filteredData.map((item) => (
                     <TableRow key={item.id} className="hover:bg-white/5 border-white/10 transition-colors group">
-                      <TableCell className="font-medium text-white md:sticky md:left-0 md:z-10 md:bg-neutral-950 md:group-hover:bg-neutral-900 p-2 md:p-4 text-xs md:text-sm">
+                      <TableCell className="font-medium text-white md:sticky md:left-0 md:z-10 md:bg-black md:group-hover:bg-neutral-900 p-2 md:p-4 text-xs md:text-sm">
                         {item.nome}
                       </TableCell>
                       
@@ -399,7 +399,7 @@ const AcampantesTable = ({
                         );
                       })}
                       
-                      <TableCell className="text-right sticky right-0 z-10 bg-neutral-950 group-hover:bg-neutral-900 p-2 md:p-4">
+                      <TableCell className="text-right sticky right-0 z-10 bg-black group-hover:bg-neutral-900 p-2 md:p-4">
                         <div className="flex justify-end gap-1 md:gap-2">
                           <Button 
                             variant="ghost" 

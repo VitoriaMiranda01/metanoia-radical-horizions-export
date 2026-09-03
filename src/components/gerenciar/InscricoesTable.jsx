@@ -339,7 +339,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
                 <TableHeader className="bg-white/5">
                   <TableRow className="hover:bg-transparent border-white/10">
                     {/* Fixed Name Column */}
-                    <TableHead className="min-w-[200px] h-12 sticky left-0 z-20 bg-neutral-950">
+                    <TableHead className="min-w-[200px] h-12 sticky left-0 z-20 bg-neutral-900">
                       <ColumnHeader 
                         title="Nome" 
                         filterKey="nome" 
@@ -366,7 +366,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
                       );
                     })}
 
-                        <TableHead className="text-white text-right h-12 sticky right-0 z-20 bg-neutral-950">
+                        <TableHead className="text-white text-right h-12 sticky right-0 z-20 bg-neutral-900">
                         Ações
                     </TableHead>
                   </TableRow>
@@ -374,7 +374,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
                 <TableBody>
                   {filteredData.map((item) => (
                     <TableRow key={item.id} className="hover:bg-white/5 transition-colors border-white/10 group">
-                      <TableCell className="text-white font-medium sticky left-0 z-10 bg-neutral-950 group-hover:bg-neutral-900">
+                      <TableCell className="text-white font-medium sticky left-0 z-10 bg-black group-hover:bg-neutral-900">
                           {item.nome}
                       </TableCell>
 
@@ -387,7 +387,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
                         );
                       })}
                       
-                      <TableCell className="sticky right-0 z-10 bg-neutral-950 group-hover:bg-neutral-900">
+                      <TableCell className="sticky right-0 z-10 bg-black group-hover:bg-neutral-900">
                         <div className="flex justify-end space-x-2">
                           <Button variant="ghost" size="sm" onClick={() => onSelect(item)} className="hover:bg-blue-500/20 text-blue-300 transition-colors">
                             <Eye className="w-4 h-4" />

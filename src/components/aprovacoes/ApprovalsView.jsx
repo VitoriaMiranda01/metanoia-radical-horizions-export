@@ -253,7 +253,8 @@ const ApprovalsView = ({
       (inscricao.cidade && inscricao.cidade.toLowerCase().includes(term)) ||
       (inscricao.estado && inscricao.estado.toLowerCase().includes(term)) ||
       (inscricao.cpf && inscricao.cpf.includes(term)) ||
-      (inscricao.tipo && inscricao.tipo.toLowerCase().includes(term))
+      (inscricao.tipo && inscricao.tipo.toLowerCase().includes(term)) ||
+      (inscricao.igreja && inscricao.igreja.toLowerCase().includes(term))
     );
   };
 

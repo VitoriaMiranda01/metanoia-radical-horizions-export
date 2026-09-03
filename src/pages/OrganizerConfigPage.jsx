@@ -594,9 +594,9 @@ const OrganizerConfigPage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
                   <DollarSign className="w-5 h-5 text-emerald-400" />
-                  <span>Taxa de Inscrição (Salvo Independentemente)</span>
+                  <span>Taxa de Inscrição</span>
                 </CardTitle>
-                <CardDescription className="text-gray-400">Gerencie os períodos e valores de inscrição. Salva direto no banco de dados.</CardDescription>
+                <CardDescription className="text-gray-400">Gerencie os períodos e valores de inscrição.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-10">
                 <div className="space-y-4">

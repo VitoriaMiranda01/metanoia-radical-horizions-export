@@ -47,6 +47,7 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
               name="condicoesMedicas" 
               value={formData.condicoesMedicas || ''} 
               onChange={handleChange} 
+              required
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
               placeholder='Ex: Diabetes' 
             />
@@ -90,6 +91,7 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
               name="medicamentos" 
               value={formData.medicamentos || ''} 
               onChange={handleChange} 
+              required
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
               placeholder='Ex: Dipirona' 
             />
@@ -125,6 +127,7 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
               name="restricoesAlimentares" 
               value={formData.restricoesAlimentares || ''} 
               onChange={handleChange} 
+              required
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
               placeholder='Ex: Intolerância à lactose' 
             />

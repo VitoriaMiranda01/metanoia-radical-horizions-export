@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
-import ProtectedRoute from '@/components/route-guards/ProtectedRoute';
 import OrganizerProtectedRoute from '@/components/route-guards/OrganizerProtectedRoute';
 import IgrejaProtectedRoute from '@/components/route-guards/IgrejaProtectedRoute';
 import LoginPage from '@/pages/LoginPage';

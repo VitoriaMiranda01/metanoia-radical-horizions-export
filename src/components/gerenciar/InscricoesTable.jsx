@@ -257,7 +257,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
                     onApply={handleSaveColumns}
                   />
                 </div>
-                <Button onClick={() => onExportar(tipo)} variant="outline" size="sm" className="bg-white/5 text-white hover:bg-white/10 border-white/20">
+                <Button onClick={() => onExportar(tipo)} variant="outline" size="sm" className="bg-white/5 text-white hover:bg-white/10 hover:text-white border-white/20">
                   <Download className="w-4 h-4 mr-2" />Exportar
                 </Button>
             </div>

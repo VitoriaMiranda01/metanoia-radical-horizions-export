@@ -69,7 +69,7 @@ const DadosPessoais = ({
         {/* CPF - Primeiro campo */}
         <div className="space-y-2 relative flex flex-col h-full">
           <div className="flex justify-between items-center h-5 mb-1">
-            <Label htmlFor="cpf" className="text-white">CPF{formData.semCpf ? ' (opcional)' : ''}</Label>
+            <Label htmlFor="cpf" className="text-white">CPF</Label>
 
             <AnimatePresence>
               {showRecoveryMessage && (

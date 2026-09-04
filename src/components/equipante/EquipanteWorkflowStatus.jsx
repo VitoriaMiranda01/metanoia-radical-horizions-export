@@ -61,7 +61,6 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, onProceedToPayment }) => {
         <h2 className="text-2xl font-bold text-white mb-2">Acompanhamento da Inscrição</h2>
         <p className="text-gray-400 mb-6">
           Acompanhe as etapas necessárias para finalizar sua participação como Equipante.
-          {isMinor && " (Requer Autorização dos Pais/Responsáveis)"}
         </p>
 
         <div className="space-y-4">

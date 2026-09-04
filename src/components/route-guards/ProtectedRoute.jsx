@@ -28,8 +28,6 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     if (!hasRequiredRole) {
       if (user.role === 'organizador') return <Navigate to="/gerenciar" replace />;
       if (user.role === 'organizador-aprovador') return <Navigate to="/aprovacoes" replace />;
-      if (user.role === 'acampante') return <Navigate to="/acampante" replace />;
-      if (user.role === 'equipante') return <Navigate to="/equipante" replace />;
       
       return <Navigate to="/login" replace />;
     }

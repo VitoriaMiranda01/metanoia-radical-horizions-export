@@ -15,8 +15,7 @@ const LoginPage = () => {
     loginAsOrganizador,
     loginAsIgreja,
     organizadorUser,
-    igrejaUser,
-    user
+    igrejaUser
   } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -49,10 +48,6 @@ const LoginPage = () => {
 
   if (organizadorUser) return <Navigate to="/gerenciar" replace />;
   if (igrejaUser) return <Navigate to="/parceiros" replace />;
-  if (user) {
-    if (user.role === 'acampante') return <Navigate to="/acampante" replace />;
-    if (user.role === 'equipante') return <Navigate to="/equipante" replace />;
-  }
   
   const handleSubmit = async e => {
     e.preventDefault();

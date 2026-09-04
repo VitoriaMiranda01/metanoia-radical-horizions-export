@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import ProtectedRoute from '@/components/route-guards/ProtectedRoute';
 import OrganizerProtectedRoute from '@/components/route-guards/OrganizerProtectedRoute';
@@ -36,11 +36,10 @@ function EquipanteWorkflowRoute() {
 }
 
 function InscricaoRedirect() {
-  const { user } = useAuth();
-
-  if (user?.role === 'acampante') return <Navigate to="/acampante" replace />;
-  if (user?.role === 'equipante') return <Navigate to="/equipante" replace />;
-
+  // Login de acampante/equipante via e-mail nativo do Supabase Auth nao
+  // existe mais na interface (ver limpeza em useOrganizerAuth.js /
+  // authService.js, 2026-09-04) -- user.role nunca mais vale 'acampante'/
+  // 'equipante', entao esta rota sempre cai no login mesmo.
   return <Navigate to="/login" replace />;
 }
 

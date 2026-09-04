@@ -79,8 +79,8 @@ const DadosComplementaresEquipante = ({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="numeroEdicaoParticipou" className="text-white">Qual número da edição que você participou do Radical? (opcional)</Label>
-            <Input id="numeroEdicaoParticipou" name="numeroEdicaoParticipou" value={formData.numeroEdicaoParticipou} onChange={handleChange} type="number" className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
+            <Label htmlFor="numeroEdicaoParticipou" className="text-white">Qual número da edição que você participou do Radical?</Label>
+            <Input id="numeroEdicaoParticipou" name="numeroEdicaoParticipou" value={formData.numeroEdicaoParticipou} onChange={handleChange} type="number" required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
           </div>
         </div>
 
@@ -100,8 +100,8 @@ const DadosComplementaresEquipante = ({
 
           {formData.jaTrabalhouEquipe === 'SIM' && (
             <div className="space-y-2">
-              <Label htmlFor="edicaoTrabalhou" className="text-white">Em qual edição você trabalhou? (opcional)</Label>
-              <Input id="edicaoTrabalhou" name="edicaoTrabalhou" value={formData.edicaoTrabalhou} onChange={handleChange} type="number" className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
+              <Label htmlFor="edicaoTrabalhou" className="text-white">Em qual edição você trabalhou?</Label>
+              <Input id="edicaoTrabalhou" name="edicaoTrabalhou" value={formData.edicaoTrabalhou} onChange={handleChange} type="number" required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
             </div>
           )}
         </div>

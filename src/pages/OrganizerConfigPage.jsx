@@ -102,7 +102,7 @@ const OrganizerConfigPage = () => {
   useEffect(() => {
     const targetOrganizadorId = organizadorId || organizadorUser?.id || user?.id;
     if (targetOrganizadorId !== undefined || isAuthenticated) {
-      loadData(targetOrganizadorId);
+      loadData();
     }
   }, [organizadorId, organizadorUser?.id, user?.id, isAuthenticated]);
 
@@ -110,7 +110,7 @@ const OrganizerConfigPage = () => {
     const unsubscribe = subscribeToConfiguracoesChanges('public:configuracoes', () => {
       const targetOrganizadorId = organizadorId || organizadorUser?.id || user?.id;
       if (targetOrganizadorId !== undefined || isAuthenticated) {
-        loadData(targetOrganizadorId);
+        loadData();
       }
     });
     return () => {
@@ -136,10 +136,15 @@ const OrganizerConfigPage = () => {
     });
   };
 
-  const loadData = async (targetId) => {
+  // Não recebe mais organizadorId -- fetchConfiguracoes não busca mais nada
+  // por organizador (ver comentário em organizerConfigService.js). Dia/mês/
+  // ano continuam vindo daqui, só que 100% reconstruídos a partir de
+  // data_evento_inicio/data_evento_fim (parseDateString), como já era o
+  // caminho preferencial antes desta mudança.
+  const loadData = async () => {
     setLoadingConfig(true);
     try {
-      const data = await fetchConfiguracoes(targetId);
+      const data = await fetchConfiguracoes();
       
       const parsedInicio = parseDateString(data.data_evento_inicio);
       const parsedFim = parseDateString(data.data_evento_fim);
@@ -150,10 +155,10 @@ const OrganizerConfigPage = () => {
         max_acampantes: data.max_acampantes || '',
         max_acampantes_homens: data.max_acampantes_homens || '',
         max_acampantes_mulheres: data.max_acampantes_mulheres || '',
-        data_edicao_dia_inicio: parsedInicio.day || data.data_edicao_dia_inicio || '',
-        data_edicao_dia_fim: parsedFim.day || data.data_edicao_dia_fim || '',
-        data_edicao_mes: parsedInicio.month || data.data_edicao_mes || '',
-        data_edicao_ano: parsedInicio.year || data.data_edicao_ano || '',
+        data_edicao_dia_inicio: parsedInicio.day || '',
+        data_edicao_dia_fim: parsedFim.day || '',
+        data_edicao_mes: parsedInicio.month || '',
+        data_edicao_ano: parsedInicio.year || '',
         horario_saida_igreja: data.horario_saida_igreja || '',
         horario_retorno_sitio: data.horario_retorno_sitio || '',
         data_limite_inscricao_pagamento: data.data_limite_inscricao_pagamento || '',
@@ -253,14 +258,12 @@ const OrganizerConfigPage = () => {
       const payloadToSave = {
         ...otherConfigs,
         data_evento_inicio: dateInicioStr,
-        data_evento_fim: dateFimStr,
-        organizadorId: organizadorId || organizadorUser?.id || user?.id
+        data_evento_fim: dateFimStr
       };
       
       await saveConfiguracoes(payloadToSave);
       
-      const targetId = organizadorId || organizadorUser?.id || user?.id;
-      await loadData(targetId);
+      await loadData();
 
       toast({
         title: "Sucesso!",

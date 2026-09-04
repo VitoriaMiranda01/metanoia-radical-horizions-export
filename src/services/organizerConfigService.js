@@ -1,7 +1,16 @@
 import { supabase } from '@/services/supabaseClient';
 import { withRetry } from '@/services/serviceHelpers';
 
-export const fetchConfiguracoes = async (organizadorId) => {
+// Não busca mais data_edicao_dia_inicio/dia_fim/mes/ano na tabela
+// "organizadores" (removido em 2026-09-04, a pedido da usuaria). Motivo:
+// essa tabela nunca chegou a ter nenhuma linha em producao (o
+// saveConfiguracoes so fazia UPDATE nela, nunca INSERT, entao o valor
+// nunca era persistido de verdade) e, na pratica, nao fazia falta --
+// OrganizerConfigPage.jsx ja reconstroi dia/mes/ano a partir de
+// data_evento_inicio/data_evento_fim (via parseDateString), que sao salvos
+// corretamente aqui em "configuracoes". Nao ha motivo de negocio pra
+// separar esses campos por organizador.
+export const fetchConfiguracoes = async () => {
   return withRetry(async () => {
     try {
       if (!navigator.onLine) return { max_equipantes: 0, max_acampantes: 0, max_acampantes_homens: 0, max_acampantes_mulheres: 0, equipante_pricing_periods: [], acampante_pricing_periods: [], edicao_numero: '' };
@@ -11,22 +20,6 @@ export const fetchConfiguracoes = async (organizadorId) => {
       const { data, error } = await configQuery.order('updated_at', { ascending: false }).limit(1).maybeSingle();
       if (error && !['PGRST205', '42P01', '42703'].includes(error.code)) {
         throw error;
-      }
-
-      let dateData = {};
-      try {
-        let query = supabase.from('organizadores').select('data_edicao_dia_inicio, data_edicao_dia_fim, data_edicao_mes, data_edicao_ano');
-        
-        if (organizadorId) {
-          query = query.eq('id', organizadorId);
-        }
-        
-        const { data: orgData } = await query.order('updated_at', { ascending: false }).limit(1).maybeSingle();
-        if (orgData) {
-          dateData = orgData;
-        }
-      } catch (err) {
-        console.error("[fetchConfiguracoes] Error fetching dates from organizadores:", err);
       }
 
       const mergedConfig = {
@@ -46,11 +39,7 @@ export const fetchConfiguracoes = async (organizadorId) => {
         cpfs_area_inimigo: data?.cpfs_area_inimigo || [],
         cpfs_area_espirito_santo: data?.cpfs_area_espirito_santo || [],
         data_evento_inicio: data?.data_evento_inicio || '',
-        data_evento_fim: data?.data_evento_fim || '',
-        data_edicao_dia_inicio: dateData.data_edicao_dia_inicio || '',
-        data_edicao_dia_fim: dateData.data_edicao_dia_fim || '',
-        data_edicao_mes: dateData.data_edicao_mes || '',
-        data_edicao_ano: dateData.data_edicao_ano || ''
+        data_evento_fim: data?.data_evento_fim || ''
       };
 
       return mergedConfig;
@@ -223,25 +212,10 @@ export const saveConfiguracoes = async (config) => {
 
     if (error) throw error;
 
-    const orgIdToUpdate = config.organizadorId;
-    if (orgIdToUpdate) {
-      const datePayload = {
-        data_edicao_dia_inicio: config.data_edicao_dia_inicio ? parseInt(config.data_edicao_dia_inicio, 10) : null,
-        data_edicao_dia_fim: config.data_edicao_dia_fim ? parseInt(config.data_edicao_dia_fim, 10) : null,
-        data_edicao_mes: config.data_edicao_mes || null,
-        data_edicao_ano: config.data_edicao_ano ? parseInt(config.data_edicao_ano, 10) : null,
-      };
-      
-      const { error: orgError } = await supabase
-        .from('organizadores')
-        .update(datePayload)
-        .eq('id', orgIdToUpdate)
-        .select();
-
-      if (orgError) {
-        console.error("[saveConfiguracoes] Error updating 'organizadores':", orgError);
-      }
-    }
+    // Não grava mais data_edicao_dia_inicio/dia_fim/mes/ano na tabela
+    // "organizadores" (removido em 2026-09-04 -- ver comentário em
+    // fetchConfiguracoes). O dado que realmente importa (a data do evento)
+    // já foi salvo acima, em data_evento_inicio/data_evento_fim.
 
     return data;
   } catch (error) {

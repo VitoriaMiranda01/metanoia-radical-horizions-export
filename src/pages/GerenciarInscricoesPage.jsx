@@ -160,9 +160,9 @@ const GerenciarInscricoesPage = () => {
       rows = dadosParaExportar.map(i => [
         i.cpf, i.nome, i.email, i.telefone, i.idade, i.cidade, i.estado, i.igreja, i.pastor, i.status]);
     } else {
-      headers = ['CPF', 'Nome', 'Email', 'WhatsApp', 'Idade', 'Cidade', 'Estado', 'Igreja', 'Status'];
+      headers = ['CPF', 'Nome', 'Email', 'WhatsApp', 'Idade', 'Cidade', 'Estado', 'Igreja'];
       rows = dadosParaExportar.map(i => [
-        i.cpf, i.nome, i.email, i.whatsapp, i.idade, i.cidade, i.estado, i.igreja, i.status]);
+        i.cpf, i.nome, i.email, i.whatsapp, i.idade, i.cidade, i.estado, i.igreja]);
     }
 
     const csvContent = [

@@ -53,10 +53,11 @@ export const getAcampantes = async () => {
 
 const GRUPOS_TRILHA = ['Vermelho', 'Amarelo', 'Verde', 'Azul', 'Roxo'];
 
-// Escolhe, entre os 5 grupos fixos, o que tem menos integrantes aprovados do mesmo
+// Escolhe, entre os 5 grupos fixos, o que tem menos integrantes do mesmo
 // sexo do acampante que está sendo alocado agora. Chamada uma vez por pessoa, no
 // momento do cadastro (ver criarInscricao em inscricoesService.js) — acampante já
-// nasce com status 'aprovado' e não passa por uma aprovação manual separada.
+// nasce com status 'aprovado' e não passa por uma aprovação manual separada, então
+// não há mais necessidade de filtrar por status aqui.
 export const escolherGrupoTrailha = async (sexo) => {
   let grupoEscolhido = GRUPOS_TRILHA[0];
   let menorContagem = Infinity;
@@ -66,8 +67,7 @@ export const escolherGrupoTrailha = async (sexo) => {
       .from('acampantes')
       .select('*', { count: 'exact', head: true })
       .eq('grupo_trailha', grupo)
-      .eq('sexo', sexo)
-      .eq('status', 'aprovado');
+      .eq('sexo', sexo);
 
     if (error) throw error;
 

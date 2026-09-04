@@ -68,12 +68,13 @@ const QuemIndicou = ({ formData, handleChange, handleSelectChange }) => {
         {/* Nome do familiar/conhecido (Condicional) */}
         {formData.conhecidoNoProjeto && formData.conhecidoNoProjeto !== 'NÃO TENHO' && (
           <div className="space-y-2">
-            <Label htmlFor="nomeFamiliarConhecido" className="text-white">Nome completo do familiar / conhecido (opcional)</Label>
+            <Label htmlFor="nomeFamiliarConhecido" className="text-white">Nome completo do familiar / conhecido</Label>
             <Input 
               id="nomeFamiliarConhecido" 
               name="nomeFamiliarConhecido" 
               value={formData.nomeFamiliarConhecido || ''} 
               onChange={handleChange} 
+              required
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
               placeholder="Digite o nome..." 
             />

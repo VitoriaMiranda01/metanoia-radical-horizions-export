@@ -1,14 +1,18 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, ExternalLink } from 'lucide-react';
+import { supabase } from '@/services/supabaseClient';
 
 const TermosResponsabilidade = ({ formData, handleChange, handleCheckboxChange }) => {
-  // Constructing the Supabase Storage URL
-  // Project ID is extracted from the context of being a Supabase integrated environment
-  const PROJECT_ID = "vlpwxybntvjmtjlyqjht"; // Standard ID for this environment's project
+  // Monta a URL publica do PDF a partir do cliente Supabase ja configurado
+  // (supabase.storage), em vez de um project ID fixo no codigo -- o valor
+  // anterior ("vlpwxybntvjmtjlyqjht") nao correspondia ao projeto real
+  // (yxootyzlpefyztiiacrs, o mesmo que VITE_SUPABASE_URL aponta), entao o
+  // link do termo estava quebrado (fetch falhava por DNS). O arquivo em si
+  // ja existe no bucket certo, so a URL montada aqui estava errada.
   const BUCKET_NAME = "termo-responsabilidade-acampante"; // Verified bucket name from database schema
   const FILE_NAME = "termo_de_responsabilidade_e_orientacoes_metanoia_radical_serra_acampante.pdf";
-  const PDF_URL = `https://${PROJECT_ID}.supabase.co/storage/v1/object/public/${BUCKET_NAME}/${FILE_NAME}`;
+  const { data: { publicUrl: PDF_URL } } = supabase.storage.from(BUCKET_NAME).getPublicUrl(FILE_NAME);
 
   const handleAceiteChange = (e) => {
     const isChecked = e.target.checked;

@@ -41,7 +41,7 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
 
         {toBoolean(formData.temProblemaSaude) && (
           <div className="space-y-2">
-            <Label htmlFor="condicoesMedicas" className="text-white">Qual problema de saúde? (opcional)</Label>
+            <Label htmlFor="condicoesMedicas" className="text-white">Qual problema de saúde?</Label>
             <Input 
               id="condicoesMedicas" 
               name="condicoesMedicas" 
@@ -84,7 +84,7 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
 
         {!isEquipante && toBoolean(formData.usaMedicamento) && (
           <div className="space-y-2">
-            <Label htmlFor="medicamentos" className="text-white">Qual medicamento? (opcional)</Label>
+            <Label htmlFor="medicamentos" className="text-white">Qual medicamento?</Label>
             <Input 
               id="medicamentos" 
               name="medicamentos" 
@@ -119,7 +119,7 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
 
         {toBoolean(formData.temRestricaoAlimentar) && (
           <div className="space-y-2">
-            <Label htmlFor="restricoesAlimentares" className="text-white">Quais? (opcional)</Label>
+            <Label htmlFor="restricoesAlimentares" className="text-white">Quais?</Label>
             <Input 
               id="restricoesAlimentares" 
               name="restricoesAlimentares" 

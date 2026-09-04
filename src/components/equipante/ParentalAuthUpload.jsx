@@ -18,8 +18,8 @@ const ParentalAuthUpload = ({ equipanteId, onUploadSuccess }) => {
   // supabase.storage.from(...).getPublicUrl(...) (cliente ja configurado
   // com VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY), nunca com um project ID
   // fixo no codigo -- mesmo padrao corrigido em TermosResponsabilidade.jsx.
-  const MODELO_BUCKET_NAME = "modelo-autorizacao-equipante";
-  const MODELO_FILE_NAME = "modelo_autorizacao_dos_pais_equipante_metanoia_radical_serra.pdf";
+  const MODELO_BUCKET_NAME = "autorizacao-menor-idade-equipante";
+  const MODELO_FILE_NAME = "autorizacao_dos_pais_menor_idade_metanoia_radical_serra_equipante.pdf";
   const { data: { publicUrl: MODELO_URL } } = supabase.storage.from(MODELO_BUCKET_NAME).getPublicUrl(MODELO_FILE_NAME);
 
   const handleDrag = (e) => {

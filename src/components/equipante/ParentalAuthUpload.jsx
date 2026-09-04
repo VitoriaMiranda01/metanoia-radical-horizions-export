@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, File, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { UploadCloud, File, X, CheckCircle, AlertCircle, FileText, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/services/supabaseClient';
 
 const ParentalAuthUpload = ({ equipanteId, onUploadSuccess }) => {
   const [file, setFile] = useState(null);
@@ -10,6 +11,16 @@ const ParentalAuthUpload = ({ equipanteId, onUploadSuccess }) => {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
   const { toast } = useToast();
+
+  // Modelo (template) da autorizacao dos pais, para download antes do envio.
+  // O arquivo precisa ser enviado manualmente (bucket PUBLICO) no Supabase
+  // Storage -- ver nomes do bucket/arquivo abaixo. Montamos a URL via
+  // supabase.storage.from(...).getPublicUrl(...) (cliente ja configurado
+  // com VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY), nunca com um project ID
+  // fixo no codigo -- mesmo padrao corrigido em TermosResponsabilidade.jsx.
+  const MODELO_BUCKET_NAME = "modelo-autorizacao-equipante";
+  const MODELO_FILE_NAME = "modelo_autorizacao_dos_pais_equipante_metanoia_radical_serra.pdf";
+  const { data: { publicUrl: MODELO_URL } } = supabase.storage.from(MODELO_BUCKET_NAME).getPublicUrl(MODELO_FILE_NAME);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -68,6 +79,20 @@ const ParentalAuthUpload = ({ equipanteId, onUploadSuccess }) => {
     <Card className="bg-black/40 border-white/10">
       <CardContent className="p-6">
         <h3 className="text-lg font-medium text-white mb-4">Envio da Autorização</h3>
+
+        <div className="bg-slate-100/5 p-4 rounded-md border border-white/10 transition-colors hover:bg-slate-100/10 mb-4">
+          <a
+            href={MODELO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline flex items-center gap-2 break-all text-sm font-medium group"
+          >
+            <FileText className="w-4 h-4 flex-shrink-0" />
+            <span className="flex-1">Baixar modelo de autorização dos pais</span>
+            <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
+          </a>
+          <p className="text-gray-400 text-xs mt-2">Baixe o modelo, preencha e assine, depois anexe o arquivo abaixo.</p>
+        </div>
         {!file ? (
           <div
             className={`dropzone rounded-xl p-8 text-center cursor-pointer ${dragActive ? 'active' : ''}`}

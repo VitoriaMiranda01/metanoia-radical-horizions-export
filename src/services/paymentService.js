@@ -144,7 +144,7 @@ export const fetchAcampantesPendentesPagamento = async () => {
   // (mesma correção já aplicada em columnVisibility.js/databaseSchema.js).
   return supabase
     .from('acampantes')
-    .select('id, nome, cpf, status_pagamento, metodo_pagamento, status, whatsapp, cidade, igreja')
+    .select('id, nome, cpf, status_pagamento, metodo_pagamento, whatsapp, cidade, igreja')
     .in('metodo_pagamento', ['manual', 'isento']);
 };
 

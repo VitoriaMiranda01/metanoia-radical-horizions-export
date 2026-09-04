@@ -66,7 +66,3 @@ export const igrejaLogin = async (codigo, senha) => {
     return { success: false, error: 'Erro ao conectar com banco de dados' };
   }
 };
-
-export const fetchUserRole = async (email) => {
-  return supabase.from('users').select('role').eq('email', email).single();
-};

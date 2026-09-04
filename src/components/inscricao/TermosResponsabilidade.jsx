@@ -53,7 +53,7 @@ const TermosResponsabilidade = ({ formData, handleChange, handleCheckboxChange }
 
         <div className="space-y-4">
           <p className="text-white/90 text-sm leading-relaxed border-l-4 border-blue-500 pl-4 py-1">
-            Declaro estar ciente do conteúdo deste termo e da essência do trabalho do Metanóia Radical Serra, responsabilizando-me pela veracidade das informações preenchidas na ficha de inscrição. <span className="text-red-500 font-bold">*</span>
+            Declaro estar ciente do conteúdo deste termo e da essência do trabalho do Metanóia Radical Serra, responsabilizando-me pela veracidade das informações preenchidas na ficha de inscrição.
           </p>
           
           <div className="flex flex-col md:flex-row md:items-center gap-4">

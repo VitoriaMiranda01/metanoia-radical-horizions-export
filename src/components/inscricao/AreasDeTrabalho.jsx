@@ -122,7 +122,7 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
         {renderRadioGroup("Opção 3", "areaTrabalhoOpcao3", formData.areaTrabalhoOpcao3)}
 
         <div className="pt-6 border-t border-white/10 mt-6">
-           <Label className="text-white block mb-4 text-md font-medium">Áreas de Trabalho Extra</Label>
+           <Label className="text-white block mb-4 text-md font-medium">Áreas de Trabalho Extra (opcional)</Label>
             <div className="flex flex-col space-y-3">
               {EXTRA_OPTIONS.map((option) => {
                 const isSelected = (formData.areasTrabalhoExtra || []).includes(option);

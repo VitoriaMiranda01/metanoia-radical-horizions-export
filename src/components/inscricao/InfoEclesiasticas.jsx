@@ -19,7 +19,7 @@ const InfoEclesiasticas = ({
           {/* 1. Pergunta Principal - Sempre visível e no topo */}
           <div className="space-y-2 p-4 bg-white/5 rounded-lg border border-white/10">
             <Label htmlFor="estaAfastado" className="text-white text-lg font-medium">
-              Congrega em alguma igreja? *
+              Congrega em alguma igreja?
             </Label>
             <Select 
               value={formData.estaAfastado} 
@@ -47,7 +47,7 @@ const InfoEclesiasticas = ({
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 pb-2">
                   <div className="space-y-2">
-                    <Label htmlFor="igreja" className="text-white">Igreja que frequenta *</Label>
+                    <Label htmlFor="igreja" className="text-white">Igreja que frequenta</Label>
                     <Select value={formData.igreja} onValueChange={value => handleChange({ target: { name: 'igreja', value } })}>
                       <SelectTrigger className="bg-white/10 border-white/20 text-white">
                         <SelectValue placeholder="Selecione sua igreja..." />
@@ -61,7 +61,7 @@ const InfoEclesiasticas = ({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="pastor" className="text-white">Nome do Pastor *</Label>
+                    <Label htmlFor="pastor" className="text-white">Nome do Pastor</Label>
                     <Input 
                       id="pastor" 
                       name="pastor" 
@@ -74,7 +74,7 @@ const InfoEclesiasticas = ({
 
                   {/* Equipante specific Cargo options */}
                   <div className="space-y-2">
-                    <Label htmlFor="cargoIgreja" className="text-white">Cargo na Igreja *</Label>
+                    <Label htmlFor="cargoIgreja" className="text-white">Cargo na Igreja</Label>
                     <Select value={formData.cargoIgreja} onValueChange={value => handleChange({ target: { name: 'cargoIgreja', value } })}>
                       <SelectTrigger className="bg-white/10 border-white/20 text-white">
                         <SelectValue placeholder="Selecione..." />
@@ -97,7 +97,7 @@ const InfoEclesiasticas = ({
 
                   {formData.cargoIgreja === 'OUTRO' && (
                     <div className="space-y-2">
-                      <Label htmlFor="cargoIgrejaOutro" className="text-white">OUTRO *</Label>
+                      <Label htmlFor="cargoIgrejaOutro" className="text-white">OUTRO</Label>
                       <Input 
                         id="cargoIgrejaOutro" 
                         name="cargoIgrejaOutro" 
@@ -110,7 +110,7 @@ const InfoEclesiasticas = ({
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="frequentaEBD" className="text-white">Frequenta Escola Bíblica (EBD)? *</Label>
+                    <Label htmlFor="frequentaEBD" className="text-white">Frequenta Escola Bíblica (EBD)?</Label>
                     <Select value={formData.frequentaEBD} onValueChange={value => handleChange({ target: { name: 'frequentaEBD', value } })}>
                       <SelectTrigger className="bg-white/10 border-white/20 text-white">
                         <SelectValue placeholder="Selecione..." />
@@ -123,7 +123,7 @@ const InfoEclesiasticas = ({
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-white">Frequenta Grupo de Cuidado / Célula? *</Label>
+                    <Label className="text-white">Frequenta Grupo de Cuidado / Célula?</Label>
                     <div className="flex gap-4 pt-2 h-10 items-center">
                       <div className="flex items-center space-x-2">
                         <input 
@@ -153,7 +153,7 @@ const InfoEclesiasticas = ({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="voceCanta" className="text-white">Você canta? *</Label>
+                    <Label htmlFor="voceCanta" className="text-white">Você canta?</Label>
                     <Select value={formData.voceCanta} onValueChange={value => handleChange({ target: { name: 'voceCanta', value } })}>
                       <SelectTrigger className="bg-white/10 border-white/20 text-white">
                         <SelectValue placeholder="Selecione..." />
@@ -166,7 +166,7 @@ const InfoEclesiasticas = ({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="tocaInstrumento" className="text-white">Você toca algum instrumento? *</Label>
+                    <Label htmlFor="tocaInstrumento" className="text-white">Você toca algum instrumento?</Label>
                     <Select value={formData.tocaInstrumento} onValueChange={value => handleChange({ target: { name: 'tocaInstrumento', value } })}>
                       <SelectTrigger className="bg-white/10 border-white/20 text-white">
                         <SelectValue placeholder="Selecione..." />
@@ -199,7 +199,7 @@ const InfoEclesiasticas = ({
         {/* 1. Pergunta Principal - Sempre visível e no topo */}
         <div className="space-y-2 p-4 bg-white/5 rounded-lg border border-white/10">
           <Label htmlFor="estaAfastado" className="text-white text-lg font-medium">
-            Congrega em alguma igreja? *
+            Congrega em alguma igreja?
           </Label>
           <Select 
             value={formData.estaAfastado} 
@@ -227,7 +227,7 @@ const InfoEclesiasticas = ({
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 pb-2">
                 <div className="space-y-2">
-                  <Label htmlFor="igreja" className="text-white">Igreja que frequenta *</Label>
+                  <Label htmlFor="igreja" className="text-white">Igreja que frequenta</Label>
                   <Input 
                     id="igreja" 
                     name="igreja" 
@@ -239,7 +239,7 @@ const InfoEclesiasticas = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pastor" className="text-white">Nome do Pastor *</Label>
+                  <Label htmlFor="pastor" className="text-white">Nome do Pastor</Label>
                   <Input 
                     id="pastor" 
                     name="pastor" 
@@ -252,7 +252,7 @@ const InfoEclesiasticas = ({
 
                 {/* Acampante specific fields */}
                 <div className="space-y-2">
-                  <Label htmlFor="ePastor" className="text-white">Cargo na igreja *</Label>
+                  <Label htmlFor="ePastor" className="text-white">Cargo na igreja</Label>
                   <Select value={formData.ePastor} onValueChange={value => handleChange({ target: { name: 'ePastor', value } })}>
                     <SelectTrigger className="bg-white/10 border-white/20 text-white">
                       <SelectValue placeholder="Selecione..." />
@@ -275,7 +275,7 @@ const InfoEclesiasticas = ({
 
                 {formData.ePastor === 'OUTRO' && (
                   <div className="space-y-2">
-                    <Label htmlFor="ePastorOutro" className="text-white">OUTRO *</Label>
+                    <Label htmlFor="ePastorOutro" className="text-white">OUTRO</Label>
                     <Input 
                       id="ePastorOutro" 
                       name="ePastorOutro" 

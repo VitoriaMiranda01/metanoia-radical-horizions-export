@@ -69,7 +69,7 @@ const DadosPessoais = ({
         {/* CPF - Primeiro campo */}
         <div className="space-y-2 relative flex flex-col h-full">
           <div className="flex justify-between items-center h-5 mb-1">
-            <Label htmlFor="cpf" className="text-white">CPF {!formData.semCpf && '*'}</Label>
+            <Label htmlFor="cpf" className="text-white">CPF{formData.semCpf ? ' (opcional)' : ''}</Label>
 
             <AnimatePresence>
               {showRecoveryMessage && (
@@ -130,7 +130,7 @@ const DadosPessoais = ({
         {/* Nome Completo - Segundo campo (Alinhado com CPF) */}
         <div className="space-y-2 relative flex flex-col h-full">
           <div className="flex items-center h-5 mb-1">
-            <Label htmlFor="nome" className="text-white">Nome Completo *</Label>
+            <Label htmlFor="nome" className="text-white">Nome Completo</Label>
           </div>
           <div className="relative">
             <Input 
@@ -148,7 +148,7 @@ const DadosPessoais = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="sexo" className="text-white">Sexo *</Label>
+          <Label htmlFor="sexo" className="text-white">Sexo</Label>
           <Select value={formData.sexo || ''} onValueChange={(value) => handleSelectChange('sexo', value)}>
             <SelectTrigger className="bg-white/10 border-white/20 text-white">
               <SelectValue placeholder="Selecione..." />
@@ -161,18 +161,18 @@ const DadosPessoais = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="whatsapp" className="text-white">WhatsApp *</Label>
+          <Label htmlFor="whatsapp" className="text-white">WhatsApp</Label>
           <Input id="whatsapp" name="whatsapp" value={formData.whatsapp || ''} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="(11) 99999-9999" />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="idade" className="text-white">Idade *</Label>
+          <Label htmlFor="idade" className="text-white">Idade</Label>
           <Input id="idade" name="idade" type="number" value={formData.idade || ''} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="25" />
         </div>
 
         {!isEquipante && (
           <div className="space-y-2">
-            <Label htmlFor="tamanho_camisa" className="text-white">Tamanho da Camisa *</Label>
+            <Label htmlFor="tamanho_camisa" className="text-white">Tamanho da Camisa</Label>
             <Select value={formData.tamanho_camisa || ''} onValueChange={(value) => handleSelectChange('tamanho_camisa', value)}>
               <SelectTrigger className="bg-white/10 border-white/20 text-white">
                 <SelectValue placeholder="Selecione..." />

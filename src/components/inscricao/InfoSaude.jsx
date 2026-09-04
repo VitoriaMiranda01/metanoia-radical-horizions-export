@@ -20,7 +20,7 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
         
         {/* Problema de Saúde */}
         <div className="space-y-2">
-          <Label className="text-white block mb-2">Tem algum problema de saúde? *</Label>
+          <Label className="text-white block mb-2">Tem algum problema de saúde?</Label>
           <div className="flex space-x-6">
             {['SIM', 'NÃO'].map((opt) => (
               <label key={`saude-${opt}`} className="flex items-center space-x-2 cursor-pointer">
@@ -41,7 +41,7 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
 
         {toBoolean(formData.temProblemaSaude) && (
           <div className="space-y-2">
-            <Label htmlFor="condicoesMedicas" className="text-white">Qual problema de saúde?</Label>
+            <Label htmlFor="condicoesMedicas" className="text-white">Qual problema de saúde? (opcional)</Label>
             <Input 
               id="condicoesMedicas" 
               name="condicoesMedicas" 
@@ -62,7 +62,7 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
             usa_medicamento/medicamentos). */}
         {!isEquipante && (
           <div className="space-y-2">
-            <Label className="text-white block mb-2">Usa medicamento? *</Label>
+            <Label className="text-white block mb-2">Usa medicamento?</Label>
             <div className="flex space-x-6">
               {['SIM', 'NÃO'].map((opt) => (
                 <label key={`medic-${opt}`} className="flex items-center space-x-2 cursor-pointer">
@@ -84,7 +84,7 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
 
         {!isEquipante && toBoolean(formData.usaMedicamento) && (
           <div className="space-y-2">
-            <Label htmlFor="medicamentos" className="text-white">Qual medicamento?</Label>
+            <Label htmlFor="medicamentos" className="text-white">Qual medicamento? (opcional)</Label>
             <Input 
               id="medicamentos" 
               name="medicamentos" 
@@ -98,7 +98,7 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
 
         {/* Restrições Alimentares */}
         <div className="space-y-2">
-          <Label className="text-white block mb-2">Tem restrição alimentar? *</Label>
+          <Label className="text-white block mb-2">Tem restrição alimentar?</Label>
           <div className="flex space-x-6">
             {['SIM', 'NÃO'].map((opt) => (
               <label key={`alim-${opt}`} className="flex items-center space-x-2 cursor-pointer">
@@ -119,7 +119,7 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
 
         {toBoolean(formData.temRestricaoAlimentar) && (
           <div className="space-y-2">
-            <Label htmlFor="restricoesAlimentares" className="text-white">Quais?</Label>
+            <Label htmlFor="restricoesAlimentares" className="text-white">Quais? (opcional)</Label>
             <Input 
               id="restricoesAlimentares" 
               name="restricoesAlimentares" 
@@ -137,7 +137,7 @@ const InfoSaude = ({ formData, handleChange, isEquipante }) => {
             aparece quando o sexo informado for Feminino). */}
         {!isEquipante && formData.sexo === 'Feminino' && (
           <div className="space-y-2">
-            <Label className="text-white block mb-2">Está grávida? *</Label>
+            <Label className="text-white block mb-2">Está grávida?</Label>
             <div className="flex space-x-6">
               {['SIM', 'NÃO'].map((opt) => (
                 <label key={`gravida-${opt}`} className="flex items-center space-x-2 cursor-pointer">

@@ -10,7 +10,7 @@ const AdminResponsavel = ({ formData, handleChange, handleSelectChange }) => {
     <FormSection title="Igreja Responsável">
       <div className="grid grid-cols-1 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="adminResponsavel" className="text-white">Igreja Responsável pela Inscrição *</Label>
+          <Label htmlFor="adminResponsavel" className="text-white">Igreja Responsável pela Inscrição</Label>
           <Select
             value={formData.adminResponsavel}
             onValueChange={(value) => handleSelectChange('adminResponsavel', value)}

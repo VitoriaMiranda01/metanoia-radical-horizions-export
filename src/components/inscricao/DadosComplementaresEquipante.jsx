@@ -19,7 +19,7 @@ const DadosComplementaresEquipante = ({
         
         {/* Familiar Trabalhando */}
         <div className="space-y-2">
-          <Label htmlFor="familiarTrabalhando" className="text-white">Tem algum familiar que vai trabalhar no projeto? *</Label>
+          <Label htmlFor="familiarTrabalhando" className="text-white">Tem algum familiar que vai trabalhar no projeto?</Label>
           <Select value={formData.familiarTrabalhando} onValueChange={value => handleSelectChange('familiarTrabalhando', value)}>
             <SelectTrigger className="bg-white/10 border-white/20 text-white">
               <SelectValue placeholder="Selecione..." />
@@ -32,14 +32,14 @@ const DadosComplementaresEquipante = ({
 
         {formData.familiarTrabalhando === 'OUTRO FAMILIAR (DESCREVA)' && (
           <div className="space-y-2">
-            <Label htmlFor="familiarTrabalhandoOutro" className="text-white">Outro familiar (favor descrever)</Label>
+            <Label htmlFor="familiarTrabalhandoOutro" className="text-white">Outro familiar (favor descrever) (opcional)</Label>
             <Input id="familiarTrabalhandoOutro" name="familiarTrabalhandoOutro" value={formData.familiarTrabalhandoOutro} onChange={handleChange} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Descreva o grau de parentesco" />
           </div>
         )}
 
         {/* Familiar Acampando */}
         <div className="space-y-2">
-          <Label htmlFor="parentesco" className="text-white">Tem algum conhecido / familiar que vai participar como ACAMPANTE no projeto? *</Label>
+          <Label htmlFor="parentesco" className="text-white">Tem algum conhecido / familiar que vai participar como ACAMPANTE no projeto?</Label>
           <Select value={formData.parentesco} onValueChange={value => handleSelectChange('parentesco', value)}>
             <SelectTrigger className="bg-white/10 border-white/20 text-white">
               <SelectValue placeholder="Selecione..." />
@@ -52,7 +52,7 @@ const DadosComplementaresEquipante = ({
 
         {formData.parentesco && formData.parentesco !== 'NÃO TENHO' && (
           <div className="space-y-2">
-            <Label htmlFor="familiarNome" className="text-white">Descrever conhecido / familiar</Label>
+            <Label htmlFor="familiarNome" className="text-white">Descrever conhecido / familiar (opcional)</Label>
             <Input id="familiarNome" name="familiarNome" value={formData.familiarNome} onChange={handleChange} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Nome do conhecido/familiar" />
           </div>
         )}
@@ -60,7 +60,7 @@ const DadosComplementaresEquipante = ({
         {/* Histórico Radical Acampante */}
         <div className="space-y-4 pt-4 border-t border-white/10">
           <div className="space-y-2">
-            <Label className="text-white block mb-2">Você fez qual Radical como ACAMPANTE? *</Label>
+            <Label className="text-white block mb-2">Você fez qual Radical como ACAMPANTE?</Label>
             <div className="flex flex-col space-y-2">
               {RADICAL_ACAMPANTE_OPTIONS.map(option => (
                 <label key={option} className="flex items-center space-x-2 cursor-pointer">
@@ -73,13 +73,13 @@ const DadosComplementaresEquipante = ({
 
           {formData.qualRadicalAcampante === 'Outros casos (favor descrever)' && (
             <div className="space-y-2">
-              <Label htmlFor="qualRadicalAcampanteOutro" className="text-white">Outra edição (favor descrever)</Label>
+              <Label htmlFor="qualRadicalAcampanteOutro" className="text-white">Outra edição (favor descrever) (opcional)</Label>
               <Input id="qualRadicalAcampanteOutro" name="qualRadicalAcampanteOutro" value={formData.qualRadicalAcampanteOutro} onChange={handleChange} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
             </div>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="numeroEdicaoParticipou" className="text-white">Qual número da edição que você participou do Radical?</Label>
+            <Label htmlFor="numeroEdicaoParticipou" className="text-white">Qual número da edição que você participou do Radical? (opcional)</Label>
             <Input id="numeroEdicaoParticipou" name="numeroEdicaoParticipou" value={formData.numeroEdicaoParticipou} onChange={handleChange} type="number" className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
           </div>
         </div>
@@ -87,7 +87,7 @@ const DadosComplementaresEquipante = ({
         {/* Histórico Trabalho */}
         <div className="space-y-4 pt-4 border-t border-white/10">
           <div className="space-y-2">
-            <Label className="text-white block mb-2">Já trabalhou em alguma Edição do Radical? *</Label>
+            <Label className="text-white block mb-2">Já trabalhou em alguma Edição do Radical?</Label>
             <div className="flex space-x-6">
               {['SIM', 'NÃO'].map(opt => (
                 <label key={`trabalhou-${opt}`} className="flex items-center space-x-2 cursor-pointer">
@@ -100,7 +100,7 @@ const DadosComplementaresEquipante = ({
 
           {formData.jaTrabalhouEquipe === 'SIM' && (
             <div className="space-y-2">
-              <Label htmlFor="edicaoTrabalhou" className="text-white">Em qual edição você trabalhou?</Label>
+              <Label htmlFor="edicaoTrabalhou" className="text-white">Em qual edição você trabalhou? (opcional)</Label>
               <Input id="edicaoTrabalhou" name="edicaoTrabalhou" value={formData.edicaoTrabalhou} onChange={handleChange} type="number" className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
             </div>
           )}

@@ -11,7 +11,7 @@ const QuemIndicou = ({ formData, handleChange, handleSelectChange }) => {
         
         {/* Nome de quem indicou */}
         <div className="space-y-2">
-          <Label htmlFor="nomeQuemIndicou" className="text-white">Nome de quem indicou *</Label>
+          <Label htmlFor="nomeQuemIndicou" className="text-white">Nome de quem indicou</Label>
           <Input 
             id="nomeQuemIndicou" 
             name="nomeQuemIndicou" 
@@ -38,7 +38,7 @@ const QuemIndicou = ({ formData, handleChange, handleSelectChange }) => {
 
         {/* Conhecido no projeto */}
         <div className="space-y-2">
-          <Label htmlFor="conhecidoNoProjeto" className="text-white">Tem algum conhecido / familiar que vai participar como acampante no projeto? *</Label>
+          <Label htmlFor="conhecidoNoProjeto" className="text-white">Tem algum conhecido / familiar que vai participar como acampante no projeto?</Label>
           <Select 
             value={formData.conhecidoNoProjeto} 
             onValueChange={(value) => handleSelectChange('conhecidoNoProjeto', value)}
@@ -68,7 +68,7 @@ const QuemIndicou = ({ formData, handleChange, handleSelectChange }) => {
         {/* Nome do familiar/conhecido (Condicional) */}
         {formData.conhecidoNoProjeto && formData.conhecidoNoProjeto !== 'NÃO TENHO' && (
           <div className="space-y-2">
-            <Label htmlFor="nomeFamiliarConhecido" className="text-white">Nome completo do familiar / conhecido</Label>
+            <Label htmlFor="nomeFamiliarConhecido" className="text-white">Nome completo do familiar / conhecido (opcional)</Label>
             <Input 
               id="nomeFamiliarConhecido" 
               name="nomeFamiliarConhecido" 

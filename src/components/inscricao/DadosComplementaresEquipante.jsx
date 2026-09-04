@@ -32,8 +32,8 @@ const DadosComplementaresEquipante = ({
 
         {formData.familiarTrabalhando === 'OUTRO FAMILIAR (DESCREVA)' && (
           <div className="space-y-2">
-            <Label htmlFor="familiarTrabalhandoOutro" className="text-white">Outro familiar (favor descrever) (opcional)</Label>
-            <Input id="familiarTrabalhandoOutro" name="familiarTrabalhandoOutro" value={formData.familiarTrabalhandoOutro} onChange={handleChange} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Descreva o grau de parentesco" />
+            <Label htmlFor="familiarTrabalhandoOutro" className="text-white">Outro familiar (favor descrever)</Label>
+            <Input id="familiarTrabalhandoOutro" name="familiarTrabalhandoOutro" value={formData.familiarTrabalhandoOutro} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Descreva o grau de parentesco" />
           </div>
         )}
 
@@ -52,8 +52,8 @@ const DadosComplementaresEquipante = ({
 
         {formData.parentesco && formData.parentesco !== 'NÃO TENHO' && (
           <div className="space-y-2">
-            <Label htmlFor="familiarNome" className="text-white">Descrever conhecido / familiar (opcional)</Label>
-            <Input id="familiarNome" name="familiarNome" value={formData.familiarNome} onChange={handleChange} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Nome do conhecido/familiar" />
+            <Label htmlFor="familiarNome" className="text-white">Descrever conhecido / familiar</Label>
+            <Input id="familiarNome" name="familiarNome" value={formData.familiarNome} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Nome do conhecido/familiar" />
           </div>
         )}
 
@@ -73,8 +73,8 @@ const DadosComplementaresEquipante = ({
 
           {formData.qualRadicalAcampante === 'Outros casos (favor descrever)' && (
             <div className="space-y-2">
-              <Label htmlFor="qualRadicalAcampanteOutro" className="text-white">Outra edição (favor descrever) (opcional)</Label>
-              <Input id="qualRadicalAcampanteOutro" name="qualRadicalAcampanteOutro" value={formData.qualRadicalAcampanteOutro} onChange={handleChange} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
+              <Label htmlFor="qualRadicalAcampanteOutro" className="text-white">Outra edição (favor descrever)</Label>
+              <Input id="qualRadicalAcampanteOutro" name="qualRadicalAcampanteOutro" value={formData.qualRadicalAcampanteOutro} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
             </div>
           )}
 

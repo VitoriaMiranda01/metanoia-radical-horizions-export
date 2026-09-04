@@ -3,6 +3,13 @@ import { Label } from '@/components/ui/label';
 import FormSection from './FormSection';
 import { cn } from '@/lib/utils';
 
+// Unica area que pode ser escolhida em mais de uma das 3 opcoes de
+// preferencia (ver isAreaDisabled abaixo) -- antes eram 3 areas
+// separadas ("Disponível para qualquer área 1/2/3"), unificadas a
+// pedido da usuaria pra ficar mais simples no formulario e na tela de
+// escalas (que passa a mostrar 1 tabela em vez de 3).
+const AREA_DISPONIVEL_QUALQUER = "Disponível para qualquer área";
+
 const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
   const AREAS = [
     "Contêiner",
@@ -11,9 +18,7 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
     "Cracolândia",
     "Cristalândia",
     "Dia do arrebatamento da igreja",
-    "Disponível para qualquer área 1",
-    "Disponível para qualquer área 2",
-    "Disponível para qualquer área 3",
+    AREA_DISPONIVEL_QUALQUER,
     "Falsa baiana",
     "Família",
     "Família muçulmana",
@@ -44,6 +49,10 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
 
   // Helper to check if an area is selected in other fields
   const isAreaDisabled = (area, currentFieldName) => {
+    // "Disponível para qualquer área" é a única exceção à regra abaixo: pode
+    // ser escolhida em mais de uma das 3 opções de preferência.
+    if (area === AREA_DISPONIVEL_QUALQUER) return false;
+
     const fieldNames = ["areaTrabalhoOpcao1", "areaTrabalhoOpcao2", "areaTrabalhoOpcao3"];
     const otherFields = fieldNames.filter(name => name !== currentFieldName);
     
@@ -113,7 +122,7 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
           <p className="text-yellow-200 text-sm">
             Selecione abaixo suas 3 opções de preferência para áreas de trabalho.
             <br/>
-            <strong>Nota:</strong> Você não pode selecionar a mesma área em mais de uma opção.
+            <strong>Nota:</strong> Você não pode selecionar a mesma área em mais de uma opção, exceto "Disponível para qualquer área", que pode ser selecionada em mais de uma opção.
           </p>
         </div>
         

@@ -123,9 +123,18 @@ export const formatEnderecoCompleto = (item) => {
 
 // Concatena as 3 opções de área de trabalho do equipante num único valor de exibição.
 // Não inclui area_trabalho_extra (campo de observação livre, não é uma 4ª opção de área).
+// "Disponível para qualquer área" pode aparecer em mais de uma das 3 opções
+// (única exceção a essa regra) -- por isso agrupamos repetições em vez de
+// listar o mesmo texto 2x ou 3x seguidas.
 export const formatAreaTrabalho = (item) => {
   const areas = [item.area_trabalho_opcao1, item.area_trabalho_opcao2, item.area_trabalho_opcao3].filter(Boolean);
-  return areas.length > 0 ? areas.join(', ') : '';
+  const contagem = areas.reduce((acc, area) => {
+    acc[area] = (acc[area] || 0) + 1;
+    return acc;
+  }, {});
+  return Object.entries(contagem)
+    .map(([area, count]) => (count > 1 ? `${area} (${count}x)` : area))
+    .join(', ');
 };
 
 // "Nome" nao entra aqui: ja e sempre a primeira coluna, fixa, em ambas as

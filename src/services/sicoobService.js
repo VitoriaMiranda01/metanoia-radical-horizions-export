@@ -22,26 +22,3 @@ export const gerarPixSicoob = async (valor, descricao, cpf, tipoInscricao, nome_
     throw new Error(err.message || 'Falha de conexão com gateway Sicoob. Tente novamente.');
   }
 };
-
-export const consultarStatusPagamentoSicoob = async (idTransacao, tipo) => {
-  try {
-    if (!idTransacao) throw new Error('ID de Transação inválido ou ausente');
-    
-    const functionName = 'sicoob-pix-consulta';
-    const { data, error } = await supabase.functions.invoke(functionName, {
-      body: { sicoob_id: idTransacao }
-    });
-
-    if (error || !data?.success) {
-      throw new Error(data?.error || error?.message || "Erro ao consultar status PIX Sicoob");
-    }
-
-    return {
-      status: data.status === 'pago' ? 'PAID' : 'PENDING',
-      id_transacao: idTransacao
-    };
-  } catch (err) {
-    console.error('sicoobApi - consultarStatusPagamentoSicoob', err, { idTransacao });
-    throw new Error(err.message || 'Falha de conexão ao consultar gateway.');
-  }
-};

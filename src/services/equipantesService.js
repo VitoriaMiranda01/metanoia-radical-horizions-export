@@ -127,21 +127,27 @@ export const updateWorkflowStage = async (equipante_id, updates) => {
   }
 };
 
+// Mesmo bucket usado para o modelo de autorizacao para download
+// (autorizacao-menor-idade-equipante), so que os arquivos enviados pelos
+// responsaveis ficam dentro da pasta "envios/" para nao se misturar com o
+// arquivo-modelo fixo que fica na raiz do bucket.
+const PARENTAL_AUTH_BUCKET = 'autorizacao-menor-idade-equipante';
+
 export const uploadParentalAuthFile = async (equipante_id, file) => {
   if (!equipante_id || !file) throw new Error("Parâmetros inválidos para upload");
 
   try {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${equipante_id}-${Math.random()}.${fileExt}`;
+    const fileName = `envios/${equipante_id}-${Math.random()}.${fileExt}`;
     
     const { error: uploadError } = await supabase.storage
-      .from('equipante-authorizations')
+      .from(PARENTAL_AUTH_BUCKET)
       .upload(fileName, file);
 
     if (uploadError) throw uploadError;
 
     const { data: publicUrlData } = supabase.storage
-      .from('equipante-authorizations')
+      .from(PARENTAL_AUTH_BUCKET)
       .getPublicUrl(fileName);
 
     const { data, error } = await supabase

@@ -50,19 +50,6 @@ const DadosPessoais = ({
     }
   };
 
-  const onSemCpfChange = (checked) => {
-    if (typeof handleCheckboxChange === 'function') {
-      handleCheckboxChange('semCpf', checked);
-    } else if (typeof handleChange === 'function') {
-      handleChange({ target: { name: 'semCpf', value: checked, type: 'checkbox', checked } });
-    }
-    // Ao marcar que não tem CPF, limpa o campo pra não enviar um valor
-    // desatualizado ou inválido junto com a inscrição.
-    if (checked && typeof handleChange === 'function') {
-      handleChange({ target: { name: 'cpf', value: '', type: 'text' } });
-    }
-  };
-
   return (
     <FormSection title="Dados Pessoais">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -106,25 +93,13 @@ const DadosPessoais = ({
             )}
           </div>
 
-          <div className="flex items-center space-x-2 mt-1">
-            <Checkbox
-              id="semCpf"
-              checked={!!formData.semCpf}
-              onCheckedChange={onSemCpfChange}
-              className="border-white/50 data-[state=checked]:bg-red-700 data-[state=checked]:text-white h-3.5 w-3.5"
-            />
-            <label htmlFor="semCpf" className="text-[10px] text-white/70 cursor-pointer select-none leading-none">
-              Não tenho CPF (documento estrangeiro)
-            </label>
-          </div>
-
-          <p className="text-[10px] text-blue-200/70 mt-auto pt-1">
-            {formData.semCpf
-              ? "Sem problema — você poderá se inscrever sem informar um CPF."
-              : (isEquipante
+          {!formData.semCpf && (
+            <p className="text-[10px] text-blue-200/70 mt-auto pt-1">
+              {isEquipante
                 ? "Digite o CPF para buscar dados de edições anteriores."
-                : "Digite o CPF para preencher automaticamente dados anteriores.")}
-          </p>
+                : "Digite o CPF para preencher automaticamente dados anteriores."}
+            </p>
+          )}
         </div>
 
         {/* Nome Completo - Segundo campo (Alinhado com CPF) */}

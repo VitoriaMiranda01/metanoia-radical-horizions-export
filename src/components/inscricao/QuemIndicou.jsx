@@ -25,13 +25,12 @@ const QuemIndicou = ({ formData, handleChange, handleSelectChange }) => {
 
         {/* Telefone de quem indicou */}
         <div className="space-y-2">
-          <Label htmlFor="telefoneQuemIndicou" className="text-white">Telefone de quem indicou (Caso não saiba, informe o seu número) *</Label>
+          <Label htmlFor="telefoneQuemIndicou" className="text-white">Telefone de quem indicou (opcional)</Label>
           <Input 
             id="telefoneQuemIndicou" 
             name="telefoneQuemIndicou" 
             value={formData.telefoneQuemIndicou || ''} 
             onChange={handleChange} 
-            required 
             className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
             placeholder="(00) 00000-0000" 
           />

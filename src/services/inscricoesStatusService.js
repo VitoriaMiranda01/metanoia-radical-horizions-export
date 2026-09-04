@@ -6,7 +6,7 @@ export const fetchInscricoesStatus = async () => {
   return withRetry(async () => {
     try {
       if (!navigator.onLine) return { inscricoes_equipantes: true, inscricoes_acampantes: true };
-      const { data, error } = await supabase.from('inscricoes_status').select('id, inscricoes_equipantes, inscricoes_acampantes, updated_at').limit(1).maybeSingle();
+      const { data, error } = await supabase.from('configuracoes').select('id, inscricoes_equipantes, inscricoes_acampantes, updated_at').limit(1).maybeSingle();
       if (error) {
          if (['42P01', 'PGRST116', 'PGRST205'].includes(error.code)) return { inscricoes_equipantes: true, inscricoes_acampantes: true };
          throw error;
@@ -24,7 +24,7 @@ export const updateInscricoesStatus = async (equipantes, acampantes) => {
     const validation = validateInscricoesStatus({ equipantes, acampantes });
     if (!validation.isValid) throw new Error(validation.errors.join(' '));
 
-    const { data: existing } = await supabase.from('inscricoes_status').select('id').limit(1).maybeSingle();
+    const { data: existing } = await supabase.from('configuracoes').select('id').limit(1).maybeSingle();
 
     const statusPayload = {
       inscricoes_equipantes: equipantes,
@@ -35,13 +35,13 @@ export const updateInscricoesStatus = async (equipantes, acampantes) => {
     let data, error;
     if (existing?.id) {
       ({ data, error } = await supabase
-        .from('inscricoes_status')
+        .from('configuracoes')
         .update(statusPayload)
         .eq('id', existing.id)
         .select());
     } else {
       ({ data, error } = await supabase
-        .from('inscricoes_status')
+        .from('configuracoes')
         .insert(statusPayload)
         .select());
     }

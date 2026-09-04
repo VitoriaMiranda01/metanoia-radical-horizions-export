@@ -18,16 +18,14 @@ export const SCHEMA_DEFINITIONS = {
     ],
     indexes: ['cpf']
   },
-  inscricoes_status: {
-    fields: ['id', 'inscricoes_equipantes', 'inscricoes_acampantes']
-  },
   configuracoes: {
     fields: [
       'id', 'max_equipantes', 'max_acampantes', 'max_acampantes_homens',
       'max_acampantes_mulheres', 'edicao_numero',
       'equipante_pricing_periods', 'acampante_pricing_periods',
       'valor_equipante', 'valor_acampante', 'updated_at',
-      'cpfs_area_guia', 'cpfs_area_inimigo', 'cpfs_area_espirito_santo'
+      'cpfs_area_guia', 'cpfs_area_inimigo', 'cpfs_area_espirito_santo',
+      'inscricoes_equipantes', 'inscricoes_acampantes'
     ]
   },
   limites_areas: {

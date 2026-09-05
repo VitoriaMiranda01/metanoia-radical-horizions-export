@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, Lock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { 
   COLUMN_DEFINITIONS, 
+  LOCKED_COLUMNS,
   selectAllColumns, 
   clearAllColumns, 
   toggleColumn 
@@ -81,26 +83,37 @@ const ColumnVisibilityDropdown = ({
                    {group}
                  </h4>
                  <div className="space-y-0.5">
-                   {items.map((col) => (
-                     <div 
-                       key={col.key} 
-                       className="flex items-center space-x-3 rounded-md hover:bg-neutral-800 p-2 transition-colors cursor-pointer group"
-                       onClick={() => handleToggle(col.key)}
-                     >
-                       <Checkbox 
-                         id={`col-${col.key}`} 
-                         checked={currentColumns.includes(col.key)}
-                         onCheckedChange={() => handleToggle(col.key)}
-                         className="border-white/30 data-[state=checked]:bg-gray-200 data-[state=checked]:text-slate-900 data-[state=checked]:border-gray-200 h-4 w-4"
-                       />
-                       <Label 
-                         htmlFor={`col-${col.key}`}
-                         className="text-sm font-normal cursor-pointer text-gray-300 group-hover:text-white select-none flex-1"
+                   {items.map((col) => {
+                     const isLocked = LOCKED_COLUMNS.includes(col.key);
+                     return (
+                       <div 
+                         key={col.key} 
+                         className={cn(
+                           "flex items-center space-x-3 rounded-md p-2 transition-colors group",
+                           isLocked ? "cursor-default" : "hover:bg-neutral-800 cursor-pointer"
+                         )}
+                         onClick={() => !isLocked && handleToggle(col.key)}
                        >
-                         {col.label}
-                       </Label>
-                     </div>
-                   ))}
+                         <Checkbox 
+                           id={`col-${col.key}`} 
+                           checked={currentColumns.includes(col.key)}
+                           onCheckedChange={() => !isLocked && handleToggle(col.key)}
+                           disabled={isLocked}
+                           className="border-white/30 data-[state=checked]:bg-gray-200 data-[state=checked]:text-slate-900 data-[state=checked]:border-gray-200 h-4 w-4 disabled:opacity-100 disabled:cursor-default"
+                         />
+                         <Label 
+                           htmlFor={`col-${col.key}`}
+                           className={cn(
+                             "text-sm font-normal select-none flex-1 flex items-center gap-1.5",
+                             isLocked ? "text-gray-400 cursor-default" : "text-gray-300 group-hover:text-white cursor-pointer"
+                           )}
+                         >
+                           {col.label}
+                           {isLocked && <Lock className="w-3 h-3 text-gray-500" aria-label="Coluna obrigatória" />}
+                         </Label>
+                       </div>
+                     );
+                   })}
                  </div>
                </div>
              ))}

@@ -145,16 +145,28 @@ const DEFAULT_VISIBLE_COLUMNS = {
   acampantes: ['cpf', 'igreja']
 };
 
+// Colunas que o usuario nao pode desmarcar no seletor "Colunas" (CPF e
+// Igreja, a pedido da usuaria em 2026-09-05) -- valem pra acampantes e
+// equipantes. Diferente de "nome", que fica sempre fixa na primeira
+// posicao da tabela, CPF/Igreja continuam podendo mudar de posicao entre as
+// outras colunas marcadas; so nao podem ficar desmarcadas/escondidas.
+export const LOCKED_COLUMNS = ['cpf', 'igreja'];
+
 export const getVisibleColumnsFromStorage = (type) => {
+  let columns;
   try {
     const saved = localStorage.getItem(`visibleColumns_${type}`);
-    if (saved) {
-      return JSON.parse(saved);
-    }
+    columns = saved ? JSON.parse(saved) : (DEFAULT_VISIBLE_COLUMNS[type] || []);
   } catch (e) {
     console.error('Error loading visible columns', e);
+    columns = DEFAULT_VISIBLE_COLUMNS[type] || [];
   }
-  return DEFAULT_VISIBLE_COLUMNS[type] || [];
+
+  // Garante que CPF/Igreja estejam sempre presentes, mesmo pra quem tinha
+  // desmarcado uma delas e salvo isso no localStorage antes dessa regra
+  // existir.
+  const missingLocked = LOCKED_COLUMNS.filter(k => !columns.includes(k));
+  return missingLocked.length > 0 ? [...columns, ...missingLocked] : columns;
 };
 
 export const saveVisibleColumnsToStorage = (type, columns) => {
@@ -171,11 +183,22 @@ export const selectAllColumns = (type) => {
 };
 
 export const clearAllColumns = () => {
-  return [];
+  // CPF/Igreja nao podem ficar desmarcadas -- "Limpar" desmarca todo o
+  // resto, mas mantem as duas.
+  return [...LOCKED_COLUMNS];
 };
 
 export const toggleColumn = (currentColumns, key) => {
-  if (currentColumns.includes(key)) {
+  const isCurrentlyVisible = currentColumns.includes(key);
+
+  // Impede desmarcar CPF/Igreja (ver LOCKED_COLUMNS acima). So bloqueia a
+  // remocao -- nao ha nada pra bloquear ao "marcar", ja que essas colunas
+  // deveriam estar sempre marcadas de qualquer forma.
+  if (isCurrentlyVisible && LOCKED_COLUMNS.includes(key)) {
+    return currentColumns;
+  }
+
+  if (isCurrentlyVisible) {
     return currentColumns.filter(c => c !== key);
   }
   return [...currentColumns, key];

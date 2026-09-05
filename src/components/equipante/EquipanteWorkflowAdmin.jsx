@@ -62,7 +62,7 @@ const EquipanteWorkflowAdmin = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-white">Workflows dos Equipantes</h2>
-        <Button onClick={exportToExcel} variant="outline" className="bg-white/5 border-white/10">
+        <Button onClick={exportToExcel} variant="outline" className="bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white">
           <Download className="w-4 h-4 mr-2" />
           Exportar Relatório
         </Button>

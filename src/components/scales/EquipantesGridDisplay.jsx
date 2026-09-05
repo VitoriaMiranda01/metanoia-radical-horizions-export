@@ -39,7 +39,7 @@ const EquipantesGridDisplay = ({
             size="sm" 
             variant="outline" 
             onClick={() => onExport(areaName, equipantes)}
-            className="h-8 text-xs bg-white/5 border-white/20 text-white hover:bg-white/10"
+            className="h-8 text-xs bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white"
           >
             <Download className="mr-2 h-3 w-3" />
             Exportar

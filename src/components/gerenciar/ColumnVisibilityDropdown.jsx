@@ -53,8 +53,8 @@ const ColumnVisibilityDropdown = ({
           Colunas
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[280px] p-0 bg-slate-900 border-white/20 text-white shadow-xl">
-         <div className="p-3 border-b border-white/10 flex justify-between items-center bg-slate-900/50">
+      <PopoverContent align="end" className="w-[280px] p-0 bg-neutral-900 border-white/20 text-white shadow-xl">
+         <div className="p-3 border-b border-white/10 flex justify-between items-center bg-neutral-900/50">
             <span className="text-sm font-medium text-gray-200">Visualizar Colunas</span>
             <div className="flex gap-2">
               <Button 

@@ -24,14 +24,14 @@ export const COLUMN_DEFINITIONS = {
     { key: 'tem_restricao_alimentar', label: 'Tem Restrição Alimentar', group: 'Saúde' },
 
     // Eclesiástico
-    { key: 'igreja', label: 'Igreja', group: 'Eclesiástico' },
-    { key: 'cargo_igreja', label: 'Função na Igreja', group: 'Eclesiástico' },
-    { key: 'esta_afastado', label: 'Congrega em Igreja', group: 'Eclesiástico' },
-    { key: 'pastor_nome', label: 'Nome do Pastor', group: 'Eclesiástico' },
-    { key: 'frequenta_ebd', label: 'Frequenta EBD', group: 'Eclesiástico' },
-    { key: 'frequenta_grupo_cuidado', label: 'Frequenta Grupo de Cuidado', group: 'Eclesiástico' },
-    { key: 'voce_canta', label: 'Canta', group: 'Eclesiástico' },
-    { key: 'toca_instrumento', label: 'Toca Instrumento', group: 'Eclesiástico' },
+    { key: 'igreja', label: 'Igreja', group: 'Igreja' },
+    { key: 'cargo_igreja', label: 'Função na Igreja', group: 'Igreja' },
+    { key: 'esta_afastado', label: 'Congrega em Igreja', group: 'Igreja' },
+    { key: 'pastor_nome', label: 'Nome do Pastor', group: 'Igreja' },
+    { key: 'frequenta_ebd', label: 'Frequenta EBD', group: 'Igreja' },
+    { key: 'frequenta_grupo_cuidado', label: 'Frequenta Grupo de Cuidado', group: 'Igreja' },
+    { key: 'voce_canta', label: 'Canta', group: 'Igreja' },
+    { key: 'toca_instrumento', label: 'Toca Instrumento', group: 'Igreja' },
 
     // Serviço (campo calculado: junta area_trabalho_opcao1/2/3)
     { key: 'area_trabalho', label: 'Área de Trabalho', group: 'Serviço' },
@@ -74,14 +74,14 @@ export const COLUMN_DEFINITIONS = {
     { key: 'cep', label: 'CEP', group: 'Endereço' },
 
     // Acampamento
-    { key: 'igreja', label: 'Igreja', group: 'Eclesiástico' },
+    { key: 'igreja', label: 'Igreja', group: 'Igreja' },
     // cargo_igreja existe na tabela desde a migration schema-update-
     // 20260901c (o formulario de acampante ja pergunta isso); a opcao so
     // nao tinha sido adicionada aqui ainda -- adicionada em 2026-09-03.
-    { key: 'cargo_igreja', label: 'Função na Igreja', group: 'Eclesiástico' },
-    { key: 'esta_afastado', label: 'Congrega em Igreja', group: 'Eclesiástico' },
-    { key: 'pastor_nome', label: 'Nome do Pastor', group: 'Eclesiástico' },
-    { key: 'admin_responsavel', label: 'Igreja Responsável pela Inscrição', group: 'Eclesiástico' },
+    { key: 'cargo_igreja', label: 'Função na Igreja', group: 'Igreja' },
+    { key: 'esta_afastado', label: 'Congrega em Igreja', group: 'Igreja' },
+    { key: 'pastor_nome', label: 'Nome do Pastor', group: 'Igreja' },
+    { key: 'admin_responsavel', label: 'Igreja Responsável pela Inscrição', group: 'Igreja' },
     { key: 'grupo_trailha', label: 'Grupo de Trilha', group: 'Acampamento' },
     { key: 'tamanho_camisa', label: 'Camiseta', group: 'Acampamento' },
 

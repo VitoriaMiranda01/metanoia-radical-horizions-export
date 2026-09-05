@@ -295,7 +295,7 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
                 variant="outline" 
                 onClick={handleCancel}
                 disabled={isSaving}
-                className="border-white/20 text-gray-300 hover:bg-white/10 hover:text-white"
+                className="border-white/20 text-black hover:bg-white/10 hover:text-white"
               >
                 <X className="w-4 h-4 mr-2" />
                 Cancelar

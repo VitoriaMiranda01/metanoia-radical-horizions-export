@@ -5,6 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 
 const formatDateInput = (val) => {
   let v = val.replace(/\D/g, '').slice(0, 8);
@@ -32,6 +42,7 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [periodToDelete, setPeriodToDelete] = useState(null);
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
@@ -58,26 +69,31 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
     setIsEditing(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Tem certeza que deseja remover este período?')) {
-      setIsSaving(true);
-      try {
-        const updatedPeriods = periods.filter(p => p.id !== id);
-        await onSave(updatedPeriods);
-        toast({
-          title: 'Período removido',
-          description: 'O período foi removido com sucesso.',
-          className: 'bg-emerald-600 text-white border-none'
-        });
-      } catch (err) {
-        toast({
-          title: 'Erro ao remover',
-          description: err.message || 'Não foi possível remover o período.',
-          variant: 'destructive'
-        });
-      } finally {
-        setIsSaving(false);
-      }
+  const handleDelete = (id) => {
+    setPeriodToDelete(id);
+  };
+
+  const confirmarRemocaoPeriodo = async () => {
+    const id = periodToDelete;
+    if (!id) return;
+    setPeriodToDelete(null);
+    setIsSaving(true);
+    try {
+      const updatedPeriods = periods.filter(p => p.id !== id);
+      await onSave(updatedPeriods);
+      toast({
+        title: 'Período removido',
+        description: 'O período foi removido com sucesso.',
+        className: 'bg-emerald-600 text-white border-none'
+      });
+    } catch (err) {
+      toast({
+        title: 'Erro ao remover',
+        description: err.message || 'Não foi possível remover o período.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -316,6 +332,33 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
           Adicionar Período
         </Button>
       )}
+
+      <AlertDialog
+        open={!!periodToDelete}
+        onOpenChange={(open) => {
+          if (!open) setPeriodToDelete(null);
+        }}
+      >
+        <AlertDialogContent className="bg-zinc-900 border border-gray-800 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover período</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Tem certeza que deseja remover este período?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmarRemocaoPeriodo}
+              className="bg-red-600 hover:bg-red-700 text-white border-none"
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

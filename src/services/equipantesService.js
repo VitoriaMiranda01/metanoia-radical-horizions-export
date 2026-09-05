@@ -245,9 +245,16 @@ export const countEquipantesInscritos = async () => {
 
 export const resetEquipantesInscricoes = async () => {
   try {
+    // parental_auth_uploaded_at tem que ser limpo junto com
+    // parental_auth_file_url -- senao a tela de detalhamento da inscricao
+    // mostra "Arquivo: -" mas ainda com a data de upload da edicao
+    // anterior, o que fica inconsistente (ver getEquipanteStageLabel em
+    // utils/equipanteWorkflow.js: o estagio "Aguardando autorizacao dos
+    // pais" ja usa so o file_url, entao isso e so cosmetico/informativo,
+    // nao afeta o calculo do estagio em si).
     const { data, error } = await supabase
       .from('equipantes')
-      .update({inscrito: false, status_pagamento: 'pendente', scale_status: 'pendente', status: 'pendente', parental_auth_file_url: null})
+      .update({inscrito: false, status_pagamento: 'pendente', scale_status: 'pendente', status: 'pendente', parental_auth_file_url: null, parental_auth_uploaded_at: null})
       .eq('tipo', 'equipante')
       .select('id');
       

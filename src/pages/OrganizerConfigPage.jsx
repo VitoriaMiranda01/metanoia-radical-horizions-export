@@ -181,9 +181,9 @@ const OrganizerConfigPage = () => {
   };
 
   // Valida os campos de data/ano do formulario de Configuracoes Gerais.
-  // So roda no clique de "Salvar Configuracoes Gerais" (handleSaveAll) -- nao
-  // durante a digitacao, senao o toast de erro interrompe o usuario a cada
-  // tecla, antes mesmo dele terminar de digitar um valor valido.
+  // So roda no clique do botao "Salvar" (handleSaveAll) -- nao durante a
+  // digitacao, senao o toast de erro interrompe o usuario a cada tecla,
+  // antes mesmo dele terminar de digitar um valor valido.
   const validateGeneralConfigFields = (cfg) => {
     const day1 = parseInt(cfg.data_edicao_dia_inicio, 10);
     if (cfg.data_edicao_dia_inicio && (isNaN(day1) || day1 < 1 || day1 > 31)) {
@@ -595,7 +595,7 @@ const OrganizerConfigPage = () => {
                   ) : (
                     <>
                       <Save className="w-4 h-4 mr-2" />
-                      Salvar Configurações Gerais
+                      Salvar
                     </>
                   )}
                 </Button>

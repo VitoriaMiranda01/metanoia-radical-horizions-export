@@ -132,3 +132,25 @@ export const salvarObservacaoAcampante = async (acampanteId, observacao) => {
     return { success: false, error: error.message || 'Erro ao tentar salvar a observação.' };
   }
 };
+
+// Apaga TODOS os registros da tabela acampantes. Usado ao resetar o sistema
+// para a proxima edicao (ver handleResetInscricoes em
+// OrganizerConfigPage.jsx / Acoes de Risco). Diferente do reset de
+// equipantes (que so atualiza o status para forcar nova inscricao), os
+// acampantes nao carregam de uma edicao pra outra -- entao aqui a limpeza e
+// uma exclusao real e definitiva de todos os registros.
+export const deleteAllAcampantes = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('acampantes')
+      .delete()
+      .not('id', 'is', null)
+      .select('id');
+
+    if (error) throw error;
+    return { success: true, count: data ? data.length : 0 };
+  } catch (error) {
+    console.error('Erro ao apagar todos os acampantes:', error);
+    throw error;
+  }
+};

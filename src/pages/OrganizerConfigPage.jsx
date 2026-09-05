@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateCpfsAreaEspecial, subscribeToConfiguracoesChanges } from '@/services/organizerConfigService';
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
 import { resetEquipantesInscricoes } from '@/services/equipantesService';
+import { deleteAllAcampantes } from '@/services/acampantesService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users } from 'lucide-react';
@@ -414,10 +415,11 @@ const OrganizerConfigPage = () => {
   const handleResetInscricoes = async () => {
     setIsResettingInscricoes(true);
     try {
-      const result = await resetEquipantesInscricoes();
+      const equipantesResult = await resetEquipantesInscricoes();
+      const acampantesResult = await deleteAllAcampantes();
       toast({
         title: "Sucesso!",
-        description: `Status de inscrição resetado com sucesso para ${result.count} equipante(s).`,
+        description: `Status de inscrição resetado para ${equipantesResult.count} equipante(s) e ${acampantesResult.count} acampante(s) apagado(s) com sucesso.`,
         className: "bg-emerald-600 text-white border-none"
       });
       setShowResetConfirmDialog(false);
@@ -792,8 +794,8 @@ const OrganizerConfigPage = () => {
               <CardContent>
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
-                    <h4 className="text-white font-medium mb-1">Resetar Inscrições de Equipantes</h4>
-                    <p className="text-sm text-gray-400">Marca todos os equipantes atuais como "não inscritos". Isso forçará todos a passarem pelo fluxo de inscrição novamente. Esta ação não pode ser desfeita.</p>
+                    <h4 className="text-white font-medium mb-1">Resetar Inscrições para Nova Edição</h4>
+                    <p className="text-sm text-gray-400">Marca todos os equipantes atuais como "não inscritos" (forçando todos a passarem pelo fluxo de inscrição novamente) e apaga permanentemente todos os registros de acampantes. Esta ação não pode ser desfeita.</p>
                   </div>
                   <Button onClick={() => setShowResetConfirmDialog(true)} variant="destructive" className="bg-red-600 hover:bg-red-700 text-white font-bold whitespace-nowrap">
                     <RefreshCw className="w-4 h-4 mr-2" />
@@ -828,8 +830,8 @@ const OrganizerConfigPage = () => {
               <AlertCircle className="w-5 h-5" /> Confirmar Reset de Inscrições
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400 text-base">
-              Tem certeza que deseja resetar o status de inscrição de <strong>TODOS</strong> os equipantes?<br /><br />
-              Isso definirá o status de inscrição como falso para todos os registros. Esta ação não apaga os dados pessoais, mas exige que eles preencham o formulário de inscrição novamente.
+              Tem certeza que deseja resetar as inscrições para a próxima edição?<br /><br />
+              Isso definirá o status de inscrição como falso para <strong>TODOS</strong> os equipantes (não apaga os dados pessoais deles, apenas exige nova inscrição) e <strong className="text-red-400">apagará permanentemente todos os registros de acampantes</strong>, incluindo seus dados pessoais.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

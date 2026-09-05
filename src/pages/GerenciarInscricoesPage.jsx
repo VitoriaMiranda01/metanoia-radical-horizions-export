@@ -144,41 +144,13 @@ const GerenciarInscricoesPage = () => {
     }
   };
 
-  const exportarDados = (tipo) => {
-    const dadosParaExportar = tipo === 'equipantes' ? equipantes : acampantesList;
-    
-    if (dadosParaExportar.length === 0) {
-      toast({ title: "Nenhum dado", description: `Não há ${tipo} para exportar.`, variant: "destructive" });
-      return;
-    }
-    
-    let headers = [];
-    let rows = [];
+  // A exportacao de acampantes e equipantes agora e feita dentro de cada
+  // tabela (ver handleExport em AcampantesTable.jsx / InscricoesTable.jsx),
+  // que tem acesso direto aos dados ja filtrados na tela e as colunas
+  // marcadas em "Colunas" -- substituiu essa funcao, que exportava uma
+  // lista fixa de colunas (incluindo Email/Pastor/Status, que nem apareciam
+  // mais na tabela) e sempre a lista completa, ignorando os filtros.
 
-    if (tipo === 'equipantes') {
-      headers = ['CPF', 'Nome', 'Email', 'Telefone', 'Idade', 'Cidade', 'Estado', 'Igreja', 'Pastor', 'Status'];
-      rows = dadosParaExportar.map(i => [
-        i.cpf, i.nome, i.email, i.telefone, i.idade, i.cidade, i.estado, i.igreja, i.pastor, i.status]);
-    } else {
-      headers = ['CPF', 'Nome', 'Email', 'WhatsApp', 'Idade', 'Cidade', 'Estado', 'Igreja'];
-      rows = dadosParaExportar.map(i => [
-        i.cpf, i.nome, i.email, i.whatsapp, i.idade, i.cidade, i.estado, i.igreja]);
-    }
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell || ''}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${tipo}_metanoia_radical.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    toast({ title: "Dados exportados", description: `Lista de ${tipo} exportada com sucesso!` });
-  };
-  
   const filterInscricoes = (list, searchTerm) => {
     if (!searchTerm.trim()) return list;
     const term = searchTerm.toLowerCase();
@@ -371,7 +343,6 @@ const GerenciarInscricoesPage = () => {
                 dados={filteredEquipantes} 
                 tipo="equipantes" 
                 onSelect={setSelectedInscricao} 
-                onExportar={exportarDados}
                 searchTerm={searchTermEquipantes}
                 onSearchChange={setSearchTermEquipantes}
               />

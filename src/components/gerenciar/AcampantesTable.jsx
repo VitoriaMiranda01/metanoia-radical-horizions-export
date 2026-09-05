@@ -206,8 +206,25 @@ const AcampantesTable = ({
       });
       return;
     }
-    
-    const result = exportAcampantesToExcel(filteredData);
+
+    // Exporta exatamente as colunas marcadas em "Colunas" (na mesma ordem
+    // da tabela), sempre incluindo Nome (coluna fixa, sempre visivel
+    // independente do que esta marcado). Os registros exportados sao os
+    // que estao filtrados na tela nesse momento -- busca + filtros de
+    // coluna; sem filtro nenhum, e a lista completa (filteredData ja
+    // reflete isso).
+    const rows = filteredData.map(item => {
+      const row = { Nome: item.nome || '-' };
+      visibleColumns.forEach(colKey => {
+        const def = getColDef(colKey);
+        if (def) {
+          row[def.label] = renderCellContent(item, colKey);
+        }
+      });
+      return row;
+    });
+
+    const result = exportAcampantesToExcel(rows);
     if (result.success) {
       toast({
         title: "Sucesso",

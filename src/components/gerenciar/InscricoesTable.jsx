@@ -14,6 +14,7 @@ import {
   DropdownMenuCheckboxItem
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useToast } from '@/components/ui/use-toast';
 import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDropdown';
 import { 
   getVisibleColumnsFromStorage, 
@@ -153,7 +154,8 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data }) =
   );
 };
 
-const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, searchTerm, onSearchChange }) => {
+const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onSearchChange }) => {
+  const { toast } = useToast();
   const [filters, setFilters] = useState({});
   const [visibleColumns, setVisibleColumns] = useState([]);
   
@@ -226,6 +228,46 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
     return item[key] || '-';
   };
 
+  const escapeCsvCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+  const handleExport = () => {
+    if (filteredData.length === 0) {
+      toast({ title: "Nenhum dado", description: `Não há ${safeTipo} para exportar.`, variant: "destructive" });
+      return;
+    }
+
+    // Exporta exatamente as colunas marcadas em "Colunas" (na mesma ordem
+    // da tabela), sempre incluindo Nome (coluna fixa, sempre visivel
+    // independente do que esta marcado). Os registros exportados sao os
+    // que estao filtrados na tela nesse momento -- busca + filtros de
+    // coluna; sem filtro nenhum, e a lista completa (filteredData ja
+    // reflete isso). getColumnValue (nao renderCellContent, que devolve um
+    // Badge JSX para "status") garante que toda celula vire texto simples.
+    const dynamicColumns = visibleColumns.filter(k => k !== 'nome');
+    const headers = ['Nome', ...dynamicColumns.map(k => {
+      const def = getColDef(k);
+      return def ? def.label : k;
+    })];
+
+    const rows = filteredData.map(item => [
+      item.nome || '',
+      ...dynamicColumns.map(k => getColumnValue(item, k))
+    ]);
+
+    const csvContent = [
+      headers.map(escapeCsvCell).join(','),
+      ...rows.map(row => row.map(escapeCsvCell).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${safeTipo}_metanoia_radical.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    toast({ title: "Dados exportados", description: `Lista de ${safeTipo} exportada com sucesso!` });
+  };
+
   return (
     <Card className="bg-black/60 glass-effect border-white/10">
       <CardHeader>
@@ -257,7 +299,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onExportar, sea
                     onApply={handleSaveColumns}
                   />
                 </div>
-                <Button onClick={() => onExportar(tipo)} variant="outline" size="sm" className="bg-white/5 text-white hover:bg-white/10 hover:text-white border-white/20">
+                <Button onClick={handleExport} variant="outline" size="sm" className="bg-white/5 text-white hover:bg-white/10 hover:text-white border-white/20">
                   <Download className="w-4 h-4 mr-2" />Exportar
                 </Button>
             </div>

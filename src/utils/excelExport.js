@@ -89,29 +89,24 @@ export const exportAllEquipantes = (allocations) => {
 };
 
 
-// Exporta acampantes para Excel
-export const exportAcampantesToExcel = (acampantes) => {
+// Exporta acampantes para Excel. Recebe linhas ja formatadas -- uma chave
+// por coluna marcada em "Colunas" (na mesma ordem exibida na tabela), mais
+// os registros ja filtrados pela busca/filtros da tela. Ver handleExport em
+// AcampantesTable.jsx, que monta essas linhas a partir de filteredData +
+// visibleColumns -- assim a exportacao reflete exatamente o que esta
+// selecionado e visivel no momento do clique, em vez de uma lista fixa de
+// colunas independente do que o usuario escolheu ver.
+export const exportAcampantesToExcel = (rows) => {
   try {
-    const formatBool = (val) => val ? 'Sim' : 'Não';
-
-    const dataToExport = acampantes.map(a => ({
-      'ID': a.id,
-      'Nome': a.nome_completo || a.nome,
-      'CPF': formatCPF(a.cpf),
-      'WhatsApp': a.whatsapp,
-      'Idade': a.idade,
-      'Sexo': a.sexo,
-      'Tamanho Camisa': a.tamanho_camisa,
-      'Problema de Saúde': formatBool(a.tem_problema_saude),
-      'Usa Medicamento': formatBool(a.usa_medicamento),
-      'Status': a.status,
-    }));
+    if (!rows || rows.length === 0) {
+      throw new Error('Nada para exportar.');
+    }
 
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const ws = XLSX.utils.json_to_sheet(rows);
 
     // Auto-adjust column widths
-    const colWidths = Object.keys(dataToExport[0] || {}).map(key => ({
+    const colWidths = Object.keys(rows[0] || {}).map(key => ({
       wch: Math.max(key.length, 15)
     }));
     ws['!cols'] = colWidths;

@@ -5,6 +5,32 @@ import { useToast } from '@/components/ui/use-toast';
 import { Save, AlertCircle, Edit2, X } from 'lucide-react';
 import { getOcupacaoArea } from '@/services/limiteAreasService';
 import { cn } from '@/lib/utils';
+
+// Selo com barra de progresso pro limite de mulheres/homens da area --
+// substitui as duas linhas empilhadas "Limite Mulheres: X/Y" / "Limite
+// Homens: X/Y" que ocupavam mais altura vertical sem mostrar a ocupacao
+// de forma visual.
+const GenderLimitPill = ({ label, current, max, isOver }) => {
+  const pct = max > 0 ? Math.min(100, (current / max) * 100) : 0;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-full border",
+        isOver ? "border-red-500/30 bg-red-500/10 text-red-300" : "border-white/10 bg-white/5 text-gray-300"
+      )}
+    >
+      <span>{label}</span>
+      <span className={cn("font-semibold", isOver ? "text-red-300" : "text-gray-100")}>{current}/{max}</span>
+      <span className="w-9 h-1 rounded-full bg-white/10 overflow-hidden inline-block">
+        <span
+          className={cn("block h-full rounded-full", isOver ? "bg-red-400" : "bg-blue-400")}
+          style={{ width: `${pct}%` }}
+        />
+      </span>
+    </span>
+  );
+};
+
 const AreaLimitHeader = ({
   areaName,
   currentCount,
@@ -109,20 +135,29 @@ const AreaLimitHeader = ({
                 <X className="w-4 h-4 mr-1" /> Cancelar
               </Button>
             </div>
-          </div> : <div className="flex flex-col gap-1 text-xs text-white/60">
-            <div className="flex justify-between items-center">
-              <span>Capacidade Total: {limitObj.limiteMaximo}</span>
-              {isOrganizer && <Button variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10 ml-auto" onClick={() => setIsEditing(true)}>
-                  <Edit2 className="w-3 h-3 mr-1" />
-                  <span className="text-[10px]">Alterar</span>
-                </Button>}
+          </div> : <div className="flex items-center justify-between gap-3 flex-wrap text-xs text-white/60">
+            <div className="flex items-center gap-2 flex-wrap">
+              {limitObj.limiteMulheres !== null && (
+                <GenderLimitPill
+                  label="Mulheres"
+                  current={currentMulheres}
+                  max={limitObj.limiteMulheres}
+                  isOver={currentMulheres > limitObj.limiteMulheres}
+                />
+              )}
+              {limitObj.limiteHomens !== null && (
+                <GenderLimitPill
+                  label="Homens"
+                  current={currentHomens}
+                  max={limitObj.limiteHomens}
+                  isOver={currentHomens > limitObj.limiteHomens}
+                />
+              )}
             </div>
-            {limitObj.limiteMulheres !== null && <span className={cn("text-[10px]", currentMulheres > limitObj.limiteMulheres ? "text-red-400" : "")}>
-                Limite Mulheres: {currentMulheres}/{limitObj.limiteMulheres}
-              </span>}
-            {limitObj.limiteHomens !== null && <span className={cn("text-[10px]", currentHomens > limitObj.limiteHomens ? "text-red-400" : "")}>
-                Limite Homens: {currentHomens}/{limitObj.limiteHomens}
-              </span>}
+            {isOrganizer && <Button variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10 shrink-0" onClick={() => setIsEditing(true)}>
+                <Edit2 className="w-3 h-3 mr-1" />
+                <span className="text-[10px]">Alterar</span>
+              </Button>}
           </div>}
       </div>
     </div>;

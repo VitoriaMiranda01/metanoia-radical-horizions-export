@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatCPF } from '@/utils/formatters';
+import { formatCPF, formatNomeExibicao } from '@/utils/formatters';
 import { User, Download, Loader2 } from 'lucide-react';
 import { WORK_AREAS } from '@/constants/workAreas';
 
@@ -51,10 +51,10 @@ const EquipantesGridDisplay = ({
         <Table>
           <TableHeader className="bg-white/5 hover:bg-white/5">
             <TableRow className="border-white/10 hover:bg-transparent">
-              <TableHead className="text-gray-300 w-[30%]">Nome</TableHead>
-              <TableHead className="text-gray-300 w-[18%] hidden sm:table-cell">CPF</TableHead>
-              <TableHead className="text-gray-300 w-[17%] hidden md:table-cell">Igreja</TableHead>
-              {onRealocar && <TableHead className="text-gray-300 w-[35%]">Ação</TableHead>}
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[26%]">Nome</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[16%] hidden sm:table-cell">CPF</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[26%] hidden md:table-cell">Igreja</TableHead>
+              {onRealocar && <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[32%]">Ação</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -63,16 +63,16 @@ const EquipantesGridDisplay = ({
                 key={eq.id || index} 
                 className="border-white/10 hover:bg-white/5 transition-colors"
               >
-                <TableCell className="font-medium text-gray-200">
+                <TableCell className="font-semibold text-white">
                   <div className="flex flex-col">
-                    <span>{eq.nome}</span>
+                    <span>{formatNomeExibicao(eq.nome)}</span>
                     <span className="text-xs text-gray-500 sm:hidden">{formatCPF(eq.cpf)}</span>
                   </div>
                 </TableCell>
                 <TableCell className="text-gray-400 hidden sm:table-cell font-mono text-xs">
                   {formatCPF(eq.cpf)}
                 </TableCell>
-                <TableCell className="text-gray-400 hidden md:table-cell text-sm">
+                <TableCell className="text-gray-400 hidden md:table-cell text-[12.5px] max-w-[220px] truncate" title={eq.igreja || '-'}>
                   {eq.igreja || '-'}
                 </TableCell>
                 {onRealocar && (
@@ -93,10 +93,9 @@ const EquipantesGridDisplay = ({
                       </Select>
                       <Button
                         size="sm"
-                        variant="outline"
                         onClick={() => onRealocar(eq.id, eq.nome, areaName)}
                         disabled={!realocarAreaChoice[eq.id] || realocando[eq.id]}
-                        className="h-8 text-xs bg-white/5 border-white/20 text-white hover:bg-white/10 whitespace-nowrap"
+                        className="h-8 text-xs font-semibold whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20"
                       >
                         {realocando[eq.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Realocar'}
                       </Button>

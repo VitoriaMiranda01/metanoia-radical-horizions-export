@@ -11,6 +11,28 @@ export function formatCPF(cpf) {
 }
 
 /**
+ * Formata um nome so para exibicao (nao altera o dado salvo no banco --
+ * varios nomes estao gravados em CAIXA ALTA). Capitaliza a primeira letra
+ * de cada palavra, mantendo minusculos os conectivos comuns em nomes
+ * portugueses ("da", "de", "do" etc), exceto quando sao a primeira palavra.
+ * Usado no grid de equipantes por area de trabalho (EquipantesGridDisplay).
+ */
+const CONECTIVOS_NOME = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
+
+export function formatNomeExibicao(nome) {
+  if (!nome) return '';
+  return nome
+    .toLowerCase()
+    .split(' ')
+    .filter(Boolean)
+    .map((palavra, index) => {
+      if (index > 0 && CONECTIVOS_NOME.has(palavra)) return palavra;
+      return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+    })
+    .join(' ');
+}
+
+/**
  * Converts various values (strings 'SIM'/'NÃO', 'true'/'false', etc) to a proper boolean.
  * Useful for normalizing form data before sending to the database.
  */

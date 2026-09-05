@@ -99,7 +99,7 @@ const ColumnVisibilityDropdown = ({
                            checked={currentColumns.includes(col.key)}
                            onCheckedChange={() => !isLocked && handleToggle(col.key)}
                            disabled={isLocked}
-                           className="border-white/30 data-[state=checked]:bg-gray-500 data-[state=checked]:text-white data-[state=checked]:border-gray-500 h-4 w-4 disabled:opacity-100 disabled:cursor-default"
+                           className="border-white/30 data-[state=checked]:bg-gray-200 data-[state=checked]:text-slate-900 data-[state=checked]:border-gray-200 h-4 w-4 disabled:opacity-100 disabled:cursor-default"
                          />
                          <Label 
                            htmlFor={`col-${col.key}`}

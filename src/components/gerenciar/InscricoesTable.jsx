@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useToast } from '@/components/ui/use-toast';
+import { exportEquipantesToExcel } from '@/utils/excelExport';
 import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDropdown';
 import { 
   getVisibleColumnsFromStorage, 
@@ -228,8 +229,6 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
     return item[key] || '-';
   };
 
-  const escapeCsvCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
-
   const handleExport = () => {
     if (filteredData.length === 0) {
       toast({ title: "Nenhum dado", description: `Não há ${safeTipo} para exportar.`, variant: "destructive" });
@@ -244,28 +243,21 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
     // reflete isso). getColumnValue (nao renderCellContent, que devolve um
     // Badge JSX para "status") garante que toda celula vire texto simples.
     const dynamicColumns = visibleColumns.filter(k => k !== 'nome');
-    const headers = ['Nome', ...dynamicColumns.map(k => {
-      const def = getColDef(k);
-      return def ? def.label : k;
-    })];
+    const rows = filteredData.map(item => {
+      const row = { Nome: item.nome || '-' };
+      dynamicColumns.forEach(k => {
+        const def = getColDef(k);
+        row[def ? def.label : k] = getColumnValue(item, k);
+      });
+      return row;
+    });
 
-    const rows = filteredData.map(item => [
-      item.nome || '',
-      ...dynamicColumns.map(k => getColumnValue(item, k))
-    ]);
-
-    const csvContent = [
-      headers.map(escapeCsvCell).join(','),
-      ...rows.map(row => row.map(escapeCsvCell).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${safeTipo}_metanoia_radical.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    toast({ title: "Dados exportados", description: `Lista de ${safeTipo} exportada com sucesso!` });
+    const result = exportEquipantesToExcel(rows);
+    if (result.success) {
+      toast({ title: "Dados exportados", description: `Lista de ${safeTipo} exportada com sucesso!` });
+    } else {
+      toast({ title: "Erro ao exportar", description: result.error || "Falha ao exportar arquivo.", variant: "destructive" });
+    }
   };
 
   return (

@@ -89,14 +89,13 @@ export const exportAllEquipantes = (allocations) => {
 };
 
 
-// Exporta acampantes para Excel. Recebe linhas ja formatadas -- uma chave
-// por coluna marcada em "Colunas" (na mesma ordem exibida na tabela), mais
-// os registros ja filtrados pela busca/filtros da tela. Ver handleExport em
-// AcampantesTable.jsx, que monta essas linhas a partir de filteredData +
-// visibleColumns -- assim a exportacao reflete exatamente o que esta
-// selecionado e visivel no momento do clique, em vez de uma lista fixa de
-// colunas independente do que o usuario escolheu ver.
-export const exportAcampantesToExcel = (rows) => {
+// Escreve linhas ja formatadas (uma chave por coluna, ja no texto exibido)
+// como um .xlsx de uma aba so. Usado tanto para acampantes quanto para
+// equipantes -- ver exportAcampantesToExcel/exportEquipantesToExcel abaixo,
+// chamadas pelo handleExport de AcampantesTable.jsx/InscricoesTable.jsx com
+// as linhas ja montadas a partir de filteredData + visibleColumns (as
+// colunas marcadas em "Colunas" e os registros ja filtrados na tela).
+const exportRowsToExcel = (rows, { sheetName, fileNamePrefix }) => {
   try {
     if (!rows || rows.length === 0) {
       throw new Error('Nada para exportar.');
@@ -111,14 +110,20 @@ export const exportAcampantesToExcel = (rows) => {
     }));
     ws['!cols'] = colWidths;
 
-    XLSX.utils.book_append_sheet(wb, ws, "Acampantes");
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
-    const fileName = `acampantes_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const fileName = `${fileNamePrefix}_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
-    
+
     return { success: true };
   } catch (error) {
     console.error('Erro ao exportar:', error);
     return { success: false, error: error.message };
   }
 };
+
+export const exportAcampantesToExcel = (rows) =>
+  exportRowsToExcel(rows, { sheetName: 'Acampantes', fileNamePrefix: 'acampantes' });
+
+export const exportEquipantesToExcel = (rows) =>
+  exportRowsToExcel(rows, { sheetName: 'Equipantes', fileNamePrefix: 'equipantes_metanoia_radical' });

@@ -167,7 +167,7 @@ export const verificarNome = async (nome, tipo) => {
     const { data: listData, error } = await supabase
       .from(table)
       .select('*')
-      .ilike('nome', `%${nome}%`)
+      .ilike('nome', nome)
       .limit(1);
 
     if (error) throw error;

@@ -84,7 +84,7 @@ const ColumnVisibilityDropdown = ({
                    {items.map((col) => (
                      <div 
                        key={col.key} 
-                       className="flex items-center space-x-3 rounded-md hover:bg-white/5 p-2 transition-colors cursor-pointer group"
+                       className="flex items-center space-x-3 rounded-md hover:bg-neutral-800 p-2 transition-colors cursor-pointer group"
                        onClick={() => handleToggle(col.key)}
                      >
                        <Checkbox 

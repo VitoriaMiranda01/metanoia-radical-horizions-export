@@ -115,17 +115,19 @@ const AreaLimitHeader = ({
 
       <div className="mt-2">
         {isEditing ? <div className="flex flex-col gap-2">
-            <div className="flex gap-2 text-xs items-center">
-              <span className="w-12">Total:</span>
-              <Input type="number" min="1" max="200" value={localLimit} onChange={e => setLocalLimit(e.target.value)} className="h-7 text-xs bg-black/40 text-white w-20" autoFocus />
-            </div>
-            <div className="flex gap-2 text-xs items-center">
-              <span className="w-12">Mulheres:</span>
-              <Input type="number" min="0" value={localMulheres} onChange={e => setLocalMulheres(e.target.value)} placeholder="Opcional" className="h-7 text-xs bg-black/40 text-white w-20" />
-            </div>
-            <div className="flex gap-2 text-xs items-center">
-              <span className="w-12">Homens:</span>
-              <Input type="number" min="0" value={localHomens} onChange={e => setLocalHomens(e.target.value)} placeholder="Opcional" className="h-7 text-xs bg-black/40 text-white w-20" />
+            <div className="flex gap-3">
+              <div className="flex flex-col gap-1 flex-1">
+                <span className="text-[11px] text-gray-400">Total</span>
+                <Input type="number" min="1" max="200" value={localLimit} onChange={e => setLocalLimit(e.target.value)} className="h-7 text-xs bg-black/40 text-white w-full" autoFocus />
+              </div>
+              <div className="flex flex-col gap-1 flex-1">
+                <span className="text-[11px] text-gray-400">Mulheres</span>
+                <Input type="number" min="0" value={localMulheres} onChange={e => setLocalMulheres(e.target.value)} placeholder="Opcional" className="h-7 text-xs bg-black/40 text-white w-full" />
+              </div>
+              <div className="flex flex-col gap-1 flex-1">
+                <span className="text-[11px] text-gray-400">Homens</span>
+                <Input type="number" min="0" value={localHomens} onChange={e => setLocalHomens(e.target.value)} placeholder="Opcional" className="h-7 text-xs bg-black/40 text-white w-full" />
+              </div>
             </div>
             <div className="flex justify-end gap-2 mt-1">
               <Button size="sm" variant="ghost" className="h-7 hover:bg-green-600/20 hover:text-green-400" onClick={handleSave} disabled={saving}>

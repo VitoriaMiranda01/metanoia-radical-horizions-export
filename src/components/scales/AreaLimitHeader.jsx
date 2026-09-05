@@ -136,24 +136,32 @@ const AreaLimitHeader = ({
               </Button>
             </div>
           </div> : <div className="flex items-center justify-between gap-3 flex-wrap text-xs text-white/60">
-            <div className="flex items-center gap-2 flex-wrap">
-              {limitObj.limiteMulheres !== null && (
-                <GenderLimitPill
-                  label="Mulheres"
-                  current={currentMulheres}
-                  max={limitObj.limiteMulheres}
-                  isOver={currentMulheres > limitObj.limiteMulheres}
-                />
-              )}
-              {limitObj.limiteHomens !== null && (
-                <GenderLimitPill
-                  label="Homens"
-                  current={currentHomens}
-                  max={limitObj.limiteHomens}
-                  isOver={currentHomens > limitObj.limiteHomens}
-                />
-              )}
-            </div>
+            {limitObj.limiteMulheres !== null || limitObj.limiteHomens !== null ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                {limitObj.limiteMulheres !== null && (
+                  <GenderLimitPill
+                    label="Mulheres"
+                    current={currentMulheres}
+                    max={limitObj.limiteMulheres}
+                    isOver={currentMulheres > limitObj.limiteMulheres}
+                  />
+                )}
+                {limitObj.limiteHomens !== null && (
+                  <GenderLimitPill
+                    label="Homens"
+                    current={currentHomens}
+                    max={limitObj.limiteHomens}
+                    isOver={currentHomens > limitObj.limiteHomens}
+                  />
+                )}
+              </div>
+            ) : (
+              // Nenhum limite por genero configurado pra essa area -- deixa
+              // isso explicito (em vez de um espaco vazio do lado do
+              // "Alterar"), pro organizador nao estranhar achando que
+              // sumiu informacao.
+              <span className="italic text-gray-500">Sem limite por gênero</span>
+            )}
             {isOrganizer && <Button variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10 shrink-0" onClick={() => setIsEditing(true)}>
                 <Edit2 className="w-3 h-3 mr-1" />
                 <span className="text-[10px]">Alterar</span>

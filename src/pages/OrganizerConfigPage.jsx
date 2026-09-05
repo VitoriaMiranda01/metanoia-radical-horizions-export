@@ -180,36 +180,45 @@ const OrganizerConfigPage = () => {
     }
   };
 
-  const validateDateField = (field, value) => {
-    if (!value) return true;
-    if (field === 'data_edicao_dia_inicio' || field === 'data_edicao_dia_fim') {
-      const day = parseInt(value, 10);
-      if (isNaN(day) || day < 1 || day > 31) {
-        toast({
-          title: "Data inválida",
-          description: "O dia deve ser um número entre 1 e 31.",
-          variant: "destructive"
-        });
-        return false;
-      }
+  // Valida os campos de data/ano do formulario de Configuracoes Gerais.
+  // So roda no clique de "Salvar Configuracoes Gerais" (handleSaveAll) -- nao
+  // durante a digitacao, senao o toast de erro interrompe o usuario a cada
+  // tecla, antes mesmo dele terminar de digitar um valor valido.
+  const validateGeneralConfigFields = (cfg) => {
+    const day1 = parseInt(cfg.data_edicao_dia_inicio, 10);
+    if (cfg.data_edicao_dia_inicio && (isNaN(day1) || day1 < 1 || day1 > 31)) {
+      toast({
+        title: "Data inválida",
+        description: "O dia deve ser um número entre 1 e 31.",
+        variant: "destructive"
+      });
+      return false;
     }
-    if (field === 'data_edicao_ano') {
-      const year = parseInt(value, 10);
-      if (isNaN(year) || year < 2020 || year > 2099) {
-        toast({
-          title: "Ano inválido",
-          description: "O ano deve ter 4 dígitos e ser válido (ex: 2024).",
-          variant: "destructive"
-        });
-        return false;
-      }
+
+    const day2 = parseInt(cfg.data_edicao_dia_fim, 10);
+    if (cfg.data_edicao_dia_fim && (isNaN(day2) || day2 < 1 || day2 > 31)) {
+      toast({
+        title: "Data inválida",
+        description: "O dia deve ser um número entre 1 e 31.",
+        variant: "destructive"
+      });
+      return false;
     }
+
+    const year = parseInt(cfg.data_edicao_ano, 10);
+    if (cfg.data_edicao_ano && (isNaN(year) || year < 2020 || year > 2099)) {
+      toast({
+        title: "Ano inválido",
+        description: "O ano deve ter 4 dígitos e ser válido (ex: 2024).",
+        variant: "destructive"
+      });
+      return false;
+    }
+
     return true;
   };
 
   const handleChange = (field, value) => {
-    if (!validateDateField(field, value)) return;
-    
     setConfig(prev => {
       const updated = { ...prev, [field]: value };
       
@@ -245,6 +254,8 @@ const OrganizerConfigPage = () => {
   };
 
   const handleSaveAll = async () => {
+    if (!validateGeneralConfigFields(config)) return;
+
     setIsSavingAll(true);
     try {
       const dateInicioStr = buildDateString(config.data_edicao_dia_inicio, config.data_edicao_mes, config.data_edicao_ano);

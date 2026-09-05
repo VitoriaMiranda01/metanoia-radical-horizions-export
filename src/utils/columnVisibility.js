@@ -1,6 +1,7 @@
 export const COLUMN_DEFINITIONS = {
   equipantes: [
     // Identificação
+    { key: 'nome', label: 'Nome', group: 'Pessoal' },
     { key: 'cpf', label: 'CPF', group: 'Pessoal' },
     // "Telefone" aponta pra whatsapp -- nao existe coluna "telefone" na
     // tabela equipantes (o telefone informado no formulario vira o campo
@@ -61,6 +62,7 @@ export const COLUMN_DEFINITIONS = {
     // "Email" (que existia aqui) foi removido em 2026-09-03: a tabela
     // acampantes tem a coluna, mas nenhum formulario atual (equipante ou
     // acampante) pede email, entao a opcao sempre aparecia vazia.
+    { key: 'nome', label: 'Nome', group: 'Pessoal' },
     { key: 'cpf', label: 'CPF', group: 'Pessoal' },
     { key: 'whatsapp', label: 'WhatsApp', group: 'Contato' },
     { key: 'idade', label: 'Idade', group: 'Pessoal' },
@@ -137,20 +139,23 @@ export const formatAreaTrabalho = (item) => {
     .join(', ');
 };
 
-// "Nome" nao entra aqui: ja e sempre a primeira coluna, fixa, em ambas as
-// tabelas (InscricoesTable.jsx trata 'nome' separado do resto). Essa lista
-// define o que vem depois dela, na ordem em que aparece aqui.
+// "Nome" aparece no seletor "Colunas" (trancada, ver LOCKED_COLUMNS) so pra
+// deixar claro pro usuario que ela sempre esta visivel -- mas continua
+// sendo renderizada como a primeira coluna fixa da tabela em código
+// separado (AcampantesTable.jsx/InscricoesTable.jsx pulam 'nome' ao
+// desenhar as colunas dinamicas de visibleColumns, exatamente como faziam
+// antes disso). Essa lista define a ordem das colunas marcadas por padrao.
 const DEFAULT_VISIBLE_COLUMNS = {
-  equipantes: ['cpf', 'igreja'],
-  acampantes: ['cpf', 'igreja']
+  equipantes: ['nome', 'cpf', 'igreja'],
+  acampantes: ['nome', 'cpf', 'igreja']
 };
 
-// Colunas que o usuario nao pode desmarcar no seletor "Colunas" (CPF e
-// Igreja, a pedido da usuaria em 2026-09-05) -- valem pra acampantes e
-// equipantes. Diferente de "nome", que fica sempre fixa na primeira
-// posicao da tabela, CPF/Igreja continuam podendo mudar de posicao entre as
-// outras colunas marcadas; so nao podem ficar desmarcadas/escondidas.
-export const LOCKED_COLUMNS = ['cpf', 'igreja'];
+// Colunas que o usuario nao pode desmarcar no seletor "Colunas" (Nome, CPF
+// e Igreja) -- valem pra acampantes e equipantes. "Nome" tambem fica
+// sempre fixa na primeira posicao da tabela (nao se move); CPF/Igreja so
+// nao podem ficar desmarcadas/escondidas, mas continuam podendo mudar de
+// posicao entre as outras colunas marcadas.
+export const LOCKED_COLUMNS = ['nome', 'cpf', 'igreja'];
 
 export const getVisibleColumnsFromStorage = (type) => {
   let columns;

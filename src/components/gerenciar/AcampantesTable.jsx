@@ -216,6 +216,7 @@ const AcampantesTable = ({
     const rows = filteredData.map(item => {
       const row = { Nome: item.nome || '-' };
       visibleColumns.forEach(colKey => {
+        if (colKey === 'nome') return;
         const def = getColDef(colKey);
         if (def) {
           row[def.label] = renderCellContent(item, colKey);

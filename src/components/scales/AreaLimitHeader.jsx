@@ -116,15 +116,15 @@ const AreaLimitHeader = ({
       <div className="mt-2">
         {isEditing ? <div className="flex flex-col gap-2">
             <div className="flex gap-3">
-              <div className="flex flex-col gap-1 flex-1">
+              <div className="flex flex-col gap-1 w-16">
                 <span className="text-[11px] text-gray-400">Total</span>
                 <Input type="number" min="1" max="200" value={localLimit} onChange={e => setLocalLimit(e.target.value)} className="h-7 text-xs bg-black/40 text-white w-full [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" autoFocus />
               </div>
-              <div className="flex flex-col gap-1 flex-1">
+              <div className="flex flex-col gap-1 w-16">
                 <span className="text-[11px] text-gray-400">Mulheres</span>
                 <Input type="number" min="0" value={localMulheres} onChange={e => setLocalMulheres(e.target.value)} placeholder="Opcional" className="h-7 text-xs bg-black/40 text-white w-full [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
               </div>
-              <div className="flex flex-col gap-1 flex-1">
+              <div className="flex flex-col gap-1 w-16">
                 <span className="text-[11px] text-gray-400">Homens</span>
                 <Input type="number" min="0" value={localHomens} onChange={e => setLocalHomens(e.target.value)} placeholder="Opcional" className="h-7 text-xs bg-black/40 text-white w-full [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
               </div>

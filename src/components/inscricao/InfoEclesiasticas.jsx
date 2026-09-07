@@ -110,19 +110,6 @@ const InfoEclesiasticas = ({
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="frequentaEBD" className="text-white">Frequenta Escola Bíblica (EBD)?</Label>
-                    <Select value={formData.frequentaEBD} onValueChange={value => handleChange({ target: { name: 'frequentaEBD', value } })}>
-                      <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SIM">SIM</SelectItem>
-                        <SelectItem value="NÃO">NÃO</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
                     <Label className="text-white">Frequenta Grupo de Cuidado, Célula ou Escola Bíblica (EBD)?</Label>
                     <div className="flex gap-4 pt-2 h-10 items-center">
                       <div className="flex items-center space-x-2">

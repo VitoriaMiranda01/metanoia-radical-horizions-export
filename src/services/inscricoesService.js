@@ -69,7 +69,6 @@ const mapEquipanteToDb = (formData) => ({
   esta_afastado: toBoolean(formData.estaAfastado),
   cargo_igreja: formData.cargoIgreja,
   cargo_igreja_outro: formData.cargoIgrejaOutro,
-  frequenta_ebd: toBoolean(formData.frequentaEBD),
   frequenta_grupo_cuidado: toBoolean(formData.frequentaGrupoCuidado),
   voce_canta: toBoolean(formData.voceCanta),
   toca_instrumento: toBoolean(formData.tocaInstrumento),

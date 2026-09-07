@@ -58,7 +58,6 @@ const mapDbToFormData = (dbData) => {
     cargoIgrejaOutro: dbData.cargo_igreja_outro || '',
 
     // Participação
-    frequentaEBD: dbData.frequenta_ebd ?? '',
     frequentaGrupoCuidado: dbData.frequenta_grupo_cuidado ?? '',
 
     // Habilidades
@@ -115,7 +114,7 @@ const EquipantePage = () => {
     temProblemaSaude: '', condicoesMedicas: '',
     temRestricaoAlimentar: '', restricoesAlimentares: '',
     igreja: '', ePastor: '', ePastorOutro: '', pastor: '', estaAfastado: '',
-    cargoIgreja: '', cargoIgrejaOutro: '', frequentaEBD: '',
+    cargoIgreja: '', cargoIgrejaOutro: '',
     frequentaGrupoCuidado: '',
     voceCanta: '', tocaInstrumento: '',
     familiarTrabalhando: '', familiarTrabalhandoOutro: '',

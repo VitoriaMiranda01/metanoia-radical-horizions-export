@@ -48,7 +48,6 @@ export const searchEquipanteByCPF = async (cpf) => {
       cargoIgrejaOutro: data.cargo_igreja_outro,
 
       // Participação
-      frequentaEBD: data.frequenta_ebd,
       frequentaGrupoCuidado: data.frequenta_grupo_cuidado,
 
       // Habilidades

@@ -265,13 +265,7 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
                 <span className="text-sm text-gray-400 block mb-1">Pastor Responsável:</span>
                 <p className="text-white font-medium">{displayValue(inscricao.pastor_nome || inscricao.pastor)}</p>
               </div>
-              {/* frequenta_ebd/frequenta_grupo_cuidado/e_pastor só existem na tabela equipantes */}
-              {isEquipante && (
-                <div className="bg-white/5 p-3 rounded-md">
-                  <span className="text-sm text-gray-400 block mb-1">Frequenta EBD?</span>
-                  <p className="text-white font-medium">{formatBoolean(inscricao.frequenta_ebd)}</p>
-                </div>
-              )}
+              {/* frequenta_grupo_cuidado/e_pastor só existem na tabela equipantes */}
               {isEquipante && (
                 <div className="bg-white/5 p-3 rounded-md">
                   <span className="text-sm text-gray-400 block mb-1">Frequenta Grupo de Cuidado, Célula ou Escola Bíblica (EBD)?</span>

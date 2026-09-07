@@ -193,8 +193,6 @@ const AprovacoesTable = ({
       data = data.filter(item => 
         (item.nome && item.nome.toLowerCase().includes(term)) ||
         (item.email && item.email.toLowerCase().includes(term)) ||
-        (item.cidade && item.cidade.toLowerCase().includes(term)) ||
-        (item.estado && item.estado.toLowerCase().includes(term)) ||
         (item.cpf && item.cpf.includes(term))
       );
     }

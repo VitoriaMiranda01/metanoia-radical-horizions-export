@@ -250,8 +250,6 @@ const ApprovalsView = ({
       (inscricao.nome && inscricao.nome.toLowerCase().includes(term)) ||
       (inscricao.nome_completo && inscricao.nome_completo.toLowerCase().includes(term)) ||
       (inscricao.email && inscricao.email.toLowerCase().includes(term)) ||
-      (inscricao.cidade && inscricao.cidade.toLowerCase().includes(term)) ||
-      (inscricao.estado && inscricao.estado.toLowerCase().includes(term)) ||
       (inscricao.cpf && inscricao.cpf.includes(term)) ||
       (inscricao.tipo && inscricao.tipo.toLowerCase().includes(term)) ||
       (inscricao.igreja && inscricao.igreja.toLowerCase().includes(term))

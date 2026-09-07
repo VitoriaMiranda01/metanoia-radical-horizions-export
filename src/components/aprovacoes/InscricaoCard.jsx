@@ -38,10 +38,6 @@ const InscricaoCard = ({
           <span className="text-gray-300 text-right">{inscricao.telefone || inscricao.whatsapp || 'Não informado'}</span>
         </div>
         <div className="flex justify-between items-center gap-2">
-          <span className="font-medium text-gray-500 shrink-0">Cidade:</span>
-          <span className="text-gray-300 text-right truncate">{inscricao.cidade || 'Não informada'}</span>
-        </div>
-        <div className="flex justify-between items-center gap-2">
           <span className="font-medium text-gray-500 shrink-0">Igreja:</span>
           <span className="text-gray-300 text-right truncate">{inscricao.igreja || inscricao.nome_igreja || 'Não informada'}</span>
         </div>

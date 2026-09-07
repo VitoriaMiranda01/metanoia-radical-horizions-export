@@ -4,7 +4,11 @@ import { toBoolean } from '@/utils/formatters';
 export const mapFormDataToDb = (formData, user) => {
   return {
     // Metadados
-    status: 'aprovado',
+    // Nao envia "status" -- a tabela acampantes nao tem essa coluna
+    // (combinado com a usuaria: acampante nao passa por etapa de aprovacao
+    // pastoral, diferente de equipante). Enviar esse campo faz o Supabase
+    // rejeitar o insert inteiro (PGRST204 "Could not find the 'status'
+    // column").
     tipo: 'acampante',
 
     // Dados Pessoais

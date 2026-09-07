@@ -32,15 +32,6 @@ export const searchEquipanteByCPF = async (cpf) => {
       telefoneResidencial: data.telefone_residencial,
       idade: data.idade,
 
-      // Endereço
-      cep: data.cep,
-      endereco: data.endereco,
-      numero: data.numero,
-      complemento: data.complemento,
-      bairro: data.bairro,
-      cidade: data.cidade,
-      estado: data.estado,
-
       // Saúde
       temProblemaSaude: data.tem_problema_saude,
       condicoesMedicas: data.condicoes_medicas,

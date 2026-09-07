@@ -13,11 +13,10 @@ export const COLUMN_DEFINITIONS = {
     { key: 'sexo', label: 'Gênero', group: 'Pessoal' },
     { key: 'autorizacao_imagem', label: 'Autorização de Imagem', group: 'Pessoal' },
 
-    // Endereço (campo calculado: junta endereco + numero + complemento + bairro)
-    { key: 'endereco_completo', label: 'Endereço Completo', group: 'Endereço' },
-    { key: 'cidade', label: 'Cidade', group: 'Endereço' },
-    { key: 'estado', label: 'Estado', group: 'Endereço' },
-    { key: 'cep', label: 'CEP', group: 'Endereço' },
+    // Endereço removido do seletor de equipantes -- o formulario de
+    // equipante nao coleta mais endereco (pedido da usuaria em
+    // 2026-09-07). Acampantes continua com o bloco de Endereço, mais
+    // abaixo, sem nenhuma alteração.
 
     // Saúde (perguntado no formulario de equipante desde sempre, so nao
     // estava disponivel aqui no seletor -- adicionado em 2026-09-03)

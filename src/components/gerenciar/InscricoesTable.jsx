@@ -192,7 +192,6 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
         item.email,
         item.whatsapp,
         item.telefone,
-        item.cidade,
         item.igreja,
         item.status,
         item.grupo_trailha,
@@ -349,10 +348,6 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
                     <div className="flex justify-between items-center gap-2">
                       <span className="font-medium text-gray-500 shrink-0">Telefone:</span>
                       <span className="text-gray-200 text-right">{item.telefone || item.whatsapp || 'Não informado'}</span>
-                    </div>
-                    <div className="flex justify-between items-center gap-2">
-                      <span className="font-medium text-gray-500 shrink-0">Cidade:</span>
-                      <span className="text-gray-200 text-right truncate">{item.cidade || 'Não informada'}</span>
                     </div>
                   </div>
 

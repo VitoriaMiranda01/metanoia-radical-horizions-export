@@ -19,7 +19,6 @@ import { RefreshCw, Lock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import DadosPessoais from '@/components/inscricao/DadosPessoais';
-import Endereco from '@/components/inscricao/Endereco';
 import InfoEclesiasticas from '@/components/inscricao/InfoEclesiasticas';
 import InfoSaude from '@/components/inscricao/InfoSaude';
 import DadosComplementaresEquipante from '@/components/inscricao/DadosComplementaresEquipante';
@@ -42,15 +41,6 @@ const mapDbToFormData = (dbData) => {
     whatsapp: dbData.whatsapp || '',
     telefoneResidencial: dbData.telefone_residencial || '',
     idade: dbData.idade || '',
-
-    // Endereço
-    cep: dbData.cep || '',
-    endereco: dbData.endereco || '',
-    numero: dbData.numero || '',
-    complemento: dbData.complemento || '',
-    bairro: dbData.bairro || '',
-    cidade: dbData.cidade || '',
-    estado: dbData.estado || '',
 
     // Saúde
     temProblemaSaude: dbData.tem_problema_saude ?? '',
@@ -122,8 +112,6 @@ const EquipantePage = () => {
   const [formData, setFormData] = useState({
     cpf: '', semCpf: false, nome: '', dataNascimento: '', sexo: '',
     whatsapp: '', telefoneResidencial: '', idade: '',
-    cep: '', endereco: '', numero: '', complemento: '',
-    bairro: '', cidade: '', estado: '',
     temProblemaSaude: '', condicoesMedicas: '',
     temRestricaoAlimentar: '', restricoesAlimentares: '',
     igreja: '', ePastor: '', ePastorOutro: '', pastor: '', estaAfastado: '',
@@ -319,7 +307,6 @@ const EquipantePage = () => {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <DadosPessoais formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} isEquipante={true} setFormData={setFormData} />
-                <Endereco formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
                 <InfoSaude formData={formData} handleChange={handleChange} isEquipante={true} />
                 <InfoEclesiasticas formData={formData} handleChange={handleChange} isEquipante={true} />
                 <DadosComplementaresEquipante formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} />

@@ -140,42 +140,45 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
             </div>
           </div>
 
-          {/* Endereço */}
-          <div className="space-y-3">
-            <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
-              Endereço
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">CEP:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.cep)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Rua:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.endereco)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Número:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.numero)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Complemento:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.complemento)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Bairro:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.bairro)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Cidade:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.cidade)}</p>
-              </div>
-              <div className="bg-white/5 p-3 rounded-md">
-                <span className="text-sm text-gray-400 block mb-1">Estado:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.estado)}</p>
+          {/* Endereço (só acampante -- equipante nao coleta mais endereco, a
+              pedido da usuaria em 2026-09-07) */}
+          {!isEquipante && (
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
+                Endereço
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">CEP:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.cep)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Rua:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.endereco)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Número:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.numero)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Complemento:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.complemento)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Bairro:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.bairro)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Cidade:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.cidade)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Estado:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.estado)}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Informações de Saúde */}
           <div className="space-y-3">

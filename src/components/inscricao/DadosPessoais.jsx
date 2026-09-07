@@ -164,6 +164,40 @@ const DadosPessoais = ({
             </Select>
           </div>
         )}
+
+        {/* E-mail, Profissão e Estado Civil -- só acampante, a pedido da
+            usuaria em 2026-09-07. */}
+        {!isEquipante && (
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-white">E-mail</Label>
+            <Input id="email" name="email" type="email" value={formData.email || ''} onChange={handleChange} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="seuemail@exemplo.com" />
+          </div>
+        )}
+
+        {!isEquipante && (
+          <div className="space-y-2">
+            <Label htmlFor="profissao" className="text-white">Profissão</Label>
+            <Input id="profissao" name="profissao" value={formData.profissao || ''} onChange={handleChange} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Sua profissão" />
+          </div>
+        )}
+
+        {!isEquipante && (
+          <div className="space-y-2">
+            <Label htmlFor="estadoCivil" className="text-white">Estado Civil</Label>
+            <Select value={formData.estadoCivil || ''} onValueChange={(value) => handleSelectChange('estadoCivil', value)}>
+              <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder="Selecione..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Solteiro(a)">Solteiro(a)</SelectItem>
+                <SelectItem value="Casado(a)">Casado(a)</SelectItem>
+                <SelectItem value="Divorciado(a)">Divorciado(a)</SelectItem>
+                <SelectItem value="Viúvo(a)">Viúvo(a)</SelectItem>
+                <SelectItem value="União Estável">União Estável</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {/* Autorização de Uso de Imagem */}

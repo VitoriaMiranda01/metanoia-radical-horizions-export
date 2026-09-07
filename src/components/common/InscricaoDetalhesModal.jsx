@@ -125,6 +125,20 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
                   <p className="text-white font-medium">{displayValue(inscricao.email)}</p>
                 </div>
               )}
+              {/* Profissão e Estado Civil -- adicionados ao formulario de
+                  acampante em 2026-09-07, a pedido da usuaria. */}
+              {!isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Profissão:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.profissao)}</p>
+                </div>
+              )}
+              {!isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Estado Civil:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.estado_civil)}</p>
+                </div>
+              )}
               <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">WhatsApp:</span>
                 <p className="text-white font-medium">{displayValue(inscricao.whatsapp)}</p>

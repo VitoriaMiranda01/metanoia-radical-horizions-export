@@ -15,6 +15,8 @@ export const mapFormDataToDb = (formData, user) => {
     sexo: formData.sexo || null,
     tamanho_camisa: formData.tamanho_camisa || null,
     idade: formData.idade ? parseInt(formData.idade) : null,
+    profissao: formData.profissao || null,
+    estado_civil: formData.estadoCivil || null,
 
     // Endereço
     cep: formData.cep || null,

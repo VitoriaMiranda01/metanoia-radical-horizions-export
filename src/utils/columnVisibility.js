@@ -58,14 +58,18 @@ export const COLUMN_DEFINITIONS = {
   ],
   acampantes: [
     // Identificação
-    // "Email" (que existia aqui) foi removido em 2026-09-03: a tabela
-    // acampantes tem a coluna, mas nenhum formulario atual (equipante ou
-    // acampante) pede email, entao a opcao sempre aparecia vazia.
     { key: 'nome', label: 'Nome', group: 'Pessoal' },
     { key: 'cpf', label: 'CPF', group: 'Pessoal' },
     { key: 'whatsapp', label: 'WhatsApp', group: 'Contato' },
+    // Email, Profissão e Estado Civil adicionados ao formulario de
+    // acampante em 2026-09-07 (a pedido da usuaria) -- ate entao a coluna
+    // email existia na tabela mas nenhum formulario pedia, por isso tinha
+    // sido removida daqui em 2026-09-03; agora volta a fazer sentido.
+    { key: 'email', label: 'E-mail', group: 'Contato' },
     { key: 'idade', label: 'Idade', group: 'Pessoal' },
     { key: 'sexo', label: 'Gênero', group: 'Pessoal' },
+    { key: 'profissao', label: 'Profissão', group: 'Pessoal' },
+    { key: 'estado_civil', label: 'Estado Civil', group: 'Pessoal' },
     { key: 'autorizacao_imagem', label: 'Autorização de Imagem', group: 'Pessoal' },
 
     // Endereço (campo calculado: junta endereco + numero + complemento + bairro)

@@ -4,7 +4,9 @@ export const SCHEMA_DEFINITIONS = {
     // é whatsapp (mesma correção já aplicada em columnVisibility.js).
     fields: [
       'id', 'nome', 'email', 'whatsapp', 'sexo', 'igreja',
-      'numero_edicao', 'status_pagamento', 'cpf'
+      'numero_edicao', 'status_pagamento', 'cpf',
+      // Adicionados em 2026-09-07 (a pedido da usuaria).
+      'profissao', 'estado_civil'
     ]
   },
   equipantes: {

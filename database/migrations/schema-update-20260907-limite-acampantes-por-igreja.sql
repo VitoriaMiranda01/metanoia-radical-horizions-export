@@ -81,9 +81,14 @@ BEGIN
     WHERE igreja = NEW.admin_responsavel;
 
   IF NOT FOUND THEN
+    -- configuracoes e uma tabela singleton (uma linha so), mas o id dela NAO
+    -- e sempre o inteiro 1 -- em producao e um UUID (o "id INTEGER DEFAULT 1"
+    -- do database-setup.sql nao reflete o banco real, mesma pegadinha ja
+    -- documentada em outras migrations deste projeto). "WHERE id = 1" dava
+    -- erro 42883 (uuid = integer). Como so existe 1 linha, basta LIMIT 1.
     SELECT limite_acampantes_por_igreja INTO v_limite
       FROM configuracoes
-      WHERE id = 1;
+      LIMIT 1;
   END IF;
 
   -- v_limite NULL (nem excecao, nem padrao configurado) = sem limite.

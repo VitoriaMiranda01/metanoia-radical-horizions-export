@@ -49,24 +49,15 @@ const PagamentosPendentesPage = () => {
         id: item.id,
         nome: item.nome || 'Sem Nome',
         cpf: item.cpf || 'Não informado',
-        telefone: item.whatsapp || 'Não informado',
-        cidade: item.cidade || 'Não informada',
-        igreja: item.igreja || 'Não informada',
         tipo: 'acampante',
-        status_pagamento: (item.status_pagamento || 'pendente').toLowerCase(),
-        metodo: (item.metodo_pagamento || '').toLowerCase()
+        status_pagamento: (item.status_pagamento || 'pendente').toLowerCase()
       }));
       const mappedEquipantes = (equipantesData || []).map(item => ({
         id: item.id,
         nome: item.nome || 'Sem Nome',
         cpf: item.cpf || 'Não informado',
-        telefone: item.telefone || item.whatsapp || 'Não informado',
-        // equipante nao tem mais coluna de endereco (cidade inclusa) -- ver
-        // commit "Remover campos de endereço do fluxo de equipantes".
-        igreja: item.igreja || 'Não informada',
         tipo: 'equipante',
-        status_pagamento: (item.status_pagamento || 'pendente').toLowerCase(),
-        metodo: (item.metodo_pagamento || '').toLowerCase()
+        status_pagamento: (item.status_pagamento || 'pendente').toLowerCase()
       }));
       const allData = [...mappedAcampantes, ...mappedEquipantes];
 
@@ -200,10 +191,6 @@ const PagamentosPendentesPage = () => {
                       <div className="flex justify-between items-center">
                         <span className="font-medium text-gray-500">CPF:</span>
                         <span className="text-gray-300">{item.cpf}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-gray-500">Método:</span>
-                        <span className="text-gray-300 capitalize">{item.metodo}</span>
                       </div>
                     </div>
 

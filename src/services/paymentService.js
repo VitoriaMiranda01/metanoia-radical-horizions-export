@@ -140,18 +140,20 @@ export const finalizeZeroValuePayment = async (inscriptionType, inscriptionId, c
 };
 
 export const fetchAcampantesPendentesPagamento = async () => {
-  // acampantes não tem coluna telefone — o telefone do acampante é whatsapp
-  // (mesma correção já aplicada em columnVisibility.js/databaseSchema.js).
+  // So busca o que a tela realmente usa (Nome, CPF, Tipo, status do
+  // pagamento) -- metodo_pagamento so entra no filtro (.in), nao precisa
+  // estar no select pra isso funcionar.
   return supabase
     .from('acampantes')
-    .select('id, nome, cpf, status_pagamento, metodo_pagamento, whatsapp, cidade, igreja')
+    .select('id, nome, cpf, status_pagamento')
     .in('metodo_pagamento', ['manual', 'isento']);
 };
 
 export const fetchEquipantesPendentesPagamento = async () => {
+  // Mesma coisa do lado de equipante -- so o que a tela usa.
   return supabase
     .from('equipantes')
-    .select('id, nome, cpf, status_pagamento, metodo_pagamento, status, telefone, whatsapp, igreja')
+    .select('id, nome, cpf, status_pagamento')
     .in('metodo_pagamento', ['manual', 'isento']);
 };
 

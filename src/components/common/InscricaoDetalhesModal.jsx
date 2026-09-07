@@ -274,7 +274,7 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
               )}
               {isEquipante && (
                 <div className="bg-white/5 p-3 rounded-md">
-                  <span className="text-sm text-gray-400 block mb-1">Frequenta Grupo de Cuidado?</span>
+                  <span className="text-sm text-gray-400 block mb-1">Frequenta Grupo de Cuidado, Célula ou Escola Bíblica (EBD)?</span>
                   <p className="text-white font-medium">{formatBoolean(inscricao.frequenta_grupo_cuidado)}</p>
                 </div>
               )}

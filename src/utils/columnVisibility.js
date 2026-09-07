@@ -29,7 +29,7 @@ export const COLUMN_DEFINITIONS = {
     { key: 'esta_afastado', label: 'Congrega em Igreja', group: 'Igreja' },
     { key: 'pastor_nome', label: 'Nome do Pastor', group: 'Igreja' },
     { key: 'frequenta_ebd', label: 'Frequenta EBD', group: 'Igreja' },
-    { key: 'frequenta_grupo_cuidado', label: 'Frequenta Grupo de Cuidado', group: 'Igreja' },
+    { key: 'frequenta_grupo_cuidado', label: 'Frequenta Grupo de Cuidado, Célula ou Escola Bíblica (EBD)', group: 'Igreja' },
     { key: 'voce_canta', label: 'Canta', group: 'Igreja' },
     { key: 'toca_instrumento', label: 'Toca Instrumento', group: 'Igreja' },
 

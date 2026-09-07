@@ -123,7 +123,7 @@ const InfoEclesiasticas = ({
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-white">Frequenta Grupo de Cuidado / Célula?</Label>
+                    <Label className="text-white">Frequenta Grupo de Cuidado, Célula ou Escola Bíblica (EBD)?</Label>
                     <div className="flex gap-4 pt-2 h-10 items-center">
                       <div className="flex items-center space-x-2">
                         <input 

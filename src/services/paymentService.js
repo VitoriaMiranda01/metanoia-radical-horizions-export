@@ -151,7 +151,7 @@ export const fetchAcampantesPendentesPagamento = async () => {
 export const fetchEquipantesPendentesPagamento = async () => {
   return supabase
     .from('equipantes')
-    .select('id, nome, cpf, status_pagamento, metodo_pagamento, status, telefone, whatsapp, cidade, igreja')
+    .select('id, nome, cpf, status_pagamento, metodo_pagamento, status, telefone, whatsapp, igreja')
     .in('metodo_pagamento', ['manual', 'isento']);
 };
 

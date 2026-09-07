@@ -61,7 +61,8 @@ const PagamentosPendentesPage = () => {
         nome: item.nome || 'Sem Nome',
         cpf: item.cpf || 'Não informado',
         telefone: item.telefone || item.whatsapp || 'Não informado',
-        cidade: item.cidade || 'Não informada',
+        // equipante nao tem mais coluna de endereco (cidade inclusa) -- ver
+        // commit "Remover campos de endereço do fluxo de equipantes".
         igreja: item.igreja || 'Não informada',
         tipo: 'equipante',
         status_pagamento: (item.status_pagamento || 'pendente').toLowerCase(),

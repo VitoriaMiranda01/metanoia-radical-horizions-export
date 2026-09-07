@@ -26,37 +26,6 @@ import { AREAS_ESPECIAIS } from '@/constants/workAreas';
 import { Button } from '@/components/ui/button';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
 
-const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-
-const getMonthNumber = monthName => {
-  const index = MESES.indexOf(monthName);
-  return index !== -1 ? String(index + 1).padStart(2, '0') : null;
-};
-
-const buildDateString = (day, monthName, year) => {
-  if (!day || !monthName || !year) return null;
-  const monthNum = getMonthNumber(monthName);
-  if (!monthNum) return null;
-  const d = String(day).padStart(2, '0');
-  const dateStr = `${year}-${monthNum}-${d}`;
-  const dateObj = new Date(`${dateStr}T00:00:00`);
-  if (isNaN(dateObj.getTime())) return null;
-  return dateStr;
-};
-
-const parseDateString = dateStr => {
-  if (!dateStr) return { day: '', month: '', year: '' };
-  const parts = dateStr.split('-');
-  if (parts.length !== 3) return { day: '', month: '', year: '' };
-  const [year, monthNum, day] = parts;
-  const monthIndex = parseInt(monthNum, 10) - 1;
-  return {
-    day: parseInt(day, 10).toString(),
-    month: MESES[monthIndex] || '',
-    year: year
-  };
-};
-
 const OrganizerConfigPage = () => {
   const { organizadorId, organizadorUser, user, isAuthenticated } = useAuth();
   
@@ -66,10 +35,8 @@ const OrganizerConfigPage = () => {
     max_acampantes: '',
     max_acampantes_homens: '',
     max_acampantes_mulheres: '',
-    data_edicao_dia_inicio: '',
-    data_edicao_dia_fim: '',
-    data_edicao_mes: '',
-    data_edicao_ano: '',
+    data_evento_inicio: '',
+    data_evento_fim: '',
     horario_saida_igreja: '',
     horario_retorno_sitio: '',
     data_limite_inscricao_pagamento: '',
@@ -140,17 +107,11 @@ const OrganizerConfigPage = () => {
   };
 
   // Não recebe mais organizadorId -- fetchConfiguracoes não busca mais nada
-  // por organizador (ver comentário em organizerConfigService.js). Dia/mês/
-  // ano continuam vindo daqui, só que 100% reconstruídos a partir de
-  // data_evento_inicio/data_evento_fim (parseDateString), como já era o
-  // caminho preferencial antes desta mudança.
+  // por organizador (ver comentário em organizerConfigService.js).
   const loadData = async () => {
     setLoadingConfig(true);
     try {
       const data = await fetchConfiguracoes();
-      
-      const parsedInicio = parseDateString(data.data_evento_inicio);
-      const parsedFim = parseDateString(data.data_evento_fim);
       
       setConfig({
         edicao_numero: data.edicao_numero || '',
@@ -158,10 +119,8 @@ const OrganizerConfigPage = () => {
         max_acampantes: data.max_acampantes || '',
         max_acampantes_homens: data.max_acampantes_homens || '',
         max_acampantes_mulheres: data.max_acampantes_mulheres || '',
-        data_edicao_dia_inicio: parsedInicio.day || '',
-        data_edicao_dia_fim: parsedFim.day || '',
-        data_edicao_mes: parsedInicio.month || '',
-        data_edicao_ano: parsedInicio.year || '',
+        data_evento_inicio: data.data_evento_inicio || '',
+        data_evento_fim: data.data_evento_fim || '',
         horario_saida_igreja: data.horario_saida_igreja || '',
         horario_retorno_sitio: data.horario_retorno_sitio || '',
         data_limite_inscricao_pagamento: data.data_limite_inscricao_pagamento || '',
@@ -184,36 +143,14 @@ const OrganizerConfigPage = () => {
     }
   };
 
-  // Valida os campos de data/ano do formulario de Configuracoes Gerais.
-  // So roda no clique do botao "Salvar" (handleSaveAll) -- nao durante a
-  // digitacao, senao o toast de erro interrompe o usuario a cada tecla,
-  // antes mesmo dele terminar de digitar um valor valido.
+  // Valida os campos de data do formulario de Configuracoes Gerais. So
+  // roda no clique do botao "Salvar" (handleSaveAll) -- nao durante a
+  // digitacao.
   const validateGeneralConfigFields = (cfg) => {
-    const day1 = parseInt(cfg.data_edicao_dia_inicio, 10);
-    if (cfg.data_edicao_dia_inicio && (isNaN(day1) || day1 < 1 || day1 > 31)) {
+    if (cfg.data_evento_inicio && cfg.data_evento_fim && cfg.data_evento_fim < cfg.data_evento_inicio) {
       toast({
         title: "Data inválida",
-        description: "O dia deve ser um número entre 1 e 31.",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    const day2 = parseInt(cfg.data_edicao_dia_fim, 10);
-    if (cfg.data_edicao_dia_fim && (isNaN(day2) || day2 < 1 || day2 > 31)) {
-      toast({
-        title: "Data inválida",
-        description: "O dia deve ser um número entre 1 e 31.",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    const year = parseInt(cfg.data_edicao_ano, 10);
-    if (cfg.data_edicao_ano && (isNaN(year) || year < 2020 || year > 2099)) {
-      toast({
-        title: "Ano inválido",
-        description: "O ano deve ter 4 dígitos e ser válido (ex: 2024).",
+        description: "A Data Fim não pode ser anterior à Data Início.",
         variant: "destructive"
       });
       return false;
@@ -270,9 +207,6 @@ const OrganizerConfigPage = () => {
 
     setIsSavingAll(true);
     try {
-      const dateInicioStr = buildDateString(config.data_edicao_dia_inicio, config.data_edicao_mes, config.data_edicao_ano);
-      const dateFimStr = buildDateString(config.data_edicao_dia_fim, config.data_edicao_mes, config.data_edicao_ano);
-      
       // Deliberately extracting out pricing periods and the special-area CPF
       // lists so they aren't included in the global save -- both are saved
       // independently (updatePricingPeriods / updateCpfsAreaEspecial).
@@ -280,8 +214,8 @@ const OrganizerConfigPage = () => {
       
       const payloadToSave = {
         ...otherConfigs,
-        data_evento_inicio: dateInicioStr,
-        data_evento_fim: dateFimStr
+        data_evento_inicio: config.data_evento_inicio || null,
+        data_evento_fim: config.data_evento_fim || null
       };
       
       await saveConfiguracoes(payloadToSave);
@@ -551,27 +485,14 @@ const OrganizerConfigPage = () => {
                   <h3 className="text-lg font-medium text-white flex items-center space-x-2">
                     <CalendarDays className="w-5 h-5 text-blue-400" /><span>Data do Evento</span>
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="data_edicao_dia_inicio" className="text-gray-300">Dia Início</Label>
-                      <Input id="data_edicao_dia_inicio" type="number" min="1" max="31" value={config.data_edicao_dia_inicio} onChange={e => handleChange('data_edicao_dia_inicio', e.target.value)} disabled={loadingConfig} className="bg-white/5 border-white/10 text-white" placeholder="Ex: 16" />
+                      <Label htmlFor="data_evento_inicio" className="text-gray-300">Data Início</Label>
+                      <Input id="data_evento_inicio" type="date" value={config.data_evento_inicio || ''} onChange={e => handleChange('data_evento_inicio', e.target.value)} disabled={loadingConfig} className="bg-white/5 border-white/10 text-white css-invert-time-icon" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="data_edicao_dia_fim" className="text-gray-300">Dia Fim</Label>
-                      <Input id="data_edicao_dia_fim" type="number" min="1" max="31" value={config.data_edicao_dia_fim} onChange={e => handleChange('data_edicao_dia_fim', e.target.value)} disabled={loadingConfig} className="bg-white/5 border-white/10 text-white" placeholder="Ex: 17" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-gray-300">Mês</Label>
-                      <Select value={config.data_edicao_mes} onValueChange={val => handleChange('data_edicao_mes', val)} disabled={loadingConfig}>
-                        <SelectTrigger className="bg-white/5 border-white/10 text-white"><SelectValue placeholder="Selecione o mês" /></SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-700 text-white max-h-[300px]">
-                          {MESES.map(m => <SelectItem key={m} value={m} className="hover:bg-gray-700 focus:bg-gray-700">{m}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="data_edicao_ano" className="text-gray-300">Ano</Label>
-                      <Input id="data_edicao_ano" type="number" min="2020" max="2099" value={config.data_edicao_ano} onChange={e => handleChange('data_edicao_ano', e.target.value)} disabled={loadingConfig} className="bg-white/5 border-white/10 text-white" placeholder="Ex: 2026" />
+                      <Label htmlFor="data_evento_fim" className="text-gray-300">Data Fim</Label>
+                      <Input id="data_evento_fim" type="date" value={config.data_evento_fim || ''} onChange={e => handleChange('data_evento_fim', e.target.value)} disabled={loadingConfig} className="bg-white/5 border-white/10 text-white css-invert-time-icon" />
                     </div>
                   </div>
                 </div>

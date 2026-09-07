@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { ChevronDown, ChevronUp, Heart, Calendar, DollarSign, Phone } from 'lucide-react';
+import { ChevronDown, ChevronUp, Heart, Calendar, DollarSign, Phone, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LandingNav from '@/components/landing/LandingNav';
 import { useCurrentPrice } from '@/hooks/useCurrentPrice';
 import { fetchEventoDatas, subscribeToConfiguracoesChanges } from '@/services/organizerConfigService';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 const FadeIn = ({
   children,
   delay = 0,
@@ -61,6 +63,7 @@ const HomePage = () => {
   const [formattedDate, setFormattedDate] = useState("Data não configurada");
   const [dateLoading, setDateLoading] = useState(true);
   const [edicaoNumero, setEdicaoNumero] = useState(null);
+  const [formattedLimitDate, setFormattedLimitDate] = useState(null);
   const {
     currentPrice,
     loading: priceLoading
@@ -76,12 +79,22 @@ const HomePage = () => {
         if (error && error.code === 'PGRST116') {
           setFormattedDate("Data não configurada");
           setEdicaoNumero(null);
+          setFormattedLimitDate(null);
           return;
         } else if (error) {
           throw error;
         }
         if (data) {
           setEdicaoNumero(data.edicao_numero || null);
+          if (data.data_limite_inscricao_pagamento) {
+            try {
+              setFormattedLimitDate(format(parseISO(data.data_limite_inscricao_pagamento), "d 'de' MMMM 'de' yyyy", { locale: ptBR }));
+            } catch {
+              setFormattedLimitDate(null);
+            }
+          } else {
+            setFormattedLimitDate(null);
+          }
           if (data.data_evento_inicio && data.data_evento_fim) {
             const [y1, m1, d1] = data.data_evento_inicio.split('-');
             const [y2, m2, d2] = data.data_evento_fim.split('-');
@@ -96,6 +109,7 @@ const HomePage = () => {
         console.error("Erro ao buscar configurações:", error);
         setFormattedDate("Data não configurada");
         setEdicaoNumero(null);
+        setFormattedLimitDate(null);
       } finally {
         setDateLoading(false);
       }
@@ -189,6 +203,11 @@ const HomePage = () => {
                         {dateLoading ? <div className="h-5 w-48 bg-white/10 animate-pulse rounded"></div> : <span>{formattedDate}</span>}
                       </div>
                       
+                      {formattedLimitDate && <div className="flex items-center space-x-3">
+                        <Clock className="text-red-500 w-5 h-5" />
+                        <span>Data limite para pagamento: <strong>{formattedLimitDate}</strong></span>
+                      </div>}
+
                       <div className="flex items-center space-x-3">
                         <DollarSign className="text-red-500 w-5 h-5" />
                         {priceLoading ? <div className="h-5 w-32 bg-white/10 animate-pulse rounded"></div> : currentPrice ? <span>Investimento: <strong>R$ {parseFloat(currentPrice).toFixed(2).replace('.', ',')}</strong></span> : <span>Investimento: <strong>Valores indisponíveis</strong></span>}

@@ -294,7 +294,7 @@ export const saveConfiguracoes = async (config) => {
 export const fetchEventoDatas = async () => {
   return supabase
     .from('configuracoes')
-    .select('data_evento_inicio, data_evento_fim, edicao_numero')
+    .select('data_evento_inicio, data_evento_fim, edicao_numero, data_limite_inscricao_pagamento')
     .limit(1)
     .single();
 };

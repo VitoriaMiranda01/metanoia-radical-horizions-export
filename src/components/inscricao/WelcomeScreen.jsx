@@ -6,11 +6,7 @@ import { motion } from 'framer-motion';
 import { fetchConfiguracoesEvento } from '@/services/organizerConfigService';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
-const MESES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-];
+import { formatEventDateRange } from '@/utils/eventDateFormat';
 
 const WelcomeScreen = ({
   onProceed
@@ -36,24 +32,7 @@ const WelcomeScreen = ({
   }, []);
 
   const formatEventDate = () => {
-    if (!config?.data_evento_inicio || !config?.data_evento_fim) {
-      return "Data não configurada";
-    }
-
-    try {
-      const startDate = new Date(config.data_evento_inicio + 'T00:00:00');
-      const endDate = new Date(config.data_evento_fim + 'T00:00:00');
-
-      const startDay = startDate.getDate().toString().padStart(2, '0');
-      const endDay = endDate.getDate().toString().padStart(2, '0');
-      const monthIndex = startDate.getMonth();
-      const monthName = MESES[monthIndex];
-      const year = startDate.getFullYear();
-
-      return `${startDay} - ${endDay} de ${monthName} de ${year}`;
-    } catch (e) {
-      return "Data inválida";
-    }
+    return formatEventDateRange(config?.data_evento_inicio, config?.data_evento_fim) || "Data não configurada";
   };
 
   const formatLimitDate = () => {

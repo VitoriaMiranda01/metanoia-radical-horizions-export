@@ -9,6 +9,7 @@ import { useCurrentPrice } from '@/hooks/useCurrentPrice';
 import { fetchEventoDatas, subscribeToConfiguracoesChanges } from '@/services/organizerConfigService';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatEventDateRange } from '@/utils/eventDateFormat';
 const FadeIn = ({
   children,
   delay = 0,
@@ -95,15 +96,8 @@ const HomePage = () => {
           } else {
             setFormattedLimitDate(null);
           }
-          if (data.data_evento_inicio && data.data_evento_fim) {
-            const [y1, m1, d1] = data.data_evento_inicio.split('-');
-            const [y2, m2, d2] = data.data_evento_fim.split('-');
-            const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            const monthName = months[parseInt(m1, 10) - 1];
-            setFormattedDate(`${parseInt(d1, 10)} - ${parseInt(d2, 10)} de ${monthName} de ${y1}`);
-          } else {
-            setFormattedDate("Data não configurada");
-          }
+          const eventDateRange = formatEventDateRange(data.data_evento_inicio, data.data_evento_fim);
+          setFormattedDate(eventDateRange || "Data não configurada");
         }
       } catch (error) {
         console.error("Erro ao buscar configurações:", error);

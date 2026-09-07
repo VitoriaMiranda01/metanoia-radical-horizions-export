@@ -3,7 +3,7 @@ export const WORK_AREAS = [
   "Copa",
   "Cozinha",
   "Cracolândia",
-  "Cristolandia",
+  "Cristolândia",
   "Dia do arrebatamento da igreja",
   "Disponível para qualquer área",
   "Espírito Santo",

@@ -16,7 +16,7 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
     "Copa",
     "Cozinha",
     "Cracolândia",
-    "Cristalândia",
+    "Cristolândia",
     "Dia do arrebatamento da igreja",
     AREA_DISPONIVEL_QUALQUER,
     "Falsa baiana",

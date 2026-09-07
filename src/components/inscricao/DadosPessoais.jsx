@@ -142,7 +142,7 @@ const DadosPessoais = ({
 
         <div className="space-y-2">
           <Label htmlFor="idade" className="text-white">Idade</Label>
-          <Input id="idade" name="idade" type="number" value={formData.idade || ''} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="25" />
+          <Input id="idade" name="idade" type="number" value={formData.idade || ''} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
         </div>
 
         {!isEquipante && (

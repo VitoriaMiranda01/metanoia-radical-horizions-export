@@ -15,7 +15,7 @@ export const fetchConfiguracoes = async () => {
     try {
       if (!navigator.onLine) return { max_equipantes: 0, max_acampantes: 0, max_acampantes_homens: 0, max_acampantes_mulheres: 0, equipante_pricing_periods: [], acampante_pricing_periods: [], edicao_numero: '' };
       
-      let configQuery = supabase.from('configuracoes').select('id, data_evento_inicio, data_evento_fim, horario_saida_igreja, horario_retorno_sitio, data_limite_inscricao_pagamento, max_equipantes, max_acampantes, updated_at, equipante_pricing_periods, acampante_pricing_periods, max_acampantes_homens, max_acampantes_mulheres, edicao_numero, cpfs_area_guia, cpfs_area_inimigo, cpfs_area_espirito_santo');
+      let configQuery = supabase.from('configuracoes').select('id, data_evento_inicio, data_evento_fim, horario_saida_igreja, horario_retorno_sitio, data_limite_inscricao_pagamento, max_equipantes, max_acampantes, updated_at, equipante_pricing_periods, acampante_pricing_periods, max_acampantes_homens, max_acampantes_mulheres, edicao_numero, cpfs_area_guia, cpfs_area_inimigo, cpfs_area_espirito_santo, limite_acampantes_por_igreja');
       
       const { data, error } = await configQuery.order('updated_at', { ascending: false }).limit(1).maybeSingle();
       if (error && !['PGRST205', '42P01', '42703'].includes(error.code)) {
@@ -39,7 +39,8 @@ export const fetchConfiguracoes = async () => {
         cpfs_area_inimigo: data?.cpfs_area_inimigo || [],
         cpfs_area_espirito_santo: data?.cpfs_area_espirito_santo || [],
         data_evento_inicio: data?.data_evento_inicio || '',
-        data_evento_fim: data?.data_evento_fim || ''
+        data_evento_fim: data?.data_evento_fim || '',
+        limite_acampantes_por_igreja: data?.limite_acampantes_por_igreja ?? null
       };
 
       return mergedConfig;
@@ -146,6 +147,72 @@ export const updateCpfsAreaEspecial = async (area, cpfs) => {
 // o resto da configuracao geral que essa tela nao usa. Chaves batem com
 // AREAS_ESPECIAIS (src/constants/workAreas.js): guia, inimigo,
 // espirito_santo.
+// Salva o limite padrao geral de acampantes por igreja (coluna
+// limite_acampantes_por_igreja em configuracoes). NULL/vazio = sem limite
+// padrao (so as igrejas com excecao em limites_igrejas ficam limitadas --
+// ver limitesIgrejasService.js). Mesmo padrao de updateCpfsAreaEspecial:
+// salva direto no banco, independente do botao "Salvar" geral da tela.
+export const updateLimiteAcampantesPorIgreja = async (valor) => {
+  try {
+    if (!navigator.onLine) throw new Error("Você está offline. Verifique sua conexão.");
+
+    const parsed = (valor === '' || valor === null || valor === undefined) ? null : parseInt(valor, 10);
+    if (parsed !== null && (isNaN(parsed) || parsed < 1)) {
+      throw new Error("Informe um número válido (mínimo 1) ou deixe em branco para não aplicar limite padrão.");
+    }
+
+    const { data: existing, error: checkError } = await supabase
+      .from('configuracoes')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+
+    let data, error;
+    if (existing?.id) {
+      ({ data, error } = await supabase
+        .from('configuracoes')
+        .update({ limite_acampantes_por_igreja: parsed, updated_at: new Date().toISOString() })
+        .eq('id', existing.id)
+        .select()
+        .single());
+    } else {
+      ({ data, error } = await supabase
+        .from('configuracoes')
+        .insert({ limite_acampantes_por_igreja: parsed, updated_at: new Date().toISOString() })
+        .select()
+        .single());
+    }
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("[updateLimiteAcampantesPorIgreja] Error:", error);
+    throw error;
+  }
+};
+
+// Busca so o limite padrao geral (select enxuto, usado pelo formulario de
+// inscricao de acampante pra saber quais igrejas ja bateram o limite -- nao
+// precisa do resto da configuracao geral que essa tela nao usa).
+export const fetchLimiteAcampantesPorIgrejaPadrao = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('configuracoes')
+      .select('limite_acampantes_por_igreja')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data?.limite_acampantes_por_igreja ?? null;
+  } catch (error) {
+    console.error('[fetchLimiteAcampantesPorIgrejaPadrao] Error:', error);
+    return null;
+  }
+};
+
 export const fetchCpfsAreasEspeciais = async () => {
   try {
     const { data, error } = await supabase

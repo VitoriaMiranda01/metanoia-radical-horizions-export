@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateCpfsAreaEspecial, subscribeToConfiguracoesChanges } from '@/services/organizerConfigService';
+import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateCpfsAreaEspecial, updateLimiteAcampantesPorIgreja, subscribeToConfiguracoesChanges } from '@/services/organizerConfigService';
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
 import { resetEquipantesInscricoes } from '@/services/equipantesService';
 import { deleteAllAcampantes } from '@/services/acampantesService';
@@ -21,6 +21,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
 import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
+import LimiteIgrejasManager from '@/components/organizer/LimiteIgrejasManager';
 import { AREAS_ESPECIAIS } from '@/constants/workAreas';
 import { Button } from '@/components/ui/button';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
@@ -76,7 +77,8 @@ const OrganizerConfigPage = () => {
     acampante_pricing_periods: [],
     cpfs_area_guia: [],
     cpfs_area_inimigo: [],
-    cpfs_area_espirito_santo: []
+    cpfs_area_espirito_santo: [],
+    limite_acampantes_por_igreja: null
   });
   
   const [loadingConfig, setLoadingConfig] = useState(true);
@@ -167,7 +169,8 @@ const OrganizerConfigPage = () => {
         acampante_pricing_periods: data.acampante_pricing_periods || [],
         cpfs_area_guia: data.cpfs_area_guia || [],
         cpfs_area_inimigo: data.cpfs_area_inimigo || [],
-        cpfs_area_espirito_santo: data.cpfs_area_espirito_santo || []
+        cpfs_area_espirito_santo: data.cpfs_area_espirito_santo || [],
+        limite_acampantes_por_igreja: data.limite_acampantes_por_igreja ?? null
       });
     } catch (error) {
       console.error("[OrganizerConfigPage] Error loading config data:", error);
@@ -251,6 +254,14 @@ const OrganizerConfigPage = () => {
     setConfig(prev => ({
       ...prev,
       [`cpfs_area_${areaKey}`]: cpfs
+    }));
+  };
+
+  const handleSaveLimiteAcampantesPorIgreja = async (valor) => {
+    await updateLimiteAcampantesPorIgreja(valor);
+    setConfig(prev => ({
+      ...prev,
+      limite_acampantes_por_igreja: valor === '' ? null : parseInt(valor, 10)
     }));
   };
 
@@ -631,6 +642,26 @@ const OrganizerConfigPage = () => {
                     onSave={(periods) => handleSavePricingPeriods('acampante', periods)} 
                   />
                 </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+            <Card className="glass-effect border-white/10 bg-black/40">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-white">
+                  <Users className="w-5 h-5 text-orange-400" />
+                  <span>Limite de Inscrições por Igreja</span>
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Controla quantos acampantes cada igreja pode inscrever. Vale só pro campo "Igreja Responsável pela Inscrição" -- quando uma igreja bate o limite, ela fica desabilitada nesse seletor no formulário de inscrição.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <LimiteIgrejasManager
+                  limiteGeral={config.limite_acampantes_por_igreja}
+                  onSaveLimiteGeral={handleSaveLimiteAcampantesPorIgreja}
+                />
               </CardContent>
             </Card>
           </motion.div>

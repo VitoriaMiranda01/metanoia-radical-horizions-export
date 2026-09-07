@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,6 +31,9 @@ import WelcomeScreen from '@/components/inscricao/WelcomeScreen';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao } from '@/services/inscricoesService';
+import { fetchLimitesIgrejas, fetchOcupacaoIgrejasAcampantes } from '@/services/limitesIgrejasService';
+import { fetchLimiteAcampantesPorIgrejaPadrao } from '@/services/organizerConfigService';
+import { IGREJAS_PARCEIRAS } from '@/constants/igrejas';
 
 const AcampantePage = () => {
   const { user } = useAuth();
@@ -63,6 +66,38 @@ const AcampantePage = () => {
 
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [igrejasEsgotadas, setIgrejasEsgotadas] = useState(new Set());
+
+  // Desabilita, no seletor de "Igreja Responsável pela Inscrição", as
+  // igrejas que ja bateram o limite de acampantes configurado em
+  // Configuracoes (excecao especifica em limites_igrejas, ou o limite
+  // padrao geral). Calculado uma vez ao carregar a pagina -- e so uma
+  // cortesia de UX (evita a pessoa preencher tudo e so descobrir no envio);
+  // a garantia de verdade contra ultrapassar o limite fica no banco (ver
+  // migration schema-update-20260907-limite-acampantes-por-igreja.sql).
+  useEffect(() => {
+    const carregarLimitesIgrejas = async () => {
+      try {
+        const [excecoes, ocupacao, limitePadrao] = await Promise.all([
+          fetchLimitesIgrejas(),
+          fetchOcupacaoIgrejasAcampantes(),
+          fetchLimiteAcampantesPorIgrejaPadrao()
+        ]);
+
+        const esgotadas = new Set();
+        IGREJAS_PARCEIRAS.forEach(igreja => {
+          const limite = excecoes[igreja] !== undefined ? excecoes[igreja] : limitePadrao;
+          if (limite === null || limite === undefined) return;
+          const ocupados = ocupacao[igreja] || 0;
+          if (ocupados >= limite) esgotadas.add(igreja);
+        });
+        setIgrejasEsgotadas(esgotadas);
+      } catch (error) {
+        console.error('Erro ao calcular limites de igrejas por acampante:', error);
+      }
+    };
+    carregarLimitesIgrejas();
+  }, []);
 
   const handleVerificationComplete = (result) => {
     if (result.cpf) setFormData(prev => ({ ...prev, cpf: result.cpf }));
@@ -195,7 +230,7 @@ const AcampantePage = () => {
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardContent className="pt-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <AdminResponsavel formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
+                  <AdminResponsavel formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} igrejasEsgotadas={igrejasEsgotadas} />
                   <DadosPessoais formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} isEquipante={false} setFormData={setFormData} />
                   <Endereco formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
                   <InfoSaude formData={formData} handleChange={handleChange} isEquipante={false} />

@@ -5,7 +5,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import FormSection from './FormSection';
 import { IGREJAS_PARCEIRAS } from '@/constants/igrejas';
 
-const AdminResponsavel = ({ formData, handleChange, handleSelectChange }) => {
+// igrejasEsgotadas: Set com as igrejas (mesma string de IGREJAS_PARCEIRAS)
+// que ja bateram o limite de acampantes inscritos (ver
+// src/services/limitesIgrejasService.js e a sessao "Limite de Inscrições
+// por Igreja" em Configurações). So desabilita a igreja neste campo -- os
+// outros campos de igreja do formulario (ex: "Igreja que frequenta") nao
+// tem nenhum controle de limite, por pedido explicito da usuaria.
+const AdminResponsavel = ({ formData, handleChange, handleSelectChange, igrejasEsgotadas }) => {
   return (
     <FormSection title="Igreja Responsável">
       <div className="grid grid-cols-1 gap-4">
@@ -19,9 +25,14 @@ const AdminResponsavel = ({ formData, handleChange, handleSelectChange }) => {
               <SelectValue placeholder="Selecione a igreja..." />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
-              {IGREJAS_PARCEIRAS.map((option, index) => (
-                <SelectItem key={index} value={option}>{option}</SelectItem>
-              ))}
+              {IGREJAS_PARCEIRAS.map((option, index) => {
+                const esgotada = !!igrejasEsgotadas?.has(option);
+                return (
+                  <SelectItem key={index} value={option} disabled={esgotada}>
+                    {option}{esgotada ? ' (limite atingido)' : ''}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>

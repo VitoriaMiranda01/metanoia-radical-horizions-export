@@ -18,6 +18,9 @@ const NON_RETRYABLE_ERROR_PREFIXES = [
   '23',    // violação de integridade (ex: 23505 - CPF duplicado)
   '22',    // dado inválido
   '42',    // erro de sintaxe/permissão
+  'P0',    // exceção levantada por função/trigger no banco (ex: RAISE EXCEPTION
+           // do limite de acampantes por igreja) -- é regra de negócio, tentar
+           // de novo não resolve, só atrasa a pessoa ver o erro real.
 ];
 
 const isRetryableError = (error) => {
@@ -250,6 +253,16 @@ export const criarInscricao = async (formData, tipo) => {
     return { success: true, data };
   } catch (error) {
     console.error(`inscricaoApi - criarInscricao (${tipo})`, error, { payload });
+
+    // Trigger do limite de acampantes por igreja (ver migration
+    // schema-update-20260907-limite-acampantes-por-igreja.sql) -- mensagem
+    // amigavel em vez do erro cru do banco. O seletor de igreja no
+    // formulario ja tenta evitar isso desabilitando igrejas no limite, mas
+    // essa e a garantia de verdade (protege contra cadastros simultaneos).
+    if (error?.message?.includes('LIMITE_IGREJA_ATINGIDO')) {
+      return { success: false, error: 'Essa igreja atingiu o limite de inscrições de acampantes. Escolha outra igreja ou entre em contato com a organização.' };
+    }
+
     return { success: false, error: 'Erro ao processar inscrição.' };
   }
 };

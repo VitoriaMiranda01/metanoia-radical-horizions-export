@@ -148,10 +148,13 @@ const EquipantePage = () => {
 
   const handleVerificationComplete = (result) => {
     if (result.semCpf) setFormData(prev => ({ ...prev, semCpf: true }));
-    // Preenche o Nome já com o que foi digitado na busca por nome (tela
-    // anterior), pra não pedir a mesma informação de novo — mesmo padrão já
-    // usado em AcampantePage.jsx.
+    // Preenche o Nome/CPF já com o que foi digitado na tela de verificação
+    // anterior, pra não pedir a mesma informação de novo — mesmo padrão já
+    // usado em AcampantePage.jsx. Faltava o CPF aqui: pra quem digitou CPF
+    // e não tinha cadastro ainda (cai direto no "else" abaixo, sem passar
+    // por mapDbToFormData), o campo ficava em branco no formulário.
     if (result.nome) setFormData(prev => ({ ...prev, nome: result.nome }));
+    if (result.cpf) setFormData(prev => ({ ...prev, cpf: result.cpf }));
 
     const isFound = result.found || result.existe;
     const isEnrolled = result.inscrito;

@@ -155,6 +155,7 @@ const AprovacoesTable = ({
   showActions = false, 
   onCancelar, 
   showCancelAction = false, 
+  showApproveOnly = false, 
   searchTerm, 
   onSearchChange
 }) => {
@@ -291,6 +292,7 @@ const AprovacoesTable = ({
                     showActions={showActions}
                     onCancelar={onCancelar}
                     showCancelAction={showCancelAction}
+                    showApproveOnly={showApproveOnly}
                   />
                 ))
               )}
@@ -377,6 +379,11 @@ const AprovacoesTable = ({
                                   <XCircle className="w-4 h-4" />
                                 </Button>
                               </>
+                            )}
+                            {showApproveOnly && (
+                              <Button variant="ghost" size="sm" onClick={() => onAprovar(inscricao.id)} className="hover:bg-green-500/20 text-green-300 transition-colors" aria-label="Aprovar inscrição" title="Aprovar inscrição">
+                                <CheckCircle className="w-4 h-4" />
+                              </Button>
                             )}
                             {showCancelAction && (
                               <Button variant="ghost" size="sm" onClick={() => onCancelar(inscricao.id)} className="hover:bg-red-500/20 text-red-300 transition-colors" aria-label="Cancelar aprovação" title="Cancelar aprovação">

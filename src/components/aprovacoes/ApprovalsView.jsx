@@ -330,6 +330,7 @@ const ApprovalsView = ({
             onAprovar={aprovarInscricao} 
             onRejeitar={rejeitarInscricao} 
             showActions={false}
+            showApproveOnly={true}
             searchTerm={searchTermRejeitadas}
             onSearchChange={setSearchTermRejeitadas}
           />

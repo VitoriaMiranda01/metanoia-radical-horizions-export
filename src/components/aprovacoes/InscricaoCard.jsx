@@ -10,7 +10,8 @@ const InscricaoCard = ({
   onRejeitar, 
   showActions, 
   onCancelar, 
-  showCancelAction 
+  showCancelAction, 
+  showApproveOnly 
 }) => {
   return (
     <div className="bg-white/5 border border-white/10 rounded-lg p-4 flex flex-col gap-4 relative overflow-hidden transition-all hover:bg-white/10">
@@ -74,6 +75,15 @@ const InscricaoCard = ({
               <XCircle className="w-5 h-5" />
             </Button>
           </>
+        )}
+        {showApproveOnly && (
+          <Button 
+            onClick={() => onAprovar(inscricao.id)} 
+            className="h-11 px-4 bg-green-500/20 hover:bg-green-500/40 text-green-400 border border-green-500/30 transition-colors"
+            aria-label="Aprovar"
+          >
+            <CheckCircle className="w-5 h-5" />
+          </Button>
         )}
         {showCancelAction && (
           <Button 

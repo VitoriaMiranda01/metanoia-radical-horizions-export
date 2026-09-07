@@ -7,12 +7,14 @@ import { fetchConfiguracoesEvento } from '@/services/organizerConfigService';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatEventDateRange } from '@/utils/eventDateFormat';
+import { useCurrentPrice } from '@/hooks/useCurrentPrice';
 
 const WelcomeScreen = ({
   onProceed
 }) => {
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { currentPrice, loading: priceLoading } = useCurrentPrice();
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -63,7 +65,7 @@ const WelcomeScreen = ({
     return "A definir";
   };
 
-  const isFullyLoading = loading;
+  const isFullyLoading = loading || priceLoading;
 
   return (
     <motion.div initial={{
@@ -123,7 +125,7 @@ const WelcomeScreen = ({
                         Data limite para inscrição e pagamento: {formatLimitDate()}
                       </p>
                       <p className="font-semibold text-green-500">
-                        Investimento: Valores detalhados na etapa de pagamento (alimentação, transporte e camisa inclusos)
+                        Investimento: {currentPrice ? `R$ ${parseFloat(currentPrice).toFixed(2).replace('.', ',')}` : 'Valores indisponíveis'} (alimentação, transporte e camisa inclusos)
                       </p>
                     </>
                   )}

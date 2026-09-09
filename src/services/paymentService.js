@@ -120,14 +120,23 @@ export const finalizeZeroValuePayment = async (inscriptionType, inscriptionId, c
     // pagamentos, usada acima, tem de verdade) — incluí-la aqui fazia esse
     // update falhar sempre, deixando o pagamento registrado mas o status do
     // acampante/equipante nunca virava 'completed'/'isento'.
+    //
+    // status_pagamento/metodo_pagamento existem nas duas tabelas, mas
+    // status (aprovação pastoral) só existe em equipantes -- acampante não
+    // passa por essa etapa (mesmo motivo do bug corrigido em
+    // acampanteForm.js). Mandar status pra acampantes quebrava esse update
+    // inteiro com PGRST204, mesmo já tendo inserido o pagamento no passo 1.
     const table = inscriptionType === 'equipante' ? 'equipantes' : 'acampantes';
+    const updates = {
+      status_pagamento: 'completed',
+      metodo_pagamento: 'isento'
+    };
+    if (inscriptionType === 'equipante') {
+      updates.status = 'completed';
+    }
     const { error: updateError } = await supabase
       .from(table)
-      .update({
-        status: 'completed',
-        status_pagamento: 'completed',
-        metodo_pagamento: 'isento'
-      })
+      .update(updates)
       .eq('id', inscriptionId);
 
     if (updateError) throw updateError;

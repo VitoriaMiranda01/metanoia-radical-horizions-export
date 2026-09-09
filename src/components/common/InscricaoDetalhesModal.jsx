@@ -530,12 +530,6 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
               )}
               {isEquipante && (
                 <div className="bg-white/5 p-3 rounded-md">
-                  <span className="text-sm text-gray-400 block mb-1">Data Upload Autorização Parental:</span>
-                  <p className="text-white font-medium">{formatarData(inscricao.parental_auth_uploaded_at)}</p>
-                </div>
-              )}
-              {isEquipante && (
-                <div className="bg-white/5 p-3 rounded-md">
                   <span className="text-sm text-gray-400 block mb-1">Status da Escala:</span>
                   <p className="text-white font-medium">{displayValue(inscricao.scale_status)}</p>
                 </div>

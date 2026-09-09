@@ -235,16 +235,15 @@ export const countEquipantesInscritos = async () => {
 
 export const resetEquipantesInscricoes = async () => {
   try {
-    // parental_auth_uploaded_at tem que ser limpo junto com
-    // parental_auth_file_url -- senao a tela de detalhamento da inscricao
-    // mostra "Arquivo: -" mas ainda com a data de upload da edicao
-    // anterior, o que fica inconsistente (ver getEquipanteStageLabel em
-    // utils/equipanteWorkflow.js: o estagio "Aguardando autorizacao dos
-    // pais" ja usa so o file_url, entao isso e so cosmetico/informativo,
-    // nao afeta o calculo do estagio em si).
+    // NAO inclui parental_auth_uploaded_at aqui -- essa coluna nao existe
+    // de verdade na tabela equipantes (tentativa anterior de limpar ela
+    // junto quebrava o reset inteiro com PGRST204 "Could not find the
+    // 'parental_auth_uploaded_at' column"). A tela de detalhamento mostra
+    // essa data, mas como a coluna nunca existiu ela sempre mostrou "-"
+    // mesmo (nunca foi escrita em lugar nenhum, nem no upload do arquivo).
     const { data, error } = await supabase
       .from('equipantes')
-      .update({inscrito: false, status_pagamento: 'pendente', scale_status: 'pendente', status: 'pendente', parental_auth_file_url: null, parental_auth_uploaded_at: null})
+      .update({inscrito: false, status_pagamento: 'pendente', scale_status: 'pendente', status: 'pendente', parental_auth_file_url: null})
       .eq('tipo', 'equipante')
       .select('id');
       

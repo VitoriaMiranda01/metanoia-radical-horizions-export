@@ -233,7 +233,7 @@ const AcampantePage = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <AdminResponsavel formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} igrejasEsgotadas={igrejasEsgotadas} />
                   <DadosPessoais formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} isEquipante={false} setFormData={setFormData} />
-                  <Endereco formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
+                  <Endereco formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} setFormData={setFormData} />
                   <InfoSaude formData={formData} handleChange={handleChange} isEquipante={false} />
                   <InfoEclesiasticas formData={formData} handleChange={handleChange} isEquipante={false} />
                   <ContatoEmergencia formData={formData} handleChange={handleChange} />

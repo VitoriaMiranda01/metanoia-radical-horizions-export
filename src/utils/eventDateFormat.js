@@ -6,10 +6,13 @@
 //     virgula entre eles e "e" antes do ultimo, seguido de "de <mes> de
 //     <ano>". Ex: "29, 30 e 31 de novembro de 2026".
 //   - Intervalo atravessa a virada do mes: cada mes forma seu proprio
-//     grupo de dias ("<dias> de <mes>"), e os grupos sao unidos entre si
-//     com virgula/"e" do mesmo jeito, com o ano aparecendo só no final
-//     (ou tambem no meio, se os grupos cairem em anos diferentes). Ex:
-//     "30 e 31 de outubro e 01 de novembro de 2026".
+//     grupo de dias ("<dias> de <mes>"). Só o ULTIMO grupo usa "e" antes do
+//     seu ultimo dia (regra de lista normal); os grupos anteriores usam só
+//     virgula entre os dias, sem "e" -- assim so aparece um "e" na frase
+//     inteira, bem antes do dia final. Os grupos entre si tambem sao unidos
+//     com "e", e o ano aparece só no final (ou tambem no meio, se os grupos
+//     cairem em anos diferentes). Ex: "30, 31 de outubro e 01 de novembro
+//     de 2026".
 //
 // Usado tanto na Home (card "Próxima Edição") quanto na tela de boas-vindas
 // do acampante -- centralizado aqui pra nao duplicar a logica nos dois
@@ -75,9 +78,15 @@ export const formatEventDateRange = (dataInicioStr, dataFimStr) => {
     const anoFinal = grupos[grupos.length - 1].year;
 
     const frasesPorMes = grupos.map((grupo, index) => {
-      const diasStr = juntarListaPortugues(grupo.dias.map(d => String(d).padStart(2, '0')));
-      let frase = `${diasStr} de ${MESES_MINUSCULO[grupo.month]}`;
+      const diasFormatados = grupo.dias.map(d => String(d).padStart(2, '0'));
       const isUltimoGrupo = index === grupos.length - 1;
+      // So o ultimo grupo usa a regra de lista completa (virgula + "e"
+      // antes do ultimo dia) -- os grupos anteriores usam só virgula, pra
+      // sobrar um "e" so pra frase inteira (antes do dia final de verdade).
+      const diasStr = isUltimoGrupo
+        ? juntarListaPortugues(diasFormatados)
+        : diasFormatados.join(', ');
+      let frase = `${diasStr} de ${MESES_MINUSCULO[grupo.month]}`;
       if (isUltimoGrupo || grupo.year !== anoFinal) {
         frase += ` de ${grupo.year}`;
       }

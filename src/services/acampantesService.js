@@ -139,8 +139,23 @@ export const salvarObservacaoAcampante = async (acampanteId, observacao) => {
 // equipantes (que so atualiza o status para forcar nova inscricao), os
 // acampantes nao carregam de uma edicao pra outra -- entao aqui a limpeza e
 // uma exclusao real e definitiva de todos os registros.
+//
+// A tabela pagamentos tem uma FK pra acampantes
+// (pagamentos_acampante_id_fkey), entao precisa apagar os pagamentos
+// ligados a acampantes ANTES de apagar os acampantes -- senao o delete
+// falha com "violates foreign key constraint". Decisao combinada com a
+// usuaria em 2026-09-09: resetar a edicao apaga o historico de pagamento
+// dos acampantes junto (o pagamento de equipante nao e afetado -- so
+// acampante e resetado por exclusao real).
 export const deleteAllAcampantes = async () => {
   try {
+    const { error: pagamentosError } = await supabase
+      .from('pagamentos')
+      .delete()
+      .not('acampante_id', 'is', null);
+
+    if (pagamentosError) throw pagamentosError;
+
     const { data, error } = await supabase
       .from('acampantes')
       .delete()

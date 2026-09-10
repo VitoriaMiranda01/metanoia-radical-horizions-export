@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Edit2, Check, X, Loader2, Save } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Loader2, Save, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,6 +48,7 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
   const [editValue, setEditValue] = useState('');
   const [savingIgreja, setSavingIgreja] = useState(null);
   const [excecaoToDelete, setExcecaoToDelete] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const ordenarExcecoes = (lista) =>
     [...lista].sort((a, b) => IGREJAS_PARCEIRAS.indexOf(a.igreja) - IGREJAS_PARCEIRAS.indexOf(b.igreja));
@@ -169,6 +170,10 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
 
   const igrejasDisponiveis = IGREJAS_PARCEIRAS.filter(ig => !excecoes.some(e => e.igreja === ig));
 
+  const excecoesFiltradas = searchTerm.trim()
+    ? excecoes.filter(e => e.igreja.toLowerCase().includes(searchTerm.trim().toLowerCase()))
+    : excecoes;
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -194,9 +199,23 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
       <div className="space-y-3 pt-4 border-t border-white/10">
         <h4 className="text-sm font-medium text-gray-300">Exceções por igreja</h4>
 
+        {!loadingExcecoes && excecoes.length > 0 && (
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/50" />
+            <Input
+              type="text"
+              placeholder="Pesquisar igreja..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/50"
+            />
+          </div>
+        )}
+
         {loadingExcecoes ? (
           <div className="flex justify-center p-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
         ) : excecoes.length > 0 ? (
+          excecoesFiltradas.length > 0 ? (
           <div className="overflow-x-auto overflow-y-auto max-h-[420px] rounded-md border border-white/10">
             <table className="w-full text-sm text-left text-white">
               <thead className="text-xs uppercase bg-white/5 border-b border-white/10 sticky top-0 z-10">
@@ -208,7 +227,7 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
               </thead>
               <tbody>
                 <AnimatePresence>
-                  {excecoes.map(({ igreja, limite_maximo }) => (
+                  {excecoesFiltradas.map(({ igreja, limite_maximo }) => (
                     <motion.tr
                       key={igreja}
                       initial={{ opacity: 0, height: 0 }}
@@ -260,6 +279,11 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
               </tbody>
             </table>
           </div>
+          ) : (
+            <div className="text-center p-4 border border-dashed border-white/20 rounded-md text-gray-400 text-sm">
+              Nenhuma igreja encontrada para "{searchTerm}".
+            </div>
+          )
         ) : (
           <div className="text-center p-4 border border-dashed border-white/20 rounded-md text-gray-400 text-sm">
             Nenhuma igreja com limite específico ainda.

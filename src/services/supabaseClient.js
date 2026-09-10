@@ -23,10 +23,38 @@ const validateConfig = () => {
 
 const isConfigValid = validateConfig();
 
+// Exibe um aviso visivel na tela quando o app sobe sem conexao real com o banco
+// (config ausente/placeholder). Assim uma configuracao errada em producao nao
+// passa despercebida, em vez de falhar silenciosamente.
+const showMockConfigBanner = () => {
+  try {
+    if (typeof document === 'undefined') return;
+    const mount = () => {
+      if (document.getElementById('supabase-mock-banner')) return;
+      const banner = document.createElement('div');
+      banner.id = 'supabase-mock-banner';
+      banner.setAttribute('role', 'alert');
+      banner.textContent = 'Atenção: o sistema está sem conexão com o banco de dados (configuração ausente). Contate o responsável técnico.';
+      banner.style.cssText = [
+        'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:99999',
+        'background:#b00020', 'color:#fff', 'padding:10px 16px',
+        'font:600 14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif',
+        'text-align:center', 'box-shadow:0 2px 8px rgba(0,0,0,.3)'
+      ].join(';');
+      document.body.appendChild(banner);
+    };
+    if (document.body) mount();
+    else document.addEventListener('DOMContentLoaded', mount);
+  } catch (_) {
+    // nunca deixar o aviso quebrar o app
+  }
+};
+
 // Mock client to prevent crashes when config is missing or invalid
 const createMockClient = () => {
   console.warn('[Supabase Init] Initializing Supabase Mock Client due to missing or invalid configuration.');
-  
+  showMockConfigBanner();
+
   const mockResponse = { 
     data: null, 
     error: { 

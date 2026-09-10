@@ -145,7 +145,7 @@ export const verificarCPF = async (cpf, tipo) => {
     };
 
   } catch (error) {
-    console.error(`inscricaoApi - verificarCPF (${tipo})`, error, { cpf });
+    console.error(`inscricaoApi - verificarCPF (${tipo})`, error);
     throw new Error('Erro ao verificar CPF. Tente novamente mais tarde.');
   }
 };

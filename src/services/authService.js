@@ -16,26 +16,26 @@ export const organizadorLogin = async (nome, senha) => {
       .maybeSingle();
 
     if (error) {
-      // Connection/Fetch errors
+      // Erros de conexão podem ter mensagem genérica propria (nao revelam usuario)
       if (error.message?.toLowerCase().includes('failed to fetch')) {
         return { success: false, error: 'Falha de conexão com o banco de dados.' };
       }
-      // RLS Errors
-      if (error.code === '42501' || error.message?.toLowerCase().includes('permission denied') || error.message?.toLowerCase().includes('rls')) {
-        return { success: false, error: 'Erro de permissão no banco de dados (RLS).' };
-      }
-
-      return { success: false, error: `Erro na consulta: ${error.message}` };
+      // Nao expor detalhes internos (codigo/RLS/mensagem do banco) ao usuario:
+      // apenas registrar para depuracao e devolver mensagem generica.
+      console.error('[AuthHelper] organizadorLogin - erro na consulta:', error);
+      return { success: false, error: 'Não foi possível fazer login. Tente novamente.' };
     }
 
+    // Mensagem unica para "usuario nao existe" e "senha errada", para nao
+    // permitir enumeracao de usuarios.
     if (!data) {
-      return { success: false, error: 'Usuário não encontrado' };
+      return { success: false, error: 'Usuário ou senha inválidos' };
     }
 
     const isMatch = await bcrypt.compare(senha, data.senha);
-    
+
     if (!isMatch) {
-      return { success: false, error: 'Senha incorreta' };
+      return { success: false, error: 'Usuário ou senha inválidos' };
     }
 
     return { success: true, user: data };
@@ -55,11 +55,15 @@ export const igrejaLogin = async (codigo, senha) => {
 
     const data = rows?.[0];
 
-    if (error) return { success: false, error: 'Erro ao conectar com banco de dados' };
-    if (!data) return { success: false, error: 'Usuário não encontrado' };
+    if (error) {
+      console.error('[AuthHelper] igrejaLogin - erro na consulta:', error);
+      return { success: false, error: 'Não foi possível fazer login. Tente novamente.' };
+    }
+    // Mensagem unica para "usuario nao existe" e "senha errada" (sem enumeracao).
+    if (!data) return { success: false, error: 'Usuário ou senha inválidos' };
 
     const isMatch = await bcrypt.compare(senha, data.senha);
-    if (!isMatch) return { success: false, error: 'Senha incorreta' };
+    if (!isMatch) return { success: false, error: 'Usuário ou senha inválidos' };
 
     return { success: true, user: data };
   } catch (err) {

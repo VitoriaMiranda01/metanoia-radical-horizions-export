@@ -16,6 +16,14 @@
 // pronto e confirmado pela usuaria, entao nao fiz ajustes de ortografia
 // por conta propria.
 //
+// CORRIGIDA em 2026-09-10 (mesmo dia): a planilha original tinha "BATISTA
+// EM TERESOPOLIS" duplicado (codigos 23 e 129 com o mesmo nome). A
+// usuaria decidiu: codigo 23 fica como "BATISTA EM TERESOPOLIS"; codigo
+// 129 passa a ser "BATISTA JERUEL TRES RIOS" (que antes estava no codigo
+// 146); o codigo 146 foi removido (vago, ja que a igreja que estava la se
+// mudou pro 129). Lista final: 145 igrejas, codigos 1 a 145, sem buraco e
+// sem nome duplicado.
+//
 // IMPORTANTE -- pendencia conhecida (decisao da usuaria em 2026-09-10):
 // esses mesmos numeros de prefixo tambem sao usados, em outro lugar do
 // sistema, como codigo de login das igrejas parceiras (tabela
@@ -177,7 +185,7 @@ export const IGREJAS_PARCEIRAS = [
   "126 - PENTECOSTAL RESTAURAÇÃO DIVINA",
   "127 - COMUNIDADE CRISTÃ ENCONTRO ROSÁRIO",
   "128 - BATISTA JERUEL EM SAPUCAIA",
-  "129 - BATISTA EM TERESÓPOLIS",
+  "129 - BATISTA JERUEL TRÊS RIOS",
   "130 - LUUZ CHURCH",
   "131 - JAT - QUINTA LEBRÃO",
   "132 - ASSASSEMBLEIA DE DEUS MINISTÉRIO VINDE A MIM UNAMAR",
@@ -194,5 +202,4 @@ export const IGREJAS_PARCEIRAS = [
   "143 - IGREJA NOVOS COMEÇOS",
   "144 - IGREJA METODISTA CAMPUS ALBUQUERQUE",
   "145 - PARQUE FLUMINENSE BELFORD ROXO",
-  "146 - BATISTA JERUEL TRÊS RIOS",
 ];

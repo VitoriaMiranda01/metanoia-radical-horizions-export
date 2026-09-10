@@ -1,8 +1,7 @@
 import React from 'react';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
+import IgrejaSelect from './IgrejaSelect';
 import { IGREJAS_PARCEIRAS } from '@/constants/igrejas';
 
 // igrejasEsgotadas: Set com as igrejas (mesma string de IGREJAS_PARCEIRAS)
@@ -17,24 +16,13 @@ const AdminResponsavel = ({ formData, handleChange, handleSelectChange, igrejasE
       <div className="grid grid-cols-1 gap-4">
         <div className="space-y-2">
           <Label htmlFor="adminResponsavel" className="text-white">Igreja Responsável pela Inscrição</Label>
-          <Select
+          <IgrejaSelect
+            id="adminResponsavel"
             value={formData.adminResponsavel}
-            onValueChange={(value) => handleSelectChange('adminResponsavel', value)}
-          >
-            <SelectTrigger className="bg-white/10 border-white/20 text-white">
-              <SelectValue placeholder="Selecione a igreja..." />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px]">
-              {IGREJAS_PARCEIRAS.map((option, index) => {
-                const esgotada = !!igrejasEsgotadas?.has(option);
-                return (
-                  <SelectItem key={index} value={option} disabled={esgotada}>
-                    {option}{esgotada ? ' (limite atingido)' : ''}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+            onChange={(value) => handleSelectChange('adminResponsavel', value)}
+            options={IGREJAS_PARCEIRAS}
+            disabledOptions={igrejasEsgotadas}
+          />
         </div>
       </div>
     </FormSection>

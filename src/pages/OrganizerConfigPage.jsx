@@ -575,7 +575,7 @@ const OrganizerConfigPage = () => {
                   <span>Limite de Inscrições por Igreja</span>
                 </CardTitle>
                 <CardDescription className="text-gray-400">
-                  Controla quantos acampantes cada igreja pode inscrever. Vale só pro campo "Igreja Responsável pela Inscrição" -- quando uma igreja bate o limite, ela fica desabilitada nesse seletor no formulário de inscrição.
+                  Controla quantos acampantes cada igreja pode inscrever.
                 </CardDescription>
               </CardHeader>
               <CardContent>

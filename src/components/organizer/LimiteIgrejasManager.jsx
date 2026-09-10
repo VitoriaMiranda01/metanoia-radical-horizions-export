@@ -197,9 +197,9 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
         {loadingExcecoes ? (
           <div className="flex justify-center p-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
         ) : excecoes.length > 0 ? (
-          <div className="overflow-x-auto rounded-md border border-white/10">
+          <div className="overflow-x-auto overflow-y-auto max-h-[420px] rounded-md border border-white/10">
             <table className="w-full text-sm text-left text-white">
-              <thead className="text-xs uppercase bg-white/5 border-b border-white/10">
+              <thead className="text-xs uppercase bg-white/5 border-b border-white/10 sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3 font-medium">Igreja</th>
                   <th className="px-4 py-3 font-medium">Limite</th>

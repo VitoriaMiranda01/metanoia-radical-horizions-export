@@ -218,7 +218,7 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
           excecoesFiltradas.length > 0 ? (
           <div className="overflow-x-auto overflow-y-auto max-h-[420px] rounded-md border border-white/10">
             <table className="w-full text-sm text-left text-white">
-              <thead className="text-xs uppercase bg-white/5 border-b border-white/10 sticky top-0 z-10">
+              <thead className="text-xs uppercase bg-zinc-900 border-b border-white/10 sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3 font-medium">Igreja</th>
                   <th className="px-4 py-3 font-medium">Limite</th>

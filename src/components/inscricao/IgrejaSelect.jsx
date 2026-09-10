@@ -129,9 +129,6 @@ const IgrejaSelect = ({
             })
           )}
         </div>
-        <div className="border-t border-white/10 px-3 py-1.5 text-[11px] text-white/35">
-          {busca ? `${opcoesFiltradas.length} de ${options.length} igrejas` : `${options.length} igrejas`}
-        </div>
       </PopoverContent>
     </Popover>
   );

@@ -8,13 +8,13 @@
 -- limites_igrejas usa (mesmo texto que aparece no seletor "Igreja
 -- Responsavel pela Inscricao" do formulario).
 --
--- Cobre 143 das 146 igrejas -- as 3 que faltam ficaram de fora de
--- proposito, por ambiguidade que so a usuaria pode resolver (ver
--- conversa): "144 - IGREJA METODISTA CAMPUS ALBUQUERQUE" nao tinha limite
--- na planilha, e "23 - BATISTA EM TERESOPOLIS" / "129 - BATISTA EM
--- TERESOPOLIS" sao duas igrejas distintas na lista oficial com o MESMO
--- nome, e a planilha de limites tambem tem duas linhas "BATISTA EM
--- TERESOPOLIS" (vagas 3 e vagas 5) sem indicar qual e qual.
+-- Cobre 144 das 146 igrejas. "144 - IGREJA METODISTA CAMPUS ALBUQUERQUE"
+-- nao tinha limite na planilha original -- usuaria confirmou depois: 5
+-- vagas (ja incluido abaixo). Faltam so as 2 igrejas com nome duplicado:
+-- "23 - BATISTA EM TERESOPOLIS" e "129 - BATISTA EM TERESOPOLIS" sao duas
+-- igrejas distintas na lista oficial com o MESMO nome, e a planilha de
+-- limites tambem tem duas linhas "BATISTA EM TERESOPOLIS" (vagas 3 e
+-- vagas 5) sem indicar qual e qual -- usuaria vai conferir e confirmar.
 --
 -- Roda um UPSERT (ON CONFLICT no texto da igreja) em vez de INSERT puro,
 -- pra nao duplicar caso alguma dessas 143 ja tenha uma excecao
@@ -162,6 +162,7 @@ INSERT INTO limites_igrejas (igreja, limite_maximo, updated_at) VALUES
   ('141 - IGREJA BATISTA DO ALTO', 4, now()),
   ('142 - IGREJA BATISTA NOVA FILADÉLFIA', 4, now()),
   ('143 - IGREJA NOVOS COMEÇOS', 2, now()),
+  ('144 - IGREJA METODISTA CAMPUS ALBUQUERQUE', 5, now()),
   ('145 - PARQUE FLUMINENSE BELFORD ROXO', 4, now()),
   ('146 - BATISTA JERUEL TRÊS RIOS', 4, now())
 ON CONFLICT (igreja) DO UPDATE SET

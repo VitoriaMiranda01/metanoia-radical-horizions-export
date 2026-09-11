@@ -205,3 +205,52 @@ grant execute on function public.realocar_equipante(uuid, text)         to authe
 -- E, de fora, com a chave publica, isto deve responder 401:
 --   GET /rest/v1/acampantes?select=*
 --   GET /rest/v1/equipantes?select=*
+
+
+-- =====================================================================
+-- APLICADO EM PRODUCAO em 2026-09-11
+-- =====================================================================
+--
+-- CORRECAO FEITA DURANTE O TESTE
+-- ------------------------------
+-- A versao original fechava pix_sicoob por completo, com o raciocinio de
+-- que "so as Edge Functions escrevem ali". Faltou considerar que a tela de
+-- Pagamentos (aba "Precisam de atencao"), criada na etapa 3, LE essa
+-- tabela no navegador do organizador para cruzar com as inscricoes e achar
+-- quem pagou e nao foi liberado. O teste pegou: a tela quebrava com
+-- "permission denied for table pix_sicoob".
+--
+-- Acrescentado:
+--   grant select on public.pix_sicoob to authenticated;
+--   create policy "organizador le cobrancas" on public.pix_sicoob
+--     for select to authenticated using (public.eh_organizador());
+--
+-- A escrita continua fechada: quem grava e o webhook, com service_role.
+--
+-- VERIFICACAO DEPOIS (de fora, com a chave publica do site)
+-- ---------------------------------------------------------
+--   LER acampantes ......... 401      LER cupons ............. 401
+--   LER equipantes ......... 401      LER escalas ............ 401
+--   LER pagamentos ......... 401      LER limites_areas ...... 401
+--   LER pix_sicoob ......... 401      LER organizadores_auth . 401
+--   LER configuracoes ...... 401      LER igrejas_parceiras .. 401
+--   APAGAR acampantes ...... 401
+--   LER limites_igrejas .... 200  (de proposito: so nome e numero)
+--
+-- ISOLAMENTO ENTRE IGREJAS (com 3 equipantes de teste, depois apagados)
+-- ---------------------------------------------------------------------
+--   visitante ............ 401, nao ve nada
+--   parceiro da igreja 01 . ve 1 -- so o da propria igreja
+--   organizador .......... ve os 3
+--   Confirmado tambem na tela: "Pendentes (1)" para o parceiro.
+--
+-- FLUXOS PUBLICOS (todos continuam funcionando)
+-- ---------------------------------------------
+--   config_publica, verificar_inscricao, validar_cupom, ocupacao_igrejas,
+--   status_pagamento_pix -- todos 200.
+--   Home com edicao/datas/valor, formulario de acampante com conferencia
+--   de CPF e seletor de igrejas: zero erros no console.
+--   realocar_equipante por visitante: 401.
+--
+-- TELAS DE ORGANIZADOR: as 6 carregam com zero erros.
+-- =====================================================================

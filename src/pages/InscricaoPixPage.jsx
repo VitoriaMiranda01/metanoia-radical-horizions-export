@@ -17,6 +17,7 @@ import { useCurrentPrice } from '@/hooks/useCurrentPrice';
 import { useCouponValidation } from '@/hooks/useCouponValidation';
 import { finalizeZeroValuePayment } from '@/services/paymentService';
 import { updateEquipantePaymentStatus, updateAcampantePaymentStatus } from '@/services/inscricoesService';
+import { consultarStatusPix } from '@/services/publicDataService';
 
 const formatCurrency = value => {
   if (value === null || value === undefined) return 'R$ 0,00';
@@ -46,6 +47,8 @@ const InscricaoPixPage = () => {
   });
   const [pixData, setPixData] = useState(null);
   const [error, setError] = useState(null);
+  // 'aguardando' | 'confirmado' | 'divergente' | 'expirado'
+  const [statusPagamento, setStatusPagamento] = useState('aguardando');
 
   // Coupon state
   const [couponInput, setCouponInput] = useState('');
@@ -53,6 +56,52 @@ const InscricaoPixPage = () => {
   const [discountValue, setDiscountValue] = useState(0);
   const [couponMessage, setCouponMessage] = useState({ type: '', text: '' });
   const { validateCoupon, loading: validatingCoupon } = useCouponValidation();
+
+  // Fica perguntando ao servidor se o pagamento caiu.
+  //
+  // Antes, esta tela nao tinha nenhuma confirmacao: gerava o QR Code e ficava
+  // parada para sempre. A pessoa pagava, nada mudava, e ela nao tinha como
+  // saber se deu certo -- so restava entrar em contato com a organizacao.
+  //
+  // Quem confirma de verdade e o webhook do Sicoob; aqui so consultamos o
+  // resultado. Pergunta a cada 5 segundos e para assim que resolver.
+  useEffect(() => {
+    const txid = pixData?.txid;
+    if (!txid || statusPagamento !== 'aguardando') return undefined;
+
+    let ativo = true;
+
+    const perguntar = async () => {
+      try {
+        const r = await consultarStatusPix(txid);
+        if (!ativo || !r?.encontrado) return;
+
+        if (r.pago || r.inscricao_liberada) {
+          setStatusPagamento('confirmado');
+          toast({
+            title: 'Pagamento confirmado!',
+            description: 'Sua inscrição está garantida.',
+            className: 'bg-emerald-600 text-white'
+          });
+        } else if (r.status === 'divergente') {
+          setStatusPagamento('divergente');
+        } else if (r.expirado) {
+          setStatusPagamento('expirado');
+        }
+      } catch (err) {
+        // Falha de rede não deve derrubar a tela -- segue tentando.
+        console.error('Erro ao consultar status do PIX:', err?.message || err);
+      }
+    };
+
+    perguntar();
+    const intervalo = setInterval(perguntar, 5000);
+
+    return () => {
+      ativo = false;
+      clearInterval(intervalo);
+    };
+  }, [pixData?.txid, statusPagamento, toast]);
 
   // Show toast if there's an error loading the pricing configuration
   useEffect(() => {
@@ -197,7 +246,8 @@ const InscricaoPixPage = () => {
       const pixCopiaECola = data.pixCopiaECola;
       
       if (pixCopiaECola) {
-        setPixData({ qrcode, pixCopiaECola });
+        setStatusPagamento('aguardando');
+        setPixData({ qrcode, pixCopiaECola, txid: data.txid });
         toast({
           title: "PIX gerado com sucesso!",
           description: "Escaneie o QR Code ou copie o código para realizar o pagamento.",
@@ -235,6 +285,7 @@ const InscricaoPixPage = () => {
   const resetForm = () => {
     setFormData({ nome: '', cpf: '' });
     setPixData(null);
+    setStatusPagamento('aguardando');
     setError(null);
     setAppliedCoupon(null);
     setDiscountValue(0);
@@ -416,6 +467,43 @@ const InscricaoPixPage = () => {
               </CardContent>
             </Card>
           </motion.div>
+        ) : statusPagamento === 'confirmado' ? (
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}>
+            <Card className="glass-effect border-emerald-500/40 bg-black/60 shadow-[0_0_40px_rgba(5,150,105,0.25)] overflow-hidden">
+              <CardContent className="p-10 text-center space-y-6">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                  className="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mx-auto"
+                >
+                  <CheckCircle2 className="w-12 h-12 text-emerald-400" />
+                </motion.div>
+
+                <div className="space-y-2">
+                  <h2 className="text-3xl font-bold text-white">Pagamento confirmado!</h2>
+                  <p className="text-gray-300">
+                    Recebemos o seu PIX de <strong className="text-emerald-400">{formatCurrency(finalValue)}</strong>.
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    Sua inscrição está garantida. Nos vemos no Metanoia! 🙌
+                  </p>
+                </div>
+
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-left space-y-1">
+                  <p className="text-gray-400 text-sm">Inscrição de</p>
+                  <p className="text-white font-medium">{formData.nome}</p>
+                </div>
+
+                <Button
+                  onClick={() => navigate('/')}
+                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                >
+                  Voltar para o início
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <Card className="glass-effect border-emerald-500/30 bg-black/60 shadow-[0_0_30px_rgba(5,150,105,0.15)] overflow-hidden">
@@ -423,6 +511,33 @@ const InscricaoPixPage = () => {
                 <CheckCircle2 className="w-6 h-6 text-emerald-400" />
                 <h2 className="text-xl font-bold text-white">Cobrança Gerada</h2>
               </div>
+
+              {statusPagamento === 'aguardando' && (
+                <div className="bg-blue-500/10 border-b border-blue-500/30 px-4 py-3 flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 text-blue-400 animate-spin shrink-0" />
+                  <p className="text-blue-300 text-sm font-medium">
+                    Aguardando o pagamento — esta tela confirma sozinha
+                  </p>
+                </div>
+              )}
+
+              {statusPagamento === 'expirado' && (
+                <div className="bg-amber-500/10 border-b border-amber-500/30 px-4 py-3 text-center">
+                  <p className="text-amber-300 text-sm font-medium">
+                    Esta cobrança expirou. Se você já pagou, fale com a organização —
+                    seu pagamento será localizado. Caso contrário, gere uma nova cobrança abaixo.
+                  </p>
+                </div>
+              )}
+
+              {statusPagamento === 'divergente' && (
+                <div className="bg-amber-500/10 border-b border-amber-500/30 px-4 py-3 text-center">
+                  <p className="text-amber-300 text-sm font-medium">
+                    Recebemos um pagamento com valor diferente do cobrado. A organização vai
+                    conferir e liberar sua inscrição — não é preciso pagar de novo.
+                  </p>
+                </div>
+              )}
 
               <CardContent className="p-8 text-center space-y-8">
                 <div className="space-y-2">

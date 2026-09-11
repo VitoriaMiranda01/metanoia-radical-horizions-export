@@ -66,3 +66,15 @@ export const validarCupomPublico = async (codigo) =>
  */
 export const criarInscricaoPublica = async (tipo, dados) =>
   chamar('criar_inscricao', { p_tipo: tipo, p_dados: dados });
+
+/**
+ * Status de UMA cobranca PIX, pelo txid.
+ *
+ * A tela de pagamento nao tinha como saber que o dinheiro entrou -- ficava
+ * parada no QR Code para sempre, mesmo depois do pagamento confirmado. Com
+ * isto ela consegue perguntar de tempos em tempos e mostrar a confirmacao.
+ *
+ * Devolve so { encontrado, status, pago, inscricao_liberada, expirado }.
+ */
+export const consultarStatusPix = async (txid) =>
+  chamar('status_pagamento_pix', { p_txid: txid });

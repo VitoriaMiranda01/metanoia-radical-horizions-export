@@ -49,21 +49,32 @@ const CpfsAreaEspecialManager = ({ areaLabel, cpfs = [], equipantes = [], carreg
     return mapa;
   }, [equipantes]);
 
-  // Sugestoes: busca por nome ou por CPF, ignorando quem ja esta na lista.
-  const sugestoes = useMemo(() => {
+  // Quem casa com a busca, esteja ou nao ja na lista.
+  const encontrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     if (!termo) return [];
     const termoDigitos = soDigitos(termo);
 
-    return (equipantes || [])
-      .filter((eq) => !cpfs.includes(soDigitos(eq.cpf)))
-      .filter((eq) => {
-        const porNome = (eq.nome || '').toLowerCase().includes(termo);
-        const porCpf = termoDigitos && soDigitos(eq.cpf).includes(termoDigitos);
-        return porNome || porCpf;
-      })
-      .slice(0, 8);
-  }, [busca, equipantes, cpfs]);
+    return (equipantes || []).filter((eq) => {
+      const porNome = (eq.nome || '').toLowerCase().includes(termo);
+      const porCpf = termoDigitos && soDigitos(eq.cpf).includes(termoDigitos);
+      return porNome || porCpf;
+    });
+  }, [busca, equipantes]);
+
+  // Só os que ainda dá para adicionar.
+  const sugestoes = useMemo(
+    () => encontrados.filter((eq) => !cpfs.includes(soDigitos(eq.cpf))).slice(0, 8),
+    [encontrados, cpfs]
+  );
+
+  // Quem a busca achou MAS já está nesta área. Sem isso, a pessoa some das
+  // sugestões e a tela diz "ninguém encontrado" -- o organizador sabe que ela
+  // existe e fica sem entender. Melhor dizer o motivo.
+  const jaNaLista = useMemo(
+    () => encontrados.filter((eq) => cpfs.includes(soDigitos(eq.cpf))).slice(0, 4),
+    [encontrados, cpfs]
+  );
 
   // Fecha a lista de sugestões ao clicar fora.
   useEffect(() => {
@@ -227,7 +238,13 @@ const CpfsAreaEspecialManager = ({ areaLabel, cpfs = [], equipantes = [], carreg
               ))
             ) : (
               <div className="px-3 py-3 text-sm text-gray-400">
-                {equipantes.length === 0 ? (
+                {jaNaLista.length > 0 ? (
+                  <span className="text-emerald-300">
+                    {jaNaLista.length === 1
+                      ? `${jaNaLista[0].nome} já está em ${areaLabel}.`
+                      : `${jaNaLista.map((e) => e.nome).join(', ')} já estão em ${areaLabel}.`}
+                  </span>
+                ) : equipantes.length === 0 ? (
                   <span className="flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     Nenhum equipante inscrito ainda. Você pode cadastrar por CPF por enquanto.

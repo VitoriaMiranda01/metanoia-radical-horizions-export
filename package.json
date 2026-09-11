@@ -37,7 +37,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-helmet": "^6.1.0",
-    "react-router-dom": "^6.30.6",
+    "react-router-dom": "^7.18.3",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-animate": "^1.0.7",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"

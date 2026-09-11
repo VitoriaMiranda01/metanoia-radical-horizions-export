@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { getAuthToken } from '@/services/authToken';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -123,11 +124,31 @@ const createMockClient = () => {
   };
 };
 
+/**
+ * O CRACHA PASSA A ACOMPANHAR AS CONSULTAS (Passo 2, etapa 6)
+ * -----------------------------------------------------------
+ * Ate aqui, TODA consulta ao banco saia como "anon" -- o visitante
+ * deslogado -- mesmo vinda de um organizador logado. Era por isso que as
+ * tabelas precisavam ficar abertas para anon: sem isso, nenhuma tela
+ * administrativa enxergaria nada.
+ *
+ * Agora, quando existe um cracha guardado (emitido pela Edge Function de
+ * login e assinado com o segredo do projeto), a biblioteca o envia em cada
+ * consulta. O banco passa a saber QUEM esta perguntando, e as travas de
+ * RLS conseguem distinguir organizador, parceiro e visitante.
+ *
+ * Quando nao ha cracha, a funcao devolve null e a biblioteca usa a chave
+ * anonima -- exatamente como antes. Por isso esta mudanca, sozinha, nao
+ * altera o comportamento de nada: ela so passa a informar o banco. O que
+ * muda o acesso e o script de travas
+ * (database/migrations/schema-update-20260911c-trancar-tabelas.sql).
+ *
+ * Nota: com "accessToken" definido, a biblioteca desabilita o namespace
+ * supabase.auth. Nao e perda nenhuma -- este projeto nunca usou Supabase
+ * Auth de verdade (ver AuthContext.jsx).
+ */
 export const supabase = isConfigValid
   ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-      },
+      accessToken: async () => getAuthToken(),
     })
   : createMockClient();

@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/services/supabaseClient';
 import { organizadorLogin, igrejaLogin } from '@/services/authService';
-import { setAuthToken, clearAuthToken } from '@/services/authToken';
+import { setAuthToken, clearAuthToken, getAuthToken } from '@/services/authToken';
 
 const AuthContext = createContext();
 
@@ -19,51 +18,39 @@ export const AuthProvider = ({ children }) => {
   const [igrejaUser, setIgrejaUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // As chamadas a supabase.auth.* sairam daqui (Passo 2, etapa 6).
+  //
+  // Elas eram vestigiais: este projeto nunca usou Supabase Auth. Ninguem
+  // nunca se cadastrou por la, entao getSession() sempre devolvia sessao
+  // nula, onAuthStateChange nunca disparava e signOut() nao fazia nada.
+  //
+  // Agora elas atrapalhariam: o cliente e criado com a opcao "accessToken"
+  // (ver supabaseClient.js), para mandar o cracha do nosso proprio login
+  // nas consultas -- e nesse modo a biblioteca desabilita o namespace
+  // supabase.auth. A sessao sempre veio do localStorage, e continua vindo.
   useEffect(() => {
-    let mounted = true;
-
-    const initializeAuth = async () => {
-      try {
-        // Carrega sessões salvas do localStorage
-        const savedUser = localStorage.getItem('metanoia_user');
-        const savedOrg = localStorage.getItem('metanoia_org_user');
-        const savedIgreja = localStorage.getItem('metanoia_igreja_user');
-        
-        if (savedUser) setUser(JSON.parse(savedUser));
-        if (savedOrg) setOrganizadorUser(JSON.parse(savedOrg));
-        if (savedIgreja) setIgrejaUser(JSON.parse(savedIgreja));
-        
-        // Tenta sincronizar com a sessão nativa do Supabase
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) throw error;
-
-        if (mounted && session?.user && !savedUser) {
-          setUser(session.user);
-        }
-      } catch (err) {
-        console.error('AuthContext - Initialization', err);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+    try {
+      // getAuthToken devolve null e limpa a sessão inteira quando o crachá
+      // está vencido ou ilegível (ver authToken.js). Sem crachá válido não
+      // adianta restaurar a sessão: as telas abririam vazias, sem explicação.
+      // Melhor cair no login, que é um problema óbvio e de solução óbvia.
+      if (!getAuthToken()) {
+        setLoading(false);
+        return;
       }
-    };
 
-    initializeAuth();
+      const savedUser = localStorage.getItem('metanoia_user');
+      const savedOrg = localStorage.getItem('metanoia_org_user');
+      const savedIgreja = localStorage.getItem('metanoia_igreja_user');
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user && !localStorage.getItem('metanoia_user')) {
-        setUser(session.user);
-      } else if (!session?.user && _event === 'SIGNED_OUT') {
-        setUser(null);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription?.unsubscribe();
-    };
+      if (savedUser) setUser(JSON.parse(savedUser));
+      if (savedOrg) setOrganizadorUser(JSON.parse(savedOrg));
+      if (savedIgreja) setIgrejaUser(JSON.parse(savedIgreja));
+    } catch (err) {
+      console.error('AuthContext - leitura da sessão salva', err?.message || err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const login = async (identifier, password, type) => {
@@ -133,11 +120,6 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     logoutOrganizador();
     logoutIgreja();
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.error('AuthContext - logout', e);
-    }
   };
 
   const value = {

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { QrCode, CreditCard, ArrowRight, Zap, AlertCircle } from 'lucide-react';
 import { atualizarStatusPagamento } from '@/services/inscricoesService';
+import { rotuloDoQueSePaga } from '@/utils/rotulosPagamento';
 
 const PaymentMethodSelectionPage = () => {
   const location = useLocation();
@@ -56,7 +57,7 @@ const PaymentMethodSelectionPage = () => {
           className="text-center mb-10"
         >
           <h1 className="text-4xl font-bold text-white mb-4">Forma de Pagamento</h1>
-          <p className="text-gray-400 text-lg">Escolha como deseja realizar o pagamento da sua inscrição.</p>
+          <p className="text-gray-400 text-lg">Escolha como deseja realizar o pagamento {'de ' + rotuloDoQueSePaga(location.state?.tipo)}.</p>
         </motion.div>
 
         {!hasCpf && (

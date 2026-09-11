@@ -18,6 +18,7 @@ import { useCouponValidation } from '@/hooks/useCouponValidation';
 import { finalizeZeroValuePayment } from '@/services/paymentService';
 import { updateEquipantePaymentStatus, updateAcampantePaymentStatus } from '@/services/inscricoesService';
 import { consultarStatusPix } from '@/services/publicDataService';
+import { rotuloValor, rotuloValorEmFrase } from '@/utils/rotulosPagamento';
 
 const formatCurrency = value => {
   if (value === null || value === undefined) return 'R$ 0,00';
@@ -108,7 +109,7 @@ const InscricaoPixPage = () => {
     if (valueError) {
       toast({
         title: "Aviso",
-        description: "Não foi possível carregar o valor da inscrição. Usando valor padrão.",
+        description: `Não foi possível carregar ${rotuloValorEmFrase(tipo)}. Usando valor padrão.`,
         variant: "default"
       });
     }
@@ -163,7 +164,7 @@ const InscricaoPixPage = () => {
       setCouponMessage({ type: 'success', text: 'Cupom aplicado com sucesso!' });
       toast({
         title: "Cupom Aplicado",
-        description: "Desconto aplicado com sucesso ao valor da inscrição.",
+        description: `Desconto aplicado com sucesso ${tipo === 'equipante' ? 'à taxa de alimentação' : 'ao valor da inscrição'}.`,
         className: "bg-emerald-600 text-white"
       });
     } else {
@@ -416,7 +417,7 @@ const InscricaoPixPage = () => {
                     </div>
 
                     <div className="bg-white/5 p-4 rounded-lg border border-white/10 space-y-1">
-                      <Label className="text-gray-400 text-sm">Valor da Inscrição</Label>
+                      <Label className="text-gray-400 text-sm">{rotuloValor(tipo)}</Label>
                       <div className="flex flex-col">
                         {discountValue > 0 && (
                           <span className="text-sm text-gray-500 line-through">

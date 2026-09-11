@@ -564,9 +564,9 @@ const OrganizerConfigPage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
                   <DollarSign className="w-5 h-5 text-emerald-400" />
-                  <span>Taxa de Inscrição</span>
+                  <span>Valores por Lote</span>
                 </CardTitle>
-                <CardDescription className="text-gray-400">Gerencie os períodos e valores de inscrição.</CardDescription>
+                <CardDescription className="text-gray-400">Gerencie os períodos e valores cobrados de cada tipo de inscrito.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-10">
                 <div className="space-y-4">
@@ -578,7 +578,7 @@ const OrganizerConfigPage = () => {
                   />
                 </div>
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-white border-b border-white/10 pb-2">Acampantes</h3>
+                  <h3 className="text-lg font-medium text-white border-b border-white/10 pb-2">Taxa de Inscrição Acampante</h3>
                   <PricingPeriodsManager 
                     type="acampante" 
                     periods={config.acampante_pricing_periods} 

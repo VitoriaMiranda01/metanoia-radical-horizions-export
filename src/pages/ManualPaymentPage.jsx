@@ -13,6 +13,7 @@ import { useCurrentPrice } from '@/hooks/useCurrentPrice';
 import { useCouponValidation } from '@/hooks/useCouponValidation';
 import { finalizeZeroValuePayment } from '@/services/paymentService';
 import { updateEquipantePaymentStatus, updateAcampantePaymentStatus } from '@/services/inscricoesService';
+import { rotuloValor, rotuloValorEmFrase } from '@/utils/rotulosPagamento';
 
 const formatCurrency = value => {
   if (value === null || value === undefined) return 'R$ 0,00';
@@ -152,7 +153,7 @@ const ManualPaymentPage = () => {
                 <div className="bg-red-500/20 border border-red-500/50 text-white p-4 rounded-md flex items-center justify-center gap-3">
                   <AlertTriangle className="w-6 h-6 text-red-400 shrink-0" />
                   <p className="text-red-400 font-medium text-sm text-left">
-                    Não foi possível carregar o valor da inscrição. Entre em contato com a organização.
+                    Não foi possível carregar {rotuloValorEmFrase(tipo)}. Entre em contato com a organização.
                   </p>
                 </div>
               )}
@@ -168,7 +169,7 @@ const ManualPaymentPage = () => {
 
               <div className="space-y-2">
                 <p className="text-gray-300 text-sm uppercase tracking-wider font-semibold">
-                  Valor da Inscrição
+                  {rotuloValor(tipo)}
                 </p>
                 {discountValue > 0 && (
                   <p className="text-lg text-gray-400 line-through">

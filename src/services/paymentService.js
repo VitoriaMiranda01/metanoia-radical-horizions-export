@@ -176,3 +176,123 @@ export const confirmarPagamentoManual = async (tipo, id) => {
     })
     .eq('id', id);
 };
+
+// ---------------------------------------------------------------------------
+// Rede de seguranca de pagamento (Etapa 3 do Passo 2)
+//
+// Regra definida com a organizacao: "sempre que pagar precisa liberar, nunca
+// pode ficar como pendente". Como nao consultamos o Sicoob ativamente, a
+// garantia e operacional -- o organizador precisa CONSEGUIR VER o que travou
+// e liberar na mao. Antes disso, a tela so mostrava pagamento manual/isento,
+// entao um PIX travado nao aparecia em lugar nenhum.
+// ---------------------------------------------------------------------------
+
+const STATUS_QUITADOS = ['confirmado', 'pago', 'completed'];
+
+const estaQuitada = (status) =>
+  STATUS_QUITADOS.includes(String(status || '').toLowerCase());
+
+/**
+ * Inscricoes que ainda nao estao quitadas, independente do metodo de
+ * pagamento. E daqui que sai a liberacao manual de quem diz que pagou mas
+ * cujo PIX nunca foi confirmado (ex.: o Sicoob nao chamou o webhook).
+ */
+export const fetchInscricoesNaoQuitadas = async () => {
+  const colunas = 'id, nome, cpf, status_pagamento, metodo_pagamento, data_pagamento';
+
+  const [acampantes, equipantes] = await Promise.all([
+    supabase.from('acampantes').select(colunas),
+    supabase.from('equipantes').select(colunas),
+  ]);
+
+  if (acampantes.error) throw acampantes.error;
+  if (equipantes.error) throw equipantes.error;
+
+  const marcar = (linhas, tipo) =>
+    (linhas || [])
+      .filter((linha) => !estaQuitada(linha.status_pagamento))
+      .map((linha) => ({ ...linha, tipo }));
+
+  return [
+    ...marcar(acampantes.data, 'acampante'),
+    ...marcar(equipantes.data, 'equipante'),
+  ];
+};
+
+/**
+ * Cobrancas PIX que exigem atencao humana. Dois casos, os dois significando
+ * "o dinheiro entrou (ou pode ter entrado) mas a inscricao nao liberou":
+ *
+ *  - pix 'pago' e inscricao ainda pendente: o webhook confirmou a cobranca
+ *    mas falhou ao atualizar a inscricao;
+ *  - pix 'divergente': o valor pago nao bateu com o cobrado, entao o webhook
+ *    se recusou a confirmar sozinho (ver sicoob-webhook-handler).
+ */
+export const fetchPixTravados = async () => {
+  const { data: pix, error } = await supabase
+    .from('pix_sicoob')
+    .select('id, sicoob_id, valor, status, inscricao_id, inscricao_tipo, created_at, updated_at')
+    .in('status', ['pago', 'divergente']);
+
+  if (error) throw error;
+  if (!pix || pix.length === 0) return [];
+
+  const ids = {
+    acampante: pix.filter((p) => p.inscricao_tipo !== 'equipante').map((p) => p.inscricao_id).filter(Boolean),
+    equipante: pix.filter((p) => p.inscricao_tipo === 'equipante').map((p) => p.inscricao_id).filter(Boolean),
+  };
+
+  const buscar = async (tabela, lista) => {
+    if (lista.length === 0) return [];
+    const { data, error: err } = await supabase
+      .from(tabela)
+      .select('id, nome, cpf, status_pagamento')
+      .in('id', lista);
+    if (err) throw err;
+    return data || [];
+  };
+
+  const [inscAcampantes, inscEquipantes] = await Promise.all([
+    buscar('acampantes', ids.acampante),
+    buscar('equipantes', ids.equipante),
+  ]);
+
+  const porId = new Map();
+  inscAcampantes.forEach((i) => porId.set(i.id, i));
+  inscEquipantes.forEach((i) => porId.set(i.id, i));
+
+  return pix
+    .map((p) => {
+      const inscricao = porId.get(p.inscricao_id);
+      return {
+        ...p,
+        tipo: p.inscricao_tipo === 'equipante' ? 'equipante' : 'acampante',
+        nome: inscricao?.nome || 'Inscrição não encontrada',
+        cpf: inscricao?.cpf || '—',
+        status_inscricao: inscricao?.status_pagamento || null,
+        motivo: p.status === 'divergente'
+          ? 'Valor pago diferente do cobrado'
+          : 'PIX pago, inscrição não liberada',
+      };
+    })
+    // 'divergente' sempre exige decisao. 'pago' so interessa se a inscricao
+    // ainda nao estiver quitada -- se ja estiver, o fluxo funcionou.
+    .filter((p) => p.status === 'divergente' || !estaQuitada(p.status_inscricao));
+};
+
+/**
+ * Isencao de taxa. Regra definida com a organizacao em 11/09/2026: isencao
+ * e SEMPRE decisao de um organizador, nunca de cupom -- por isso os cupons
+ * ISENTO_* foram desativados.
+ */
+export const isentarInscricao = async (tipo, id) => {
+  const table = tipo === 'equipante' ? 'equipantes' : 'acampantes';
+  return supabase
+    .from(table)
+    .update({
+      status_pagamento: 'confirmado',
+      metodo_pagamento: 'isento',
+      data_pagamento: new Date().toISOString()
+    })
+    .eq('id', id);
+};

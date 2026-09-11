@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
+import { validarCupomPublico } from '@/services/publicDataService';
 
 export const fetchCoupons = async () => {
   return supabase.from('cupons').select('*').order('created_at', { ascending: false });
@@ -16,11 +17,28 @@ export const deleteCoupon = async (id) => {
   return supabase.from('cupons').delete().eq('id', id);
 };
 
+/**
+ * Validacao de cupom para o visitante (nao logado).
+ *
+ * Antes isto fazia select('*') na tabela "cupons". Como a tabela e legivel
+ * pela chave publica, dava pra LISTAR todos os cupons e usar o de maior
+ * desconto -- e foi assim que se descobriu que existiam cupons de isencao
+ * total com nome adivinhavel. Agora quem responde e o servidor, e so sobre o
+ * codigo perguntado.
+ *
+ * O retorno mantem o formato { data, error } que a tela ja esperava.
+ */
 export const findActiveCouponByCode = async (code) => {
-  return supabase
-    .from('cupons')
-    .select('*')
-    .eq('codigo', code)
-    .eq('ativo', true)
-    .single();
+  try {
+    const resultado = await validarCupomPublico(code);
+
+    if (!resultado?.valido) {
+      return { data: null, error: null };
+    }
+
+    return { data: { codigo: code, desconto_fixo: resultado.desconto }, error: null };
+  } catch (error) {
+    console.error('couponsService - findActiveCouponByCode', error?.message || error);
+    return { data: null, error };
+  }
 };

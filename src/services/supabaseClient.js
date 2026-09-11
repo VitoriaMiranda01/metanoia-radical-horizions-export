@@ -87,8 +87,25 @@ const createMockClient = () => {
     maybeSingle: async () => mockResponse,
   });
 
+  // O cliente falso precisa ter TODAS as superficies que o app usa. Se faltar
+  // alguma, o erro deixa de ser "banco nao configurado" (tratado, com aviso na
+  // tela) e vira "X is not a function" -- excecao nao tratada que derruba a
+  // renderizacao. Era o que acontecia com rpc() e channel(), e o resultado era
+  // uma tela em branco em vez do aviso vermelho.
+  const canalFalso = {
+    on: () => canalFalso,
+    subscribe: () => canalFalso,
+    unsubscribe: async () => ({ error: null }),
+  };
+
   return {
     from: (table) => mockChain(),
+    rpc: async () => mockResponse,
+    channel: () => canalFalso,
+    removeChannel: async () => ({ error: null }),
+    functions: {
+      invoke: async () => mockResponse,
+    },
     auth: {
       getSession: async () => ({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),

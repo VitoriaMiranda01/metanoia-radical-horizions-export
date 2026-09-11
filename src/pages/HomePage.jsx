@@ -209,7 +209,7 @@ const HomePage = () => {
                     </div>
 
                     <Button onClick={() => navigate('/acampante')} className="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-bold py-6 text-lg rounded-xl shadow-lg shadow-red-900/30 transition-all transform group-hover:scale-[1.02]">
-                      Inscrever-se
+                      Inscrever-se como Acampante
                     </Button>
                     <p className="text-xs text-center text-gray-500 mt-2">*Vagas limitadas</p>
                   </div>
@@ -245,7 +245,7 @@ const HomePage = () => {
                   Se você já participou de alguma edição do Metanoia Radical Serra como acampante e sente o chamado para servir nos bastidores, junte-se à nossa equipe!
                 </p>
                 <Button onClick={() => navigate('/equipante')} className="bg-red-600 hover:bg-red-700 text-white text-lg px-8 py-6 rounded-xl shadow-lg shadow-red-900/20 transition-all transform hover:translate-x-2">
-                  Inscrever-se
+                  Inscrever-se como Equipante
                 </Button>
               </FadeIn>
 

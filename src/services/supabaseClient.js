@@ -147,8 +147,55 @@ const createMockClient = () => {
  * supabase.auth. Nao e perda nenhuma -- este projeto nunca usou Supabase
  * Auth de verdade (ver AuthContext.jsx).
  */
+/**
+ * Rede de seguranca para cracha recusado pelo banco.
+ *
+ * A conferencia de validade em authToken.js pega o caso comum (cracha
+ * vencido), mas nao pega um cracha que esta DENTRO da validade e mesmo
+ * assim e recusado -- por exemplo um assinado com um segredo anterior,
+ * depois de uma troca de chave.
+ *
+ * Nesses casos o banco responde 401 com o codigo PGRST301 ("nao consegui
+ * decodificar o JWT"). Sem tratamento, a pessoa ficaria "logada" com todas
+ * as listas vazias e sem nenhuma pista do que fazer.
+ *
+ * Aqui, ao ver esse erro uma vez, a sessao e descartada e a pessoa vai
+ * para o login. Trata-se de uma unica vez por carregamento de pagina, para
+ * nao entrar em laco.
+ */
+let sessaoJaDescartada = false;
+
+const derrubarSessaoInvalida = () => {
+  if (sessaoJaDescartada) return;
+  sessaoJaDescartada = true;
+  try {
+    ['metanoia_access_token', 'metanoia_user', 'metanoia_org_user', 'metanoia_igreja_user']
+      .forEach((chave) => localStorage.removeItem(chave));
+  } catch (_) { /* ignora */ }
+  try {
+    if (typeof window !== 'undefined') window.location.replace('/login');
+  } catch (_) { /* ignora */ }
+};
+
+const fetchComTratamentoDeCracha = async (input, init) => {
+  const resposta = await fetch(input, init);
+
+  // Só interessa 401 vindo do banco (PostgREST). O login em si devolve 401
+  // para senha errada e não deve derrubar sessão nenhuma.
+  const alvo = String(typeof input === 'string' ? input : input?.url || '');
+  if (resposta.status === 401 && alvo.includes('/rest/v1/')) {
+    try {
+      const corpo = await resposta.clone().json();
+      if (corpo?.code === 'PGRST301') derrubarSessaoInvalida();
+    } catch (_) { /* corpo não era JSON -- ignora */ }
+  }
+
+  return resposta;
+};
+
 export const supabase = isConfigValid
   ? createClient(supabaseUrl, supabaseAnonKey, {
       accessToken: async () => getAuthToken(),
+      global: { fetch: fetchComTratamentoDeCracha },
     })
   : createMockClient();

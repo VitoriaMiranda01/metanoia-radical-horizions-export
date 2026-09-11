@@ -199,7 +199,7 @@ const HomePage = () => {
                       
                       {formattedLimitDate && <div className="flex items-center space-x-3">
                         <Clock className="text-red-500 w-5 h-5" />
-                        <span>Data limite para pagamento: <strong>{formattedLimitDate}</strong></span>
+                        <span>Data limite para inscrição: <strong>{formattedLimitDate}</strong></span>
                       </div>}
 
                       <div className="flex items-center space-x-3">

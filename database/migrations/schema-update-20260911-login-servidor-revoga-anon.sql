@@ -47,13 +47,47 @@ alter table public.igrejas_parceiras  enable row level security;
 revoke all on public.organizadores_auth from anon;
 revoke all on public.igrejas_parceiras  from anon;
 
+-- Tambem revogado de "authenticated". Hoje ninguem no site usa esse papel
+-- (o token emitido pela funcao de login ainda nao e enviado ao banco), mas no
+-- Passo 2 ele passara a valer -- e sem isto QUALQUER pessoa logada, inclusive
+-- uma igreja parceira, teria acesso total as senhas de todo mundo.
+-- A Edge Function nao e afetada: ela usa service_role, que mantem os privilegios.
+revoke all on public.organizadores_auth from authenticated;
+revoke all on public.igrejas_parceiras  from authenticated;
+
 -- Observacao: nao ha nenhuma outra parte do sistema lendo estas tabelas
 -- pelo navegador -- a lista de igrejas usada nos formularios vem do
 -- arquivo estatico src/constants/igrejas.js (IGREJAS_PARCEIRAS), nao
 -- desta tabela. Conferido por busca em todo o src/ antes de aplicar.
 
--- Conferencia (deve devolver zero privilegios para "anon"):
+-- Conferencia (deve devolver zero linhas):
 --   select grantee, privilege_type
 --   from information_schema.role_table_grants
 --   where table_name in ('organizadores_auth','igrejas_parceiras')
---     and grantee = 'anon';
+--     and grantee in ('anon','authenticated');
+
+-- =====================================================================
+-- APLICADO EM PRODUCAO em 2026-09-11 (projeto yxootyzlpefyztiiacrs),
+-- como a migracao "login_servidor_revoga_acesso_tabelas_credencial".
+--
+-- Estado ANTES (conferido): anon e authenticated tinham
+-- DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE nas duas
+-- tabelas -- ou seja, qualquer visitante podia ler, alterar e APAGAR as
+-- senhas de todos os organizadores e de todas as igrejas.
+--
+-- Verificacao DEPOIS, feita de fora (navegador, com a chave publica):
+--   GET    /rest/v1/organizadores_auth  -> 401 permission denied
+--   DELETE /rest/v1/organizadores_auth  -> 401 permission denied
+--   GET    /rest/v1/igrejas_parceiras   -> 401 permission denied
+--   DELETE /rest/v1/igrejas_parceiras   -> 401 permission denied
+--
+-- Login testado no site real DEPOIS da revogacao, com contas reais:
+--   organizador -> entra em /gerenciar, token emitido (user_role=organizador)
+--   parceiro    -> entra em /parceiros, token emitido (user_role=parceiro)
+--   logout      -> limpa o token em ambos os casos
+--
+-- Observacao: a policy permissiva "Pode tudo" (ALL / using true) continua
+-- existindo nas duas tabelas, mas ficou inerte: sem GRANT, o Postgres barra
+-- o acesso antes de avaliar a policy. Remove-la e um passo de limpeza para
+-- a Fase 2.
+-- =====================================================================

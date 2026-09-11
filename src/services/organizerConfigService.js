@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabaseClient';
 import { withRetry } from '@/services/serviceHelpers';
+import { fetchConfigPublica } from '@/services/publicDataService';
 
 // Não busca mais data_edicao_dia_inicio/dia_fim/mes/ano na tabela
 // "organizadores" (removido em 2026-09-04, a pedido da usuaria). Motivo:
@@ -291,12 +292,25 @@ export const saveConfiguracoes = async (config) => {
   }
 };
 
+// Usada pela HomePage, que e publica -- por isso passa pela funcao
+// config_publica em vez de ler a tabela. Formato de retorno mantido.
 export const fetchEventoDatas = async () => {
-  return supabase
-    .from('configuracoes')
-    .select('data_evento_inicio, data_evento_fim, edicao_numero, data_limite_inscricao_pagamento')
-    .limit(1)
-    .single();
+  try {
+    const config = await fetchConfigPublica();
+    if (!config) return { data: null, error: null };
+    return {
+      data: {
+        data_evento_inicio: config.data_evento_inicio,
+        data_evento_fim: config.data_evento_fim,
+        edicao_numero: config.edicao_numero,
+        data_limite_inscricao_pagamento: config.data_limite_inscricao_pagamento
+      },
+      error: null
+    };
+  } catch (error) {
+    console.error('organizerConfigService - fetchEventoDatas', error?.message || error);
+    return { data: null, error };
+  }
 };
 
 export const subscribeToConfiguracoesChanges = (channelName, onChange) => {
@@ -317,16 +331,27 @@ export const fetchConfiguracoesEvento = async () => {
     .maybeSingle();
 };
 
-export const fetchPricingConfig = async (edicao_numero) => {
-  let query = supabase
-    .from('configuracoes')
-    .select('valor_acampante, valor_equipante, acampante_pricing_periods, equipante_pricing_periods');
-
-  if (edicao_numero) {
-    query = query.eq('edicao_numero', edicao_numero);
-  } else {
-    query = query.order('edicao_numero', { ascending: false }).limit(1);
+// Usada pelas telas publicas de pagamento (useCurrentPrice) -- por isso passa
+// pela funcao config_publica.
+//
+// valor_acampante / valor_equipante NAO sao mais devolvidos de proposito:
+// estao com 15000 no banco e a tela os trata como reais, entao qualquer data
+// fora dos lotes exibiria R$ 15.000,00. Sem eles, a tela mostra 0 e o servidor
+// recusa a cobranca de forma visivel (ver sicoob-pix-create), que e o
+// comportamento seguro.
+export const fetchPricingConfig = async () => {
+  try {
+    const config = await fetchConfigPublica();
+    if (!config) return { data: null, error: null };
+    return {
+      data: {
+        acampante_pricing_periods: config.acampante_pricing_periods || [],
+        equipante_pricing_periods: config.equipante_pricing_periods || []
+      },
+      error: null
+    };
+  } catch (error) {
+    console.error('organizerConfigService - fetchPricingConfig', error?.message || error);
+    return { data: null, error };
   }
-
-  return query.maybeSingle();
 };

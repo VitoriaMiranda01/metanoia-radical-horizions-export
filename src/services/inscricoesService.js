@@ -1,7 +1,10 @@
 import { supabase } from '@/services/supabaseClient';
 import { mapFormDataToDb as mapAcampanteToDb } from '@/utils/acampanteForm';
 import { toBoolean } from '@/utils/formatters';
-import { escolherGrupoTrailha } from '@/services/acampantesService';
+import {
+  verificarInscricaoPublica,
+  criarInscricaoPublica,
+} from '@/services/publicDataService';
 
 // Reenvia automaticamente inserções que falharam por erro passageiro (ex:
 // sobrecarga momentânea do banco/pooler quando muita gente se inscreve ao
@@ -30,22 +33,25 @@ const isRetryableError = (error) => {
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const insertWithRetry = async (table, payload, { maxAttempts = 3, baseDelayMs = 800 } = {}) => {
+// O insert direto virou chamada à função criar_inscricao (ver
+// publicDataService.js), mas o reenvio continua valendo pelo mesmo motivo de
+// antes: o gargalo é a sobrecarga do banco em picos de inscrição, e isso não
+// muda por a escrita passar por uma função.
+const comReenvio = async (executar, { maxAttempts = 3, baseDelayMs = 800 } = {}) => {
   let lastError;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const { data, error } = await supabase.from(table).insert(payload).select().single();
-    if (!error) return { data, error: null };
+    try {
+      return await executar();
+    } catch (error) {
+      lastError = error;
+      if (attempt === maxAttempts || !isRetryableError(error)) throw error;
 
-    lastError = error;
-    if (attempt === maxAttempts || !isRetryableError(error)) {
-      return { data: null, error };
+      const delay = baseDelayMs * 2 ** (attempt - 1) + Math.random() * 300;
+      console.warn(`inscricaoApi - tentativa ${attempt} falhou (codigo: ${error?.code || 'sem codigo'}), tentando novamente em ${Math.round(delay)}ms`);
+      await wait(delay);
     }
-
-    const delay = baseDelayMs * 2 ** (attempt - 1) + Math.random() * 300;
-    console.warn(`inscricaoApi - insertWithRetry: tentativa ${attempt} falhou (codigo: ${error.code || 'sem codigo'}), tentando novamente em ${Math.round(delay)}ms`, error);
-    await wait(delay);
   }
-  return { data: null, error: lastError };
+  throw lastError;
 };
 
 const mapEquipanteToDb = (formData) => ({
@@ -99,53 +105,54 @@ const mapEquipanteToDb = (formData) => ({
   metodo_pagamento: formData.metodoPagamento,
 });
 
+/**
+ * MUDANCA DE SEGURANCA (Passo 2, etapa 5)
+ * ---------------------------------------
+ * verificarCPF e verificarNome faziam select('*') na tabela e devolviam a
+ * LINHA INTEIRA de outra pessoa -- endereco, condicoes medicas, medicamentos,
+ * se esta gravida, contato de emergencia -- so para responder "ja existe?".
+ * Bastava chutar CPFs para colher a base.
+ *
+ * Agora quem responde e a funcao verificar_inscricao, no servidor, e ela
+ * devolve so { existe, pago, inscrito } -- mais id e nome apenas quando a
+ * pessoa NAO pagou, porque nesse caso a tela a leva direto ao pagamento
+ * pendente. Quem ja pagou nao tem nenhum dado devolvido.
+ *
+ * O formato de retorno foi mantido para nao exigir mudanca nas telas.
+ */
+const montarResultadoVerificacao = (resultado, cpfDigitado) => {
+  if (!resultado?.existe) {
+    return { existe: false, found: false };
+  }
+
+  // "dados" agora e o minimo necessario para seguir ao pagamento, nao mais a
+  // ficha completa. Quem ja pagou nao recebe id nem nome.
+  const dados = resultado.pago
+    ? null
+    : { id: resultado.id, nome: resultado.nome, cpf: cpfDigitado ?? null };
+
+  return {
+    existe: true,
+    found: true,
+    dados,
+    data: dados,
+    inscrito: !!resultado.inscrito,
+    pagou: !!resultado.pago,
+    status_pagamento: resultado.pago ? 'confirmado' : 'pendente'
+  };
+};
+
 export const verificarCPF = async (cpf, tipo) => {
   if (!cpf) {
     console.error('inscricaoApi - verificarCPF: CPF nulo ou indefinido fornecido');
     return { existe: false, found: false };
   }
 
-  const table = tipo === 'equipante' ? 'equipantes' : 'acampantes';
-  const cpfNormalizado = cpf.replace(/\D/g, '');
-
   try {
-    const { data: listData, error } = await supabase
-      .from(table)
-      .select('*')
-      .or(`cpf.eq.${cpfNormalizado},cpf.eq.${cpf}`)
-      .limit(1);
-
-    if (error) throw error;
-
-    if (!listData || listData.length === 0) {
-      return { existe: false, found: false };
-    }
-
-    const data = listData[0];
-    const isPago = data.status_pagamento === 'pago' || data.status_pagamento === 'confirmado';
-
-    if (tipo === 'equipante') {
-      return {
-        existe: true, // For backwards compatibility
-        dados: data,  // For backwards compatibility
-        found: true,
-        data: data,
-        inscrito: !!data.inscrito,
-        pagou: isPago,
-        status_pagamento: data.status_pagamento
-      };
-    }
-
-    // Acampante fallback logic
-    return {
-      existe: true,
-      pagou: isPago,
-      status_pagamento: data.status_pagamento,
-      dados: data
-    };
-
+    const resultado = await verificarInscricaoPublica({ tipo, cpf });
+    return montarResultadoVerificacao(resultado, cpf);
   } catch (error) {
-    console.error(`inscricaoApi - verificarCPF (${tipo})`, error);
+    console.error(`inscricaoApi - verificarCPF (${tipo})`, error?.message || error);
     throw new Error('Erro ao verificar CPF. Tente novamente mais tarde.');
   }
 };
@@ -156,50 +163,11 @@ export const verificarNome = async (nome, tipo) => {
     return { existe: false, found: false };
   }
 
-  const table = tipo === 'equipante' ? 'equipantes' : 'acampantes';
-
   try {
-    const { data: listData, error } = await supabase
-      .from(table)
-      .select('*')
-      .ilike('nome', nome)
-      .limit(1);
-
-    if (error) throw error;
-
-    if (!listData || listData.length === 0) {
-      return { existe: false, found: false };
-    }
-
-    const data = listData[0];
-
-    const isPago =
-      data.status_pagamento === 'pago' ||
-      data.status_pagamento === 'confirmado';
-
-    if (tipo === 'equipante') {
-      return {
-        existe: true,
-        dados: data,
-        found: true,
-        data: data,
-        inscrito: !!data.inscrito,
-        pagou: isPago,
-        status_pagamento: data.status_pagamento
-      };
-    }
-
-    return {
-      existe: true,
-      dados: data,
-      found: true,
-      data: data,
-      pagou: isPago,
-      status_pagamento: data.status_pagamento
-    };
-
+    const resultado = await verificarInscricaoPublica({ tipo, nome });
+    return montarResultadoVerificacao(resultado, null);
   } catch (error) {
-    console.error(`inscricaoApi - verificarNome (${tipo})`, error, { nome });
+    console.error(`inscricaoApi - verificarNome (${tipo})`, error?.message || error);
     throw new Error('Erro ao verificar nome. Tente novamente mais tarde.');
   }
 };
@@ -216,35 +184,32 @@ export const criarInscricao = async (formData, tipo) => {
     ? mapEquipanteToDb(formData)
     : mapAcampanteToDb(formData, null);
 
-  // Acampante já nasce com status 'aprovado' (não existe mais uma etapa manual
-  // de aprovação pra ele), então o grupo de trilha precisa ser sorteado aqui,
-  // no cadastro — não dá mais pra depender de uma transição de status.
-  if (tipo === 'acampante') {
-    try {
-      mappedData.grupo_trailha = await escolherGrupoTrailha(mappedData.sexo);
-    } catch (error) {
-      console.error('inscricaoApi - criarInscricao: erro ao alocar grupo de trilha', error);
-      // Não bloqueia o cadastro por causa disso; a pessoa fica sem grupo e pode
-      // ser alocada manualmente depois.
-    }
-  }
+  // O sorteio do grupo de trilha saiu daqui: era feito no navegador e exigia
+  // ler a tabela de acampantes inteira só para contar quantos havia em cada
+  // grupo. Agora quem sorteia é o servidor, dentro de criar_inscricao.
 
   const processedMethod = formData.metodoPagamento || mappedData.metodo_pagamento || null;
 
   const payload = {
     ...mappedData,
-    status_pagamento: 'pendente',
     metodo_pagamento: processedMethod,
   };
 
   try {
-    const { data, error } = await insertWithRetry(table, payload);
+    // O insert direto virou chamada à função criar_inscricao: o servidor é que
+    // define status de pagamento, dados de transação, aprovação e grupo de
+    // trilha, e devolve só o id. Sem isso, qualquer um podia se inserir já
+    // marcado como "confirmado".
+    const resultado = await comReenvio(() => criarInscricaoPublica(tipo, payload));
 
-    if (error) throw error;
+    if (!resultado?.id) {
+      throw new Error('A inscrição não retornou identificador.');
+    }
 
-    return { success: true, data };
+    // As telas seguem usando result.data.id para ir ao pagamento.
+    return { success: true, data: { ...payload, id: resultado.id } };
   } catch (error) {
-    console.error(`inscricaoApi - criarInscricao (${tipo})`, error, { payload });
+    console.error(`inscricaoApi - criarInscricao (${tipo})`, error?.message || error);
 
     // Trigger do limite de acampantes por igreja (ver migration
     // schema-update-20260907-limite-acampantes-por-igreja.sql) -- mensagem

@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
+import { fetchOcupacaoIgrejas } from '@/services/publicDataService';
 
 /**
  * Limite de inscricoes de acampantes por igreja (excecoes ao limite padrao
@@ -75,21 +76,13 @@ export const deleteLimiteIgreja = async (igreja) => {
 // uma igreja ja bateu o limite. Conta TODAS as inscricoes, independente de
 // status de pagamento (regra combinada com a usuaria em 2026-09-07: toda
 // inscricao enviada ja ocupa a vaga da igreja).
+// Passa a contar no servidor. Antes isto baixava a coluna admin_responsavel
+// de TODOS os acampantes só para somar no navegador -- ou seja, a base
+// inteira saía do banco a cada carregamento do formulário.
 export const fetchOcupacaoIgrejasAcampantes = async () => {
   try {
-    const { data, error } = await supabase
-      .from('acampantes')
-      .select('admin_responsavel');
-
-    if (error) throw error;
-
-    const counts = {};
-    (data || []).forEach(row => {
-      const igreja = row.admin_responsavel;
-      if (!igreja) return;
-      counts[igreja] = (counts[igreja] || 0) + 1;
-    });
-    return counts;
+    const counts = await fetchOcupacaoIgrejas();
+    return counts || {};
   } catch (error) {
     console.error('Erro ao buscar ocupação de igrejas:', error);
     return {};

@@ -51,34 +51,14 @@ export const getAcampantes = async () => {
   }
 };
 
-const GRUPOS_TRILHA = ['Vermelho', 'Amarelo', 'Verde', 'Azul', 'Roxo'];
-
-// Escolhe, entre os 5 grupos fixos, o que tem menos integrantes do mesmo
-// sexo do acampante que está sendo alocado agora. Chamada uma vez por pessoa, no
-// momento do cadastro (ver criarInscricao em inscricoesService.js) — acampante já
-// nasce com status 'aprovado' e não passa por uma aprovação manual separada, então
-// não há mais necessidade de filtrar por status aqui.
-export const escolherGrupoTrailha = async (sexo) => {
-  let grupoEscolhido = GRUPOS_TRILHA[0];
-  let menorContagem = Infinity;
-
-  for (const grupo of GRUPOS_TRILHA) {
-    const { count, error } = await supabase
-      .from('acampantes')
-      .select('*', { count: 'exact', head: true })
-      .eq('grupo_trailha', grupo)
-      .eq('sexo', sexo);
-
-    if (error) throw error;
-
-    if ((count || 0) < menorContagem) {
-      menorContagem = count || 0;
-      grupoEscolhido = grupo;
-    }
-  }
-
-  return grupoEscolhido;
-};
+// O sorteio do grupo de trilha saiu daqui (Passo 2, etapa 5). Era feito no
+// navegador e precisava consultar a tabela de acampantes cinco vezes, uma por
+// grupo, só para contar quantas pessoas do mesmo sexo havia em cada um — o que
+// exigia que o visitante pudesse ler a tabela.
+//
+// Agora quem sorteia é o servidor, dentro da função criar_inscricao
+// (database/migrations/schema-update-20260911b-rpcs-publicas.sql), usando a
+// mesma regra: entre os cinco grupos fixos, o que tem menos gente do mesmo sexo.
 
 export const countAcampantes = async () => {
   return supabase.from('acampantes').select('*', { count: 'exact', head: true });
@@ -88,7 +68,7 @@ export const countAcampantes = async () => {
 // corrige manualmente pela tela de Gerenciar Inscricoes -- ex: quer colocar
 // amigos/familia no mesmo grupo). Diferente da alocacao de equipante em
 // area de trabalho, os grupos de trilha nao tem capacidade maxima fixa
-// (escolherGrupoTrailha, acima, so tenta balancear por sexo no momento do
+// (o sorteio no servidor so tenta balancear por sexo no momento do
 // cadastro) -- por isso aqui e so um UPDATE direto na coluna
 // grupo_trailha, sem trava de concorrencia/capacidade no banco.
 export const realocarGrupoTrailha = async (acampanteId, novoGrupo) => {

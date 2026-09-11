@@ -1,19 +1,25 @@
 import { supabase } from '@/services/supabaseClient';
 import { validateInscricoesStatus } from '@/utils/validation';
 import { withRetry, handleSupabaseError } from '@/services/serviceHelpers';
+import { fetchConfigPublica } from '@/services/publicDataService';
 
+// Chamada pelas paginas publicas de inscricao -- por isso passa pela funcao
+// config_publica em vez de ler a tabela "configuracoes" direto.
 export const fetchInscricoesStatus = async () => {
   return withRetry(async () => {
+    const PADRAO = { inscricoes_equipantes: true, inscricoes_acampantes: true };
     try {
-      if (!navigator.onLine) return { inscricoes_equipantes: true, inscricoes_acampantes: true };
-      const { data, error } = await supabase.from('configuracoes').select('id, inscricoes_equipantes, inscricoes_acampantes, updated_at').limit(1).maybeSingle();
-      if (error) {
-         if (['42P01', 'PGRST116', 'PGRST205'].includes(error.code)) return { inscricoes_equipantes: true, inscricoes_acampantes: true };
-         throw error;
-      }
-      return data || { inscricoes_equipantes: true, inscricoes_acampantes: true };
+      if (!navigator.onLine) return PADRAO;
+      const config = await fetchConfigPublica();
+      if (!config) return PADRAO;
+      return {
+        inscricoes_equipantes: config.inscricoes_equipantes,
+        inscricoes_acampantes: config.inscricoes_acampantes,
+        updated_at: config.updated_at
+      };
     } catch (error) {
-      return { inscricoes_equipantes: true, inscricoes_acampantes: true };
+      console.error('inscricoesStatusService - fetchInscricoesStatus', error?.message || error);
+      return PADRAO;
     }
   });
 };

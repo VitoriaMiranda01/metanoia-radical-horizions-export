@@ -29,7 +29,7 @@
 -- * Soma de todas as vagas: 728, em 145 igrejas.
 -- =====================================================================
 
-insert into public.limites_igrejas (igreja, limite_maximo, updated_at)
+insert into public.limites_igrejas (igreja, limite_maximo)
 values
   ('01 - MINISTÉRIO ARCA DA ALIANÇA', 5),
   ('02 - COMUNIDADE KADOSH', 4),

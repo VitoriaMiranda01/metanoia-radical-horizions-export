@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateCpfsAreaEspecial, updateLimiteAcampantesPorIgreja, subscribeToConfiguracoesChanges } from '@/services/organizerConfigService';
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
-import { resetEquipantesInscricoes } from '@/services/equipantesService';
+import { resetEquipantesInscricoes, fetchEquipantesParaSelecao } from '@/services/equipantesService';
 import { deleteAllAcampantes } from '@/services/acampantesService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
@@ -64,10 +64,32 @@ const OrganizerConfigPage = () => {
   const [isCreatingCoupon, setIsCreatingCoupon] = useState(false);
   const [couponToDelete, setCouponToDelete] = useState(null);
 
+  // Lista de equipantes usada só para o organizador ESCOLHER pessoas pelo nome
+  // nas Áreas de Trabalho Especiais (antes ele tinha que digitar o CPF).
+  const [equipantesParaSelecao, setEquipantesParaSelecao] = useState([]);
+  const [carregandoEquipantes, setCarregandoEquipantes] = useState(true);
+
   useEffect(() => {
     checkDb();
     loadCoupons();
+    carregarEquipantesParaSelecao();
   }, []);
+
+  const carregarEquipantesParaSelecao = async () => {
+    setCarregandoEquipantes(true);
+    try {
+      const { data, error } = await fetchEquipantesParaSelecao();
+      if (error) throw error;
+      setEquipantesParaSelecao(data || []);
+    } catch (err) {
+      console.error('OrganizerConfigPage - carregarEquipantesParaSelecao', err?.message || err);
+      // Não bloqueia a tela: sem a lista, a busca por nome fica vazia e o
+      // organizador ainda consegue cadastrar pelo CPF.
+      setEquipantesParaSelecao([]);
+    } finally {
+      setCarregandoEquipantes(false);
+    }
+  };
 
   useEffect(() => {
     const targetOrganizadorId = organizadorId || organizadorUser?.id || user?.id;
@@ -548,7 +570,7 @@ const OrganizerConfigPage = () => {
               </CardHeader>
               <CardContent className="space-y-10">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-white border-b border-white/10 pb-2">Equipantes</h3>
+                  <h3 className="text-lg font-medium text-white border-b border-white/10 pb-2">Taxa de Alimentação Equipante</h3>
                   <PricingPeriodsManager 
                     type="equipante" 
                     periods={config.equipante_pricing_periods} 
@@ -595,7 +617,7 @@ const OrganizerConfigPage = () => {
                   <span>Áreas de Trabalho Especiais</span>
                 </CardTitle>
                 <CardDescription className="text-gray-400">
-                  Gerencie os equipantes que farão parte de cada área de trabalho especial.
+                  Busque pelo nome e escolha os equipantes de cada área de trabalho especial.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
@@ -605,6 +627,8 @@ const OrganizerConfigPage = () => {
                     <CpfsAreaEspecialManager
                       areaLabel={area.label}
                       cpfs={config[`cpfs_area_${area.key}`] || []}
+                      equipantes={equipantesParaSelecao}
+                      carregandoEquipantes={carregandoEquipantes}
                       onSave={(cpfs) => handleSaveCpfsAreaEspecial(area.key, cpfs)}
                     />
                   </div>

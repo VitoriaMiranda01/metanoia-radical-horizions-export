@@ -87,6 +87,23 @@ Todo este fluxo foi testado ponta a ponta num projeto Supabase descartável
 | Usuário inexistente | HTTP 401, **mensagem idêntica** à anterior |
 | Leitura anônima das tabelas de credencial | **HTTP 401 permission denied** |
 
+## Status em produção (2026-09-11)
+
+Fluxo completo aplicado no projeto `yxootyzlpefyztiiacrs`:
+
+| Etapa | Resultado |
+|---|---|
+| Função `login` publicada (`verify_jwt: true`) | ✅ |
+| Segredo `APP_JWT_SECRET` cadastrado | ✅ |
+| Site publicado usando a função (bundle sem `organizadores_auth` / `igrejas_parceiras` / bcryptjs) | ✅ |
+| Revogação do acesso de `anon` e `authenticated` às tabelas de credencial | ✅ |
+| Leitura anônima das tabelas de credencial | **401 permission denied** |
+| Exclusão anônima das tabelas de credencial | **401 permission denied** |
+| Login real de organizador, após a revogação | ✅ entra em `/gerenciar` |
+| Login real de parceiro, após a revogação | ✅ entra em `/parceiros`, claim `igreja_codigo` |
+| Campo `senha` na resposta / no `localStorage` | **ausente** |
+| Logout limpa o token | ✅ nos dois perfis |
+
 ## Notas de segurança
 
 - A função responde com **mensagem única** para "usuário não existe" e "senha

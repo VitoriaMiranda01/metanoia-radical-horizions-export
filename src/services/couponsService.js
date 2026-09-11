@@ -1,9 +1,11 @@
 import { supabase } from '@/services/supabaseClient';
 import { validarCupomPublico } from '@/services/publicDataService';
+import { comReenvio } from '@/services/serviceHelpers';
 
-export const fetchCoupons = async () => {
-  return supabase.from('cupons').select('*').order('created_at', { ascending: false });
-};
+export const fetchCoupons = async () => comReenvio(
+  () => supabase.from('cupons').select('*').order('created_at', { ascending: false }),
+  { rotulo: 'cupons' }
+);
 
 export const createCoupon = async ({ codigo, desconto_fixo, ativo }) => {
   return supabase.from('cupons').insert([{ codigo, desconto_fixo, ativo }]);

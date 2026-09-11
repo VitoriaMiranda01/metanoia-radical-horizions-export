@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabaseClient';
 import { fetchOcupacaoIgrejas } from '@/services/publicDataService';
+import { comReenvio } from '@/services/serviceHelpers';
 
 /**
  * Limite de inscricoes de acampantes por igreja (excecoes ao limite padrao
@@ -18,9 +19,12 @@ import { fetchOcupacaoIgrejas } from '@/services/publicDataService';
 
 export const fetchLimitesIgrejas = async () => {
   try {
-    const { data, error } = await supabase
-      .from('limites_igrejas')
-      .select('igreja, limite_maximo, updated_at');
+    const { data, error } = await comReenvio(
+      () => supabase
+        .from('limites_igrejas')
+        .select('igreja, limite_maximo, updated_at'),
+      { rotulo: 'limites de igreja' }
+    );
 
     if (error) {
       if (error.code === '42P01') {
@@ -49,14 +53,19 @@ export const saveLimiteIgreja = async (igreja, limiteMaximo) => {
     throw new Error('Informe um limite válido (mínimo 1).');
   }
 
-  const { data, error } = await supabase
-    .from('limites_igrejas')
-    .upsert(
-      { igreja, limite_maximo: max, updated_at: new Date().toISOString() },
-      { onConflict: 'igreja' }
-    )
-    .select()
-    .single();
+  // Reenvio seguro aqui: o upsert grava sempre o MESMO valor para a MESMA
+  // igreja (onConflict), então repetir dá no mesmo -- não duplica nada.
+  const { data, error } = await comReenvio(
+    () => supabase
+      .from('limites_igrejas')
+      .upsert(
+        { igreja, limite_maximo: max, updated_at: new Date().toISOString() },
+        { onConflict: 'igreja' }
+      )
+      .select()
+      .single(),
+    { rotulo: 'salvar limite de igreja' }
+  );
 
   if (error) throw error;
   return data;

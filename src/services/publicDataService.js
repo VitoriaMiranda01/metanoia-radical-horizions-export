@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
+import { ehFalhaPassageira } from '@/services/serviceHelpers';
 
 /**
  * Acesso publico ao banco, via funcoes controladas (RPC).
@@ -48,19 +49,9 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
  * permissao negada, dado invalido, regra de negocio -- nao sao: tentar de
  * novo daria o mesmo resultado e so atrasaria a pessoa.
  */
-const valeTentarDeNovo = (erro) => {
-  const status = Number(erro?.status ?? erro?.context?.status);
-  if (Number.isFinite(status)) return status >= 500;
-
-  // Ter um codigo significa que o servidor RESPONDEU -- seja recusando por
-  // permissao (42501), por dado invalido (22xxx), por regra de negocio
-  // levantada no banco (P0001, como o limite de acampantes por igreja) ou
-  // pelo PostgREST (PGRST301). Repetir daria exatamente a mesma resposta e
-  // so atrasaria a pessoa. Reenvio existe para quando a resposta NAO CHEGOU.
-  if (erro?.code) return false;
-
-  return true;
-};
+// A regra de "vale tentar de novo?" mora em serviceHelpers.js, para as telas
+// publicas e as do organizador seguirem exatamente o mesmo criterio.
+const valeTentarDeNovo = ehFalhaPassageira;
 
 const chamar = async (funcao, args = undefined, { tentativas = 3, esperaBase = 600 } = {}) => {
   let ultimoErro;

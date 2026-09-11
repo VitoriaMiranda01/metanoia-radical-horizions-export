@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
+import { comReenvio } from '@/services/serviceHelpers';
 
 export const searchEquipanteByCPF = async (cpf) => {
   try {
@@ -210,9 +211,8 @@ export const updateEquipanteInscrito = async (equipante_id) => {
   }
 };
 
-export const fetchEquipantesRaw = async () => {
-  return supabase.from('equipantes').select('*');
-};
+export const fetchEquipantesRaw = async () =>
+  comReenvio(() => supabase.from('equipantes').select('*'), { rotulo: 'equipantes' });
 
 /**
  * Lista enxuta para o organizador ESCOLHER pessoas pelo nome (ex.: as areas
@@ -224,12 +224,14 @@ export const fetchEquipantesRaw = async () => {
  * podem se chamar igual, e nome digitado com erro falharia em silencio).
  * Na tela, quem aparece e o nome; o CPF fica so como desempate.
  */
-export const fetchEquipantesParaSelecao = async () => {
-  return supabase
-    .from('equipantes')
-    .select('id, nome, cpf, igreja, status')
-    .order('nome', { ascending: true });
-};
+export const fetchEquipantesParaSelecao = async () =>
+  comReenvio(
+    () => supabase
+      .from('equipantes')
+      .select('id, nome, cpf, igreja, status')
+      .order('nome', { ascending: true }),
+    { rotulo: 'equipantes para seleção' }
+  );
 
 export const updateEquipanteStatus = async (id, newStatus) => {
   return supabase.from('equipantes').update({ status: newStatus }).eq('id', id);
@@ -238,17 +240,21 @@ export const updateEquipanteStatus = async (id, newStatus) => {
 // Tabela geral dos organizadores: só mostra equipantes cuja inscrição já foi
 // aprovada (pelo pastor/organizador, na tela de Aprovações). Inscrições
 // pendentes ou rejeitadas ficam visíveis apenas na tela de Aprovações.
-export const fetchEquipantesInscritos = async () => {
-  return supabase.from('equipantes').select('*').eq('inscrito', true).eq('status', 'aprovado');
-};
+export const fetchEquipantesInscritos = async () =>
+  comReenvio(
+    () => supabase.from('equipantes').select('*').eq('inscrito', true).eq('status', 'aprovado'),
+    { rotulo: 'equipantes inscritos' }
+  );
 
-export const countEquipantesInscritos = async () => {
-  return supabase
-    .from('equipantes')
-    .select('*', { count: 'exact', head: true })
-    .eq('inscrito', true)
-    .eq('status', 'aprovado');
-};
+export const countEquipantesInscritos = async () =>
+  comReenvio(
+    () => supabase
+      .from('equipantes')
+      .select('*', { count: 'exact', head: true })
+      .eq('inscrito', true)
+      .eq('status', 'aprovado'),
+    { rotulo: 'contagem de equipantes' }
+  );
 
 export const resetEquipantesInscricoes = async () => {
   try {

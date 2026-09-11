@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabaseClient';
 import { toast } from '@/components/ui/use-toast';
+import { comReenvio } from '@/services/serviceHelpers';
 
 // Deleta um acampante
 export const deleteAcampante = async (acampanteId, user) => {
@@ -28,10 +29,10 @@ export const getAcampantes = async () => {
       return [];
     }
 
-    let query = supabase
-      .from('acampantes')
-      .select('*')
-    const { data, error } = await query;
+    const { data, error } = await comReenvio(
+      () => supabase.from('acampantes').select('*'),
+      { rotulo: 'acampantes' }
+    );
 
     if (error) throw error;
     
@@ -60,9 +61,8 @@ export const getAcampantes = async () => {
 // (database/migrations/schema-update-20260911b-rpcs-publicas.sql), usando a
 // mesma regra: entre os cinco grupos fixos, o que tem menos gente do mesmo sexo.
 
-export const countAcampantes = async () => {
-  return supabase.from('acampantes').select('*', { count: 'exact', head: true });
-};
+export const countAcampantes = async () =>
+  comReenvio(() => supabase.from('acampantes').select('*', { count: 'exact', head: true }), { rotulo: 'contagem de acampantes' });
 
 // Realoca um acampante ja aprovado pra outro grupo de trilha (organizador
 // corrige manualmente pela tela de Gerenciar Inscricoes -- ex: quer colocar

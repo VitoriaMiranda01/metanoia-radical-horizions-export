@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
+import { comReenvio } from '@/services/serviceHelpers';
 
 export const savePaymentInfo = async (paymentData) => {
   try {
@@ -201,8 +202,8 @@ export const fetchInscricoesNaoQuitadas = async () => {
   const colunas = 'id, nome, cpf, status_pagamento, metodo_pagamento, data_pagamento';
 
   const [acampantes, equipantes] = await Promise.all([
-    supabase.from('acampantes').select(colunas),
-    supabase.from('equipantes').select(colunas),
+    comReenvio(() => supabase.from('acampantes').select(colunas), { rotulo: 'acampantes pendentes' }),
+    comReenvio(() => supabase.from('equipantes').select(colunas), { rotulo: 'equipantes pendentes' }),
   ]);
 
   if (acampantes.error) throw acampantes.error;
@@ -229,10 +230,13 @@ export const fetchInscricoesNaoQuitadas = async () => {
  *    se recusou a confirmar sozinho (ver sicoob-webhook-handler).
  */
 export const fetchPixTravados = async () => {
-  const { data: pix, error } = await supabase
-    .from('pix_sicoob')
-    .select('id, sicoob_id, valor, status, inscricao_id, inscricao_tipo, created_at, updated_at')
-    .in('status', ['pago', 'divergente']);
+  const { data: pix, error } = await comReenvio(
+    () => supabase
+      .from('pix_sicoob')
+      .select('id, sicoob_id, valor, status, inscricao_id, inscricao_tipo, created_at, updated_at')
+      .in('status', ['pago', 'divergente']),
+    { rotulo: 'cobranças PIX' }
+  );
 
   if (error) throw error;
   if (!pix || pix.length === 0) return [];

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/services/supabaseClient';
 import { organizadorLogin, igrejaLogin } from '@/services/authService';
+import { setAuthToken, clearAuthToken } from '@/services/authToken';
 
 const AuthContext = createContext();
 
@@ -74,8 +75,12 @@ export const AuthProvider = ({ children }) => {
       const result = await organizadorLogin(nome.trim(), senha);
       
       if (result.success) {
-        const sessionUser = { ...result.user, role: 'organizador' };
-        
+        const sessionUser = { ...result.user, role: result.user?.role || 'organizador' };
+
+        // Cracha assinado pelo servidor. Guardado agora; passa a ser usado nas
+        // consultas ao banco no Passo 2 (junto com o travamento por RLS).
+        setAuthToken(result.token);
+
         setOrganizadorUser(sessionUser);
         setUser(sessionUser);
         localStorage.setItem('metanoia_org_user', JSON.stringify(sessionUser));
@@ -95,6 +100,7 @@ export const AuthProvider = ({ children }) => {
       const result = await igrejaLogin(codigo.trim(), senha);
       if (result.success) {
         const sessionUser = { ...result.user, role: 'parceiro' };
+        setAuthToken(result.token);
         setIgrejaUser(sessionUser);
         setUser(sessionUser);
         localStorage.setItem('metanoia_igreja_user', JSON.stringify(sessionUser));
@@ -113,6 +119,7 @@ export const AuthProvider = ({ children }) => {
     if (user?.role === 'organizador') setUser(null);
     localStorage.removeItem('metanoia_org_user');
     localStorage.removeItem('metanoia_user');
+    clearAuthToken();
   };
 
   const logoutIgreja = () => {
@@ -120,6 +127,7 @@ export const AuthProvider = ({ children }) => {
     if (user?.role === 'parceiro') setUser(null);
     localStorage.removeItem('metanoia_igreja_user');
     localStorage.removeItem('metanoia_user');
+    clearAuthToken();
   };
 
   const logout = async () => {

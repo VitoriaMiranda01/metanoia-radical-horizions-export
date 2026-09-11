@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { exportAcampantesToExcel } from '@/utils/excelExport';
 import { useToast } from '@/components/ui/use-toast';
+import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { cn } from "@/lib/utils";
 import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDropdown';
 import { 
@@ -197,6 +198,10 @@ const AcampantesTable = ({
     });
   }, [data, searchTerm, filters]);
 
+  // Pagina a lista JA filtrada. A busca e os filtros continuam valendo sobre
+  // tudo; a paginacao so decide quanto se desenha na tela de uma vez.
+  const paginacao = usePaginacao(filteredData);
+
   const handleExport = () => {
     if (filteredData.length === 0) {
       toast({
@@ -326,7 +331,7 @@ const AcampantesTable = ({
           <>
             {/* Mobile View (Cards) */}
             <div className="md:hidden flex flex-col gap-4">
-              {filteredData.map((item) => (
+              {paginacao.itensDaPagina.map((item) => (
                 <div key={item.id} className="bg-white/5 border border-white/10 rounded-lg overflow-hidden flex flex-col">
                   <div className="p-4 flex-1">
                     <h3 className="font-bold text-white text-lg leading-tight break-words mb-4">
@@ -405,7 +410,7 @@ const AcampantesTable = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredData.map((item) => (
+                  {paginacao.itensDaPagina.map((item) => (
                     <TableRow key={item.id} className="hover:bg-white/5 border-white/10 transition-colors group">
                       <TableCell className="font-medium text-white md:sticky md:left-0 md:z-10 md:bg-black md:group-hover:bg-neutral-900 p-2 md:p-4 text-xs md:text-sm">
                         {item.nome}
@@ -445,6 +450,8 @@ const AcampantesTable = ({
                 </TableBody>
               </Table>
             </div>
+
+            <Paginacao {...paginacao} />
           </>
         )}
       </CardContent>

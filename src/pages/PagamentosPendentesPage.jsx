@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 
 const formatarValor = (valor) => {
   const numero = Number(valor);
@@ -105,6 +106,10 @@ const PagamentosPendentesPage = () => {
       return casaBusca && casaTipo;
     });
   }, [aba, travados, pendentes, filterText, tipoFiltro]);
+
+  // Pagina a lista já filtrada. No dia do evento essa tela pode ter centenas
+  // de pendentes — desenhar tudo de uma vez trava celular mais simples.
+  const paginacao = usePaginacao(linhas);
 
   const Acoes = ({ item }) => {
     const emConfirmacao = acaoPendente?.id === item.id;
@@ -297,7 +302,7 @@ const PagamentosPendentesPage = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    linhas.map((item) => (
+                    paginacao.itensDaPagina.map((item) => (
                       <TableRow key={item.id} className="border-white/10 hover:bg-white/5 transition-colors">
                         <TableCell className="font-medium text-white">{item.nome}</TableCell>
                         <TableCell className="text-gray-400">{item.cpf}</TableCell>
@@ -334,6 +339,8 @@ const PagamentosPendentesPage = () => {
                 </TableBody>
               </Table>
             </div>
+
+            <Paginacao {...paginacao} />
           </motion.div>
         )}
       </div>

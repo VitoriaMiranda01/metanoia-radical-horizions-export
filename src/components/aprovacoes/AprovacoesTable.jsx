@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Users, Eye, CheckCircle, XCircle, Clock, Search, Filter, X } from 'lucide-react';
@@ -207,6 +208,9 @@ const AprovacoesTable = ({
       });
     });
   }, [dados, filters, searchTerm]);
+
+  // Pagina a lista JA filtrada -- busca e filtros seguem valendo sobre tudo.
+  const paginacao = usePaginacao(filteredData);
   
   const getColDef = (key) => COLUMN_DEFINITIONS[tableType].find(c => c.key === key);
 
@@ -279,7 +283,7 @@ const AprovacoesTable = ({
                   )}
                 </div>
               ) : (
-                filteredData.map((inscricao) => (
+                paginacao.itensDaPagina.map((inscricao) => (
                   <InscricaoCard 
                     key={inscricao.id}
                     inscricao={inscricao}
@@ -348,7 +352,7 @@ const AprovacoesTable = ({
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredData.map((inscricao) => (
+                    paginacao.itensDaPagina.map((inscricao) => (
                       <TableRow key={inscricao.id} className="hover:bg-white/5 transition-colors border-white/10 group">
                         <TableCell className="text-white font-medium sticky left-0 z-10 bg-black group-hover:bg-neutral-900">
                             {inscricao.nome}
@@ -396,6 +400,8 @@ const AprovacoesTable = ({
                 </TableBody>
               </Table>
             </div>
+
+            <Paginacao {...paginacao} />
           </>
         )}
       </CardContent>

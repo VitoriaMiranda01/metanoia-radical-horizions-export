@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useToast } from '@/components/ui/use-toast';
+import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { exportEquipantesToExcel } from '@/utils/excelExport';
 import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDropdown';
 import { 
@@ -214,6 +215,9 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
       });
     });
   }, [dados, filters, searchTerm]);
+
+  // Pagina a lista JA filtrada -- busca e filtros seguem valendo sobre tudo.
+  const paginacao = usePaginacao(filteredData);
   
   const getColDef = (key) => {
     const defs = COLUMN_DEFINITIONS[safeTipo] || [];
@@ -327,7 +331,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
           <>
             {/* Mobile View - Cards (< md) */}
             <div className="flex md:hidden flex-col gap-4">
-              {filteredData.map((item) => (
+              {paginacao.itensDaPagina.map((item) => (
                 <div key={item.id} className="bg-white/5 border border-white/10 shadow-sm rounded-lg p-5 flex flex-col gap-4 relative overflow-hidden transition-all hover:bg-white/10">
                   <div className="flex justify-between items-start gap-3">
                     <h3 className="font-semibold text-white text-lg leading-tight break-words">
@@ -404,7 +408,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredData.map((item) => (
+                  {paginacao.itensDaPagina.map((item) => (
                     <TableRow key={item.id} className="hover:bg-white/5 transition-colors border-white/10 group">
                       <TableCell className="text-white font-medium sticky left-0 z-10 bg-black group-hover:bg-neutral-900">
                           {item.nome}
@@ -431,6 +435,8 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
                 </TableBody>
               </Table>
             </div>
+
+            <Paginacao {...paginacao} />
           </>
         )}
       </CardContent>

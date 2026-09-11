@@ -30,10 +30,54 @@ import { supabase } from '@/services/supabaseClient';
  * esta logado.
  */
 
-const chamar = async (funcao, args = undefined) => {
-  const { data, error } = await supabase.rpc(funcao, args);
-  if (error) throw error;
-  return data;
+const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Uma falha de REDE nao e uma resposta -- e a ausencia dela.
+ *
+ * Num teste, a home apareceu uma vez com "Data nao configurada" e "Valores
+ * indisponiveis" porque a chamada simplesmente nao completou. Cinquenta
+ * tentativas seguidas depois nao reproduziram: foi um tropeco passageiro.
+ * Mas no dia da abertura, com centenas de pessoas entrando ao mesmo tempo,
+ * um tropeco desses vai acontecer com alguem -- e essa pessoa veria o evento
+ * "sem data e sem valor" e poderia desistir achando que o sistema esta
+ * errado.
+ *
+ * Por isso: erro sem resposta do servidor (queda de rede, timeout, CORS por
+ * falha de borda) ou erro 5xx sao tentados de novo. Erro com resposta --
+ * permissao negada, dado invalido, regra de negocio -- nao sao: tentar de
+ * novo daria o mesmo resultado e so atrasaria a pessoa.
+ */
+const valeTentarDeNovo = (erro) => {
+  const status = Number(erro?.status ?? erro?.context?.status);
+  if (Number.isFinite(status)) return status >= 500;
+
+  // Ter um codigo significa que o servidor RESPONDEU -- seja recusando por
+  // permissao (42501), por dado invalido (22xxx), por regra de negocio
+  // levantada no banco (P0001, como o limite de acampantes por igreja) ou
+  // pelo PostgREST (PGRST301). Repetir daria exatamente a mesma resposta e
+  // so atrasaria a pessoa. Reenvio existe para quando a resposta NAO CHEGOU.
+  if (erro?.code) return false;
+
+  return true;
+};
+
+const chamar = async (funcao, args = undefined, { tentativas = 3, esperaBase = 600 } = {}) => {
+  let ultimoErro;
+
+  for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
+    const { data, error } = await supabase.rpc(funcao, args);
+    if (!error) return data;
+
+    ultimoErro = error;
+    if (tentativa === tentativas || !valeTentarDeNovo(error)) break;
+
+    // Espera crescente, para não insistir em cima de um servidor já ocupado.
+    await espera(esperaBase * 2 ** (tentativa - 1) + Math.random() * 200);
+    console.warn(`[dados públicos] ${funcao}: tentativa ${tentativa} falhou, tentando de novo`);
+  }
+
+  throw ultimoErro;
 };
 
 /**
@@ -64,8 +108,17 @@ export const validarCupomPublico = async (codigo) =>
  * montou; o servidor e que passa a decidir status de pagamento, dados de
  * transacao, aprovacao e grupo de trilha. Devolve so o id.
  */
+/**
+ * Sem reenvio automatico aqui, de proposito.
+ *
+ * Se a rede cair no meio de uma criacao, nao da para saber se a inscricao
+ * entrou ou nao. Repetir por conta propria poderia gravar a mesma pessoa
+ * duas vezes -- e, pior, consumir duas vagas da igreja. O reenvio controlado
+ * dessa operacao fica em inscricoesService.js, que sabe distinguir erro
+ * passageiro de erro de regra (CPF duplicado, limite da igreja).
+ */
 export const criarInscricaoPublica = async (tipo, dados) =>
-  chamar('criar_inscricao', { p_tipo: tipo, p_dados: dados });
+  chamar('criar_inscricao', { p_tipo: tipo, p_dados: dados }, { tentativas: 1 });
 
 /**
  * Status de UMA cobranca PIX, pelo txid.

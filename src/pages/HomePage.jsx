@@ -65,6 +65,8 @@ const HomePage = () => {
   const [dateLoading, setDateLoading] = useState(true);
   const [edicaoNumero, setEdicaoNumero] = useState(null);
   const [formattedLimitDate, setFormattedLimitDate] = useState(null);
+  // true quando a resposta do servidor não veio, mesmo depois dos reenvios.
+  const [falhaAoCarregar, setFalhaAoCarregar] = useState(false);
   const {
     currentPrice,
     loading: priceLoading
@@ -73,6 +75,7 @@ const HomePage = () => {
     const fetchDates = async () => {
       try {
         setDateLoading(true);
+        setFalhaAoCarregar(false);
         const {
           data,
           error
@@ -100,8 +103,14 @@ const HomePage = () => {
           setFormattedDate(eventDateRange || "Data não configurada");
         }
       } catch (error) {
+        // Chegar aqui significa que nem depois das tentativas de reenvio a
+        // resposta veio (ver publicDataService.js). Distinguir isso de "o
+        // organizador ainda não preencheu a data" importa: dizer "Data não
+        // configurada" faria o visitante achar que a organização errou, e
+        // ele poderia desistir. O problema é de conexão, e recarregar
+        // resolve -- então é isso que a tela diz.
         console.error("Erro ao buscar configurações:", error);
-        setFormattedDate("Data não configurada");
+        setFalhaAoCarregar(true);
         setEdicaoNumero(null);
         setFormattedLimitDate(null);
       } finally {
@@ -194,7 +203,7 @@ const HomePage = () => {
                     <div className="space-y-4 text-gray-300">
                       <div className="flex items-center space-x-3">
                         <Calendar className="text-red-500 w-5 h-5" />
-                        {dateLoading ? <div className="h-5 w-48 bg-white/10 animate-pulse rounded"></div> : <span>{formattedDate}</span>}
+                        {dateLoading ? <div className="h-5 w-48 bg-white/10 animate-pulse rounded"></div> : falhaAoCarregar ? <span className="text-amber-300">Não foi possível carregar. Recarregue a página.</span> : <span>{formattedDate}</span>}
                       </div>
                       
                       {formattedLimitDate && <div className="flex items-center space-x-3">
@@ -204,7 +213,7 @@ const HomePage = () => {
 
                       <div className="flex items-center space-x-3">
                         <DollarSign className="text-red-500 w-5 h-5" />
-                        {priceLoading ? <div className="h-5 w-32 bg-white/10 animate-pulse rounded"></div> : currentPrice ? <span>Investimento: <strong>R$ {parseFloat(currentPrice).toFixed(2).replace('.', ',')}</strong></span> : <span>Investimento: <strong>Valores indisponíveis</strong></span>}
+                        {priceLoading ? <div className="h-5 w-32 bg-white/10 animate-pulse rounded"></div> : currentPrice ? <span>Investimento: <strong>R$ {parseFloat(currentPrice).toFixed(2).replace('.', ',')}</strong></span> : falhaAoCarregar ? <span className="text-amber-300">Valor indisponível no momento</span> : <span>Investimento: <strong>Valores indisponíveis</strong></span>}
                       </div>
                     </div>
 

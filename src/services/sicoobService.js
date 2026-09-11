@@ -18,7 +18,7 @@ export const gerarPixSicoob = async (valor, descricao, cpf, tipoInscricao, nome_
       coupon_code: coupon_code
     };
   } catch (err) {
-    console.error('sicoobApi - gerarPixSicoob', err, { cpf, tipoInscricao, inscricao_id });
+    console.error('sicoobApi - gerarPixSicoob', err, { tipoInscricao, inscricao_id });
     throw new Error(err.message || 'Falha de conexão com gateway Sicoob. Tente novamente.');
   }
 };

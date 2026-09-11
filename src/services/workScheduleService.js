@@ -13,7 +13,7 @@ export const updateWorkScheduleStatus = async (cpf) => {
       .maybeSingle();
 
     if (searchError) {
-      console.error('workScheduleApi - updateWorkScheduleStatus search', searchError, { cpf });
+      console.error('workScheduleApi - updateWorkScheduleStatus search', searchError);
       return { success: false, error: 'Erro ao buscar equipante no banco de dados' };
     }
 

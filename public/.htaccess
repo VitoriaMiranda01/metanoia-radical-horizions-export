@@ -7,11 +7,25 @@
 </IfModule>
 
 <IfModule mod_headers.c>
-  Header set X-Powered-By "Hostinger Horizons"
+  # Nao revelar a tecnologia usada pelo servidor
+  Header unset X-Powered-By
+
+  # Cabecalhos de seguranca
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+  # Content-Security-Policy em modo de TESTE (Report-Only): NAO bloqueia nada,
+  # apenas registra violacoes no console do navegador. Depois de alguns dias sem
+  # erros, trocar "Content-Security-Policy-Report-Only" por "Content-Security-Policy"
+  # para passar a bloquear. Se algo parar de funcionar, liberar o dominio no
+  # connect-src/script-src correspondente.
+  Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'self'; base-uri 'self'; object-src 'none'"
 
   # Cache everything on CDN by default
   Header set Cache-Control "public, s-maxage=604800, max-age=0"
-  
+
   # Cache in browser all assets
   <If "%{REQUEST_URI} =~ m#^/assets/.*$#">
     Header set Cache-Control "public, max-age=604800"

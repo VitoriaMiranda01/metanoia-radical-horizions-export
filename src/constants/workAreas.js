@@ -58,7 +58,12 @@ export const AREAS_INSCRICAO = [
   { valor: 'Perseguidos' },
   { valor: 'Presídio' },
   { valor: 'Primeiros socorros - Saúde', rotulo: 'Primeiros socorros – Saúde' },
-  { valor: 'Recepção' },
+  // A escala oficial separa as duas, e sao trabalhos diferentes: a da
+  // igreja e a mesa de cracha antes de sair (2 pessoas nas edicoes
+  // 33/35/36); a do sitio e a chegada -- fila / confronto e celular /
+  // mesa (36, 34 e 34 pessoas). Ate 12/09/2026 existia uma "Recepção" so.
+  { valor: 'Recepção Igreja' },
+  { valor: 'Recepção Sítio' },
   { valor: 'Segurança' },
   { valor: 'Selva' },
   { valor: 'Teatro' },

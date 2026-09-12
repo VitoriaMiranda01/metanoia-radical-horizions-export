@@ -1,5 +1,4 @@
 import { supabase } from '@/services/supabaseClient';
-import { AREAS_ESPECIAIS } from '@/constants/workAreas';
 
 // Camada de service pra alocacao automatica/manual de equipantes em areas de
 // trabalho. Toda a decisao (preferencias, capacidade, limite por sexo,
@@ -143,94 +142,6 @@ export const removerAlocacao = async (escalaId) => {
     console.error('equipanteAllocationApi - removerAlocacao', error, { escalaId });
     return { success: false, error: error.message || 'Erro ao remover' };
   }
-};
-
-// Acao em lote do botao "Alocar Áreas Especiais" (tela de escalas): pra
-// cada uma das 3 areas especiais (Guia, Inimigo, Espirito Santo), compara
-// os CPFs configurados em Configuracoes (cpfs_area_guia/inimigo/
-// espirito_santo, buscados via fetchCpfsAreasEspeciais em
-// organizerConfigService.js) com o CPF de cada equipante aprovado. Quando
-// acha uma correspondencia:
-//   - se o equipante ja esta alocado em outra area, MOVE a participacao
-//     dele para a area especial -- passa pela mesma checagem de vaga e de
-//     limite por sexo de qualquer outra realocacao. Desde 12/09/2026 uma
-//     pessoa pode ter mais de uma area; aqui movemos a PRIMEIRA delas, que
-//     e o comportamento de sempre (na pratica este botao roda no comeco da
-//     distribuicao, quando quase ninguem tem duas);
-//   - se ja esta na propria area especial, nao faz nada (conta como "ja
-//     estava correto", nao e erro);
-//   - se ainda nao tem alocacao nenhuma, aloca DIRETO na area especial;
-//   - se o CPF configurado nao bate com nenhum equipante aprovado (pessoa
-//     nao inscrita, ainda pendente, ou CPF digitado errado), e reportado
-//     como "nao encontrado".
-// Roda uma de cada vez (sequencial), pelo mesmo motivo de antes.
-export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovados, allocations) => {
-  const normalizarCpf = (cpf) => (cpf || '').replace(/\D/g, '');
-
-  // Mapa mutavel: vai sendo atualizado a cada realocacao bem-sucedida
-  // dentro deste mesmo loop, pra que, no caso raro de um CPF aparecer
-  // configurado em mais de uma area especial por engano, a segunda
-  // passada ja veja a area mais recente (nao a original antes desta
-  // acao em lote).
-  // Guarda a PRIMEIRA participacao de cada pessoa: e ela que sera movida.
-  const alocacaoPorEquipanteId = new Map();
-  (allocations || []).forEach(a => {
-    if (!alocacaoPorEquipanteId.has(a.id)) alocacaoPorEquipanteId.set(a.id, a);
-  });
-  const equipantePorCpf = new Map(
-    (equipantesAprovados || [])
-      .filter(eq => normalizarCpf(eq.cpf))
-      .map(eq => [normalizarCpf(eq.cpf), eq])
-  );
-
-  const resultado = {
-    movidos: [],
-    alocadosDiretamente: [],
-    jaNaAreaCorreta: [],
-    naoEncontrados: [],
-    falhas: []
-  };
-
-  for (const area of AREAS_ESPECIAIS) {
-    const cpfsConfigurados = cpfsPorArea?.[area.key] || [];
-
-    for (const cpfConfigurado of cpfsConfigurados) {
-      const equipante = equipantePorCpf.get(normalizarCpf(cpfConfigurado));
-
-      if (!equipante) {
-        resultado.naoEncontrados.push({ cpf: cpfConfigurado, area: area.label });
-        continue;
-      }
-
-      const alocacaoAtual = alocacaoPorEquipanteId.get(equipante.id);
-
-      if (!alocacaoAtual) {
-        const alocacao = await alocarEquipanteManualmente(equipante.id, area.label);
-        if (alocacao.success) {
-          resultado.alocadosDiretamente.push({ nome: equipante.nome, area: area.label });
-          alocacaoPorEquipanteId.set(equipante.id, { id: equipante.id, allocatedArea: area.label });
-        } else {
-          resultado.falhas.push({ nome: equipante.nome, area: area.label, erro: alocacao.error });
-        }
-        continue;
-      }
-
-      if (alocacaoAtual.allocatedArea === area.label) {
-        resultado.jaNaAreaCorreta.push({ nome: equipante.nome, area: area.label });
-        continue;
-      }
-
-      const realoc = await realocarAlocacao(alocacaoAtual.escalaId, area.label);
-      if (realoc.success) {
-        resultado.movidos.push({ nome: equipante.nome, de: alocacaoAtual.allocatedArea, para: area.label });
-        alocacaoPorEquipanteId.set(equipante.id, { ...alocacaoAtual, allocatedArea: area.label });
-      } else {
-        resultado.falhas.push({ nome: equipante.nome, area: area.label, erro: realoc.error });
-      }
-    }
-  }
-
-  return resultado;
 };
 
 // Lista de espera: equipantes aprovados que ainda nao tem linha em escalas.

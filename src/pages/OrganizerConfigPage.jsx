@@ -10,9 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateCpfsAreaEspecial, updateLimiteAcampantesPorIgreja, subscribeToConfiguracoesChanges } from '@/services/organizerConfigService';
+import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimiteAcampantesPorIgreja, subscribeToConfiguracoesChanges } from '@/services/organizerConfigService';
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
-import { resetEquipantesInscricoes, fetchEquipantesParaSelecao } from '@/services/equipantesService';
+import { resetEquipantesInscricoes } from '@/services/equipantesService';
 import { deleteAllAcampantes } from '@/services/acampantesService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
@@ -20,10 +20,8 @@ import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, Dolla
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
-import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import LimiteIgrejasManager from '@/components/organizer/LimiteIgrejasManager';
 import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizadoresManager';
-import { AREAS_ESPECIAIS } from '@/constants/workAreas';
 import { Button } from '@/components/ui/button';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
 
@@ -43,9 +41,6 @@ const OrganizerConfigPage = () => {
     data_limite_inscricao_pagamento: '',
     equipante_pricing_periods: [],
     acampante_pricing_periods: [],
-    cpfs_area_guia: [],
-    cpfs_area_inimigo: [],
-    cpfs_area_espirito_santo: [],
     limite_acampantes_por_igreja: null
   });
   
@@ -65,32 +60,10 @@ const OrganizerConfigPage = () => {
   const [isCreatingCoupon, setIsCreatingCoupon] = useState(false);
   const [couponToDelete, setCouponToDelete] = useState(null);
 
-  // Lista de equipantes usada só para o organizador ESCOLHER pessoas pelo nome
-  // nas Áreas de Trabalho Especiais (antes ele tinha que digitar o CPF).
-  const [equipantesParaSelecao, setEquipantesParaSelecao] = useState([]);
-  const [carregandoEquipantes, setCarregandoEquipantes] = useState(true);
-
   useEffect(() => {
     checkDb();
     loadCoupons();
-    carregarEquipantesParaSelecao();
   }, []);
-
-  const carregarEquipantesParaSelecao = async () => {
-    setCarregandoEquipantes(true);
-    try {
-      const { data, error } = await fetchEquipantesParaSelecao();
-      if (error) throw error;
-      setEquipantesParaSelecao(data || []);
-    } catch (err) {
-      console.error('OrganizerConfigPage - carregarEquipantesParaSelecao', err?.message || err);
-      // Não bloqueia a tela: sem a lista, a busca por nome fica vazia e o
-      // organizador ainda consegue cadastrar pelo CPF.
-      setEquipantesParaSelecao([]);
-    } finally {
-      setCarregandoEquipantes(false);
-    }
-  };
 
   useEffect(() => {
     const targetOrganizadorId = organizadorId || organizadorUser?.id || user?.id;
@@ -149,9 +122,6 @@ const OrganizerConfigPage = () => {
         data_limite_inscricao_pagamento: data.data_limite_inscricao_pagamento || '',
         equipante_pricing_periods: data.equipante_pricing_periods || [],
         acampante_pricing_periods: data.acampante_pricing_periods || [],
-        cpfs_area_guia: data.cpfs_area_guia || [],
-        cpfs_area_inimigo: data.cpfs_area_inimigo || [],
-        cpfs_area_espirito_santo: data.cpfs_area_espirito_santo || [],
         limite_acampantes_por_igreja: data.limite_acampantes_por_igreja ?? null
       });
     } catch (error) {
@@ -209,29 +179,6 @@ const OrganizerConfigPage = () => {
     }
   };
 
-  // Quem ja esta em um dos OUTROS dois papeis especiais, com o nome do papel.
-  // Guia, Inimigo e Espirito Santo acontecem ao mesmo tempo e cada um tem seu
-  // roteiro -- a mesma pessoa nao cumpre dois (regra tambem no banco, ver
-  // migration 20260912t).
-  const cpfsDosOutrosPapeis = (areaKeyAtual) => {
-    const mapa = {};
-    AREAS_ESPECIAIS.forEach((outra) => {
-      if (outra.key === areaKeyAtual) return;
-      (config[`cpfs_area_${outra.key}`] || []).forEach((cpf) => {
-        mapa[String(cpf).replace(/\D/g, '')] = outra.label;
-      });
-    });
-    return mapa;
-  };
-
-  const handleSaveCpfsAreaEspecial = async (areaKey, cpfs) => {
-    await updateCpfsAreaEspecial(areaKey, cpfs);
-    setConfig(prev => ({
-      ...prev,
-      [`cpfs_area_${areaKey}`]: cpfs
-    }));
-  };
-
   const handleSaveLimiteAcampantesPorIgreja = async (valor) => {
     await updateLimiteAcampantesPorIgreja(valor);
     setConfig(prev => ({
@@ -247,8 +194,8 @@ const OrganizerConfigPage = () => {
     try {
       // Deliberately extracting out pricing periods and the special-area CPF
       // lists so they aren't included in the global save -- both are saved
-      // independently (updatePricingPeriods / updateCpfsAreaEspecial).
-      const { equipante_pricing_periods, acampante_pricing_periods, cpfs_area_guia, cpfs_area_inimigo, cpfs_area_espirito_santo, ...otherConfigs } = config;
+      // independently (updatePricingPeriods).
+      const { equipante_pricing_periods, acampante_pricing_periods, ...otherConfigs } = config;
       
       const payloadToSave = {
         ...otherConfigs,
@@ -621,35 +568,6 @@ const OrganizerConfigPage = () => {
                   limiteGeral={config.limite_acampantes_por_igreja}
                   onSaveLimiteGeral={handleSaveLimiteAcampantesPorIgreja}
                 />
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <Card className="glass-effect border-white/10 bg-black/40">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-white">
-                  <Users className="w-5 h-5 text-cyan-400" />
-                  <span>Áreas de Trabalho Especiais</span>
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Busque pelo nome e escolha os equipantes de cada área de trabalho especial.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-8">
-                {AREAS_ESPECIAIS.map(area => (
-                  <div key={area.key} className="space-y-4">
-                    <h3 className="text-lg font-medium text-white border-b border-white/10 pb-2">{area.label}</h3>
-                    <CpfsAreaEspecialManager
-                      areaLabel={area.label}
-                      cpfs={config[`cpfs_area_${area.key}`] || []}
-                      equipantes={equipantesParaSelecao}
-                      carregandoEquipantes={carregandoEquipantes}
-                      areaPorCpf={cpfsDosOutrosPapeis(area.key)}
-                      onSave={(cpfs) => handleSaveCpfsAreaEspecial(area.key, cpfs)}
-                    />
-                  </div>
-                ))}
               </CardContent>
             </Card>
           </motion.div>

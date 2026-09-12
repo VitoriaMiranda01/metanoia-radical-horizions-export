@@ -73,15 +73,20 @@ export const AREAS_INSCRICAO = [
 
 export { AREA_DISPONIVEL_QUALQUER };
 
-// As 3 areas que existem na tela de escalas mas foram deliberadamente
-// excluidas do formulario -- ninguem se inscreve pra elas diretamente. O
-// organizador informa os CPFs de quem vai pra cada uma em Configuracoes
-// (src/components/organizer/CpfsAreaEspecialManager.jsx) e o botao "Alocar
-// Áreas Especiais" na tela de escalas (src/pages/OrganizerScalesPage.jsx)
-// realoca, por CPF, quem ja esta alocado em outra area pra area especial
-// configurada. `key` e o sufixo usado nas colunas cpfs_area_*
-// (configuracoes) e no service; `label` e o nome exibido, que e tambem o
-// nome canonico da area.
+// Os 3 papeis que atravessam o acampamento inteiro. Ficam fora do
+// formulario de inscricao -- ninguem se candidata a eles -- e sao escolhidos
+// pelo organizador na tela de Geracao de Escalas, como qualquer outra area.
+//
+// Ate 12/09/2026 havia um segundo caminho: listas de CPF em Configuracoes
+// mais um botao "Alocar Áreas Especiais" que aplicava tudo de uma vez. Dois
+// lugares para dizer a mesma coisa, que podiam discordar entre si. O Patrick
+// decidiu ficar so com a tela de escalas, e o outro caminho foi removido.
+//
+// Uma pessoa so pode ter UM destes tres (roteiros simultaneos, ninguem
+// cumpre dois). A regra e do banco -- _area_especial(), migration 20260912t
+// --, e esta lista precisa continuar espelhando a de la.
+//
+// `label` e o nome exibido, que e tambem o nome canonico da area.
 export const AREAS_ESPECIAIS = [
   { key: 'guia', label: 'Guia' },
   { key: 'inimigo', label: 'Inimigo' },
@@ -93,10 +98,8 @@ export const AREAS_ESPECIAIS = [
 // Escalas (com tabela propria e como destino de "Realocar"), mas nunca no
 // formulario de inscricao nem na alocacao automatica.
 //
-// Diferem das AREAS_ESPECIAIS acima: aquelas sao preenchidas em lote pelo
-// botao "Alocar Áreas Especiais", a partir de uma lista de CPFs digitada em
-// Configuracoes. Estas aqui nao tem lista de CPF nenhuma -- o organizador
-// simplesmente realoca as pessoas para elas na propria tela.
+// Diferem das AREAS_ESPECIAIS acima em uma coisa so: naquelas, uma pessoa
+// nao pode acumular duas. Aqui pode.
 //
 // No banco as duas familias sao a mesma coisa: limites_areas.somente_organizador
 // = true (ver schema-update-20260912e). E essa coluna, e nao esta lista, que

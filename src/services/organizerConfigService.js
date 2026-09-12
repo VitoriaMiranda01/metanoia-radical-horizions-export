@@ -90,58 +90,6 @@ export const updatePricingPeriods = async (type, periods) => {
   }
 };
 
-// Salva a lista de CPFs escolhidos pro organizador pra uma das 3 areas
-// especiais (Guia, Inimigo, Espirito Santo), que nao aparecem no
-// formulario de equipante. Mesmo padrao de updatePricingPeriods: salva
-// direto na tabela configuracoes, de forma independente do botao "Salvar
-// Configuracoes Gerais". Por enquanto isso so registra a informacao --
-// nenhuma logica de alocacao usa esses dados ainda (pedido explicito da
-// usuaria nesta etapa).
-const CPFS_AREA_COLUMN_MAP = {
-  guia: 'cpfs_area_guia',
-  inimigo: 'cpfs_area_inimigo',
-  espirito_santo: 'cpfs_area_espirito_santo'
-};
-
-export const updateCpfsAreaEspecial = async (area, cpfs) => {
-  try {
-    if (!navigator.onLine) throw new Error("Você está offline. Verifique sua conexão.");
-
-    const column = CPFS_AREA_COLUMN_MAP[area];
-    if (!column) throw new Error(`Área especial desconhecida: ${area}`);
-
-    const { data: existing, error: checkError } = await supabase
-      .from('configuracoes')
-      .select('id')
-      .limit(1)
-      .maybeSingle();
-
-    if (checkError) throw checkError;
-
-    let data, error;
-    if (existing?.id) {
-      ({ data, error } = await supabase
-        .from('configuracoes')
-        .update({ [column]: cpfs, updated_at: new Date().toISOString() })
-        .eq('id', existing.id)
-        .select()
-        .single());
-    } else {
-      ({ data, error } = await supabase
-        .from('configuracoes')
-        .insert({ [column]: cpfs, updated_at: new Date().toISOString() })
-        .select()
-        .single());
-    }
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error(`[updateCpfsAreaEspecial] Error updating ${area} CPFs:`, error);
-    throw error;
-  }
-};
-
 // Busca so os CPFs configurados pras 3 areas especiais (Guia, Inimigo,
 // Espirito Santo), usado pelo botao "Alocar Áreas Especiais" na tela de
 // escalas (src/pages/OrganizerScalesPage.jsx) -- select enxuto, sem trazer
@@ -151,7 +99,7 @@ export const updateCpfsAreaEspecial = async (area, cpfs) => {
 // Salva o limite padrao geral de acampantes por igreja (coluna
 // limite_acampantes_por_igreja em configuracoes). NULL/vazio = sem limite
 // padrao (so as igrejas com excecao em limites_igrejas ficam limitadas --
-// ver limitesIgrejasService.js). Mesmo padrao de updateCpfsAreaEspecial:
+// ver limitesIgrejasService.js). Mesmo padrao das outras escritas pontuais:
 // salva direto no banco, independente do botao "Salvar" geral da tela.
 export const updateLimiteAcampantesPorIgreja = async (valor) => {
   try {
@@ -211,28 +159,6 @@ export const fetchLimiteAcampantesPorIgrejaPadrao = async () => {
   } catch (error) {
     console.error('[fetchLimiteAcampantesPorIgrejaPadrao] Error:', error);
     return null;
-  }
-};
-
-export const fetchCpfsAreasEspeciais = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('configuracoes')
-      .select('cpfs_area_guia, cpfs_area_inimigo, cpfs_area_espirito_santo')
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) throw error;
-
-    return {
-      guia: data?.cpfs_area_guia || [],
-      inimigo: data?.cpfs_area_inimigo || [],
-      espirito_santo: data?.cpfs_area_espirito_santo || []
-    };
-  } catch (error) {
-    console.error('[fetchCpfsAreasEspeciais] Error:', error);
-    return { guia: [], inimigo: [], espirito_santo: [] };
   }
 };
 

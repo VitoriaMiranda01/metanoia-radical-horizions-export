@@ -217,25 +217,6 @@ export const updateEquipanteInscrito = async (equipante_id) => {
 export const fetchEquipantesRaw = async () =>
   comReenvio(() => supabase.from('equipantes').select('*'), { rotulo: 'equipantes' });
 
-/**
- * Lista enxuta para o organizador ESCOLHER pessoas pelo nome (ex.: as areas
- * especiais Guia / Inimigo / Espirito Santo).
- *
- * Traz so o necessario para identificar alguem na tela -- nome, CPF, igreja e
- * situacao da inscricao. O CPF vem porque continua sendo a CHAVE usada para
- * casar a pessoa na hora de alocar (nome nao serve de chave: dois equipantes
- * podem se chamar igual, e nome digitado com erro falharia em silencio).
- * Na tela, quem aparece e o nome; o CPF fica so como desempate.
- */
-export const fetchEquipantesParaSelecao = async () =>
-  comReenvio(
-    () => supabase
-      .from('equipantes')
-      .select('id, nome, cpf, igreja, status')
-      .order('nome', { ascending: true }),
-    { rotulo: 'equipantes para seleção' }
-  );
-
 export const updateEquipanteStatus = async (id, newStatus) => {
   return supabase.from('equipantes').update({ status: newStatus }).eq('id', id);
 };

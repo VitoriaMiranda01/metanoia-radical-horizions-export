@@ -39,7 +39,6 @@ const AreaLimitHeader = ({
   limitObj,
   onSaveLimit,
   isOrganizer = true,
-  porCpf = false,
   // true quando a area TEM uma atuacao de lider na lista mas ninguem esta
   // com ela. Combinado com o Patrick: toda area que tem lider na escala
   // oficial precisa de um lider definido.
@@ -111,14 +110,6 @@ const AreaLimitHeader = ({
       <div className="flex justify-between items-start mb-2">
         <span className="font-semibold text-sm truncate mr-2 flex-1 flex items-center gap-2" title={areaName}>
           <span className="truncate">{areaName}</span>
-          {porCpf && (
-            <span
-              className="shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 font-medium"
-              title="Área preenchida pela lista de CPFs de Configurações, com o botão “Alocar Áreas Especiais”."
-            >
-              Por CPF
-            </span>
-          )}
           {faltaLider && (
             <span
               className="shrink-0 inline-flex items-center gap-1 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-medium"

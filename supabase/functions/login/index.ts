@@ -125,6 +125,36 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: GENERIC_ERROR }, 401);
     }
 
+    // Trava de primeiro acesso (igrejas parceiras).
+    //
+    // A senha inicial e uma FORMULA ("<codigo><sufixo>", com o sufixo guardado
+    // Patrick para facilitar a distribuicao. Formula vaza -- basta uma das
+    // 145 pessoas repassar a mensagem. Por isso a conta so aceita esse
+    // primeiro acesso depois que um organizador libera a igreja: assim a
+    // formula nunca vale para as 145 contas ao mesmo tempo.
+    //
+    // A conferencia vem DEPOIS da senha de proposito: quem nao sabe a senha
+    // recebe o erro generico e nao descobre nada sobre a conta.
+    if (tipo === "igreja" && row.acesso_liberado !== true) {
+      return json({
+        success: false,
+        error: "O acesso desta igreja ainda não foi liberado. Fale com a organização.",
+      }, 403);
+    }
+
+    // Registra a visita (alimenta a coluna "último acesso" da tela de senhas,
+    // que e como o organizador enxerga quem ja entrou). Falha aqui nao pode
+    // derrubar o login -- e informacao de apoio, nao parte da autenticacao.
+    if (tipo === "igreja") {
+      const { error: erroAcesso } = await admin
+        .from("igrejas_parceiras")
+        .update({ ultimo_acesso: new Date().toISOString() })
+        .eq("id", row.id);
+      if (erroAcesso) {
+        console.error("[login] falha ao registrar último acesso:", erroAcesso.message);
+      }
+    }
+
     const token = await new SignJWT({
       role: "authenticated",
       user_role: userRole,
@@ -140,10 +170,21 @@ Deno.serve(async (req: Request) => {
     // A senha (hash) NUNCA vai para o navegador.
     const { senha: _senhaRemovida, ...safeUser } = row as Record<string, unknown>;
 
+    // senha_definida = false significa que a conta ainda esta com a senha
+    // temporaria (a formula de primeiro acesso, ou uma senha gerada por um
+    // organizador numa redefinicao). Nos dois casos o site manda a pessoa
+    // para a tela de criar a senha dela antes de qualquer outra coisa.
+    const precisaTrocarSenha = tipo === "igreja" && row.senha_definida !== true;
+
     return json({
       success: true,
       token,
-      user: { ...safeUser, role: tipo === "igreja" ? "parceiro" : userRole },
+      precisa_trocar_senha: precisaTrocarSenha,
+      user: {
+        ...safeUser,
+        role: tipo === "igreja" ? "parceiro" : userRole,
+        precisa_trocar_senha: precisaTrocarSenha,
+      },
     });
   } catch (err) {
     console.error("[login] exceção não tratada:", err);

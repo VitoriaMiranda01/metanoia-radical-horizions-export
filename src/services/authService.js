@@ -27,9 +27,31 @@ const UNAVAILABLE_ERROR = 'Não foi possível fazer login. Tente novamente.';
 // servico. O supabase-js transforma respostas fora da faixa 2xx em "error",
 // entao aqui olhamos o status para escolher a mensagem certa -- sem nunca
 // revelar se o usuario existe ou nao (mesma mensagem para os dois casos).
-const mensagemParaErro = (error) => {
+const ACESSO_NAO_LIBERADO =
+  'O acesso desta igreja ainda não foi liberado. Fale com a organização.';
+
+// A Edge Function responde 403 quando a senha ESTA certa mas a igreja ainda
+// nao teve o primeiro acesso liberado por um organizador. Esse caso precisa
+// de uma mensagem propria: dizer "usuário ou senha inválidos" mandaria a
+// pessoa procurar um erro que nao existe (e encheria a fila de pedidos de
+// senha nova sem necessidade).
+//
+// Como so chega aqui quem JA acertou a senha, a mensagem nao revela nada a
+// quem esta tentando adivinhar.
+const mensagemParaErro = async (error) => {
   const status = error?.context?.status;
   if (status === 401 || status === 400) return GENERIC_ERROR;
+  if (status === 403) {
+    // O supabase-js entrega a resposta crua em error.context. Se por algum
+    // motivo nao der para ler o corpo, o texto fixo diz a mesma coisa.
+    try {
+      const corpo = await error.context.clone().json();
+      if (typeof corpo?.error === 'string' && corpo.error) return corpo.error;
+    } catch {
+      /* segue com o texto fixo */
+    }
+    return ACESSO_NAO_LIBERADO;
+  }
   return UNAVAILABLE_ERROR;
 };
 
@@ -45,14 +67,22 @@ const chamarLogin = async (tipo, identifier, senha) => {
 
     if (error) {
       console.error(`[AuthHelper] login (${tipo}) - falha na função:`, error?.message || error);
-      return { success: false, error: mensagemParaErro(error) };
+      return { success: false, error: await mensagemParaErro(error) };
     }
 
     if (!data?.success || !data?.user) {
       return { success: false, error: data?.error || GENERIC_ERROR };
     }
 
-    return { success: true, user: data.user, token: data.token };
+    // precisa_trocar_senha: a conta esta com senha temporaria (primeiro acesso
+    // ou redefinicao feita por um organizador). Quem decide o que fazer com
+    // isso e o AuthContext -- aqui so repassamos o que o servidor disse.
+    return {
+      success: true,
+      user: data.user,
+      token: data.token,
+      precisa_trocar_senha: data.precisa_trocar_senha === true,
+    };
   } catch (err) {
     console.error(`[AuthHelper] login (${tipo}) - exceção:`, err?.message || err);
     return { success: false, error: UNAVAILABLE_ERROR };

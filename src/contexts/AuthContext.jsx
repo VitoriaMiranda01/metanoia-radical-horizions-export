@@ -86,6 +86,18 @@ export const AuthProvider = ({ children }) => {
     try {
       const result = await igrejaLogin(codigo.trim(), senha);
       if (result.success) {
+        // Conta ainda com senha temporaria (a de primeiro acesso, ou uma
+        // gerada por um organizador numa redefinicao). NAO abre a sessao: a
+        // tela de login mostra o formulario de criar a senha ali mesmo e, com
+        // a senha nova, chama esta funcao de novo.
+        //
+        // Deixar a pessoa entrar "meio logada" e depois barrar em cada tela
+        // sairia mais complicado e mais facil de furar -- do jeito assim,
+        // enquanto a senha for temporaria simplesmente nao existe sessao.
+        if (result.precisa_trocar_senha || result.user?.precisa_trocar_senha) {
+          return { ...result, precisa_trocar_senha: true };
+        }
+
         const sessionUser = { ...result.user, role: 'parceiro' };
         setAuthToken(result.token);
         setIgrejaUser(sessionUser);

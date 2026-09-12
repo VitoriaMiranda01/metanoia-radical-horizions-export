@@ -203,3 +203,37 @@ export const IGREJAS_PARCEIRAS = [
   "144 - IGREJA METODISTA CAMPUS ALBUQUERQUE",
   "145 - PARQUE FLUMINENSE BELFORD ROXO",
 ];
+
+// ---------------------------------------------------------------------------
+// Busca de igreja pelo codigo de login.
+//
+// Usada na tela de login: quando o parceiro sai do campo do codigo, o site
+// mostra o nome da igreja embaixo, para ele perceber na hora se digitou o
+// codigo errado -- em vez de descobrir isso so depois de entrar na conta de
+// outra igreja.
+//
+// Nao consulta o servidor: esta lista ja vem dentro do site (e a mesma dos
+// formularios de inscricao), entao a resposta e instantanea e nenhuma porta
+// nova e aberta. Isso tambem nao vaza nada: a lista ja e publica por ser
+// necessaria no formulario de inscricao.
+//
+// Compara por VALOR NUMERICO de proposito. Os codigos sao guardados com zero
+// a esquerda ate 99 ("01", "09"), e e previsivel que alguem digite "1" em vez
+// de "01". Devolvendo o codigo canonico, a tela consegue corrigir o campo
+// sozinha -- e o parceiro ve a correcao acontecer, sem magica escondida.
+// ---------------------------------------------------------------------------
+export const buscarIgrejaPorCodigo = (codigo) => {
+  const digitado = String(codigo ?? '').trim();
+  if (!digitado || !/^\d+$/.test(digitado)) return null;
+
+  const alvo = Number(digitado);
+  for (const item of IGREJAS_PARCEIRAS) {
+    const separador = item.indexOf(' - ');
+    if (separador === -1) continue;
+    const cod = item.slice(0, separador);
+    if (Number(cod) === alvo) {
+      return { codigo: cod, nome: item.slice(separador + 3) };
+    }
+  }
+  return null;
+};

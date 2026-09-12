@@ -18,6 +18,7 @@ import InscricaoPixPage from '@/pages/InscricaoPixPage';
 import ManualPaymentPage from '@/pages/ManualPaymentPage';
 import AdminWorkflowsPage from '@/pages/AdminWorkflowsPage';
 import PagamentosPendentesPage from '@/pages/PagamentosPendentesPage';
+import SenhasParceirosPage from '@/pages/SenhasParceirosPage';
 import Layout from '@/components/Layout';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
 
@@ -128,6 +129,15 @@ function App() {
               element={
                 <OrganizerProtectedRoute>
                   <PagamentosPendentesPage />
+                </OrganizerProtectedRoute>
+              } 
+            />
+
+            <Route 
+              path="/senhas-parceiros" 
+              element={
+                <OrganizerProtectedRoute>
+                  <SenhasParceirosPage />
                 </OrganizerProtectedRoute>
               } 
             />

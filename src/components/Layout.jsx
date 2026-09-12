@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganizerAuth } from '@/hooks/useOrganizerAuth';
 import { Button } from '@/components/ui/button';
-import { LogOut, Users, UserCheck, Tent, Wrench, Settings, Grid, HeartHandshake, Banknote } from 'lucide-react';
+import { LogOut, Users, UserCheck, Tent, Wrench, Settings, Grid, HeartHandshake, Banknote, KeyRound } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -46,7 +46,8 @@ const Layout = ({ children }) => {
   const organizerItems = [
     { path: '/organizer/configuracoes', label: 'Configurações', icon: Settings },
     { path: '/organizer/escalas', label: 'Escalas', icon: Grid },
-    { path: '/pagamentos-pendentes', label: 'Pagamentos Pendentes', icon: Banknote }
+    { path: '/pagamentos-pendentes', label: 'Pagamentos Pendentes', icon: Banknote },
+    { path: '/senhas-parceiros', label: 'Senhas dos Parceiros', icon: KeyRound }
   ];
 
   const availableItems = user ? navigationItems.filter(item => 

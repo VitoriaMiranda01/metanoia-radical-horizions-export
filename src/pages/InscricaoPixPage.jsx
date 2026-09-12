@@ -195,7 +195,9 @@ const InscricaoPixPage = () => {
       return;
     }
 
-    const response = await finalizeZeroValuePayment(tipo, inscricaoId, appliedCoupon, userId);
+    const response = await finalizeZeroValuePayment(tipo, inscricaoId, appliedCoupon, userId,
+      // Prova de dono: CPF, ou o nome de quem se inscreveu sem CPF.
+      { cpf: location.state?.cpf, nome: location.state?.nome });
     
     if (response.success) {
       if (tipo === 'equipante') {

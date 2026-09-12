@@ -28,11 +28,15 @@ const PaymentMethodSelectionPage = () => {
     if (location.state?.id && location.state?.tipo) {
       try {
         await atualizarStatusPagamento(
-          location.state.id, 
-          location.state.tipo, 
-          'pendente', 
-          method, 
-          null
+          location.state.id,
+          location.state.tipo,
+          'pendente',
+          method,
+          null,
+          // Prova de que a inscrição é desta pessoa. Quem se inscreveu sem
+          // CPF prova pelo nome -- é a mesma evidência que ela usou para
+          // chegar até aqui.
+          { cpf: location.state?.cpf, nome: location.state?.nome }
         );
       } catch (error) {
         console.error("Failed to update payment method:", error);

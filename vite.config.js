@@ -215,10 +215,28 @@ if (window.navigation && window.self !== window.top) {
 }
 `;
 
+// Os 5 scripts abaixo sao a instrumentacao do editor Hostinger Horizons:
+// mandam erro de runtime, erro de console, overlay do Vite, corpo de
+// resposta HTTP com falha e tentativa de navegacao para o window.parent,
+// com destino '*'.
+//
+// Ate 12/09/2026 eles iam TAMBEM para o site publicado -- diferente dos
+// outros plugins do Horizons, que ja eram so de desenvolvimento (ver a
+// lista de plugins la embaixo). Duas consequencias:
+//
+//   1. producao embrulhava window.fetch e console.error de todo visitante,
+//      e lia o corpo de respostas HTTP com erro;
+//   2. eram scripts INLINE, o que impedia ligar o Content-Security-Policy
+//      com script-src 'self' -- e por isso a politica ficou meses em modo
+//      Report-Only, sem bloquear nada.
+//
+// Agora so entram quando existe servidor de desenvolvimento (ctx.server),
+// que e exatamente quando o editor do Horizons esta rodando.
 const addTransformIndexHtml = {
 	name: 'add-transform-index-html',
-	transformIndexHtml(html) {
-		const tags = [
+	transformIndexHtml(html, ctx) {
+		const noEditor = !!ctx?.server;
+		const tags = !noEditor ? [] : [
 			{
 				tag: 'script',
 				attrs: { type: 'module' },

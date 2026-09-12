@@ -87,7 +87,9 @@ const ManualPaymentPage = () => {
       return;
     }
 
-    const response = await finalizeZeroValuePayment(tipo, inscriptionId, appliedCoupon, userId);
+    const response = await finalizeZeroValuePayment(tipo, inscriptionId, appliedCoupon, userId,
+      // Prova de dono: CPF, ou o nome de quem se inscreveu sem CPF.
+      { cpf: location.state?.cpf, nome: location.state?.nome });
     
     if (response.success) {
       if (tipo === 'equipante') {

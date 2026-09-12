@@ -16,12 +16,34 @@
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 
-  # Content-Security-Policy em modo de TESTE (Report-Only): NAO bloqueia nada,
-  # apenas registra violacoes no console do navegador. Depois de alguns dias sem
-  # erros, trocar "Content-Security-Policy-Report-Only" por "Content-Security-Policy"
-  # para passar a bloquear. Se algo parar de funcionar, liberar o dominio no
-  # connect-src/script-src correspondente.
-  Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'self'; base-uri 'self'; object-src 'none'"
+  # Content-Security-Policy -- AGORA BLOQUEANDO (era Report-Only ate 12/09/2026).
+  #
+  # Ficou meses em modo de teste porque o build de producao injetava 5
+  # scripts INLINE da instrumentacao do editor Hostinger Horizons, que
+  # "script-src 'self'" barra. Esses scripts passaram a ser so de
+  # desenvolvimento (ver vite.config.js), entao a politica pode valer.
+  #
+  # O que cada parte libera, e por que:
+  #   script-src 'self'      so o bundle do proprio site. Sem 'unsafe-inline':
+  #                          e essa linha que impede script injetado de rodar.
+  #   style-src 'unsafe-inline'  React e framer-motion escrevem style="" nos
+  #                          elementos; sem isto a tela perde a animacao e o
+  #                          layout.
+  #   connect-src            Supabase (REST e Edge Functions) em https E o
+  #                          realtime em wss -- "https://*.supabase.co" NAO
+  #                          cobre "wss://", sao esquemas diferentes, e sem o
+  #                          wss a tela de Configuracoes perde a atualizacao
+  #                          ao vivo. viacep e a busca de endereco por CEP no
+  #                          formulario de inscricao.
+  #   img-src https:         a logo vem do CDN do Hostinger.
+  #   frame-ancestors 'self' ninguem embute o site num iframe -- e o que
+  #                          impede um site de fora ler os postMessage.
+  #   form-action 'self'     um <form> injetado nao consegue postar para fora.
+  #   object-src 'none'      sem Flash/applet/embed.
+  #
+  # Se algo parar de funcionar, o console do navegador diz exatamente qual
+  # diretiva barrou -- e so acrescentar o dominio na diretiva citada.
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.in wss://*.supabase.in https://viacep.com.br; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
 
   # Cache everything on CDN by default
   Header set Cache-Control "public, s-maxage=604800, max-age=0"

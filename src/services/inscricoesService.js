@@ -258,14 +258,16 @@ export const criarInscricao = async (formData, tipo) => {
  * NAO e mais tocado aqui -- quem confirma pagamento e o webhook do Sicoob ou
  * um organizador.
  */
-export const atualizarStatusPagamento = async (idInscricao, tipo, status, metodo, idTransacao) => {
+export const atualizarStatusPagamento = async (idInscricao, tipo, status, metodo, idTransacao, dono = {}) => {
   if (!idInscricao) {
     console.error('inscricaoApi - atualizarStatusPagamento: ID da inscrição ausente');
     return { success: false, error: 'ID da inscrição inválido' };
   }
 
   try {
-    const resposta = await registrarMetodoPagamento(tipo, idInscricao, metodo);
+    // `dono` leva o CPF (ou o nome, para quem se inscreveu sem CPF) como
+    // prova de que a inscrição é dessa pessoa -- o servidor recusa sem isso.
+    const resposta = await registrarMetodoPagamento(tipo, idInscricao, metodo, dono.cpf, dono.nome);
     if (!resposta?.ok) {
       return { success: false, error: resposta?.erro || 'Erro ao atualizar pagamento.' };
     }

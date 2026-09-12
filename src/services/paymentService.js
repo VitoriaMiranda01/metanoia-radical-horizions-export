@@ -105,13 +105,15 @@ export const getPaymentStatus = async (paymentId) => {
  * userId continua na assinatura so para nao mexer em quem chama -- nunca foi
  * usado aqui.
  */
-export const finalizeZeroValuePayment = async (inscriptionType, inscriptionId, couponCode, userId = null) => {
+export const finalizeZeroValuePayment = async (inscriptionType, inscriptionId, couponCode, userId = null, dono = {}) => {
   try {
     if (!inscriptionId) {
       throw new Error("ID da inscrição não encontrado para finalizar o pagamento.");
     }
 
-    const resposta = await finalizarInscricaoGratuita(inscriptionType, inscriptionId, couponCode);
+    // `dono` leva o CPF (ou o nome, para quem se inscreveu sem CPF) como
+    // prova de que a inscrição é dessa pessoa -- o servidor recusa sem isso.
+    const resposta = await finalizarInscricaoGratuita(inscriptionType, inscriptionId, couponCode, dono.cpf, dono.nome);
 
     if (!resposta?.ok) {
       return { success: false, error: resposta?.erro || 'Não foi possível finalizar a inscrição.' };

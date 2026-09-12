@@ -26,7 +26,9 @@ export const SCHEMA_DEFINITIONS = {
       'max_acampantes_mulheres', 'edicao_numero',
       'equipante_pricing_periods', 'acampante_pricing_periods',
       'valor_equipante', 'valor_acampante', 'updated_at',
-      'cpfs_area_guia', 'cpfs_area_inimigo', 'cpfs_area_espirito_santo',
+      // cpfs_area_guia / cpfs_area_inimigo / cpfs_area_espirito_santo
+      // existem no banco mas estao obsoletas desde 12/09/2026 (migration
+      // 20260912u): os tres papeis se definem so na tela de escalas.
       'inscricoes_equipantes', 'inscricoes_acampantes'
     ]
   },

@@ -73,8 +73,9 @@ const chamar = async (funcao, args = undefined, { tentativas = 3, esperaBase = 6
 
 /**
  * Configuracao publica do evento: preco, datas e se as inscricoes estao
- * abertas. Nao traz cpfs_area_guia / cpfs_area_inimigo /
- * cpfs_area_espirito_santo, que sao listas internas e hoje vazam junto.
+ * abertas -- e so isso: quando esta funcao nasceu, o site lia a linha
+ * inteira de configuracoes, levando junto listas internas de CPF (hoje
+ * obsoletas) para o navegador de qualquer visitante.
  */
 export const fetchConfigPublica = async () => chamar('config_publica');
 

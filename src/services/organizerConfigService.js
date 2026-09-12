@@ -16,7 +16,7 @@ export const fetchConfiguracoes = async () => {
     try {
       if (!navigator.onLine) return { max_equipantes: 0, max_acampantes: 0, max_acampantes_homens: 0, max_acampantes_mulheres: 0, equipante_pricing_periods: [], acampante_pricing_periods: [], edicao_numero: '' };
       
-      let configQuery = supabase.from('configuracoes').select('id, data_evento_inicio, data_evento_fim, horario_saida_igreja, horario_retorno_sitio, data_limite_inscricao_pagamento, max_equipantes, max_acampantes, updated_at, equipante_pricing_periods, acampante_pricing_periods, max_acampantes_homens, max_acampantes_mulheres, edicao_numero, cpfs_area_guia, cpfs_area_inimigo, cpfs_area_espirito_santo, limite_acampantes_por_igreja');
+      let configQuery = supabase.from('configuracoes').select('id, data_evento_inicio, data_evento_fim, horario_saida_igreja, horario_retorno_sitio, data_limite_inscricao_pagamento, max_equipantes, max_acampantes, updated_at, equipante_pricing_periods, acampante_pricing_periods, max_acampantes_homens, max_acampantes_mulheres, edicao_numero, limite_acampantes_por_igreja');
       
       const { data, error } = await configQuery.order('updated_at', { ascending: false }).limit(1).maybeSingle();
       if (error && !['PGRST205', '42P01', '42703'].includes(error.code)) {
@@ -36,9 +36,6 @@ export const fetchConfiguracoes = async () => {
         updated_at: data?.updated_at,
         equipante_pricing_periods: data?.equipante_pricing_periods || [],
         acampante_pricing_periods: data?.acampante_pricing_periods || [],
-        cpfs_area_guia: data?.cpfs_area_guia || [],
-        cpfs_area_inimigo: data?.cpfs_area_inimigo || [],
-        cpfs_area_espirito_santo: data?.cpfs_area_espirito_santo || [],
         data_evento_inicio: data?.data_evento_inicio || '',
         data_evento_fim: data?.data_evento_fim || '',
         limite_acampantes_por_igreja: data?.limite_acampantes_por_igreja ?? null
@@ -47,7 +44,7 @@ export const fetchConfiguracoes = async () => {
       return mergedConfig;
     } catch (error) {
       console.error("[fetchConfiguracoes] Fatal load error:", error);
-      return { max_equipantes: 0, max_acampantes: 0, max_acampantes_homens: 0, max_acampantes_mulheres: 0, equipante_pricing_periods: [], acampante_pricing_periods: [], cpfs_area_guia: [], cpfs_area_inimigo: [], cpfs_area_espirito_santo: [], edicao_numero: '' };
+      return { max_equipantes: 0, max_acampantes: 0, max_acampantes_homens: 0, max_acampantes_mulheres: 0, equipante_pricing_periods: [], acampante_pricing_periods: [], edicao_numero: '' };
     }
   });
 };

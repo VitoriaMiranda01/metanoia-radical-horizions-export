@@ -54,7 +54,20 @@ const Layout = ({ children }) => {
     item.roles.includes(user.role)
   ) : [];
 
-  const displayIdentifier = user?.nome || user?.name || user?.codigo || 'Usuário';
+  // Quem esta na tela. Para a igreja parceira, quem entra e uma PESSOA -- o
+  // responsavel que se apresentou no primeiro acesso -- e nao a instituicao;
+  // saudar "Olá, METODISTA" nao diz nada a ninguem. Igrejas cadastradas antes
+  // do primeiro acesso self-service nao tem esse nome, e ai vale o de antes.
+  const displayIdentifier =
+    (isParceiro && user?.responsavel_nome) || user?.nome || user?.name || user?.codigo || 'Usuário';
+
+  // Embaixo do titulo: "PARCEIRO - 64 - METODISTA CENTENÁRIO". Sem isso, quem
+  // cuida de mais de uma conta nao tem como saber em qual esta.
+  const linhaDoPapel = user
+    ? (isParceiro && user?.codigo
+        ? `${getRoleDisplayName(user.role)} - ${user.codigo} - ${user.nome || ''}`.trim()
+        : getRoleDisplayName(user.role))
+    : '';
 
   return (
     <div className="min-h-screen bg-neutral-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900 via-black to-black">
@@ -77,7 +90,7 @@ const Layout = ({ children }) => {
                     <h1 className="text-xl font-bold text-white tracking-wide uppercase leading-tight">Metanoia <span className="text-red-600">Radical</span> <span className="text-green-600">SERRA</span></h1>
                     {user && (
                       <span className="text-xs text-gray-400 uppercase tracking-widest block">
-                        {getRoleDisplayName(user.role)}
+                        {linhaDoPapel}
                       </span>
                     )}
                   </div>

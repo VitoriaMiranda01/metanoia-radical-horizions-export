@@ -28,7 +28,6 @@ const criticarSenha = (senha, codigo) => {
   if (valor.length < 8) return 'A senha precisa ter pelo menos 8 caracteres.';
   if (!/[A-Za-zÀ-ÿ]/.test(valor)) return 'A senha precisa ter pelo menos uma letra.';
   if (!/[0-9]/.test(valor)) return 'A senha precisa ter pelo menos um número.';
-  if (valor.toLowerCase().includes('metanoia')) return 'A senha não pode conter a palavra "metanoia".';
   if (codigo && valor.toLowerCase().includes(String(codigo).toLowerCase())) {
     return 'A senha não pode conter o código da sua igreja.';
   }
@@ -428,7 +427,7 @@ const LoginPage = () => {
                   <ul className="text-xs text-gray-500 space-y-1 pl-1">
                     <li>• pelo menos 8 caracteres</li>
                     <li>• pelo menos uma letra e um número</li>
-                    <li>• não pode conter "metanoia" nem {ehParceiro ? 'o código da igreja' : 'o seu nome de usuário'}</li>
+                    <li>• não pode conter {ehParceiro ? 'o código da igreja' : 'o seu nome de usuário'}</li>
                   </ul>
 
                   <Button type="submit" className="w-full bg-gradient-to-r from-green-700 to-green-900 hover:from-green-600 hover:to-green-800 text-white font-bold py-2 px-4 rounded-md transition-all duration-200 shadow-lg mt-2 disabled:opacity-50" disabled={loading}>

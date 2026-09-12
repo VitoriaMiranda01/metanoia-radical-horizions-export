@@ -263,7 +263,7 @@ const SenhasOrganizadoresManager = () => {
               {salvando ? 'Salvando...' : 'Salvar nova senha'}
             </Button>
             <span className="text-xs text-gray-500">
-              Mínimo 8 caracteres, com letra e número. Não pode conter "metanoia" nem o seu nome de usuário.
+              Mínimo 8 caracteres, com letra e número. Não pode conter o seu nome de usuário.
             </span>
           </div>
         </form>

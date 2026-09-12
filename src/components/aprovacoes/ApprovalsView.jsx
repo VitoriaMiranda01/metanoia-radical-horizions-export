@@ -22,6 +22,9 @@ const ApprovalsView = ({
   const [loading, setLoading] = useState(true);
   
   // Global Search states
+  // Aba aberta. Precisa ser estado (e nao defaultValue) porque os cartoes de
+  // cima tambem trocam de aba.
+  const [aba, setAba] = useState('pendentes');
   const [searchTermPendentes, setSearchTermPendentes] = useState('');
   const [searchTermAprovadas, setSearchTermAprovadas] = useState('');
   const [searchTermRejeitadas, setSearchTermRejeitadas] = useState('');
@@ -263,10 +266,16 @@ const ApprovalsView = ({
       </div>
 
       {showStatistics && (
-        <AprovacoesStatsCards pendentes={pendentes.length} aprovadas={aprovadas.length} rejeitadas={rejeitadas.length} />
+        <AprovacoesStatsCards
+          pendentes={pendentes.length}
+          aprovadas={aprovadas.length}
+          rejeitadas={rejeitadas.length}
+          abaAtiva={aba}
+          onSelecionar={setAba}
+        />
       )}
 
-      <Tabs defaultValue="pendentes" className="space-y-6">
+      <Tabs value={aba} onValueChange={setAba} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 bg-white/10">
           <TabsTrigger value="pendentes" className="data-[state=active]:bg-yellow-600">Pendentes ({pendentes.length})</TabsTrigger>
           <TabsTrigger value="aprovadas" className="data-[state=active]:bg-green-600">Aprovadas ({aprovadas.length})</TabsTrigger>

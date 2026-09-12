@@ -97,10 +97,14 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
           : 'pendente',
     });
 
+    // So conta como concluida DEPOIS que o organizador lanca a escala --
+    // ter area nao basta, porque quem anuncia a escala e a reuniao.
     stages.push({
       id: 'scale',
       label: 'Escala de trabalho',
-      status: workflowData.escalado ? 'ok' : 'pendente',
+      status: workflowData.nao_sera_escalado
+        ? 'rejeitado'
+        : workflowData.escalado ? 'ok' : 'pendente',
     });
 
     stages.push({
@@ -120,6 +124,8 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     // houver resposta, e false -- falha fechada.
     podePagar: !!workflowData?.pode_pagar,
     escalado: !!workflowData?.escalado,
+    naoSeraEscalado: !!workflowData?.nao_sera_escalado,
+    escalaLancada: !!workflowData?.escala_lancada,
     pago: !!workflowData?.pago,
     aprovacao: workflowData?.aprovacao ?? null,
     workflowStages: getWorkflowStages(),

@@ -15,6 +15,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
     workflowData,
     podePagar,
     escalado,
+    naoSeraEscalado,
     pago,
     aprovacao
   } = useEquipanteWorkflow(equipanteId, age, dono);
@@ -62,6 +63,10 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
   // O que falta, em uma frase, para a pessoa saber o que esperar.
   const oQueFalta = () => {
     if (pago) return null;
+    // A Direcao decidiu que esta pessoa nao entra na escala (excesso de
+    // gente, por exemplo). So aparece depois do lancamento -- antes disso
+    // nada foi anunciado.
+    if (naoSeraEscalado) return null;
     if (aprovacao === 'rejeitado') return 'Sua inscrição não foi aprovada pela sua igreja. Procure a organização.';
     if (aprovacao !== 'aprovado') return 'Sua igreja ainda precisa aprovar a sua inscrição. Assim que isso acontecer, esta tela avisa.';
     if (isMinor && !hasUploadedAuth) return 'Falta anexar a autorização dos seus responsáveis, aqui embaixo.';
@@ -79,6 +84,19 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
           O <strong className="text-gray-200">pagamento da taxa de alimentação é a última etapa</strong>,
           e abre depois que você for escalado em uma área.
         </p>
+
+        {naoSeraEscalado && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/30 p-4 rounded-lg">
+            <p className="text-red-300 text-sm flex items-start">
+              <XCircle className="w-5 h-5 mr-2 shrink-0" />
+              <span>
+                <strong>Cancelado — verificar com a Direção.</strong> Sua inscrição foi aprovada,
+                mas você não entrou na escala desta edição. Procure a Direção para entender o
+                caso.
+              </span>
+            </p>
+          </div>
+        )}
 
         {pago && (
           <div className="mb-6 bg-green-500/10 border border-green-500/25 p-4 rounded-lg">

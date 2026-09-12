@@ -167,3 +167,47 @@ export const definirAtuacao = async (equipanteId, atuacao) => {
   if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar a atuação' };
   return { success: true };
 };
+
+// ---------------------------------------------------------------------------
+// Lancamento da escala
+//
+// Ter area nao basta para o equipante saber que foi escalado: a escala e
+// anunciada na reuniao, e so quando o organizador LANCA e que o site passa
+// a mostrar a etapa concluida e a abrir o pagamento da taxa de alimentacao.
+//
+// O lancamento so e possivel com a fila "A escalar" zerada -- todo aprovado
+// precisa ter um destino, nem que seja "Não será escalado". Quem manda
+// nisso e o banco (lancar_escala), nao a tela.
+// ---------------------------------------------------------------------------
+
+export const fetchSituacaoEscala = async () => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('situacao_escala'),
+    { rotulo: 'situação da escala' }
+  );
+  if (error) {
+    console.error('scalesApi - situação da escala', error?.message || error);
+    return null;
+  }
+  return data?.ok ? data : null;
+};
+
+export const lancarEscala = async () => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('lancar_escala'),
+    { rotulo: 'lançamento da escala' }
+  );
+  if (error) return { success: false, error: error.message || 'Erro ao lançar a escala' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível lançar a escala' };
+  return { success: true, lancadaEm: data.lancada_em };
+};
+
+export const desfazerLancamentoEscala = async () => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('desfazer_lancamento_escala'),
+    { rotulo: 'desfazer o lançamento' }
+  );
+  if (error) return { success: false, error: error.message || 'Erro ao desfazer' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível desfazer' };
+  return { success: true };
+};

@@ -34,6 +34,10 @@
 
 const AREA_DISPONIVEL_QUALQUER = 'Disponível para qualquer área';
 
+// Onde vai quem a Direcao decidiu que nao entra na escala. Ver o comentario
+// em AREAS_SOMENTE_ORGANIZADOR, abaixo.
+export const AREA_NAO_SERA_ESCALADO = 'Não será escalado';
+
 // Areas que o equipante pode escolher nas 3 opcoes de preferencia.
 export const AREAS_INSCRICAO = [
   { valor: 'Contêiner' },
@@ -116,7 +120,13 @@ export const AREAS_SOMENTE_ORGANIZADOR = [
   'Recepção Sítio',
   'Secretaria',
   'Som / Multimídia',
-  'Som / Projeção'
+  'Som / Projeção',
+  // Nao e cena: e o destino de quem foi aprovado pela igreja mas nao entrou
+  // na escala (excesso de gente, por exemplo). Existe para que a fila "A
+  // escalar" consiga zerar -- e a fila zerada e o que libera o lancamento.
+  // Depois de lancada a escala, essa pessoa ve "Cancelado -- verificar com
+  // a Direcao" e nao consegue pagar.
+  AREA_NAO_SERA_ESCALADO
 ];
 
 // "Teatro" e "Louvor nas cenas" NAO sao cena nenhuma -- sao pergunta. No

@@ -119,30 +119,30 @@ export const AREAS_SOMENTE_ORGANIZADOR = [
   'Som / Projeção'
 ];
 
-// "Teatro" e "Louvor nas cenas" nao sao um lugar de trabalho: sao uma
-// pergunta generica no formulario ("prefere cena teatral?", "quer
-// tocar/cantar em cena?"). Quem cai numa delas esta esperando o organizador
-// direcionar para a cena de verdade -- Cristolândia, Pastor Enforcado,
-// Família, Túmulo... -- na geracao de escalas.
+// "Teatro" e "Louvor nas cenas" NAO sao cena nenhuma -- sao pergunta. No
+// formulario elas servem para a pessoa dizer que prefere cena teatral, ou
+// que quer tocar/cantar em cena. Quem decide para qual cena de verdade ela
+// vai (Cristolândia, Pastor Enforcado, Família, Túmulo...) e o organizador,
+// na geracao de escalas.
 //
-// Existem desde o commit inicial do repositorio (o export do Hostinger
-// Horizons); o que mudou em 12/09/2026 foi so parar de tratar as duas como
-// se fossem area comum: a atuacao padrao das duas e "A direcionar" e a tela
-// marca as duas com um selo, para nao ficar gente esquecida ali dentro.
-export const AREAS_A_DIRECIONAR = ['Teatro', 'Louvor nas cenas'];
+// Por isso, desde 12/09/2026, elas ficam SO no formulario: nao sao area na
+// tela de escalas e ninguem pode ser alocado nelas -- mesmo tratamento de
+// "Disponível para qualquer área". A escolha continua aparecendo embaixo do
+// nome na fila "A escalar", como sugestao.
+export const AREAS_SO_PREFERENCIA = [
+  AREA_DISPONIVEL_QUALQUER,
+  'Teatro',
+  'Louvor nas cenas'
+];
 
 // Areas que a tela de escalas mostra, uma tabela para cada.
 //
-// "Disponível para qualquer área" NAO entra aqui, e de proposito: ela e uma
-// PREFERENCIA ("me ponha onde precisar"), nao um lugar de trabalho. Quem
-// escolhe essa opcao e mandado pela funcao do banco para a area configurada
-// com mais vagas livres no momento (ver
-// database/migrations/schema-update-20260912d-escalas-alocacao.sql). Antes
-// desta correcao essas pessoas ficavam empilhadas numa area ficticia de
-// mesmo nome, com teto de 15 -- da 16a em diante iam para a lista de espera
-// mesmo tendo dito que aceitavam qualquer area.
+// As de AREAS_SO_PREFERENCIA ficam de fora, de proposito: sao respostas do
+// formulario ("me ponha onde precisar", "prefiro cena teatral", "quero
+// tocar em cena"), nao lugares de trabalho. Ninguem e alocado nelas -- o
+// organizador ve a escolha na fila "A escalar" e decide o destino.
 export const WORK_AREAS = [
-  ...AREAS_INSCRICAO.map(a => a.valor).filter(v => v !== AREA_DISPONIVEL_QUALQUER),
+  ...AREAS_INSCRICAO.map(a => a.valor).filter(v => !AREAS_SO_PREFERENCIA.includes(v)),
   ...AREAS_ESPECIAIS.map(a => a.label),
   ...AREAS_SOMENTE_ORGANIZADOR
 ].sort((a, b) => a.localeCompare(b, 'pt-BR'));

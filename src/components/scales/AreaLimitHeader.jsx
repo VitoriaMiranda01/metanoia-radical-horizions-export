@@ -39,18 +39,6 @@ const AreaLimitHeader = ({
   limitObj,
   onSaveLimit,
   isOrganizer = true,
-  // Area que so a diretoria preenche (Secretaria, Estacionamento,
-  // Infiltrados...): ninguem se inscreve nela, o organizador realoca gente
-  // para ca na mao. Vale avisar, senao parece area quebrada quando fica
-  // vazia depois de gerar a escala.
-  somenteOrganizador = false,
-  // "Teatro" / "Louvor nas cenas": opcao generica do formulario, nao um
-  // lugar de trabalho. Quem esta aqui espera o organizador mandar para a
-  // cena de verdade -- o selo existe para ninguem ficar esquecido dentro.
-  aDirecionar = false,
-  // Guia / Inimigo / Espírito Santo: quem entra vem da lista de CPFs de
-  // Configuracoes, pelo botao "Alocar Áreas Especiais". Sem o selo, o
-  // organizador olha "Guia 0/26" e nao sabe por que esta vazia.
   porCpf = false,
   // true quando a area TEM uma atuacao de lider na lista mas ninguem esta
   // com ela. Combinado com o Patrick: toda area que tem lider na escala
@@ -123,28 +111,12 @@ const AreaLimitHeader = ({
       <div className="flex justify-between items-start mb-2">
         <span className="font-semibold text-sm truncate mr-2 flex-1 flex items-center gap-2" title={areaName}>
           <span className="truncate">{areaName}</span>
-          {somenteOrganizador && (
-            <span
-              className="shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 font-medium"
-              title="Área escolhida pela diretoria: não aparece no formulário do equipante. Use “Realocar” para trazer as pessoas."
-            >
-              Diretoria
-            </span>
-          )}
           {porCpf && (
             <span
               className="shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 font-medium"
               title="Área preenchida pela lista de CPFs de Configurações, com o botão “Alocar Áreas Especiais”."
             >
               Por CPF
-            </span>
-          )}
-          {aDirecionar && (
-            <span
-              className="shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 font-medium"
-              title="Opção genérica do formulário, não é um lugar de trabalho. Quem está aqui espera você mandar para a cena certa."
-            >
-              A direcionar
             </span>
           )}
           {faltaLider && (

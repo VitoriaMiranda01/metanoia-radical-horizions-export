@@ -1,16 +1,52 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganizerAuth } from '@/hooks/useOrganizerAuth';
 import { Button } from '@/components/ui/button';
 import { LogOut, Users, UserCheck, Tent, Wrench, Settings, Grid, HeartHandshake, Banknote, KeyRound } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { fetchContadoresDoMenu } from '@/services/menuContadoresService';
+
+// Selo vermelho de "tem coisa te esperando aqui". Some sozinho quando o
+// numero e zero -- selo permanente vira paisagem e para de ser aviso.
+const SeloContador = ({ quantidade }) => {
+  if (!quantidade) return null;
+  return (
+    <span
+      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold leading-none flex items-center justify-center border border-black/70 shadow-lg shadow-red-900/40"
+      aria-label={`${quantidade} ${quantidade === 1 ? 'item aguardando' : 'itens aguardando'}`}
+    >
+      {quantidade > 99 ? '99+' : quantidade}
+    </span>
+  );
+};
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const { isOrganizer, isParceiro, isAprovador } = useOrganizerAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Numeros dos selos. Comecam zerados: melhor nao mostrar nada do que
+  // mostrar um numero errado enquanto a resposta nao chega.
+  const [contadores, setContadores] = useState({ aprovacoes: 0, pagamentos: 0, senhas: 0 });
+
+  useEffect(() => {
+    if (!isOrganizer && !isAprovador) return undefined;
+
+    let vivo = true;
+    const carregar = () => {
+      fetchContadoresDoMenu()
+        .then((c) => { if (vivo) setContadores(c); })
+        .catch(() => { /* proximo ciclo tenta de novo */ });
+    };
+
+    carregar();
+    // Um minuto: rapido o bastante para o organizador perceber um pedido novo
+    // enquanto trabalha, devagar o bastante para nao pesar.
+    const id = setInterval(carregar, 60000);
+    return () => { vivo = false; clearInterval(id); };
+  }, [isOrganizer, isAprovador]);
 
   const handleLogout = () => {
     logout();
@@ -39,15 +75,21 @@ const Layout = ({ children }) => {
     { path: '/acampante', label: 'Área do Acampante', icon: Tent, roles: ['acampante'] },
     { path: '/equipante', label: 'Área do Equipante', icon: Wrench, roles: ['equipante'] },
     { path: '/gerenciar', label: 'Gerenciar Inscrições', icon: Users, roles: ['organizador'] },
-    { path: '/aprovacoes', label: 'Aprovações', icon: UserCheck, roles: ['organizador', 'organizador-aprovador'] }
+    { path: '/aprovacoes', label: 'Aprovações Equipe', icon: UserCheck, roles: ['organizador', 'organizador-aprovador'], contador: 'aprovacoes' }
   ];
 
   // Organizer specific navigation (Settings/Scales)
+  //
+  // Configuracoes por ultimo, na ponta direita: e o icone menos usado no dia
+  // a dia e o unico que nao tem selo -- deixa os que pedem acao juntos.
+  //
+  // "contador" e a chave do selo. Escalas nao tem de proposito: a fila "a
+  // escalar" e o estado normal do trabalho, nao uma pendencia atrasada.
   const organizerItems = [
-    { path: '/organizer/configuracoes', label: 'Configurações', icon: Settings },
     { path: '/organizer/escalas', label: 'Escalas', icon: Grid },
-    { path: '/pagamentos-pendentes', label: 'Pagamentos Pendentes', icon: Banknote },
-    { path: '/senhas-parceiros', label: 'Senhas dos Parceiros', icon: KeyRound }
+    { path: '/pagamentos-pendentes', label: 'Pagamentos Pendentes', icon: Banknote, contador: 'pagamentos' },
+    { path: '/senhas-parceiros', label: 'Senhas dos Parceiros', icon: KeyRound, contador: 'senhas' },
+    { path: '/organizer/configuracoes', label: 'Configurações', icon: Settings }
   ];
 
   const availableItems = user ? navigationItems.filter(item => 
@@ -108,14 +150,15 @@ const Layout = ({ children }) => {
                     key={item.path}
                     variant={isActive ? "default" : "ghost"}
                     onClick={() => navigate(item.path)}
-                    className={`flex items-center space-x-2 transition-all duration-300 ${
-                      isActive 
-                        ? 'bg-red-700 hover:bg-red-800 text-white shadow-lg shadow-red-900/20' 
+                    className={`relative flex items-center space-x-2 transition-all duration-300 ${
+                      isActive
+                        ? 'bg-red-700 hover:bg-red-800 text-white shadow-lg shadow-red-900/20'
                         : 'hover:bg-white/5 text-gray-300 hover:text-white'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
                     <span className="hidden lg:inline">{item.label}</span>
+                    {item.contador && <SeloContador quantidade={contadores[item.contador]} />}
                   </Button>
                 );
               })}
@@ -145,15 +188,20 @@ const Layout = ({ children }) => {
                         key={item.path}
                         variant={isActive ? "default" : "ghost"}
                         onClick={() => navigate(item.path)}
-                        title={item.label}
-                        className={`transition-all duration-300 ${
-                          isActive 
-                            ? 'bg-red-700 hover:bg-red-800 text-white' 
+                        title={
+                          item.contador && contadores[item.contador]
+                            ? `${item.label} (${contadores[item.contador]} aguardando)`
+                            : item.label
+                        }
+                        className={`relative transition-all duration-300 ${
+                          isActive
+                            ? 'bg-red-700 hover:bg-red-800 text-white'
                             : 'hover:bg-white/5 text-gray-300 hover:text-white'
                         }`}
                         size="icon"
                       >
                         <Icon className="w-4 h-4" />
+                        {item.contador && <SeloContador quantidade={contadores[item.contador]} />}
                       </Button>
                     );
                   })}

@@ -48,6 +48,10 @@ const AreaLimitHeader = ({
   // lugar de trabalho. Quem esta aqui espera o organizador mandar para a
   // cena de verdade -- o selo existe para ninguem ficar esquecido dentro.
   aDirecionar = false,
+  // Guia / Inimigo / Espírito Santo: quem entra vem da lista de CPFs de
+  // Configuracoes, pelo botao "Alocar Áreas Especiais". Sem o selo, o
+  // organizador olha "Guia 0/26" e nao sabe por que esta vazia.
+  porCpf = false,
   // true quando a area TEM uma atuacao de lider na lista mas ninguem esta
   // com ela. Combinado com o Patrick: toda area que tem lider na escala
   // oficial precisa de um lider definido.
@@ -125,6 +129,14 @@ const AreaLimitHeader = ({
               title="Área escolhida pela diretoria: não aparece no formulário do equipante. Use “Realocar” para trazer as pessoas."
             >
               Diretoria
+            </span>
+          )}
+          {porCpf && (
+            <span
+              className="shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 font-medium"
+              title="Área preenchida pela lista de CPFs de Configurações, com o botão “Alocar Áreas Especiais”."
+            >
+              Por CPF
             </span>
           )}
           {aDirecionar && (

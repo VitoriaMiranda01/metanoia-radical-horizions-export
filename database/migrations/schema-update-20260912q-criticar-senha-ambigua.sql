@@ -1,0 +1,41 @@
+-- ---------------------------------------------------------------------------
+-- Conserto: nenhum parceiro conseguia criar a propria senha.
+--
+-- O QUE ACONTECIA
+-- ---------------
+-- Ao trocar a senha, o site recebia
+--
+--   42725: function public._criticar_senha(text, text) is not unique
+--
+-- e a troca simplesmente nao acontecia. Como criar a senha propria e passo
+-- OBRIGATORIO do primeiro acesso, isso travava a conta de qualquer igreja
+-- logo na porta de entrada.
+--
+-- POR QUE
+-- -------
+-- Existiam duas versoes da funcao no banco:
+--
+--   _criticar_senha(p_senha, p_codigo)                      -- 20260911d
+--   _criticar_senha(p_senha, p_codigo, p_rotulo default ..) -- 20260912c
+--
+-- A segunda foi criada para as senhas dos organizadores, onde a mensagem
+-- precisava dizer "o seu nome de usuário" em vez de "o código da sua
+-- igreja". Como o terceiro parametro tem DEFAULT, as duas atendem uma
+-- chamada de dois argumentos -- e o Postgres, sem criterio para escolher,
+-- recusa a chamada inteira. trocar_senha_igreja chama com dois argumentos.
+--
+-- Passou despercebido porque as duas convivem sem reclamar: o erro so
+-- aparece na hora da chamada, e o teste de criacao de senha tinha sido
+-- feito antes de a versao de tres argumentos existir.
+--
+-- CONSERTO
+-- --------
+-- Some a versao de dois argumentos. A de tres faz exatamente a mesma coisa
+-- quando chamada com dois -- o rotulo padrao ja e "o código da sua igreja".
+--
+-- LICAO: sobrecarga com parametro DEFAULT nao "substitui" a versao antiga,
+-- convive com ela e quebra as duas. Ao acrescentar um parametro opcional a
+-- uma funcao existente, apague a assinatura antiga na mesma migration.
+-- ---------------------------------------------------------------------------
+
+drop function if exists public._criticar_senha(text, text);

@@ -8,9 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
-import { Eye, EyeOff, Heart, Shield, Users, AlertCircle, CheckCircle2, KeyRound, MailCheck } from 'lucide-react';
-import { buscarIgrejaPorCodigo } from '@/constants/igrejas';
-import { trocarSenhaIgreja, solicitarRedefinicaoSenha, trocarSenhaOrganizador } from '@/services/senhasParceirosService';
+import { Eye, EyeOff, Heart, Shield, Users, AlertCircle, CheckCircle2, KeyRound, MailCheck, UserPlus, Copy, Check } from 'lucide-react';
+import { buscarIgrejaPorCodigo, IGREJAS_PARA_PRIMEIRO_ACESSO } from '@/constants/igrejas';
+import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
+import {
+  trocarSenhaIgreja,
+  solicitarRedefinicaoSenha,
+  trocarSenhaOrganizador,
+  primeiroAcessoHabilitado,
+  primeiroAcessoParceiro
+} from '@/services/senhasParceirosService';
 
 // Espelha as regras que o banco aplica em _criticar_senha (ver migration
 // schema-update-20260911d). Aqui e so cortesia -- avisar antes de enviar, em
@@ -53,8 +60,17 @@ const LoginPage = () => {
   const [igrejaDoCodigo, setIgrejaDoCodigo] = useState(null);
   const [codigoDesconhecido, setCodigoDesconhecido] = useState(false);
 
-  // 'login' | 'definir-senha' | 'pedido-enviado'
+  // 'login' | 'primeiro-acesso' | 'primeiro-acesso-ok' | 'definir-senha' | 'pedido-enviado'
   const [etapa, setEtapa] = useState('login');
+
+  // Primeiro acesso do parceiro. O botao so aparece quando o banco diz que
+  // esta aberto (interruptor no login de permissao maxima) -- por isso a
+  // pergunta e feita ao servidor, e nao decidida aqui.
+  const [primeiroAcessoAberto, setPrimeiroAcessoAberto] = useState(false);
+  const [paNome, setPaNome] = useState('');
+  const [paIgreja, setPaIgreja] = useState('');
+  const [paResultado, setPaResultado] = useState(null);
+  const [copiado, setCopiado] = useState(false);
   const [senhaTemporaria, setSenhaTemporaria] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmaSenha, setConfirmaSenha] = useState('');
@@ -65,6 +81,14 @@ const LoginPage = () => {
         clearTimeout(errorTimeoutRef.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    let vivo = true;
+    primeiroAcessoHabilitado()
+      .then((aberto) => { if (vivo) setPrimeiroAcessoAberto(aberto === true); })
+      .catch(() => { /* na duvida, o botao nao aparece */ });
+    return () => { vivo = false; };
   }, []);
 
   const showError = (msg) => {
@@ -203,6 +227,54 @@ const LoginPage = () => {
     }
   };
 
+  // Primeiro acesso: a igreja se apresenta e recebe codigo + senha.
+  const handlePrimeiroAcesso = async (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+
+    const nome = paNome.trim().replace(/\s+/g, ' ');
+    if (nome.length < 5 || !nome.includes(' ')) {
+      showError('Escreva seu nome completo (nome e sobrenome).');
+      return;
+    }
+    if (!paIgreja) {
+      showError('Escolha a igreja pela qual você responde.');
+      return;
+    }
+
+    // A lista vem no formato "NN - NOME"; o codigo e o que vai para o banco.
+    const separador = paIgreja.indexOf(' - ');
+    const codigo = separador === -1 ? paIgreja.trim() : paIgreja.slice(0, separador);
+
+    setLoading(true);
+    try {
+      const r = await primeiroAcessoParceiro(codigo, nome);
+      if (!r?.ok) {
+        showError(r?.erro || 'Não foi possível concluir o primeiro acesso.');
+        return;
+      }
+      setPaResultado(r);
+      setEtapa('primeiro-acesso-ok');
+    } catch (error) {
+      showError('Não foi possível concluir o primeiro acesso agora. Tente de novo em instantes.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Do "aqui esta seu acesso" direto para a criacao da senha propria: o
+  // parceiro nao precisa digitar de novo o que acabou de receber.
+  const handleSeguirParaSenha = () => {
+    if (!paResultado) return;
+    setFormData({ identifier: paResultado.codigo, password: '' });
+    setIgrejaDoCodigo({ codigo: paResultado.codigo, nome: paResultado.igreja });
+    setCodigoDesconhecido(false);
+    setSenhaTemporaria(paResultado.senha);
+    setNovaSenha('');
+    setConfirmaSenha('');
+    setEtapa('definir-senha');
+  };
+
   const handlePedirNovaSenha = async () => {
     const codigo = formData.identifier.trim();
     if (!codigo) {
@@ -239,12 +311,18 @@ const LoginPage = () => {
     setIgrejaDoCodigo(null);
     setCodigoDesconhecido(false);
     setEtapa('login');
+    setPaResultado(null);
+    setPaNome('');
+    setPaIgreja('');
   };
 
   const voltarParaLogin = () => {
     setEtapa('login');
     setErrorMessage('');
     setFormData(prev => ({ ...prev, password: '' }));
+    setPaResultado(null);
+    setPaNome('');
+    setPaIgreja('');
   };
 
   const avisoErro = (
@@ -366,6 +444,135 @@ const LoginPage = () => {
           )}
 
           {/* ------------------------------------------------------------- */}
+          {/* Primeiro acesso: quem e voce e por qual igreja responde        */}
+          {/* ------------------------------------------------------------- */}
+          {etapa === 'primeiro-acesso' && (
+            <Card className="glass-effect border-white/10 shadow-2xl bg-black/60">
+              <CardHeader className="text-center pb-2">
+                <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-green-500/10 border border-green-500/40 flex items-center justify-center">
+                  <UserPlus className="w-6 h-6 text-green-500" />
+                </div>
+                <CardTitle className="text-2xl text-white">Primeiro acesso</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Para a igreja que ainda não entrou no sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-400 mb-4">
+                  Diga quem você é e por qual igreja você responde. Na tela seguinte
+                  aparece o seu código de acesso e a senha para entrar.
+                </p>
+
+                {avisoErro}
+
+                <form onSubmit={handlePrimeiroAcesso} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="paNome" className="text-gray-200">Seu nome completo</Label>
+                    <Input
+                      id="paNome"
+                      value={paNome}
+                      onChange={(e) => setPaNome(e.target.value)}
+                      required
+                      autoFocus
+                      className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-green-500 transition-colors"
+                      placeholder="Nome e sobrenome"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="paIgreja" className="text-gray-200">
+                      Igreja pela qual você é responsável
+                    </Label>
+                    <IgrejaSelect
+                      id="paIgreja"
+                      value={paIgreja}
+                      onChange={setPaIgreja}
+                      options={IGREJAS_PARA_PRIMEIRO_ACESSO}
+                      placeholder="Procure pelo nome ou pelo número..."
+                    />
+                  </div>
+
+                  <p className="text-xs text-gray-500">
+                    Cada igreja faz o primeiro acesso uma única vez, e fica registrado
+                    quem fez. Se a sua igreja já entrou alguma vez, use "Esqueci minha senha".
+                  </p>
+
+                  <Button type="submit" className="w-full bg-gradient-to-r from-green-700 to-green-900 hover:from-green-600 hover:to-green-800 text-white font-bold py-2 px-4 rounded-md transition-all duration-200 shadow-lg mt-2 disabled:opacity-50" disabled={loading}>
+                    {loading ? 'Verificando...' : 'RECEBER MEU ACESSO'}
+                  </Button>
+
+                  <button type="button" onClick={voltarParaLogin} className="w-full text-sm text-gray-500 hover:text-gray-300 transition-colors">
+                    Voltar
+                  </button>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ------------------------------------------------------------- */}
+          {/* Primeiro acesso concluido: aqui esta o codigo e a senha        */}
+          {/* ------------------------------------------------------------- */}
+          {etapa === 'primeiro-acesso-ok' && paResultado && (
+            <Card className="glass-effect border-white/10 shadow-2xl bg-black/60">
+              <CardHeader className="text-center pb-2">
+                <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-green-500/10 border border-green-500/40 flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6 text-green-500" />
+                </div>
+                <CardTitle className="text-2xl text-white">Acesso liberado</CardTitle>
+                <CardDescription className="text-gray-400">{paResultado.igreja}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-gray-300">
+                  Anote estes dados. É com eles que você entra:
+                </p>
+
+                <div className="rounded-lg border border-green-500/40 bg-green-500/10 p-4 space-y-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-green-300/80">Código da igreja</p>
+                    <p className="font-mono text-2xl text-white">{paResultado.codigo}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-green-300/80">Senha</p>
+                    <p className="font-mono text-2xl text-white break-all">{paResultado.senha}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(
+                          `Código: ${paResultado.codigo}\nSenha: ${paResultado.senha}`
+                        );
+                        setCopiado(true);
+                        setTimeout(() => setCopiado(false), 2000);
+                      } catch {
+                        showError('Não consegui copiar. Anote os dados à mão.');
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 text-sm text-green-300 hover:text-green-200 transition-colors"
+                  >
+                    {copiado
+                      ? <><Check className="w-4 h-4" />Copiado</>
+                      : <><Copy className="w-4 h-4" />Copiar código e senha</>}
+                  </button>
+                </div>
+
+                <p className="text-sm text-gray-400">
+                  Esta senha é temporária. No passo seguinte você cria a sua própria —
+                  e é ela que vale daí em diante.
+                </p>
+
+                <Button
+                  type="button"
+                  onClick={handleSeguirParaSenha}
+                  className="w-full bg-gradient-to-r from-green-700 to-green-900 hover:from-green-600 hover:to-green-800 text-white font-bold"
+                >
+                  CRIAR MINHA SENHA E ENTRAR
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ------------------------------------------------------------- */}
           {/* Pedido de nova senha enviado                                   */}
           {/* ------------------------------------------------------------- */}
           {etapa === 'pedido-enviado' && (
@@ -468,6 +675,17 @@ const LoginPage = () => {
                 <Button type="submit" className="w-full bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 text-white font-bold py-2 px-4 rounded-md transition-all duration-200 shadow-lg mt-2 disabled:opacity-50" disabled={loading}>
                   {loading ? 'Processando...' : 'ENTRAR'}
                 </Button>
+
+                {ehParceiro && primeiroAcessoAberto && (
+                  <button
+                    type="button"
+                    onClick={() => { setErrorMessage(''); setEtapa('primeiro-acesso'); }}
+                    className="w-full flex items-center justify-center gap-2 text-sm text-green-400 hover:text-green-300 border border-green-500/30 hover:border-green-500/50 rounded-md py-2 transition-colors"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Primeiro acesso
+                  </button>
+                )}
 
                 {ehParceiro && (
                   <button

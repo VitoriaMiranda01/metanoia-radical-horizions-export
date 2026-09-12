@@ -205,6 +205,26 @@ export const IGREJAS_PARCEIRAS = [
 ];
 
 // ---------------------------------------------------------------------------
+// Igrejas de teste.
+//
+// Existem so para os desenvolvedores exercitarem o login de parceiro e o
+// primeiro acesso sem mexer em conta de igreja de verdade. Ficam FORA de
+// IGREJAS_PARCEIRAS de proposito: aquela lista alimenta os formularios de
+// inscricao, e ninguem que va se inscrever precisa ver "TESTE
+// DESENVOLVEDOR" no meio das opcoes.
+//
+// Criada em 12/09/2026 a pedido do Patrick, junto com a conta 999 na tabela
+// igrejas_parceiras.
+// ---------------------------------------------------------------------------
+export const IGREJAS_TESTE = [
+  "999 - TESTE DESENVOLVEDOR",
+];
+
+// Lista usada na tela de primeiro acesso do parceiro: as igrejas de verdade
+// mais as de teste.
+export const IGREJAS_PARA_PRIMEIRO_ACESSO = [...IGREJAS_PARCEIRAS, ...IGREJAS_TESTE];
+
+// ---------------------------------------------------------------------------
 // Busca de igreja pelo codigo de login.
 //
 // Usada na tela de login: quando o parceiro sai do campo do codigo, o site
@@ -227,7 +247,7 @@ export const buscarIgrejaPorCodigo = (codigo) => {
   if (!digitado || !/^\d+$/.test(digitado)) return null;
 
   const alvo = Number(digitado);
-  for (const item of IGREJAS_PARCEIRAS) {
+  for (const item of IGREJAS_PARA_PRIMEIRO_ACESSO) {
     const separador = item.indexOf(' - ');
     if (separador === -1) continue;
     const cod = item.slice(0, separador);

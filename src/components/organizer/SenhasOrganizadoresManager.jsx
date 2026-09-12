@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { KeyRound, ShieldCheck, RefreshCw, Copy, Check, MessageSquare, X, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { KeyRound, ShieldCheck, RefreshCw, Copy, Check, MessageSquare, X, AlertTriangle, Eye, EyeOff, DoorOpen } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import {
   trocarSenhaOrganizador,
   souOrganizadorMaximo,
   listarOrganizadores,
-  redefinirSenhaOrganizador
+  redefinirSenhaOrganizador,
+  primeiroAcessoHabilitado,
+  definirPrimeiroAcessoParceiros,
+  reabrirPrimeiroAcesso
 } from '@/services/senhasParceirosService';
 
 /**
@@ -85,6 +89,12 @@ const SenhasOrganizadoresManager = () => {
   const [ocupado, setOcupado] = useState(null);
   const [senhaGerada, setSenhaGerada] = useState(null);
 
+  // Interruptor do botao "Primeiro acesso" na tela de login do parceiro.
+  const [primeiroAcesso, setPrimeiroAcesso] = useState(false);
+  const [mudandoPrimeiroAcesso, setMudandoPrimeiroAcesso] = useState(false);
+  const [codigoReabrir, setCodigoReabrir] = useState('');
+  const [reabrindo, setReabrindo] = useState(false);
+
   const carregarLista = async () => {
     setCarregando(true);
     try {
@@ -92,6 +102,7 @@ const SenhasOrganizadoresManager = () => {
       setSouMaximo(maximo === true);
       if (maximo === true) {
         setLista((await listarOrganizadores()) || []);
+        setPrimeiroAcesso((await primeiroAcessoHabilitado()) === true);
       }
     } catch (err) {
       console.error('SenhasOrganizadoresManager - carregar', err?.message || err);
@@ -133,6 +144,58 @@ const SenhasOrganizadoresManager = () => {
       toast({ title: 'Erro de conexão', description: 'Tente de novo.', variant: 'destructive' });
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const alternarPrimeiroAcesso = async (ativo) => {
+    // Otimista: o interruptor anda na hora e volta sozinho se o banco recusar.
+    setPrimeiroAcesso(ativo);
+    setMudandoPrimeiroAcesso(true);
+    try {
+      const r = await definirPrimeiroAcessoParceiros(ativo);
+      if (!r?.ok) {
+        setPrimeiroAcesso(!ativo);
+        toast({ title: 'Não deu certo', description: r?.erro, variant: 'destructive' });
+        return;
+      }
+      toast({
+        title: ativo ? 'Primeiro acesso ABERTO' : 'Primeiro acesso FECHADO',
+        description: ativo
+          ? 'O botão já aparece na tela de login do parceiro.'
+          : 'O botão sumiu da tela de login do parceiro.',
+        className: ativo ? 'bg-emerald-600 text-white' : undefined
+      });
+    } catch (err) {
+      setPrimeiroAcesso(!ativo);
+      console.error('SenhasOrganizadoresManager - primeiro acesso', err?.message || err);
+      toast({ title: 'Erro de conexão', description: 'Tente de novo.', variant: 'destructive' });
+    } finally {
+      setMudandoPrimeiroAcesso(false);
+    }
+  };
+
+  const reabrir = async (e) => {
+    e.preventDefault();
+    const codigo = codigoReabrir.trim();
+    if (!codigo) return;
+    setReabrindo(true);
+    try {
+      const r = await reabrirPrimeiroAcesso(codigo);
+      if (!r?.ok) {
+        toast({ title: 'Não deu certo', description: r?.erro, variant: 'destructive' });
+        return;
+      }
+      setCodigoReabrir('');
+      toast({
+        title: `Igreja ${codigo} zerada`,
+        description: 'Ela volta a poder fazer o primeiro acesso, e a senha antiga não vale mais.',
+        className: 'bg-emerald-600 text-white'
+      });
+    } catch (err) {
+      console.error('SenhasOrganizadoresManager - reabrir', err?.message || err);
+      toast({ title: 'Erro de conexão', description: 'Tente de novo.', variant: 'destructive' });
+    } finally {
+      setReabrindo(false);
     }
   };
 
@@ -205,6 +268,64 @@ const SenhasOrganizadoresManager = () => {
           </div>
         </form>
       </div>
+
+      {/* ------- Primeiro acesso dos parceiros (só o login máximo) -------- */}
+      {souMaximo && (
+        <div className="bg-black/60 glass-effect rounded-xl border border-white/10 p-6">
+          <div className="flex items-center gap-3 mb-1">
+            <DoorOpen className="w-6 h-6 text-emerald-400" />
+            <h2 className="text-xl font-bold text-white">Primeiro acesso dos parceiros</h2>
+            <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/15">
+              permissão máxima
+            </Badge>
+          </div>
+          <p className="text-gray-400 text-sm mb-5">
+            Com isto ligado, aparece um botão <strong className="text-gray-200">Primeiro acesso</strong> na
+            tela de login do parceiro: a pessoa informa o nome dela e a igreja pela qual responde, e recebe
+            na hora o código e a senha — sem precisar que um organizador libere uma a uma.
+          </p>
+
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-white/5 p-4">
+            <div className="min-w-0">
+              <p className="text-white font-medium">
+                {primeiroAcesso ? 'Aberto — o botão está no ar' : 'Fechado — o botão não aparece'}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Cada igreja só consegue fazer isso uma vez, e fica registrado quem fez.
+                Feche assim que os parceiros terminarem de se cadastrar.
+              </p>
+            </div>
+            <Switch
+              checked={primeiroAcesso}
+              disabled={mudandoPrimeiroAcesso || carregando}
+              onCheckedChange={alternarPrimeiroAcesso}
+              aria-label="Abrir ou fechar o primeiro acesso dos parceiros"
+            />
+          </div>
+
+          {/* Desfazer um primeiro acesso: para repetir testes e para o caso
+              real de alguem ter pego a igreja errada. */}
+          <form onSubmit={reabrir} className="mt-4 flex flex-wrap items-end gap-3">
+            <div className="space-y-2">
+              <Label className="text-gray-200">Reabrir o primeiro acesso de uma igreja</Label>
+              <Input
+                value={codigoReabrir}
+                onChange={(e) => setCodigoReabrir(e.target.value)}
+                className="bg-white/5 border-white/20 text-white w-40"
+                placeholder="Código (ex: 07)"
+              />
+            </div>
+            <Button type="submit" variant="outline" disabled={reabrindo || !codigoReabrir.trim()}
+              className="border-white/20 bg-transparent text-gray-200 hover:bg-white/10">
+              {reabrindo ? 'Zerando...' : 'Zerar essa igreja'}
+            </Button>
+            <p className="text-xs text-gray-500 basis-full">
+              Apaga o registro do primeiro acesso, devolve a senha de fábrica e tranca a conta
+              de novo. A senha que a igreja tinha deixa de funcionar.
+            </p>
+          </form>
+        </div>
+      )}
 
       {/* ---------------- Organizadores (só o login máximo) ---------------- */}
       {souMaximo && (

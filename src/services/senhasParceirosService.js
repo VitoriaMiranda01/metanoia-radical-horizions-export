@@ -51,6 +51,29 @@ export const solicitarRedefinicaoSenha = async (codigo) =>
     p_codigo: String(codigo || '').trim(),
   }, 'pedido de nova senha');
 
+// ---------------------------------------------------------------------------
+// Primeiro acesso do parceiro (tela de login, sem estar logado)
+//
+// O parceiro se apresenta -- nome completo e igreja -- e recebe ali mesmo o
+// codigo e a senha. Quem decide se isso esta aberto e o banco
+// (configuracoes.primeiro_acesso_parceiros); a tela so pergunta.
+// ---------------------------------------------------------------------------
+
+/** true quando o botao "Primeiro acesso" deve aparecer na tela de login. */
+export const primeiroAcessoHabilitado = async () =>
+  chamar('primeiro_acesso_habilitado', undefined, 'primeiro acesso');
+
+/**
+ * Faz o primeiro acesso de uma igreja. Devolve
+ * { ok, codigo, igreja, senha } -- a senha em texto, uma vez so, porque e
+ * ela que o parceiro vai usar na tela seguinte para criar a senha propria.
+ */
+export const primeiroAcessoParceiro = async (codigo, nomeResponsavel) =>
+  chamar('primeiro_acesso_parceiro', {
+    p_codigo: String(codigo || '').trim(),
+    p_responsavel: String(nomeResponsavel || '').trim(),
+  }, 'primeiro acesso do parceiro');
+
 // --- daqui para baixo, so organizador ---------------------------------------
 
 export const listarContasParceiros = async () =>
@@ -102,6 +125,23 @@ export const trocarSenhaOrganizador = async (nome, senhaAtual, senhaNova) =>
 /** true so para a conta de permissao maxima. Serve para a tela decidir o que mostrar. */
 export const souOrganizadorMaximo = async () =>
   chamar('eh_organizador_maximo', undefined, 'permissão do organizador');
+
+/**
+ * Liga/desliga o botao "Primeiro acesso" da tela do parceiro. So o login de
+ * permissao maxima consegue -- a checagem esta no banco, nao aqui.
+ */
+export const definirPrimeiroAcessoParceiros = async (ativo) =>
+  chamar('definir_primeiro_acesso_parceiros', { p_ativo: ativo === true },
+    'interruptor do primeiro acesso');
+
+/**
+ * Devolve uma igreja ao estado de "nunca acessou": apaga o registro do
+ * primeiro acesso, volta a senha para a de fabrica e tranca de novo. Serve
+ * para repetir testes e para consertar quem se cadastrou na igreja errada.
+ */
+export const reabrirPrimeiroAcesso = async (codigo) =>
+  chamar('reabrir_primeiro_acesso', { p_codigo: String(codigo || '').trim() },
+    'reabertura do primeiro acesso');
 
 export const listarOrganizadores = async () =>
   chamar('listar_organizadores', undefined, 'lista de organizadores');

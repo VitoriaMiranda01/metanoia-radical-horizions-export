@@ -387,6 +387,15 @@ const SenhasParceirosPage = () => {
                           <TableCell className="font-mono text-white">{conta.codigo}</TableCell>
                           <TableCell className="text-gray-200">
                             {conta.nome}
+                            {/* Quem se apresentou pela igreja no primeiro
+                                acesso. E a unica forma de conferir depois se
+                                a pessoa certa pegou a conta certa. */}
+                            {conta.responsavel_nome && (
+                              <span className="block text-xs text-gray-500 mt-0.5">
+                                primeiro acesso por <span className="text-gray-300">{conta.responsavel_nome}</span>
+                                {conta.primeiro_acesso_em ? ` em ${formatarData(conta.primeiro_acesso_em)}` : ''}
+                              </span>
+                            )}
                             {conta.pedido_aberto_em && (
                               <span className="block text-xs text-amber-400 mt-0.5">
                                 pediu senha nova em {formatarData(conta.pedido_aberto_em)}

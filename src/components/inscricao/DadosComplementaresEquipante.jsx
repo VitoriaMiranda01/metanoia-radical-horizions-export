@@ -73,13 +73,13 @@ const DadosComplementaresEquipante = ({
 
           {formData.qualRadicalAcampante === 'Outros casos (favor descrever)' && (
             <div className="space-y-2">
-              <Label htmlFor="qualRadicalAcampanteOutro" className="text-white">Outra edição (favor descrever)</Label>
+              <Label htmlFor="qualRadicalAcampanteOutro" className="text-white">Outra bandeira Radical (favor descrever)</Label>
               <Input id="qualRadicalAcampanteOutro" name="qualRadicalAcampanteOutro" value={formData.qualRadicalAcampanteOutro} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
             </div>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="numeroEdicaoParticipou" className="text-white">Qual número da edição que você participou do Radical?</Label>
+            <Label htmlFor="numeroEdicaoParticipou" className="text-white">Qual número da edição que você participou desse Radical?</Label>
             <Input id="numeroEdicaoParticipou" name="numeroEdicaoParticipou" value={formData.numeroEdicaoParticipou} onChange={handleChange} type="number" required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
           </div>
         </div>

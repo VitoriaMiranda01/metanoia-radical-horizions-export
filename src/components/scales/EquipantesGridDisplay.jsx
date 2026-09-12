@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCPF, formatNomeExibicao } from '@/utils/formatters';
-import { User, Download, Loader2, Star } from 'lucide-react';
+import { User, Download, Loader2, Star, X, Plus } from 'lucide-react';
 import { WORK_AREAS } from '@/constants/workAreas';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +22,12 @@ const EquipantesGridDisplay = ({
   realocarAreaChoice = {},
   onRealocarAreaChoiceChange,
   realocando = {},
+  onRemover,
+  onAdicionarArea,
+  // Quantas areas cada pessoa tem no total. Serve para mostrar "+1 área" ao
+  // lado do nome de quem esta em mais de uma -- nas escalas oficiais isso e
+  // ~6% da equipe.
+  areasPorEquipante = {},
   // Atuacoes possiveis NESTA area, na ordem do banco (a primeira e a
   // padrao, que todo mundo recebe ao ser alocado).
   atuacoes = [],
@@ -72,7 +78,7 @@ const EquipantesGridDisplay = ({
           <TableBody>
             {equipantes.map((eq, index) => (
               <TableRow
-                key={eq.id || index}
+                key={eq.escalaId || eq.id || index}
                 className="border-white/10 hover:bg-white/5 transition-colors"
               >
                 <TableCell className="font-semibold text-white">
@@ -81,6 +87,14 @@ const EquipantesGridDisplay = ({
                       {formatNomeExibicao(eq.nome)}
                       {ehLider(eq.atuacao) && (
                         <Star className="h-3 w-3 text-amber-400 shrink-0" fill="currentColor" title="Líder da área" />
+                      )}
+                      {areasPorEquipante[eq.id] > 1 && (
+                        <span
+                          className="shrink-0 text-[9px] px-1 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30"
+                          title={`Esta pessoa está em ${areasPorEquipante[eq.id]} áreas.`}
+                        >
+                          +{areasPorEquipante[eq.id] - 1}
+                        </span>
                       )}
                     </span>
                     <span className="text-xs text-gray-500 sm:hidden">{formatCPF(eq.cpf)}</span>
@@ -96,8 +110,8 @@ const EquipantesGridDisplay = ({
                   <TableCell>
                     <Select
                       value={eq.atuacao || ''}
-                      onValueChange={(val) => onDefinirAtuacao(eq.id, val, areaName)}
-                      disabled={!!salvandoAtuacao[eq.id]}
+                      onValueChange={(val) => onDefinirAtuacao(eq.escalaId, val)}
+                      disabled={!!salvandoAtuacao[eq.escalaId]}
                     >
                       <SelectTrigger
                         className={cn(
@@ -105,7 +119,7 @@ const EquipantesGridDisplay = ({
                           ehLider(eq.atuacao) ? "text-amber-300 border-amber-500/40" : "text-white"
                         )}
                       >
-                        {salvandoAtuacao[eq.id]
+                        {salvandoAtuacao[eq.escalaId]
                           ? <Loader2 className="h-3 w-3 animate-spin" />
                           : <SelectValue placeholder="Definir..." />}
                       </SelectTrigger>
@@ -123,11 +137,11 @@ const EquipantesGridDisplay = ({
                   <TableCell>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <Select
-                        value={realocarAreaChoice[eq.id] || ''}
-                        onValueChange={(val) => onRealocarAreaChoiceChange(eq.id, val)}
+                        value={realocarAreaChoice[eq.escalaId] || ''}
+                        onValueChange={(val) => onRealocarAreaChoiceChange(eq.escalaId, val)}
                       >
                         <SelectTrigger className="h-8 w-full sm:w-[150px] bg-black/40 border-white/20 text-white text-xs">
-                          <SelectValue placeholder="Nova área..." />
+                          <SelectValue placeholder="Mover para..." />
                         </SelectTrigger>
                         <SelectContent>
                           {WORK_AREAS.filter(area => area !== areaName).map(area => (
@@ -137,12 +151,40 @@ const EquipantesGridDisplay = ({
                       </Select>
                       <Button
                         size="sm"
-                        onClick={() => onRealocar(eq.id, eq.nome, areaName)}
-                        disabled={!realocarAreaChoice[eq.id] || realocando[eq.id]}
+                        onClick={() => onRealocar(eq.escalaId, eq.nome, areaName)}
+                        disabled={!realocarAreaChoice[eq.escalaId] || realocando[eq.escalaId]}
                         className="h-8 text-xs font-semibold whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20"
                       >
-                        {realocando[eq.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Realocar'}
+                        {realocando[eq.escalaId] ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Mover'}
                       </Button>
+                      {/* A mesma pessoa pode trabalhar em mais de uma area
+                          -- nas escalas oficiais sao ~55 por edicao. Este
+                          botao ACRESCENTA a area escolhida ao lado, sem
+                          tirar a pessoa desta aqui. */}
+                      {onAdicionarArea && (
+                        <Button
+                          size="sm" variant="ghost"
+                          onClick={() => onAdicionarArea(eq.id, eq.escalaId, eq.nome)}
+                          disabled={!realocarAreaChoice[eq.escalaId] || realocando[eq.escalaId]}
+                          title={realocarAreaChoice[eq.escalaId]
+                            ? `Escalar TAMBEM em ${realocarAreaChoice[eq.escalaId]}, sem tirar de ${areaName}`
+                            : 'Escolha a area ao lado para escalar esta pessoa tambem nela'}
+                          className="h-8 w-8 p-0 shrink-0 text-gray-500 hover:text-green-400 hover:bg-green-500/10 disabled:opacity-40"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {onRemover && (
+                        <Button
+                          size="sm" variant="ghost"
+                          onClick={() => onRemover(eq.escalaId, eq.nome, areaName, areasPorEquipante[eq.id] || 1)}
+                          disabled={realocando[eq.escalaId]}
+                          title={`Tirar ${formatNomeExibicao(eq.nome)} de ${areaName}`}
+                          className="h-8 w-8 p-0 shrink-0 text-gray-500 hover:text-red-400 hover:bg-red-500/10"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 )}

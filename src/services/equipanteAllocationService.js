@@ -109,38 +109,39 @@ export const liberarVagaERealocar = async (equipanteId) => {
   }
 };
 
-// Realocacao: organizador troca a area de um equipante que JA esta alocado
-// (diferente de alocarEquipanteManualmente, que so serve pra quem ainda esta
-// na lista de espera -- a funcao do banco recusa explicitamente qualquer
-// equipante que ja tenha linha em escalas). A funcao do banco
-// (realocar_equipante, ver database/migrations/schema-update-20260903-
-// realocar-equipante.sql) confere vaga na area de destino (capacidade +
-// limite por sexo) com a mesma trava de concorrencia das outras alocacoes,
-// e so entao atualiza a linha existente em escalas (mesma linha, so troca
-// area_alocada -- nao apaga e recria).
-export const realocarEquipante = async (equipanteId, novaArea) => {
-  if (!equipanteId || !novaArea) {
-    return { success: false, error: 'Equipante ou área não informados' };
+// Move UMA participacao de area. Endereçada pelo id da LINHA em escalas
+// (escalaId), nao pela pessoa: desde 12/09/2026 a mesma pessoa pode estar em
+// mais de uma area, entao "realocar o fulano" deixou de ser sem ambiguidade.
+export const realocarAlocacao = async (escalaId, novaArea) => {
+  if (!escalaId || !novaArea) {
+    return { success: false, error: 'Alocação ou área não informadas' };
   }
-
   try {
-    const { data, error } = await supabase.rpc('realocar_equipante', {
-      p_equipante_id: equipanteId,
+    const { data, error } = await supabase.rpc('realocar_alocacao', {
+      p_escala_id: escalaId,
       p_nova_area: novaArea
     });
-
     if (error) throw error;
-
-    const resultado = Array.isArray(data) ? data[0] : data;
-
-    if (!resultado?.sucesso) {
-      return { success: false, error: resultado?.mensagem || 'Não foi possível realocar' };
-    }
-
-    return { success: true, areaAnterior: resultado?.area_anterior || null };
+    if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível realocar' };
+    return { success: true, areaAnterior: data.area_anterior };
   } catch (error) {
-    console.error('equipanteAllocationApi - realocarEquipante', error, { equipanteId, novaArea });
-    return { success: false, error: error.message || 'Erro ao tentar realocar equipante' };
+    console.error('equipanteAllocationApi - realocarAlocacao', error, { escalaId, novaArea });
+    return { success: false, error: error.message || 'Erro ao realocar' };
+  }
+};
+
+// Tira a pessoa de UMA area. Se era a unica, ela volta para a fila "A
+// escalar" -- e por isso o botao pede confirmacao na tela.
+export const removerAlocacao = async (escalaId) => {
+  if (!escalaId) return { success: false, error: 'Alocação não informada' };
+  try {
+    const { data, error } = await supabase.rpc('remover_alocacao', { p_escala_id: escalaId });
+    if (error) throw error;
+    if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível remover' };
+    return { success: true, area: data.area, restam: data.restam };
+  } catch (error) {
+    console.error('equipanteAllocationApi - removerAlocacao', error, { escalaId });
+    return { success: false, error: error.message || 'Erro ao remover' };
   }
 };
 
@@ -150,28 +151,19 @@ export const realocarEquipante = async (equipanteId, novaArea) => {
 // espirito_santo, buscados via fetchCpfsAreasEspeciais em
 // organizerConfigService.js) com o CPF de cada equipante aprovado. Quando
 // acha uma correspondencia:
-//   - se o equipante ja esta alocado em outra area, realoca pra area
-//     especial configurada via realocarEquipante -- ou seja, passa pela
-//     MESMA checagem de vaga/limite de sexo da area de destino que ja
-//     vale pra qualquer outra realocacao manual (nao ha bypass de
-//     capacidade so por vir desta acao em lote);
-//   - se ja esta alocado NA PROPRIA area especial, nao faz nada (conta
-//     como "ja estava correto", nao e erro);
-//   - se o equipante ainda nao tem nenhuma alocacao (esta na lista de
-//     espera, aprovado mas sem linha em escalas), aloca ele DIRETO na
-//     area especial configurada via alocarEquipanteManualmente -- decisao
-//     explicita do organizador (a versao anterior desta acao so mexia em
-//     quem ja tinha alocacao e deixava esse caso de fora; foi confirmado
-//     que nao ha necessidade de passar por uma area anterior antes).
-//     Passa pela mesma checagem de vaga/limite de sexo que qualquer outra
-//     alocacao manual;
-//   - se o CPF configurado nao bate com nenhum equipante aprovado
-//     (pessoa nao inscrita, ainda pendente de aprovacao, ou CPF digitado
-//     errado em Configuracoes), e reportado como "nao encontrado".
-// Roda uma alocacao/realocacao de cada vez (sequencial, nao em paralelo)
-// -- alem de mais simples, evita qualquer disputa entre chamadas desta
-// mesma acao em lote (a checagem de vaga em si ja e protegida pela trava
-// do banco, igual as outras alocacoes).
+//   - se o equipante ja esta alocado em outra area, MOVE a participacao
+//     dele para a area especial -- passa pela mesma checagem de vaga e de
+//     limite por sexo de qualquer outra realocacao. Desde 12/09/2026 uma
+//     pessoa pode ter mais de uma area; aqui movemos a PRIMEIRA delas, que
+//     e o comportamento de sempre (na pratica este botao roda no comeco da
+//     distribuicao, quando quase ninguem tem duas);
+//   - se ja esta na propria area especial, nao faz nada (conta como "ja
+//     estava correto", nao e erro);
+//   - se ainda nao tem alocacao nenhuma, aloca DIRETO na area especial;
+//   - se o CPF configurado nao bate com nenhum equipante aprovado (pessoa
+//     nao inscrita, ainda pendente, ou CPF digitado errado), e reportado
+//     como "nao encontrado".
+// Roda uma de cada vez (sequencial), pelo mesmo motivo de antes.
 export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovados, allocations) => {
   const normalizarCpf = (cpf) => (cpf || '').replace(/\D/g, '');
 
@@ -180,7 +172,11 @@ export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovado
   // configurado em mais de uma area especial por engano, a segunda
   // passada ja veja a area mais recente (nao a original antes desta
   // acao em lote).
-  const alocacaoPorEquipanteId = new Map((allocations || []).map(a => [a.id, a]));
+  // Guarda a PRIMEIRA participacao de cada pessoa: e ela que sera movida.
+  const alocacaoPorEquipanteId = new Map();
+  (allocations || []).forEach(a => {
+    if (!alocacaoPorEquipanteId.has(a.id)) alocacaoPorEquipanteId.set(a.id, a);
+  });
   const equipantePorCpf = new Map(
     (equipantesAprovados || [])
       .filter(eq => normalizarCpf(eq.cpf))
@@ -224,7 +220,7 @@ export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovado
         continue;
       }
 
-      const realoc = await realocarEquipante(equipante.id, area.label);
+      const realoc = await realocarAlocacao(alocacaoAtual.escalaId, area.label);
       if (realoc.success) {
         resultado.movidos.push({ nome: equipante.nome, de: alocacaoAtual.allocatedArea, para: area.label });
         alocacaoPorEquipanteId.set(equipante.id, { ...alocacaoAtual, allocatedArea: area.label });

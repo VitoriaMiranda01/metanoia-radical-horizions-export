@@ -69,10 +69,11 @@ export const contarAguardandoAprovacao = async () => {
 
 export const detectAllocationChanges = (currentAllocations, previousAllocations) => {
   if (!previousAllocations || previousAllocations.length === 0) return currentAllocations;
-  const prevMap = new Map(previousAllocations.map(a => [a.id, a]));
+  // Chaveado por escalaId: uma pessoa pode ter mais de uma linha.
+  const prevMap = new Map(previousAllocations.map(a => [a.escalaId ?? a.id, a]));
   const changes = [];
   currentAllocations.forEach(current => {
-    const prev = prevMap.get(current.id);
+    const prev = prevMap.get(current.escalaId ?? current.id);
     if (!prev || prev.allocatedArea !== current.allocatedArea) changes.push(current);
   });
   return changes;
@@ -91,7 +92,9 @@ export const saveScales = async (allocations) => {
       if (validation.isValid) validRecords.push(record);
     }
     if (validRecords.length === 0) return { success: false, error: "Nenhum registro válido para salvar." };
-    const { data, error } = await supabase.from('escalas').upsert(validRecords, { onConflict: 'equipante_id' }).select();
+    // A trava passou a ser (equipante_id, area_alocada): a mesma pessoa pode
+    // estar em varias areas, mas nao duas vezes na mesma.
+    const { data, error } = await supabase.from('escalas').upsert(validRecords, { onConflict: 'equipante_id,area_alocada' }).select();
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
@@ -105,9 +108,15 @@ export const fetchAllAllocations = async () => {
     'alocações'
   );
 
+  // Uma linha por PARTICIPACAO, nao por pessoa: quem trabalha em duas areas
+  // vem duas vezes, com o mesmo `id` de equipante e `escalaId` diferentes.
+  // Por isso tudo que identifica uma linha na tela (chave do React, estado
+  // de "qual area escolhi", "salvando...") tem de usar escalaId -- usar o
+  // id do equipante faria as duas linhas se confundirem.
   return linhas.map(item => ({
     ...item.equipantes,
     id: item.equipantes?.id || item.equipante_id,
+    escalaId: item.id,
     nome: item.equipantes?.nome,
     allocatedArea: item.area_alocada,
     atuacao: item.atuacao || null,
@@ -154,10 +163,10 @@ export const fetchAtuacoesPorArea = async () => {
  * organizador e que a atuação pertence à área onde ela está -- não dá para
  * gravar "Traficante" em alguém da Cozinha, mesmo forçando a chamada.
  */
-export const definirAtuacao = async (equipanteId, atuacao) => {
+export const definirAtuacao = async (escalaId, atuacao) => {
   const { data, error } = await comReenvio(
-    () => supabase.rpc('definir_atuacao_equipante', {
-      p_equipante_id: equipanteId,
+    () => supabase.rpc('definir_atuacao_alocacao', {
+      p_escala_id: escalaId,
       p_atuacao: atuacao
     }),
     { rotulo: 'atuação do equipante' }

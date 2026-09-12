@@ -7,10 +7,16 @@ const configureWorksheet = (ws) => {
     { wch: 40 }, // Nome
     { wch: 18 }, // CPF
     { wch: 35 }, // Igreja
-    { wch: 25 }, // Área (optional)
+    { wch: 25 }, // Atuação / Área
+    { wch: 25 }, // Atuação (na aba Geral, que tem Área antes)
   ];
   return ws;
 };
+
+// A planilha oficial das edicoes 33/35/36 tem NOME | IGREJA | ATUACAO -- a
+// atuacao (a funcao da pessoa dentro da area: Líder, Fila / Confronto,
+// Traficante...) e o que faltava aqui. Ver
+// database/migrations/schema-update-20260912e-atuacoes-e-areas-da-diretoria.sql.
 
 // Export equipantes for a specific area
 export const exportEquipantesByArea = (areaName, equipantes) => {
@@ -21,7 +27,8 @@ export const exportEquipantesByArea = (areaName, equipantes) => {
   const data = equipantes.map(eq => ({
     'Nome': eq.nome || '-',
     'CPF': formatCPF(eq.cpf || ''),
-    'Igreja': eq.igreja || '-'
+    'Igreja': eq.igreja || '-',
+    'Atuação': eq.atuacao || '-'
   }));
 
   const ws = XLSX.utils.json_to_sheet(data);
@@ -61,7 +68,8 @@ export const exportAllEquipantes = (allocations) => {
     const data = grouped[areaName].map(eq => ({
       'Nome': eq.nome || '-',
       'CPF': formatCPF(eq.cpf || ''),
-      'Igreja': eq.igreja || '-'
+      'Igreja': eq.igreja || '-',
+      'Atuação': eq.atuacao || '-'
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -76,7 +84,8 @@ export const exportAllEquipantes = (allocations) => {
     'Área': eq.allocatedArea || 'Sem Área',
     'Nome': eq.nome || '-',
     'CPF': formatCPF(eq.cpf || ''),
-    'Igreja': eq.igreja || '-'
+    'Igreja': eq.igreja || '-',
+    'Atuação': eq.atuacao || '-'
   }));
   
   const wsAll = XLSX.utils.json_to_sheet(allData);

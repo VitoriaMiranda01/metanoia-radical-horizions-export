@@ -38,7 +38,16 @@ const AreaLimitHeader = ({
   currentHomens = 0,
   limitObj,
   onSaveLimit,
-  isOrganizer = true
+  isOrganizer = true,
+  // Area que so a diretoria preenche (Secretaria, Estacionamento,
+  // Infiltrados...): ninguem se inscreve nela, o organizador realoca gente
+  // para ca na mao. Vale avisar, senao parece area quebrada quando fica
+  // vazia depois de gerar a escala.
+  somenteOrganizador = false,
+  // true quando a area TEM uma atuacao de lider na lista mas ninguem esta
+  // com ela. Combinado com o Patrick: toda area que tem lider na escala
+  // oficial precisa de um lider definido.
+  faltaLider = false
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [localLimit, setLocalLimit] = useState(limitObj.limiteMaximo);
@@ -104,8 +113,25 @@ const AreaLimitHeader = ({
   };
   return <div className={cn("p-3 rounded-t-lg transition-colors duration-300", isFull ? "bg-red-900/60 text-red-100" : "bg-gray-800 text-gray-200")}>
       <div className="flex justify-between items-start mb-2">
-        <span className="font-semibold text-sm truncate mr-2 flex-1" title={areaName}>
-          {areaName}
+        <span className="font-semibold text-sm truncate mr-2 flex-1 flex items-center gap-2" title={areaName}>
+          <span className="truncate">{areaName}</span>
+          {somenteOrganizador && (
+            <span
+              className="shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 font-medium"
+              title="Área escolhida pela diretoria: não aparece no formulário do equipante. Use “Realocar” para trazer as pessoas."
+            >
+              Diretoria
+            </span>
+          )}
+          {faltaLider && (
+            <span
+              className="shrink-0 inline-flex items-center gap-1 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-medium"
+              title="Esta área tem líder na escala oficial, mas ninguém está com a atuação de líder. Escolha um na coluna Atuação."
+            >
+              <AlertCircle className="w-2.5 h-2.5" />
+              Sem líder
+            </span>
+          )}
         </span>
         <div className={cn("text-xs px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1", isFull ? "bg-red-950/50 text-red-200" : "bg-black/30 text-gray-300")}>
           {isFull && <AlertCircle className="w-3 h-3" />}

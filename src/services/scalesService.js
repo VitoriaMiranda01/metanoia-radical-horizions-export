@@ -77,7 +77,7 @@ export const saveScales = async (allocations) => {
 
 export const fetchAllAllocations = async () => {
   const linhas = await lerTudoPaginado(
-    () => supabase.from('escalas').select(`id, equipante_id, area_alocada, equipantes!inner (${COLUNAS_EQUIPANTE})`),
+    () => supabase.from('escalas').select(`id, equipante_id, area_alocada, atuacao, equipantes!inner (${COLUNAS_EQUIPANTE})`),
     'alocações'
   );
 
@@ -86,6 +86,60 @@ export const fetchAllAllocations = async () => {
     id: item.equipantes?.id || item.equipante_id,
     nome: item.equipantes?.nome,
     allocatedArea: item.area_alocada,
+    atuacao: item.atuacao || null,
     statusAllocation: 'Alocado'
   }));
+};
+
+/**
+ * Catalogo de atuacoes (a coluna ATUAÇÃO da escala oficial: a função da
+ * pessoa DENTRO da área -- "Líder", "Fila / Confronto", "Traficante"...).
+ *
+ * Devolve um mapa { [nome da area]: [{ atuacao, ehPadrao, ehLider }] }, já
+ * na ordem em que deve aparecer no menu suspenso. Quem manda na lista é o
+ * banco (tabela atuacoes_areas), não o bundle -- assim dá para corrigir uma
+ * atuação sem publicar o site de novo.
+ */
+export const fetchAtuacoesPorArea = async () => {
+  const { data, error } = await comReenvio(
+    () => supabase
+      .from('atuacoes_areas')
+      .select('area_nome, atuacao, ordem, eh_padrao, eh_lider')
+      .order('area_nome')
+      .order('ordem'),
+    { rotulo: 'atuações das áreas' }
+  );
+
+  if (error) {
+    console.error('scalesApi - atuações das áreas', error?.message || error);
+    return {};
+  }
+
+  return (data || []).reduce((acc, linha) => {
+    (acc[linha.area_nome] = acc[linha.area_nome] || []).push({
+      atuacao: linha.atuacao,
+      ehPadrao: linha.eh_padrao,
+      ehLider: linha.eh_lider
+    });
+    return acc;
+  }, {});
+};
+
+/**
+ * Troca a atuação de uma pessoa já alocada. O banco confere que é
+ * organizador e que a atuação pertence à área onde ela está -- não dá para
+ * gravar "Traficante" em alguém da Cozinha, mesmo forçando a chamada.
+ */
+export const definirAtuacao = async (equipanteId, atuacao) => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('definir_atuacao_equipante', {
+      p_equipante_id: equipanteId,
+      p_atuacao: atuacao
+    }),
+    { rotulo: 'atuação do equipante' }
+  );
+
+  if (error) return { success: false, error: error.message || 'Erro ao salvar a atuação' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar a atuação' };
+  return { success: true };
 };

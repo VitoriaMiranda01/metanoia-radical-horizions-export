@@ -82,6 +82,36 @@ export const AREAS_ESPECIAIS = [
   { key: 'espirito_santo', label: 'Espírito Santo' }
 ];
 
+// Areas que existem na escala oficial e NAO sao oferecidas ao equipante: quem
+// trabalha nelas e escolhido pela diretoria. Aparecem na tela de Geracao de
+// Escalas (com tabela propria e como destino de "Realocar"), mas nunca no
+// formulario de inscricao nem na alocacao automatica.
+//
+// Diferem das AREAS_ESPECIAIS acima: aquelas sao preenchidas em lote pelo
+// botao "Alocar Áreas Especiais", a partir de uma lista de CPFs digitada em
+// Configuracoes. Estas aqui nao tem lista de CPF nenhuma -- o organizador
+// simplesmente realoca as pessoas para elas na propria tela.
+//
+// No banco as duas familias sao a mesma coisa: limites_areas.somente_organizador
+// = true (ver schema-update-20260912e). E essa coluna, e nao esta lista, que
+// impede a alocacao automatica e o coringa de mandarem gente para ca.
+//
+// Sao ~60 pessoas por edicao (6,6% da escala) que ate agora nao cabiam no
+// sistema.
+export const AREAS_SOMENTE_ORGANIZADOR = [
+  'Apresentadores',
+  'Ataque / Madrugada',
+  'Base Operacional',
+  'Depressão',
+  'Equipe de Manutenção',
+  'Estacionamento',
+  'Infiltrados',
+  'Pastor Invisível',
+  'Secretaria',
+  'Som / Multimídia',
+  'Som / Projeção'
+];
+
 // Areas que a tela de escalas mostra, uma tabela para cada.
 //
 // "Disponível para qualquer área" NAO entra aqui, e de proposito: ela e uma
@@ -94,7 +124,8 @@ export const AREAS_ESPECIAIS = [
 // mesmo tendo dito que aceitavam qualquer area.
 export const WORK_AREAS = [
   ...AREAS_INSCRICAO.map(a => a.valor).filter(v => v !== AREA_DISPONIVEL_QUALQUER),
-  ...AREAS_ESPECIAIS.map(a => a.label)
+  ...AREAS_ESPECIAIS.map(a => a.label),
+  ...AREAS_SOMENTE_ORGANIZADOR
 ].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
 // Teto de uma area que nunca foi configurada em limites_areas. Espelha o

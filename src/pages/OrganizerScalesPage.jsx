@@ -4,8 +4,8 @@ import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { WORK_AREAS, DEFAULT_AREA_CAPACITY, AREAS_ESPECIAIS } from '@/constants/workAreas';
-import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges } from '@/services/scalesService';
+import { WORK_AREAS, DEFAULT_AREA_CAPACITY, AREAS_ESPECIAIS, AREAS_SOMENTE_ORGANIZADOR } from '@/constants/workAreas';
+import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges, fetchAtuacoesPorArea, definirAtuacao } from '@/services/scalesService';
 import { fetchLimitesAreas, saveLimiteAreaComGenero, getLimiteAreaComGenero } from '@/services/limiteAreasService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { exportEquipantesByArea, exportAllEquipantes } from '@/utils/excelExport';
@@ -38,6 +38,15 @@ const OrganizerScalesPage = () => {
   const [manualAreaChoice, setManualAreaChoice] = useState({});
   const [manualAllocating, setManualAllocating] = useState({});
   const [isAllocatingAreasEspeciais, setIsAllocatingAreasEspeciais] = useState(false);
+
+  // Atuacoes possiveis de cada area (a coluna ATUAÇÃO da escala oficial),
+  // vindas do banco: { "Segurança": [{atuacao, ehPadrao, ehLider}, ...] }.
+  // Buscadas uma vez no load -- e uma lista fixa por edicao, nao muda no
+  // meio do trabalho como as alocacoes mudam.
+  const [atuacoesPorArea, setAtuacoesPorArea] = useState({});
+  const [salvandoAtuacao, setSalvandoAtuacao] = useState({});
+
+  const AREAS_DA_DIRETORIA = new Set(AREAS_SOMENTE_ORGANIZADOR);
   
   const previousAllocationsRef = useRef([]);
   const saveTimeoutRef = useRef(null);
@@ -94,8 +103,41 @@ const OrganizerScalesPage = () => {
         variant: "destructive"
       });
     }
+    setAtuacoesPorArea(await fetchAtuacoesPorArea());
     await fetchBackgroundData(false);
     setLoadingLimits(false);
+  };
+
+  // Troca a atuação de uma pessoa dentro da área (Líder, Traficante,
+  // Fila / Confronto...). Atualiza a tela na hora e só depois confirma com
+  // o banco -- se o banco recusar, volta ao que era e avisa.
+  const handleDefinirAtuacao = async (equipanteId, novaAtuacao, areaName) => {
+    const anterior = allocations.find(a => a.id === equipanteId)?.atuacao ?? null;
+    if (anterior === novaAtuacao) return;
+
+    setSalvandoAtuacao(prev => ({ ...prev, [equipanteId]: true }));
+    setAllocations(prev => prev.map(a => (a.id === equipanteId ? { ...a, atuacao: novaAtuacao } : a)));
+    // Mantém o "antes" alinhado com o "agora": sem isso o efeito de
+    // auto-save enxergaria uma diferença e tentaria regravar a escala.
+    previousAllocationsRef.current = previousAllocationsRef.current.map(
+      a => (a.id === equipanteId ? { ...a, atuacao: novaAtuacao } : a)
+    );
+
+    const resultado = await definirAtuacao(equipanteId, novaAtuacao);
+
+    if (!resultado.success) {
+      setAllocations(prev => prev.map(a => (a.id === equipanteId ? { ...a, atuacao: anterior } : a)));
+      previousAllocationsRef.current = previousAllocationsRef.current.map(
+        a => (a.id === equipanteId ? { ...a, atuacao: anterior } : a)
+      );
+      toast({
+        title: "Não foi possível salvar a atuação",
+        description: resultado.error,
+        variant: "destructive"
+      });
+    }
+
+    setSalvandoAtuacao(prev => ({ ...prev, [equipanteId]: false }));
   };
 
   useEffect(() => {
@@ -484,13 +526,23 @@ const OrganizerScalesPage = () => {
           const limitObj = getLimiteAreaComGenero(area, limitsMap, DEFAULT_AREA_CAPACITY);
           const mulheresCount = getGenderCount(areaEquipantes, 'feminino');
           const homensCount = getGenderCount(areaEquipantes, 'masculino');
+          const atuacoesDaArea = atuacoesPorArea[area] || [];
+
+          // A área tem líder previsto na escala oficial e ninguém está com
+          // essa atuação -- só avisa se já houver gente na área (numa área
+          // vazia o aviso seria ruído).
+          const atuacoesDeLider = atuacoesDaArea.filter(a => a.ehLider).map(a => a.atuacao);
+          const faltaLider = atuacoesDeLider.length > 0
+            && areaEquipantes.length > 0
+            && !areaEquipantes.some(eq => atuacoesDeLider.includes(eq.atuacao));
+
           return <div key={index} className="bg-black/40 border border-white/10 rounded-lg overflow-hidden shadow-md backdrop-blur-sm">
                 <div className="sticky top-0 z-10 bg-gray-900 border-b border-white/10">
-                  <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} />
+                  <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} somenteOrganizador={AREAS_DA_DIRETORIA.has(area)} faltaLider={faltaLider} />
                 </div>
-                
+
                 <div className="p-4 max-h-[400px] overflow-y-auto">
-                  {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={areaEquipantes} areaName={area} onExport={handleExportArea} onRealocar={handleRealocar} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={(id, val) => setManualAreaChoice(prev => ({ ...prev, [id]: val }))} realocando={manualAllocating} />}
+                  {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={areaEquipantes} areaName={area} onExport={handleExportArea} onRealocar={handleRealocar} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={(id, val) => setManualAreaChoice(prev => ({ ...prev, [id]: val }))} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={handleDefinirAtuacao} salvandoAtuacao={salvandoAtuacao} />}
                 </div>
               </div>;
         })}

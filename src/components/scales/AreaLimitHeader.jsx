@@ -44,6 +44,10 @@ const AreaLimitHeader = ({
   // para ca na mao. Vale avisar, senao parece area quebrada quando fica
   // vazia depois de gerar a escala.
   somenteOrganizador = false,
+  // "Teatro" / "Louvor nas cenas": opcao generica do formulario, nao um
+  // lugar de trabalho. Quem esta aqui espera o organizador mandar para a
+  // cena de verdade -- o selo existe para ninguem ficar esquecido dentro.
+  aDirecionar = false,
   // true quando a area TEM uma atuacao de lider na lista mas ninguem esta
   // com ela. Combinado com o Patrick: toda area que tem lider na escala
   // oficial precisa de um lider definido.
@@ -121,6 +125,14 @@ const AreaLimitHeader = ({
               title="Área escolhida pela diretoria: não aparece no formulário do equipante. Use “Realocar” para trazer as pessoas."
             >
               Diretoria
+            </span>
+          )}
+          {aDirecionar && (
+            <span
+              className="shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 font-medium"
+              title="Opção genérica do formulário, não é um lugar de trabalho. Quem está aqui espera você mandar para a cena certa."
+            >
+              A direcionar
             </span>
           )}
           {faltaLider && (

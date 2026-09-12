@@ -58,12 +58,9 @@ export const AREAS_INSCRICAO = [
   { valor: 'Perseguidos' },
   { valor: 'Presídio' },
   { valor: 'Primeiros socorros - Saúde', rotulo: 'Primeiros socorros – Saúde' },
-  // A escala oficial separa as duas, e sao trabalhos diferentes: a da
-  // igreja e a mesa de cracha antes de sair (2 pessoas nas edicoes
-  // 33/35/36); a do sitio e a chegada -- fila / confronto e celular /
-  // mesa (36, 34 e 34 pessoas). Ate 12/09/2026 existia uma "Recepção" so.
-  { valor: 'Recepção Igreja' },
-  { valor: 'Recepção Sítio' },
+  // Recepção saiu daqui em 12/09/2026: quem trabalha na recepcao (e em
+  // qual das duas) e sempre escolha do organizador. Ver
+  // AREAS_SOMENTE_ORGANIZADOR abaixo.
   { valor: 'Segurança' },
   { valor: 'Selva' },
   { valor: 'Teatro' },
@@ -112,10 +109,27 @@ export const AREAS_SOMENTE_ORGANIZADOR = [
   'Estacionamento',
   'Infiltrados',
   'Pastor Invisível',
+  // As duas recepcoes entraram aqui em 12/09/2026: o equipante nao escolhe
+  // recepcao. E o organizador que separa quem fica na mesa de cracha da
+  // igreja e quem recebe no sitio.
+  'Recepção Igreja',
+  'Recepção Sítio',
   'Secretaria',
   'Som / Multimídia',
   'Som / Projeção'
 ];
+
+// "Teatro" e "Louvor nas cenas" nao sao um lugar de trabalho: sao uma
+// pergunta generica no formulario ("prefere cena teatral?", "quer
+// tocar/cantar em cena?"). Quem cai numa delas esta esperando o organizador
+// direcionar para a cena de verdade -- Cristolândia, Pastor Enforcado,
+// Família, Túmulo... -- na geracao de escalas.
+//
+// Existem desde o commit inicial do repositorio (o export do Hostinger
+// Horizons); o que mudou em 12/09/2026 foi so parar de tratar as duas como
+// se fossem area comum: a atuacao padrao das duas e "A direcionar" e a tela
+// marca as duas com um selo, para nao ficar gente esquecida ali dentro.
+export const AREAS_A_DIRECIONAR = ['Teatro', 'Louvor nas cenas'];
 
 // Areas que a tela de escalas mostra, uma tabela para cada.
 //

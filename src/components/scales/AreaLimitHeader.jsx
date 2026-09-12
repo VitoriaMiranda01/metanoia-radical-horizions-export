@@ -42,7 +42,10 @@ const AreaLimitHeader = ({
   // true quando a area TEM uma atuacao de lider na lista mas ninguem esta
   // com ela. Combinado com o Patrick: toda area que tem lider na escala
   // oficial precisa de um lider definido.
-  faltaLider = false
+  faltaLider = false,
+  // Nas areas divididas por cor, QUAIS cores estao sem lider. Dizer "falta
+  // lider" numa area com 40 pessoas e cinco cores nao ajuda ninguem.
+  coresSemLider = []
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [localLimit, setLocalLimit] = useState(limitObj.limiteMaximo);
@@ -113,7 +116,9 @@ const AreaLimitHeader = ({
           {faltaLider && (
             <span
               className="shrink-0 inline-flex items-center gap-1 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-medium"
-              title="Esta área tem líder na escala oficial, mas ninguém está com a atuação de líder. Escolha um na coluna Atuação."
+              title={coresSemLider.length > 0
+                ? `Sem líder em: ${coresSemLider.join(', ')}. Cada cor precisa do seu líder — escolha na coluna Atuação.`
+                : "Esta área tem líder na escala oficial, mas ninguém está com a atuação de líder. Escolha um na coluna Atuação."}
             >
               <AlertCircle className="w-2.5 h-2.5" />
               Sem líder

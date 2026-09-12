@@ -148,6 +148,33 @@ export const AREAS_SO_PREFERENCIA = [
   'Louvor nas cenas'
 ];
 
+// ---------------------------------------------------------------------------
+// Cores dos grupos de trilha.
+//
+// Nove areas trabalham divididas por cor -- ha 5 guias no vermelho e 5 no
+// verde, e cada cor tem o seu lider. A cor NAO e obrigatoria: e identificacao,
+// nao regra. Ate 12/09/2026 ela era gravada no campo de atuacao, o que nao
+// deixava espaco para dizer a funcao da pessoa (e por isso "Invisível" tinha
+// inventado dez atuacoes do tipo "Líder / Amarelo").
+//
+// Espelha _area_com_cor() no banco (migration 20260912v). Mudou aqui, muda la.
+// ---------------------------------------------------------------------------
+export const CORES_GRUPO = ['Amarelo', 'Azul', 'Roxo', 'Verde', 'Vermelho'];
+
+export const AREAS_COM_COR = [
+  'Espírito Santo',
+  'Fotografia',
+  'Guia',
+  'Infiltrados',
+  'Inimigo',
+  'Invisível',
+  'Marcador',
+  'Pastor Invisível',
+  'Recepção Sítio'
+];
+
+export const areaTemCor = (area) => AREAS_COM_COR.includes(area);
+
 // Areas que a tela de escalas mostra, uma tabela para cada.
 //
 // As de AREAS_SO_PREFERENCIA ficam de fora, de proposito: sao respostas do

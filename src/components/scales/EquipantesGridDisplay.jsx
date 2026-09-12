@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCPF, formatNomeExibicao } from '@/utils/formatters';
 import { User, Download, Loader2, Star, X, Plus } from 'lucide-react';
-import { WORK_AREAS } from '@/constants/workAreas';
+import { WORK_AREAS, CORES_GRUPO } from '@/constants/workAreas';
 import { cn } from '@/lib/utils';
 
 const EquipantesGridDisplay = ({
@@ -32,7 +32,12 @@ const EquipantesGridDisplay = ({
   // padrao, que todo mundo recebe ao ser alocado).
   atuacoes = [],
   onDefinirAtuacao,
-  salvandoAtuacao = {}
+  salvandoAtuacao = {},
+  // Cor do grupo de trilha. So aparece nas areas que trabalham divididas por
+  // cor -- nas outras a coluna nem existe.
+  mostrarCor = false,
+  onDefinirCor,
+  salvandoCor = {}
 }) => {
   if (!equipantes || equipantes.length === 0) {
     return (
@@ -47,6 +52,20 @@ const EquipantesGridDisplay = ({
   // em Estacionamento ou Secretaria, por exemplo, a atuacao e uma so.
   const mostrarAtuacao = onDefinirAtuacao && atuacoes.length > 1;
   const ehLider = (valor) => atuacoes.some(a => a.atuacao === valor && a.ehLider);
+  const colunaCor = mostrarCor && !!onDefinirCor;
+
+  // Bolinha da cor, para o organizador achar a pessoa correndo o olho pela
+  // coluna em vez de ler palavra por palavra.
+  const TINTA = {
+    Amarelo:  'bg-yellow-400',
+    Azul:     'bg-blue-500',
+    Roxo:     'bg-purple-500',
+    Verde:    'bg-green-500',
+    Vermelho: 'bg-red-500'
+  };
+  const Bolinha = ({ cor }) => (
+    <span className={cn('inline-block w-2.5 h-2.5 rounded-full shrink-0 border border-black/40', TINTA[cor] || 'bg-transparent')} />
+  );
 
   return (
     <div className="space-y-3">
@@ -72,6 +91,7 @@ const EquipantesGridDisplay = ({
               <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[14%] hidden sm:table-cell">CPF</TableHead>
               <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[22%] hidden md:table-cell">Igreja</TableHead>
               {mostrarAtuacao && <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[18%]">Atuação</TableHead>}
+              {colunaCor && <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[13%]">Cor</TableHead>}
               {onRealocar && <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[22%]">Ação</TableHead>}
             </TableRow>
           </TableHeader>
@@ -86,7 +106,11 @@ const EquipantesGridDisplay = ({
                     <span className="flex items-center gap-1.5">
                       {formatNomeExibicao(eq.nome)}
                       {ehLider(eq.atuacao) && (
-                        <Star className="h-3 w-3 text-amber-400 shrink-0" fill="currentColor" title="Líder da área" />
+                        <Star
+                          className="h-3 w-3 text-amber-400 shrink-0"
+                          fill="currentColor"
+                          title={eq.cor ? `Líder do ${eq.cor}` : 'Líder da área'}
+                        />
                       )}
                       {areasPorEquipante[eq.id] > 1 && (
                         <span
@@ -127,6 +151,37 @@ const EquipantesGridDisplay = ({
                         {atuacoes.map(a => (
                           <SelectItem key={a.atuacao} value={a.atuacao}>
                             {a.ehLider ? `★ ${a.atuacao}` : a.atuacao}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                )}
+                {colunaCor && (
+                  <TableCell>
+                    <Select
+                      value={eq.cor || 'sem'}
+                      onValueChange={(val) => onDefinirCor(eq.escalaId, val === 'sem' ? '' : val)}
+                      disabled={!!salvandoCor[eq.escalaId]}
+                    >
+                      <SelectTrigger className="h-8 w-full sm:w-[130px] bg-black/40 border-white/20 text-white text-xs">
+                        {salvandoCor[eq.escalaId]
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : (
+                            <span className="flex items-center gap-1.5 truncate">
+                              <Bolinha cor={eq.cor} />
+                              <span className="truncate">{eq.cor || 'Sem cor'}</span>
+                            </span>
+                          )}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sem">Sem cor</SelectItem>
+                        {CORES_GRUPO.map(cor => (
+                          <SelectItem key={cor} value={cor}>
+                            <span className="flex items-center gap-2">
+                              <Bolinha cor={cor} />
+                              {cor}
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>

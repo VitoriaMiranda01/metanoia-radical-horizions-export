@@ -104,7 +104,7 @@ export const saveScales = async (allocations) => {
 
 export const fetchAllAllocations = async () => {
   const linhas = await lerTudoPaginado(
-    () => supabase.from('escalas').select(`id, equipante_id, area_alocada, atuacao, equipantes!inner (${COLUNAS_EQUIPANTE})`),
+    () => supabase.from('escalas').select(`id, equipante_id, area_alocada, atuacao, cor, equipantes!inner (${COLUNAS_EQUIPANTE})`),
     'alocações'
   );
 
@@ -120,6 +120,7 @@ export const fetchAllAllocations = async () => {
     nome: item.equipantes?.nome,
     allocatedArea: item.area_alocada,
     atuacao: item.atuacao || null,
+    cor: item.cor || null,
     statusAllocation: 'Alocado'
   }));
 };
@@ -163,6 +164,23 @@ export const fetchAtuacoesPorArea = async () => {
  * organizador e que a atuação pertence à área onde ela está -- não dá para
  * gravar "Traficante" em alguém da Cozinha, mesmo forçando a chamada.
  */
+/**
+ * Cor do grupo de trilha da pessoa NESTA area (Amarelo, Azul, Roxo, Verde,
+ * Vermelho). Vazio tira a cor -- ela e opcional, serve so para identificar.
+ * O banco recusa cor em area que nao trabalha por cor.
+ */
+export const definirCor = async (escalaId, cor) => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('definir_cor_alocacao', {
+      p_escala_id: escalaId,
+      p_cor: cor || null
+    }),
+    { rotulo: 'cor do grupo' }
+  );
+  if (error) throw error;
+  return data;
+};
+
 export const definirAtuacao = async (escalaId, atuacao) => {
   const { data, error } = await comReenvio(
     () => supabase.rpc('definir_atuacao_alocacao', {

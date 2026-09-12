@@ -9,6 +9,7 @@ const configureWorksheet = (ws) => {
     { wch: 35 }, // Igreja
     { wch: 25 }, // Atuação / Área
     { wch: 25 }, // Atuação (na aba Geral, que tem Área antes)
+    { wch: 12 }, // Cor do grupo
   ];
   return ws;
 };
@@ -28,7 +29,8 @@ export const exportEquipantesByArea = (areaName, equipantes) => {
     'Nome': eq.nome || '-',
     'CPF': formatCPF(eq.cpf || ''),
     'Igreja': eq.igreja || '-',
-    'Atuação': eq.atuacao || '-'
+    'Atuação': eq.atuacao || '-',
+    'Cor': eq.cor || '-'
   }));
 
   const ws = XLSX.utils.json_to_sheet(data);
@@ -69,7 +71,8 @@ export const exportAllEquipantes = (allocations) => {
       'Nome': eq.nome || '-',
       'CPF': formatCPF(eq.cpf || ''),
       'Igreja': eq.igreja || '-',
-      'Atuação': eq.atuacao || '-'
+      'Atuação': eq.atuacao || '-',
+      'Cor': eq.cor || '-'
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -85,7 +88,8 @@ export const exportAllEquipantes = (allocations) => {
     'Nome': eq.nome || '-',
     'CPF': formatCPF(eq.cpf || ''),
     'Igreja': eq.igreja || '-',
-    'Atuação': eq.atuacao || '-'
+    'Atuação': eq.atuacao || '-',
+    'Cor': eq.cor || '-'
   }));
   
   const wsAll = XLSX.utils.json_to_sheet(allData);

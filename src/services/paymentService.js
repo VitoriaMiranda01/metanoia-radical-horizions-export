@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabaseClient';
 import { comReenvio } from '@/services/serviceHelpers';
+import { finalizarInscricaoGratuita } from '@/services/publicDataService';
 
 export const savePaymentInfo = async (paymentData) => {
   try {
@@ -87,7 +88,22 @@ export const getPaymentStatus = async (paymentId) => {
 };
 
 /**
- * Handles 100% discount situations where the final value is zero.
+ * Inscricao que ficou em R$ 0,00 por cupom.
+ *
+ * Isto fazia duas escritas direto das tabelas (insert em "pagamentos" e
+ * update na inscricao). Depois do travamento por RLS as duas passaram a levar
+ * 401: a pessoa preenchia a inscricao inteira, aplicava o cupom e recebia
+ * "Erro ao finalizar" -- ja inscrita e pendente. Hoje nenhum cupom ativo zera
+ * o valor, entao o caminho estava inalcancavel, mas bastava ativar um cupom
+ * de isencao para o problema aparecer.
+ *
+ * Agora quem decide se a inscricao esta zerada e o SERVIDOR: ele refaz a
+ * conta (valor do lote de hoje menos o desconto do cupom) e so confirma se
+ * der zero. Se fosse o navegador a decidir, bastaria chamar a funcao para
+ * sair sem pagar.
+ *
+ * userId continua na assinatura so para nao mexer em quem chama -- nunca foi
+ * usado aqui.
  */
 export const finalizeZeroValuePayment = async (inscriptionType, inscriptionId, couponCode, userId = null) => {
   try {
@@ -95,57 +111,16 @@ export const finalizeZeroValuePayment = async (inscriptionType, inscriptionId, c
       throw new Error("ID da inscrição não encontrado para finalizar o pagamento.");
     }
 
-    const payload = {
-      valor: 0,
-      status: 'completed',
-      data_pagamento: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    const resposta = await finalizarInscricaoGratuita(inscriptionType, inscriptionId, couponCode);
 
-    if (inscriptionType === 'equipante') {
-      payload.equipante_id = inscriptionId;
-    } else {
-      payload.acampante_id = inscriptionId;
+    if (!resposta?.ok) {
+      return { success: false, error: resposta?.erro || 'Não foi possível finalizar a inscrição.' };
     }
-
-    // 1. Insert completed payment record into pagamentos table
-    const { error: paymentError } = await supabase
-      .from('pagamentos')
-      .insert([payload]);
-
-    if (paymentError) throw paymentError;
-
-    // 2. Update inscription table
-    // Nota: acampantes/equipantes não têm coluna updated_at (só a tabela
-    // pagamentos, usada acima, tem de verdade) — incluí-la aqui fazia esse
-    // update falhar sempre, deixando o pagamento registrado mas o status do
-    // acampante/equipante nunca virava 'completed'/'isento'.
-    //
-    // status_pagamento/metodo_pagamento existem nas duas tabelas, mas
-    // status (aprovação pastoral) só existe em equipantes -- acampante não
-    // passa por essa etapa (mesmo motivo do bug corrigido em
-    // acampanteForm.js). Mandar status pra acampantes quebrava esse update
-    // inteiro com PGRST204, mesmo já tendo inserido o pagamento no passo 1.
-    const table = inscriptionType === 'equipante' ? 'equipantes' : 'acampantes';
-    const updates = {
-      status_pagamento: 'completed',
-      metodo_pagamento: 'isento'
-    };
-    if (inscriptionType === 'equipante') {
-      updates.status = 'completed';
-    }
-    const { error: updateError } = await supabase
-      .from(table)
-      .update(updates)
-      .eq('id', inscriptionId);
-
-    if (updateError) throw updateError;
 
     return { success: true };
   } catch (error) {
-    console.error('Error finalizing zero value payment:', error);
-    return { success: false, error: error.message };
+    console.error('Error finalizing zero value payment:', error?.message || error);
+    return { success: false, error: 'Não foi possível finalizar a inscrição. Tente novamente.' };
   }
 };
 

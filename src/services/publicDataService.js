@@ -122,3 +122,22 @@ export const criarInscricaoPublica = async (tipo, dados) =>
  */
 export const consultarStatusPix = async (txid) =>
   chamar('status_pagamento_pix', { p_txid: txid });
+
+// Forma de pagamento escolhida na tela "Forma de Pagamento".
+//
+// Antes o navegador gravava direto na tabela. Com as tabelas fechadas isso
+// passou a levar 401 -- e o erro era engolido em silencio, entao TODO MUNDO
+// aparecia como "Não Informado" na tela de Pagamentos do organizador, sem
+// dar para separar quem ia depositar de quem abandonou um PIX.
+//
+// Sem reenvio automatico nao: repetir grava o mesmo valor, entao e seguro.
+export const registrarMetodoPagamento = async (tipo, id, metodo) =>
+  chamar('registrar_metodo_pagamento', { p_tipo: tipo, p_id: id, p_metodo: metodo });
+
+// Inscricao que ficou em R$ 0,00 por cupom.
+//
+// Quem decide se esta zerada e o SERVIDOR (valor do lote de hoje menos o
+// desconto do cupom). Se fosse o navegador, bastaria chamar esta funcao para
+// sair sem pagar.
+export const finalizarInscricaoGratuita = async (tipo, id, cupom) =>
+  chamar('finalizar_inscricao_gratuita', { p_tipo: tipo, p_id: id, p_cupom: cupom ?? null }, { tentativas: 1 });

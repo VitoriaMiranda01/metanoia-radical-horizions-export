@@ -4,6 +4,8 @@ import { toBoolean } from '@/utils/formatters';
 import {
   verificarInscricaoPublica,
   criarInscricaoPublica,
+  registrarMetodoPagamento,
+  finalizarInscricaoGratuita,
 } from '@/services/publicDataService';
 
 // Reenvia automaticamente inserções que falharam por erro passageiro (ex:
@@ -242,32 +244,34 @@ export const criarInscricao = async (formData, tipo) => {
   }
 };
 
+/**
+ * Registra a forma de pagamento escolhida (PIX ou Manual).
+ *
+ * Isto escrevia direto na tabela. Depois do travamento por RLS (Passo 2) a
+ * chamada passou a levar 401 -- e o erro era engolido pelo try/catch de quem
+ * chamava, entao a escolha NUNCA era gravada: na tela de Pagamentos do
+ * organizador todo mundo aparecia como "Não Informado", sem dar para separar
+ * quem ia depositar de quem abandonou um PIX.
+ *
+ * Agora quem grava e o servidor, e so o que ele aceita: 'pix' ou 'manual', e
+ * apenas enquanto a inscricao ainda estiver pendente. O status do pagamento
+ * NAO e mais tocado aqui -- quem confirma pagamento e o webhook do Sicoob ou
+ * um organizador.
+ */
 export const atualizarStatusPagamento = async (idInscricao, tipo, status, metodo, idTransacao) => {
   if (!idInscricao) {
     console.error('inscricaoApi - atualizarStatusPagamento: ID da inscrição ausente');
     return { success: false, error: 'ID da inscrição inválido' };
   }
 
-  const table = tipo === 'equipante' ? 'equipantes' : 'acampantes';
-
   try {
-    const { data, error } = await supabase
-      .from(table)
-      .update({
-        status_pagamento: status,
-        metodo_pagamento: metodo,
-        id_transacao_sicoob: idTransacao,
-        data_pagamento: status === 'pago' || status === 'confirmado' ? new Date().toISOString() : null
-      })
-      .eq('id', idInscricao)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return { success: true, data };
+    const resposta = await registrarMetodoPagamento(tipo, idInscricao, metodo);
+    if (!resposta?.ok) {
+      return { success: false, error: resposta?.erro || 'Erro ao atualizar pagamento.' };
+    }
+    return { success: true };
   } catch (error) {
-    console.error(`inscricaoApi - atualizarStatusPagamento (${tipo})`, error, { idInscricao, status, metodo });
+    console.error(`inscricaoApi - atualizarStatusPagamento (${tipo})`, error?.message || error, { idInscricao, metodo });
     return { success: false, error: 'Erro ao atualizar pagamento.' };
   }
 };

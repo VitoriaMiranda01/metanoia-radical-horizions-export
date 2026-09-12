@@ -332,6 +332,10 @@ const EquipantePage = () => {
           <EquipanteWorkflowStatus
             equipanteId={inscricaoData.id}
             age={inscricaoData.idade ?? formData.idade}
+            // Prova de dono: quem se inscreve nao esta logado, entao o
+            // servidor confere o CPF (ou o nome de quem nao tem CPF) antes
+            // de contar a situacao da inscricao.
+            dono={{ cpf: inscricaoData?.cpf || formData.cpf, nome: inscricaoData?.nome || formData.nome }}
             onProceedToPayment={proceedToPayment}
           />
         )}

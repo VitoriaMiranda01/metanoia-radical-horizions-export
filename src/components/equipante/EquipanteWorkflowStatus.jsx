@@ -6,15 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import ParentalAuthUpload from './ParentalAuthUpload';
 import { Button } from '@/components/ui/button';
 
-const EquipanteWorkflowStatus = ({ equipanteId, age, onProceedToPayment }) => {
+const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment }) => {
   const {
-    age: resolvedAge,
     isMinor,
     workflowStages,
     isLoading,
     uploadFile,
-    workflowData
-  } = useEquipanteWorkflow(equipanteId, age);
+    workflowData,
+    podePagar,
+    escalado,
+    pago,
+    aprovacao
+  } = useEquipanteWorkflow(equipanteId, age, dono);
 
   if (isLoading) {
     return <div className="text-white text-center py-8">Carregando status...</div>;
@@ -48,12 +51,24 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, onProceedToPayment }) => {
     }
   };
 
-  const hasUploadedAuth = workflowData?.parental_auth_file_url;
-  
-  // Verify if all stages prior to payment have status 'ok' or 'concluído'
-  const canProceedToPayment = workflowStages
-    .filter(stage => stage.id !== 'payment')
-    .every(stage => stage.status === 'ok' || stage.status === 'concluído');
+  const hasUploadedAuth = workflowData?.autorizacao_pais_enviada;
+
+  // NAO se calcula mais "todas as etapas estao ok" aqui: com a lista vazia
+  // (consulta que falhou), [].every() e true em JavaScript e o botao abria
+  // sozinho -- era assim que a pessoa ia parar no pagamento logo depois de
+  // se inscrever. Quem autoriza e o servidor, em situacao_inscricao.
+  const canProceedToPayment = podePagar;
+
+  // O que falta, em uma frase, para a pessoa saber o que esperar.
+  const oQueFalta = () => {
+    if (pago) return null;
+    if (aprovacao === 'rejeitado') return 'Sua inscrição não foi aprovada pela sua igreja. Procure a organização.';
+    if (aprovacao !== 'aprovado') return 'Sua igreja ainda precisa aprovar a sua inscrição. Assim que isso acontecer, esta tela avisa.';
+    if (isMinor && !hasUploadedAuth) return 'Falta anexar a autorização dos seus responsáveis, aqui embaixo.';
+    if (!escalado) return 'Tudo certo até aqui. Agora é aguardar a escala: as áreas são divulgadas na reunião de equipe. Quando você for escalado, o pagamento da taxa de alimentação abre nesta tela.';
+    return null;
+  };
+  const falta = oQueFalta();
 
   return (
     <div className="space-y-6">
@@ -61,7 +76,27 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, onProceedToPayment }) => {
         <h2 className="text-2xl font-bold text-white mb-2">Acompanhamento da Inscrição</h2>
         <p className="text-gray-400 mb-6">
           Acompanhe as etapas necessárias para finalizar sua participação como Equipante.
+          O <strong className="text-gray-200">pagamento da taxa de alimentação é a última etapa</strong>,
+          e abre depois que você for escalado em uma área.
         </p>
+
+        {pago && (
+          <div className="mb-6 bg-green-500/10 border border-green-500/25 p-4 rounded-lg">
+            <p className="text-green-300 text-sm flex items-start">
+              <CheckCircle2 className="w-5 h-5 mr-2 shrink-0" />
+              Inscrição concluída. Nos vemos no Radical!
+            </p>
+          </div>
+        )}
+
+        {falta && (
+          <div className="mb-6 bg-amber-500/10 border border-amber-500/25 p-4 rounded-lg">
+            <p className="text-amber-200 text-sm flex items-start">
+              <Clock className="w-5 h-5 mr-2 shrink-0" />
+              {falta}
+            </p>
+          </div>
+        )}
 
         <div className="space-y-4">
           {workflowStages.map((stage, idx) => (
@@ -101,20 +136,19 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, onProceedToPayment }) => {
           </div>
         )}
 
-        <div className="mt-8 pt-6 border-t border-white/10">
-          <Button
-            onClick={() => onProceedToPayment?.({ nome: workflowData?.nome, cpf: workflowData?.cpf })}
-            disabled={!canProceedToPayment}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg disabled:opacity-50"
-          >
-            Ir para Pagamento <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
-          {!canProceedToPayment && (
-            <p className="text-xs text-center text-gray-500 mt-2">
-              Você precisa completar as pendências obrigatórias acima antes de prosseguir para o pagamento.
-            </p>
-          )}
-        </div>
+        {/* O botao so existe quando o servidor libera. Antes ele aparecia
+            desabilitado, o que fazia parecer que faltava alguma coisa a
+            fazer -- quando na verdade e so aguardar a escala. */}
+        {canProceedToPayment && (
+          <div className="mt-8 pt-6 border-t border-white/10">
+            <Button
+              onClick={() => onProceedToPayment?.({ nome: workflowData?.nome })}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg"
+            >
+              Pagar a taxa de alimentação <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -124,13 +124,13 @@ export const updateWorkflowStage = async (equipante_id, updates) => {
 // arquivo-modelo fixo que fica na raiz do bucket.
 const PARENTAL_AUTH_BUCKET = 'autorizacao-menor-idade-equipante';
 
-export const uploadParentalAuthFile = async (equipante_id, file) => {
+export const uploadParentalAuthFile = async (equipante_id, file, dono = {}) => {
   if (!equipante_id || !file) throw new Error("Parâmetros inválidos para upload");
 
   try {
     const fileExt = file.name.split('.').pop();
     const fileName = `envios/${equipante_id}-${Math.random()}.${fileExt}`;
-    
+
     const { error: uploadError } = await supabase.storage
       .from(PARENTAL_AUTH_BUCKET)
       .upload(fileName, file);
@@ -141,39 +141,42 @@ export const uploadParentalAuthFile = async (equipante_id, file) => {
       .from(PARENTAL_AUTH_BUCKET)
       .getPublicUrl(fileName);
 
-    const { data, error } = await supabase
-      .from('equipantes')
-      .update({
-        parental_auth_file_url: publicUrlData.publicUrl
-      })
-      .eq('id', equipante_id)
-      .eq('tipo', 'equipante')
-      .select()
-      .single();
+    // O endereco do arquivo e gravado pelo servidor: quem envia a
+    // autorizacao e um menor de idade que NAO esta logado, e escrever
+    // direto na tabela leva 401 desde o travamento.
+    const { data, error } = await supabase.rpc('registrar_autorizacao_pais', {
+      p_id: equipante_id,
+      p_url: publicUrlData?.publicUrl,
+      p_cpf: dono.cpf ?? null,
+      p_nome: dono.nome ?? null,
+    });
 
     if (error) throw error;
-    return data;
+    if (!data?.ok) throw new Error(data?.erro || 'Não foi possível registrar a autorização.');
+
+    return await getEquipanteWorkflow(equipante_id, dono);
   } catch (err) {
     console.error('equipanteApi - uploadParentalAuthFile', err, { equipante_id });
-    throw new Error('Erro ao realizar o upload da autorização');
+    throw new Error(err.message || 'Falha ao enviar a autorização');
   }
 };
 
-export const getEquipanteWorkflow = async (equipante_id) => {
+export const getEquipanteWorkflow = async (equipante_id, dono = {}) => {
   if (!equipante_id) return null;
   try {
-    const { data, error } = await supabase
-      .from('equipantes')
-      .select('id, nome, cpf, idade, parental_auth_file_url, status, scale_status, status_pagamento')
-      .eq('id', equipante_id)
-      .eq('tipo', 'equipante')
-      .maybeSingle();
+    const { data, error } = await supabase.rpc('situacao_inscricao', {
+      p_tipo: 'equipante',
+      p_id: equipante_id,
+      p_cpf: dono.cpf ?? null,
+      p_nome: dono.nome ?? null,
+    });
 
     if (error) throw error;
+    if (!data?.ok) throw new Error(data?.erro || 'Não foi possível carregar a situação da inscrição.');
     return data;
   } catch (err) {
     console.error('equipanteApi - getEquipanteWorkflow', err, { equipante_id });
-    throw new Error('Falha ao buscar fluxo de trabalho do equipante');
+    throw new Error(err.message || 'Falha ao buscar a situação da inscrição');
   }
 };
 

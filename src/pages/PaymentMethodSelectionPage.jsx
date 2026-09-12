@@ -61,7 +61,14 @@ const PaymentMethodSelectionPage = () => {
           className="text-center mb-10"
         >
           <h1 className="text-4xl font-bold text-white mb-4">Forma de Pagamento</h1>
-          <p className="text-gray-400 text-lg">Escolha como deseja realizar o pagamento {'de ' + rotuloDoQueSePaga(location.state?.tipo)}.</p>
+          {/* O que esta sendo pago vem em negrito: numa tela onde as duas
+              opcoes competem pela atencao, e a unica parte que muda entre
+              equipante ("sua taxa de alimentacao") e acampante ("sua
+              inscricao"). */}
+          <p className="text-gray-400 text-lg">
+            Escolha como deseja realizar o pagamento de{' '}
+            <strong className="text-white font-semibold">{rotuloDoQueSePaga(location.state?.tipo)}</strong>.
+          </p>
         </motion.div>
 
         {!hasCpf && (

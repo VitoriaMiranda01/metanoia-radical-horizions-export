@@ -6,28 +6,30 @@ import {
 } from '@/services/equipantesService';
 import { useToast } from '@/components/ui/use-toast';
 
-export const useEquipanteWorkflow = (equipante_id, age) => {
+export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
   const [workflowData, setWorkflowData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const { toast } = useToast();
 
   // Use age directly — from the 'idade' field saved in equipantes
-  const resolvedAge = workflowData?.idade ?? Number(age) ?? 18;
-  const isMinor = resolvedAge < 18;
+  const resolvedAge = Number(age) || 18;
+  // Quem diz se e menor e o servidor (situacao_inscricao), que le a idade
+  // gravada. O `age` da tela e so o palpite enquanto nao carregou.
+  const isMinor = workflowData ? !!workflowData.menor_de_idade : resolvedAge < 18;
 
   const fetchWorkflow = useCallback(async () => {
     if (!equipante_id) return;
     try {
       setIsLoading(true);
-      const data = await getEquipanteWorkflow(equipante_id);
+      const data = await getEquipanteWorkflow(equipante_id, dono);
       setWorkflowData(data);
     } catch (err) {
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
-  }, [equipante_id]);
+  }, [equipante_id, dono.cpf, dono.nome]);
 
   useEffect(() => {
     fetchWorkflow();
@@ -36,7 +38,7 @@ export const useEquipanteWorkflow = (equipante_id, age) => {
   const uploadFile = async (file) => {
     try {
       setIsLoading(true);
-      const updated = await uploadParentalAuthFile(equipante_id, file);
+      const updated = await uploadParentalAuthFile(equipante_id, file, dono);
       setWorkflowData(updated);
       toast({ title: 'Sucesso', description: 'Arquivo enviado com sucesso.' });
       return updated;
@@ -65,52 +67,46 @@ export const useEquipanteWorkflow = (equipante_id, age) => {
     }
   };
 
+  // As etapas sao montadas a partir do que o SERVIDOR respondeu. Se ele nao
+  // respondeu, a lista fica vazia -- e por isso quem le `podePagar` tem de
+  // usar a flag abaixo, e nunca "todas as etapas estao ok": [].every() e
+  // true em JavaScript, e era exatamente assim que o botao de pagamento
+  // abria sozinho quando a consulta falhava.
   const getWorkflowStages = () => {
     if (!workflowData) return [];
 
     const stages = [];
 
-    // 1. Inscrição step - always completed
-    stages.push({
-      id: 'inscricao',
-      label: 'Inscrição',
-      status: 'ok',
-    });
+    stages.push({ id: 'inscricao', label: 'Inscrição enviada', status: 'ok' });
 
-    // 2. Autorização dos Pais step - only for minors
-    if (isMinor) {
+    if (workflowData.menor_de_idade) {
       stages.push({
         id: 'parental_auth',
-        label: 'Autorização dos Pais',
-        status: workflowData.parental_auth_file_url ? 'ok' : 'em_processo',
+        label: 'Autorização dos pais',
+        status: workflowData.autorizacao_pais_enviada ? 'ok' : 'em_processo',
       });
     }
 
-    // 3. Autorização Pastoral (é a mesma aprovação/rejeição da inscrição do
-    // equipante feita pelos organizadores/pastor na tela de Aprovações — não
-    // existe mais um campo separado para isso)
     stages.push({
       id: 'pastoral_auth',
-      label: 'Autorização Pastoral',
-      status: workflowData.status === 'aprovado'
+      label: 'Aprovação da sua igreja',
+      status: workflowData.aprovacao === 'aprovado'
         ? 'ok'
-        : workflowData.status === 'rejeitado'
+        : workflowData.aprovacao === 'rejeitado'
           ? 'rejeitado'
           : 'pendente',
     });
 
-    // 4. Escala
     stages.push({
       id: 'scale',
-      label: 'Escala de Trabalho',
-      status: workflowData.scale_status || 'pendente',
+      label: 'Escala de trabalho',
+      status: workflowData.escalado ? 'ok' : 'pendente',
     });
 
-    // 5. Pagamento
     stages.push({
       id: 'payment',
-      label: 'Pagamento',
-      status: workflowData.status_pagamento === 'pago' || workflowData.status_pagamento === 'confirmado' ? 'ok' : (workflowData.status_pagamento || 'pendente'),
+      label: 'Pagamento da taxa de alimentação',
+      status: workflowData.pago ? 'ok' : 'pendente',
     });
 
     return stages;
@@ -120,6 +116,12 @@ export const useEquipanteWorkflow = (equipante_id, age) => {
     age: resolvedAge,
     isMinor,
     workflowData,
+    // Quem autoriza o pagamento e o servidor, nunca a tela. Enquanto nao
+    // houver resposta, e false -- falha fechada.
+    podePagar: !!workflowData?.pode_pagar,
+    escalado: !!workflowData?.escalado,
+    pago: !!workflowData?.pago,
+    aprovacao: workflowData?.aprovacao ?? null,
     workflowStages: getWorkflowStages(),
     isLoading,
     error,

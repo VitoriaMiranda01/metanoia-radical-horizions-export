@@ -209,6 +209,21 @@ const OrganizerConfigPage = () => {
     }
   };
 
+  // Quem ja esta em um dos OUTROS dois papeis especiais, com o nome do papel.
+  // Guia, Inimigo e Espirito Santo acontecem ao mesmo tempo e cada um tem seu
+  // roteiro -- a mesma pessoa nao cumpre dois (regra tambem no banco, ver
+  // migration 20260912t).
+  const cpfsDosOutrosPapeis = (areaKeyAtual) => {
+    const mapa = {};
+    AREAS_ESPECIAIS.forEach((outra) => {
+      if (outra.key === areaKeyAtual) return;
+      (config[`cpfs_area_${outra.key}`] || []).forEach((cpf) => {
+        mapa[String(cpf).replace(/\D/g, '')] = outra.label;
+      });
+    });
+    return mapa;
+  };
+
   const handleSaveCpfsAreaEspecial = async (areaKey, cpfs) => {
     await updateCpfsAreaEspecial(areaKey, cpfs);
     setConfig(prev => ({
@@ -630,6 +645,7 @@ const OrganizerConfigPage = () => {
                       cpfs={config[`cpfs_area_${area.key}`] || []}
                       equipantes={equipantesParaSelecao}
                       carregandoEquipantes={carregandoEquipantes}
+                      areaPorCpf={cpfsDosOutrosPapeis(area.key)}
                       onSave={(cpfs) => handleSaveCpfsAreaEspecial(area.key, cpfs)}
                     />
                   </div>

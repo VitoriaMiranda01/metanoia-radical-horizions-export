@@ -27,8 +27,23 @@ import { validateCPF } from '@/utils/validation';
  *   - os CPFs ja cadastrados continuam valendo, sem precisar refazer nada.
  *
  * Ou seja: mudou o que a pessoa ve e faz, nao o que o sistema usa.
+ *
+ * UMA AREA ESPECIAL POR PESSOA
+ * ----------------------------
+ * Guia, Inimigo e Espirito Santo sao papeis que atravessam o acampamento
+ * inteiro, cada um com seu roteiro, todos ao mesmo tempo -- ninguem cumpre
+ * dois. "areaPorCpf" traz quem ja esta em uma das outras duas listas, para a
+ * tela nem oferecer a pessoa. Quem garante mesmo assim e o banco (ver
+ * migration 20260912t); isto aqui e para o organizador nao chegar a errar.
  */
-const CpfsAreaEspecialManager = ({ areaLabel, cpfs = [], equipantes = [], carregandoEquipantes = false, onSave }) => {
+const CpfsAreaEspecialManager = ({
+  areaLabel,
+  cpfs = [],
+  equipantes = [],
+  carregandoEquipantes = false,
+  areaPorCpf = {},
+  onSave
+}) => {
   const [busca, setBusca] = useState('');
   const [aberto, setAberto] = useState(false);
   const [error, setError] = useState('');
@@ -62,10 +77,21 @@ const CpfsAreaEspecialManager = ({ areaLabel, cpfs = [], equipantes = [], carreg
     });
   }, [busca, equipantes]);
 
-  // Só os que ainda dá para adicionar.
+  // Só os que ainda dá para adicionar: fora os que já estão nesta lista e
+  // fora os que já têm outro papel especial.
   const sugestoes = useMemo(
-    () => encontrados.filter((eq) => !cpfs.includes(soDigitos(eq.cpf))).slice(0, 8),
-    [encontrados, cpfs]
+    () => encontrados
+      .filter((eq) => !cpfs.includes(soDigitos(eq.cpf)))
+      .filter((eq) => !areaPorCpf[soDigitos(eq.cpf)])
+      .slice(0, 8),
+    [encontrados, cpfs, areaPorCpf]
+  );
+
+  // Achados pela busca que estão em OUTRO papel especial. Aparecem na lista
+  // dizendo onde estão, em vez de sumirem sem explicação.
+  const emOutroPapel = useMemo(
+    () => encontrados.filter((eq) => areaPorCpf[soDigitos(eq.cpf)]).slice(0, 4),
+    [encontrados, areaPorCpf]
   );
 
   // Quem a busca achou MAS já está nesta área. Sem isso, a pessoa some das
@@ -118,6 +144,10 @@ const CpfsAreaEspecialManager = ({ areaLabel, cpfs = [], equipantes = [], carreg
       setError('Esta pessoa já está nesta lista.');
       return;
     }
+    if (areaPorCpf[cpf]) {
+      setError(`${equipante.nome} já é ${areaPorCpf[cpf]}. Cada pessoa só pode ter um desses três papéis — tire de lá primeiro.`);
+      return;
+    }
     salvarLista([...cpfs, cpf], {
       titulo: 'Pessoa adicionada',
       descricao: `${equipante.nome} entrou na lista de ${areaLabel}.`
@@ -135,6 +165,10 @@ const CpfsAreaEspecialManager = ({ areaLabel, cpfs = [], equipantes = [], carreg
     }
     if (cpfs.includes(digitos)) {
       setError('Este CPF já está nesta lista.');
+      return;
+    }
+    if (areaPorCpf[digitos]) {
+      setError(`Este CPF já está na lista de ${areaPorCpf[digitos]}. Cada pessoa só pode ter um desses três papéis.`);
       return;
     }
     salvarLista([...cpfs, digitos], {
@@ -238,7 +272,15 @@ const CpfsAreaEspecialManager = ({ areaLabel, cpfs = [], equipantes = [], carreg
               ))
             ) : (
               <div className="px-3 py-3 text-sm text-gray-400">
-                {jaNaLista.length > 0 ? (
+                {emOutroPapel.length > 0 ? (
+                  <span className="text-amber-300 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>
+                      {emOutroPapel.map((e) => `${e.nome} já é ${areaPorCpf[soDigitos(e.cpf)]}`).join('; ')}.
+                      Cada pessoa só pode ter um dos papéis Guia, Inimigo ou Espírito Santo.
+                    </span>
+                  </span>
+                ) : jaNaLista.length > 0 ? (
                   <span className="text-emerald-300">
                     {jaNaLista.length === 1
                       ? `${jaNaLista[0].nome} já está em ${areaLabel}.`

@@ -87,12 +87,6 @@ export const updatePricingPeriods = async (type, periods) => {
   }
 };
 
-// Busca so os CPFs configurados pras 3 areas especiais (Guia, Inimigo,
-// Espirito Santo), usado pelo botao "Alocar Áreas Especiais" na tela de
-// escalas (src/pages/OrganizerScalesPage.jsx) -- select enxuto, sem trazer
-// o resto da configuracao geral que essa tela nao usa. Chaves batem com
-// AREAS_ESPECIAIS (src/constants/workAreas.js): guia, inimigo,
-// espirito_santo.
 // Salva o limite padrao geral de acampantes por igreja (coluna
 // limite_acampantes_por_igreja em configuracoes). NULL/vazio = sem limite
 // padrao (so as igrejas com excecao em limites_igrejas ficam limitadas --

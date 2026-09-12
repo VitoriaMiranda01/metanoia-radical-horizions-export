@@ -16,8 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 // Realocacao manual de grupo de trilha (organizador corrige quem ja esta
 // alocado -- ex: juntar amigos/familia no mesmo grupo). Mesmo padrao de UI
-// usado pra realocacao de area de trabalho de equipante (CpfsAreaEspecial-
-// Manager.jsx / botao "Alocar Áreas Especiais"): seleciona o novo valor e
+// usado pra realocacao de area de trabalho de equipante (tela de Geracao
+// de Escalas, acao "Mover"): seleciona o novo valor e
 // confirma com um botao dedicado, sem precisar sair do card.
 const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao }) => {
   const isMale = acampante.sexo?.toLowerCase() === 'masculino';

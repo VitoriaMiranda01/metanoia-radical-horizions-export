@@ -1,24 +1,47 @@
 import { supabase } from '@/services/supabaseClient';
 import { validateEscala } from '@/utils/validation';
-import { withRetry } from '@/services/serviceHelpers';
+import { comReenvio } from '@/services/serviceHelpers';
 
-export const fetchApprovedEquipantes = async () => {
-  return withRetry(async () => {
-    try {
-      let query = supabase.from('equipantes')
-        .select('id, nome, whatsapp, sexo, igreja, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, numero_edicao, status, status_pagamento, cpf')
-        .eq('status', 'aprovado');
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data || []).map(eq => ({
-        ...eq,
-        nome: eq.nome
-      }));
-    } catch (error) {
-      return [];
+const COLUNAS_EQUIPANTE =
+  'id, nome, whatsapp, sexo, igreja, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, numero_edicao, status, status_pagamento, cpf';
+
+// O PostgREST corta a resposta num teto de linhas (padrao 1000 no Supabase) e
+// NAO avisa: devolve as primeiras N como se fossem todas. As edicoes reais
+// tiveram 852, 912 e 852 equipantes -- ja perto do teto, e a 37a pode passar.
+// Se passar sem esta paginacao, a tela de escalas simplesmente deixaria de
+// mostrar parte das pessoas, sem nenhum erro na tela. Por isso lemos de
+// 1000 em 1000 ate a pagina vir incompleta.
+const PAGINA = 1000;
+
+const lerTudoPaginado = async (montarConsulta, rotulo) => {
+  const tudo = [];
+
+  for (let inicio = 0; ; inicio += PAGINA) {
+    const { data, error } = await comReenvio(
+      () => montarConsulta().range(inicio, inicio + PAGINA - 1),
+      { rotulo }
+    );
+
+    // Antes esta camada devolvia [] em silencio quando dava erro, e a tela de
+    // escalas abria com todas as areas vazias sem dizer por que. Continua
+    // devolvendo o que conseguiu (nao vale derrubar a tela inteira), mas
+    // agora deixa rastro no console.
+    if (error) {
+      console.error(`scalesApi - ${rotulo}`, error?.message || error);
+      return tudo;
     }
-  });
+
+    const pagina = data || [];
+    tudo.push(...pagina);
+    if (pagina.length < PAGINA) return tudo;
+  }
 };
+
+export const fetchApprovedEquipantes = async () =>
+  lerTudoPaginado(
+    () => supabase.from('equipantes').select(COLUNAS_EQUIPANTE).eq('status', 'aprovado'),
+    'equipantes aprovados'
+  );
 
 export const detectAllocationChanges = (currentAllocations, previousAllocations) => {
   if (!previousAllocations || previousAllocations.length === 0) return currentAllocations;
@@ -53,20 +76,16 @@ export const saveScales = async (allocations) => {
 };
 
 export const fetchAllAllocations = async () => {
-  return withRetry(async () => {
-    try {
-      let query = supabase.from('escalas').select(`id, equipante_id, area_alocada, equipantes!inner (id, nome, whatsapp, sexo, igreja, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, numero_edicao, status, status_pagamento, cpf)`);
-      const { data, error } = await query;
-      if (error) throw error;
-      return data.map(item => ({
-        ...item.equipantes,
-        id: item.equipantes?.id || item.equipante_id,
-        nome: item.equipantes?.nome,
-        allocatedArea: item.area_alocada,
-        statusAllocation: 'Alocado'
-      }));
-    } catch (error) {
-      return [];
-    }
-  });
+  const linhas = await lerTudoPaginado(
+    () => supabase.from('escalas').select(`id, equipante_id, area_alocada, equipantes!inner (${COLUNAS_EQUIPANTE})`),
+    'alocações'
+  );
+
+  return linhas.map(item => ({
+    ...item.equipantes,
+    id: item.equipantes?.id || item.equipante_id,
+    nome: item.equipantes?.nome,
+    allocatedArea: item.area_alocada,
+    statusAllocation: 'Alocado'
+  }));
 };

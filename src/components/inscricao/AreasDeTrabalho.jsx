@@ -2,44 +2,23 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import FormSection from './FormSection';
 import { cn } from '@/lib/utils';
+import { AREAS_INSCRICAO, AREA_DISPONIVEL_QUALQUER } from '@/constants/workAreas';
 
-// Unica area que pode ser escolhida em mais de uma das 3 opcoes de
-// preferencia (ver isAreaDisabled abaixo) -- antes eram 3 areas
-// separadas ("Disponível para qualquer área 1/2/3"), unificadas a
-// pedido da usuaria pra ficar mais simples no formulario e na tela de
-// escalas (que passa a mostrar 1 tabela em vez de 3).
-const AREA_DISPONIVEL_QUALQUER = "Disponível para qualquer área";
+// A lista de areas NAO mora mais aqui: mora em src/constants/workAreas.js,
+// junto com a lista que a tela de Geracao de Escalas usa. Eram duas listas
+// escritas a mao, e 5 nomes divergiam (as vezes so por uma maiuscula ou por
+// um traco diferente) -- quem escolhia uma dessas 5 areas era alocado no
+// banco mas nao aparecia em area nenhuma na tela de escalas. O comentario
+// grande em workAreas.js conta a historia inteira.
+//
+// `valor` e o que vai para o banco; `rotulo` (quando existe) e so o texto
+// mais explicado que aparece aqui na tela.
+//
+// "Disponível para qualquer área" continua sendo a unica opcao que pode ser
+// escolhida em mais de uma das 3 preferencias (ver isAreaDisabled abaixo).
 
 const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
-  const AREAS = [
-    "Contêiner",
-    "Copa",
-    "Cozinha",
-    "Cracolândia",
-    "Cristolândia",
-    "Dia do arrebatamento da igreja",
-    AREA_DISPONIVEL_QUALQUER,
-    "Falsa baiana",
-    "Família",
-    "Família muçulmana",
-    "Fotografia (necessário possuir equipamento próprio)",
-    "Hospital (cena teatral)",
-    "Igreja subterrânea",
-    "Invisível",
-    "Logística",
-    "Louvor nas cenas",
-    "Marcador",
-    "Oração itinerante",
-    "Pastor enforcado",
-    "Perseguidos",
-    "Presídio",
-    "Primeiros socorros – Saúde",
-    "Recepção",
-    "Segurança",
-    "Selva",
-    "Teatro",
-    "Túmulo"
-  ];
+  const AREAS = AREAS_INSCRICAO;
 
   const EXTRA_OPTIONS = [
     "Disponível para ajudar a carregar o caminhão na Centenario Quinta-Feira 19h.",
@@ -76,13 +55,14 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
       <Label className="text-white block text-md font-medium">{label}</Label>
       <div className="bg-white/5 border border-white/10 rounded-md p-4 max-h-60 overflow-y-auto custom-scrollbar">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {AREAS.map((area) => {
+          {AREAS.map(({ valor: area, rotulo }) => {
             const disabled = isAreaDisabled(area, name);
             const isSelected = value === area;
-            
+            const textoExibido = rotulo || area;
+
             return (
-              <label 
-                key={`${name}-${area}`} 
+              <label
+                key={`${name}-${area}`}
                 className={cn(
                   "flex items-start space-x-3 p-2 rounded transition-colors border border-transparent",
                   disabled 
@@ -105,7 +85,7 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
                   "text-sm leading-tight",
                   disabled ? "text-gray-500" : "text-gray-200"
                 )}>
-                  {area} {disabled && "(Selecionado em outra opção)"}
+                  {textoExibido} {disabled && "(Selecionado em outra opção)"}
                 </span>
               </label>
             );

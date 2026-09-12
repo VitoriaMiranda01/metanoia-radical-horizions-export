@@ -10,7 +10,7 @@ import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
 import { Eye, EyeOff, Heart, Shield, Users, AlertCircle, CheckCircle2, KeyRound, MailCheck } from 'lucide-react';
 import { buscarIgrejaPorCodigo } from '@/constants/igrejas';
-import { trocarSenhaIgreja, solicitarRedefinicaoSenha } from '@/services/senhasParceirosService';
+import { trocarSenhaIgreja, solicitarRedefinicaoSenha, trocarSenhaOrganizador } from '@/services/senhasParceirosService';
 
 // Espelha as regras que o banco aplica em _criticar_senha (ver migration
 // schema-update-20260911d). Aqui e so cortesia -- avisar antes de enviar, em
@@ -112,7 +112,18 @@ const LoginPage = () => {
 
     try {
       if (selectedType === 'organizador') {
-        await loginAsOrganizador(formData.identifier, formData.password);
+        const resultado = await loginAsOrganizador(formData.identifier, formData.password);
+
+        // Senha temporaria (gerada pelo login de permissao maxima): nao abre
+        // sessao, pede a senha propria -- mesma etapa usada pelas igrejas.
+        if (resultado?.precisa_trocar_senha) {
+          setSenhaTemporaria(formData.password);
+          setNovaSenha('');
+          setConfirmaSenha('');
+          setEtapa('definir-senha');
+          return;
+        }
+
         toast({
           title: "Login realizado com sucesso!",
           description: `Bem-vindo(a), organizador!`
@@ -153,7 +164,7 @@ const LoginPage = () => {
       showError('As duas senhas não são iguais.');
       return;
     }
-    const critica = criticarSenha(novaSenha, formData.identifier.trim());
+    const critica = criticarSenha(novaSenha, ehParceiro ? formData.identifier.trim() : null);
     if (critica) {
       showError(critica);
       return;
@@ -161,14 +172,21 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      const resposta = await trocarSenhaIgreja(formData.identifier, senhaTemporaria, novaSenha);
+      const resposta = ehParceiro
+        ? await trocarSenhaIgreja(formData.identifier, senhaTemporaria, novaSenha)
+        : await trocarSenhaOrganizador(formData.identifier, senhaTemporaria, novaSenha);
+
       if (!resposta?.ok) {
         showError(resposta?.erro || 'Não foi possível criar a senha. Tente novamente.');
         return;
       }
 
       // Senha criada: entra de verdade, agora com a senha dela.
-      await loginAsIgreja(formData.identifier, novaSenha);
+      if (ehParceiro) {
+        await loginAsIgreja(formData.identifier, novaSenha);
+      } else {
+        await loginAsOrganizador(formData.identifier, novaSenha);
+      }
       toast({
         title: 'Senha criada com sucesso!',
         description: 'Use essa senha nos próximos acessos.'
@@ -177,7 +195,7 @@ const LoginPage = () => {
       setNovaSenha('');
       setConfirmaSenha('');
       setFormData({ identifier: '', password: '' });
-      navigate('/parceiros');
+      navigate(ehParceiro ? '/parceiros' : '/gerenciar');
     } catch (error) {
       showError(error.message || 'Não foi possível criar a senha. Tente novamente.');
     } finally {
@@ -281,9 +299,11 @@ const LoginPage = () => {
                 </div>
                 <CardTitle className="text-2xl text-white">Crie sua senha</CardTitle>
                 <CardDescription className="text-gray-400">
-                  {igrejaDoCodigo?.nome
-                    ? `${igrejaDoCodigo.codigo} — ${igrejaDoCodigo.nome}`
-                    : `Igreja ${formData.identifier}`}
+                  {!ehParceiro
+                    ? formData.identifier
+                    : igrejaDoCodigo?.nome
+                      ? `${igrejaDoCodigo.codigo} — ${igrejaDoCodigo.nome}`
+                      : `Igreja ${formData.identifier}`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -330,7 +350,7 @@ const LoginPage = () => {
                   <ul className="text-xs text-gray-500 space-y-1 pl-1">
                     <li>• pelo menos 8 caracteres</li>
                     <li>• pelo menos uma letra e um número</li>
-                    <li>• não pode conter "metanoia" nem o código da igreja</li>
+                    <li>• não pode conter "metanoia" nem {ehParceiro ? 'o código da igreja' : 'o seu nome de usuário'}</li>
                   </ul>
 
                   <Button type="submit" className="w-full bg-gradient-to-r from-green-700 to-green-900 hover:from-green-600 hover:to-green-800 text-white font-bold py-2 px-4 rounded-md transition-all duration-200 shadow-lg mt-2 disabled:opacity-50" disabled={loading}>

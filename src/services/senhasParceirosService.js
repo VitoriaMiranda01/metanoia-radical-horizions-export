@@ -76,3 +76,38 @@ export const descartarSolicitacaoSenha = async (codigo) =>
   chamar('descartar_solicitacao_senha', {
     p_codigo: String(codigo || '').trim(),
   }, 'descarte de pedido');
+
+// ---------------------------------------------------------------------------
+// Senhas dos ORGANIZADORES
+//
+// Mesma ideia das igrejas, com duas diferencas decididas com o Patrick em
+// 12/09/2026:
+//
+//  - nao existe "esqueci minha senha": sao 8 pessoas que se conhecem, e
+//    pedir ao login de permissao maxima e mais simples e mais seguro que um
+//    botao automatico;
+//  - a conta "Desenvolvedores" e a de permissao maxima -- so ela enxerga a
+//    lista e gera senha para os outros. Quem manda nisso e o banco
+//    (eh_organizador_maximo), nao a tela.
+// ---------------------------------------------------------------------------
+
+/** Troca feita pelo proprio organizador; a prova de identidade e a senha atual. */
+export const trocarSenhaOrganizador = async (nome, senhaAtual, senhaNova) =>
+  chamar('trocar_senha_organizador', {
+    p_nome: String(nome || '').trim(),
+    p_senha_atual: senhaAtual,
+    p_senha_nova: senhaNova,
+  }, 'troca de senha do organizador');
+
+/** true so para a conta de permissao maxima. Serve para a tela decidir o que mostrar. */
+export const souOrganizadorMaximo = async () =>
+  chamar('eh_organizador_maximo', undefined, 'permissão do organizador');
+
+export const listarOrganizadores = async () =>
+  chamar('listar_organizadores', undefined, 'lista de organizadores');
+
+/** Gera senha nova para OUTRO organizador. Devolve a senha em texto uma vez so. */
+export const redefinirSenhaOrganizador = async (nome) =>
+  chamar('redefinir_senha_organizador', {
+    p_nome: String(nome || '').trim(),
+  }, 'nova senha do organizador');

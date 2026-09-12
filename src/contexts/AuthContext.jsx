@@ -62,6 +62,15 @@ export const AuthProvider = ({ children }) => {
       const result = await organizadorLogin(nome.trim(), senha);
       
       if (result.success) {
+        // Senha temporaria (gerada pelo login de permissao maxima): NAO abre
+        // sessao. A tela de login mostra o formulario de criar a senha ali
+        // mesmo e, com a senha nova, chama esta funcao de novo. Mesma regra
+        // das igrejas parceiras -- enquanto a senha for temporaria,
+        // simplesmente nao existe sessao.
+        if (result.precisa_trocar_senha || result.user?.precisa_trocar_senha) {
+          return { ...result, precisa_trocar_senha: true };
+        }
+
         const sessionUser = { ...result.user, role: result.user?.role || 'organizador' };
 
         // Cracha assinado pelo servidor. Guardado agora; passa a ser usado nas

@@ -22,6 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
 import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import LimiteIgrejasManager from '@/components/organizer/LimiteIgrejasManager';
+import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizadoresManager';
 import { AREAS_ESPECIAIS } from '@/constants/workAreas';
 import { Button } from '@/components/ui/button';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
@@ -756,6 +757,12 @@ const OrganizerConfigPage = () => {
                 </div>
               </CardContent>
             </Card>
+          </motion.div>
+
+          {/* Senhas dos organizadores: troca da propria e, para a conta de
+              permissao maxima, geracao de senha para os outros. */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
+            <SenhasOrganizadoresManager />
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>

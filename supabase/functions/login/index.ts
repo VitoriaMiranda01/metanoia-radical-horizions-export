@@ -145,9 +145,10 @@ Deno.serve(async (req: Request) => {
     // Registra a visita (alimenta a coluna "último acesso" da tela de senhas,
     // que e como o organizador enxerga quem ja entrou). Falha aqui nao pode
     // derrubar o login -- e informacao de apoio, nao parte da autenticacao.
-    if (tipo === "igreja") {
+    {
+      const tabela = tipo === "igreja" ? "igrejas_parceiras" : "organizadores_auth";
       const { error: erroAcesso } = await admin
-        .from("igrejas_parceiras")
+        .from(tabela)
         .update({ ultimo_acesso: new Date().toISOString() })
         .eq("id", row.id);
       if (erroAcesso) {
@@ -174,7 +175,9 @@ Deno.serve(async (req: Request) => {
     // temporaria (a formula de primeiro acesso, ou uma senha gerada por um
     // organizador numa redefinicao). Nos dois casos o site manda a pessoa
     // para a tela de criar a senha dela antes de qualquer outra coisa.
-    const precisaTrocarSenha = tipo === "igreja" && row.senha_definida !== true;
+    // Vale para os dois tipos: igreja com a senha de primeiro acesso, e
+    // organizador que recebeu senha gerada pelo login de permissao maxima.
+    const precisaTrocarSenha = row.senha_definida !== true;
 
     return json({
       success: true,

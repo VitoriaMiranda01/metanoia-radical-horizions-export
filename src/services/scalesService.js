@@ -43,6 +43,30 @@ export const fetchApprovedEquipantes = async () =>
     'equipantes aprovados'
   );
 
+/**
+ * Quantos equipantes ainda aguardam o parceiro aprovar.
+ *
+ * Os outros dois numeros do painel (a escalar / escalados) a tela ja tem de
+ * graca -- sao o tamanho das duas listas que ela ja carregou. Este aqui
+ * precisa de consulta propria, e vai como contagem pura (head: true), sem
+ * trazer nenhuma linha: sao ate ~900 registros e a tela so quer o numero.
+ */
+export const contarAguardandoAprovacao = async () => {
+  const { count, error } = await comReenvio(
+    () => supabase
+      .from('equipantes')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pendente'),
+    { rotulo: 'inscrições aguardando aprovação' }
+  );
+
+  if (error) {
+    console.error('scalesApi - aguardando aprovação', error?.message || error);
+    return null;
+  }
+  return count ?? 0;
+};
+
 export const detectAllocationChanges = (currentAllocations, previousAllocations) => {
   if (!previousAllocations || previousAllocations.length === 0) return currentAllocations;
   const prevMap = new Map(previousAllocations.map(a => [a.id, a]));

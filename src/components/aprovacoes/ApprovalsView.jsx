@@ -6,7 +6,7 @@ import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
 import AprovacoesTable from '@/components/aprovacoes/AprovacoesTable';
 import { fetchEquipantesRaw, updateEquipanteStatus } from '@/services/equipantesService';
 import { useAuth } from '@/contexts/AuthContext';
-import { alocarEquipanteAutomaticamente, liberarVagaERealocar } from '@/services/equipanteAllocationService';
+import { liberarVagaERealocar } from '@/services/equipanteAllocationService';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const ApprovalsView = ({ 
@@ -131,32 +131,17 @@ const ApprovalsView = ({
     
     if (!success) return;
 
-    toast({ 
-      title: "Equipante aprovado!", 
-      description: "A inscrição foi aprovada com sucesso.", 
-      className: "bg-green-600 text-white" 
+    // A aprovacao NAO escala mais ninguem automaticamente (decidido com o
+    // Patrick em 12/09/2026). Antes, aprovar ja jogava a pessoa na primeira
+    // das 3 preferencias que tivesse vaga; agora ela entra na fila "A
+    // escalar" da tela de Geracao de Escalas e o organizador coloca uma a
+    // uma na area, olhando o conjunto. As preferencias continuam gravadas e
+    // aparecem ali do lado, como sugestao -- so nao decidem sozinhas.
+    toast({
+      title: "Equipante aprovado!",
+      description: `${inscricao.nome} entrou na fila para ser escalado em Geração de Escalas.`,
+      className: "bg-green-600 text-white"
     });
-
-    // Alocacao automatica em area de trabalho, seguindo a ordem de
-    // preferencia do equipante. Nao bloqueia a aprovacao se falhar (mesmo
-    // espirito do sorteio de grupo de trilha do acampante) — so avisa o
-    // organizador do resultado.
-    const alocacao = await alocarEquipanteAutomaticamente(id);
-    if (alocacao.success && alocacao.alocado) {
-      toast({
-        title: "Alocado automaticamente",
-        description: `${inscricao.nome} foi alocado em: ${alocacao.area}`,
-        className: "bg-blue-600 text-white"
-      });
-    } else if (alocacao.success && !alocacao.alocado) {
-      toast({
-        title: "Sem vaga nas 3 opções",
-        description: `${inscricao.nome} ficou na lista de espera. Aloque manualmente em Geração de Escalas.`,
-        variant: "destructive"
-      });
-    } else if (!alocacao.success) {
-      console.error('Falha ao tentar alocar equipante automaticamente:', alocacao.error);
-    }
   };
 
   const rejeitarInscricao = async (id) => {
@@ -218,25 +203,19 @@ const ApprovalsView = ({
       variant: "destructive"
     });
 
-    // Libera a vaga em escalas (se ela tinha uma) e tenta realocar o
-    // primeiro compativel da lista de espera nela. Nao bloqueia o
-    // cancelamento se falhar por qualquer motivo de infra — o cancelamento
-    // em si ja aconteceu (mesmo espirito do resto desta tela).
+    // Libera a vaga em escalas, se a pessoa tinha uma. NAO puxa mais
+    // ninguem da fila para o lugar dela: com a escala sendo montada a mao,
+    // quem entra na vaga e escolha do organizador, na tela de Geracao de
+    // Escalas. Nao bloqueia o cancelamento se falhar por qualquer motivo de
+    // infra — o cancelamento em si ja aconteceu (mesmo espirito do resto
+    // desta tela).
     const liberacao = await liberarVagaERealocar(inscricao.id);
 
     if (liberacao.success && liberacao.vagaLiberada) {
-      if (liberacao.novoAlocadoNome) {
-        toast({
-          title: "Vaga realocada",
-          description: `A vaga em ${liberacao.areaLiberada} foi liberada e ${liberacao.novoAlocadoNome} foi alocado automaticamente.`,
-          className: "bg-blue-600 text-white"
-        });
-      } else {
-        toast({
-          title: "Vaga liberada",
-          description: `A vaga em ${liberacao.areaLiberada} foi liberada. Ninguém na lista de espera se encaixou nela por enquanto.`
-        });
-      }
+      toast({
+        title: "Vaga liberada",
+        description: `A vaga de ${inscricao.nome} em ${liberacao.areaLiberada} está livre. Escolha quem entra no lugar em Geração de Escalas.`
+      });
     } else if (!liberacao.success) {
       console.error('Falha ao tentar liberar vaga / realocar após cancelamento:', liberacao.error);
     }

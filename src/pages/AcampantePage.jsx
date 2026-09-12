@@ -105,22 +105,30 @@ const AcampantePage = () => {
     if (result.nome) setFormData(prev => ({ ...prev, nome: result.nome }));
     if (result.semCpf) setFormData(prev => ({ ...prev, semCpf: true }));
     
-    if (result.existe && result.dados) {
+    // Quem JA PAGOU nao recebe id nem nome do servidor (verificar_inscricao
+    // devolve so "existe/pago", de proposito -- ninguem precisa conseguir
+    // descobrir o nome de um inscrito digitando CPFs). Por isso este caso
+    // vem primeiro e nao depende de "dados".
+    //
+    // Antes a condicao exigia "result.dados", que e nulo justamente para quem
+    // pagou: a pessoa ja inscrita e paga caia no formulario de nova inscricao,
+    // preenchia tudo de novo e so no envio recebia "Erro ao processar
+    // inscricao" (o banco recusando o CPF repetido).
+    if (result.existe && result.pagou) {
       setInscricaoData(result.dados);
-
-      if (result.pagou) {
-        setCurrentStep('sucesso');
-      } else {
-        toast({ title: "Cadastro encontrado", description: "Redirecionando para o pagamento..." });
-        navigate('/payment-method-selection', {
-          state: {
-            id: result.dados.id,
-            tipo: 'acampante',
-            nome: result.dados.nome,
-            cpf: result.dados.cpf
-          }
-        });
-      }
+      setCurrentStep('sucesso');
+    } else if (result.existe && result.dados) {
+      // Ja inscrito, mas ainda devendo: vai direto para o pagamento.
+      setInscricaoData(result.dados);
+      toast({ title: "Cadastro encontrado", description: "Redirecionando para o pagamento..." });
+      navigate('/payment-method-selection', {
+        state: {
+          id: result.dados.id,
+          tipo: 'acampante',
+          nome: result.dados.nome,
+          cpf: result.dados.cpf
+        }
+      });
     } else {
       setCurrentStep('formulario');
     }

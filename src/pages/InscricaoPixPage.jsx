@@ -248,7 +248,14 @@ const InscricaoPixPage = () => {
       
       if (pixCopiaECola) {
         setStatusPagamento('aguardando');
-        setPixData({ qrcode, pixCopiaECola, txid: data.txid });
+        // O identificador da cobranca vem como "sicoob_id" -- e ele que a
+        // funcao status_pagamento_pix procura em pix_sicoob.sicoob_id.
+        //
+        // Aqui lia-se "data.txid", que a Edge Function nunca devolveu: o
+        // valor ficava undefined, a consulta de status nem chegava a comecar
+        // e a tela ficava parada para sempre, mesmo com o pagamento pago.
+        // Era exatamente o sintoma relatado no teste de R$1.
+        setPixData({ qrcode, pixCopiaECola, txid: data.sicoob_id ?? data.txid });
         toast({
           title: "PIX gerado com sucesso!",
           description: "Escaneie o QR Code ou copie o código para realizar o pagamento.",

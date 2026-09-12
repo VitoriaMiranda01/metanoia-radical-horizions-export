@@ -220,6 +220,24 @@ export const criarInscricao = async (formData, tipo) => {
       return { success: false, error: 'Essa igreja atingiu o limite de inscrições de acampantes. Escolha outra igreja ou entre em contato com a organização.' };
     }
 
+    // Recusas da propria criar_inscricao (ver migration
+    // criar_inscricao_valida_abertura_e_dados). O servidor passou a conferir
+    // a janela de inscricao e os dados minimos -- antes isso so existia no
+    // navegador, entao uma chamada direta a API furava as duas coisas.
+    if (error?.message?.includes('INSCRICOES_FECHADAS')) {
+      return { success: false, error: 'As inscrições não estão abertas no momento.' };
+    }
+    if (error?.message?.includes('NOME_OBRIGATORIO')) {
+      return { success: false, error: 'Informe o nome completo para concluir a inscrição.' };
+    }
+
+    // CPF ja cadastrado. A tela pergunta o CPF antes do formulario justamente
+    // para isso, mas duas pessoas enviando ao mesmo tempo ainda chegam aqui --
+    // e "Erro ao processar inscrição" nao diz nada a quem esta tentando.
+    if (error?.code === '23505' || error?.message?.includes('duplicate key')) {
+      return { success: false, error: 'Já existe uma inscrição com esse CPF nesta edição.' };
+    }
+
     return { success: false, error: 'Erro ao processar inscrição.' };
   }
 };

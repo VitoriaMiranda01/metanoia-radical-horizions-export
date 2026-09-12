@@ -148,7 +148,17 @@ const EquipantePage = () => {
     const hasPaid = result.pagou;
     const loadedData = result.data || result.dados;
 
-    if (isFound && loadedData) {
+    // Quem JA PAGOU nao recebe id nem nome do servidor (verificar_inscricao
+    // devolve so "existe/pago/inscrito", de proposito). Por isso este caso vem
+    // primeiro e nao depende de "loadedData".
+    //
+    // Antes a condicao exigia loadedData, que e nulo justamente para quem
+    // pagou: o equipante ja inscrito e pago caia no formulario de nova
+    // inscricao, preenchia tudo de novo e so no envio recebia "Erro ao
+    // processar inscricao" (o banco recusando o CPF repetido).
+    if (isFound && hasPaid) {
+      setCurrentStep('sucesso');
+    } else if (isFound && loadedData) {
       setInscricaoData(loadedData);
 
       if (!isEnrolled) {

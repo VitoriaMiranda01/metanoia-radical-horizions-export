@@ -130,7 +130,7 @@ const AcampantePage = () => {
         }
       });
     } else {
-      setCurrentStep('formulario');
+      setCurrentStep(acampantesAbertos ? 'formulario' : 'fechadas');
     }
   };
 
@@ -196,24 +196,6 @@ const AcampantePage = () => {
     );
   }
 
-  if (!acampantesAbertos) {
-    return (
-      <Layout>
-        <div className="max-w-xl mx-auto mt-20 bg-red-900/20 border border-red-500/30 rounded-lg p-12 text-center">
-          <Lock className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-white">Inscrições Encerradas</h3>
-          <Button 
-            variant="outline" 
-            className="mt-4" 
-            onClick={() => navigate('/')}
-          >
-            Voltar
-          </Button>
-        </div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout>
       <Helmet>
@@ -229,7 +211,32 @@ const AcampantePage = () => {
         {currentStep === 'verificacao' && (
           <div className="space-y-6">
             <Button variant="ghost" onClick={() => setCurrentStep('welcome')} className="text-white hover:bg-white/10">Voltar</Button>
+            {/* Com as inscricoes fechadas a tela NAO some: quem se inscreveu
+                e ainda nao pagou precisa entrar para pagar -- e isso costuma
+                acontecer depois de as inscricoes fecharem. So o cadastro novo
+                fica barrado. */}
+            {!acampantesAbertos && (
+              <div className="bg-amber-500/10 border border-amber-500/25 p-4 rounded-lg flex items-start gap-3">
+                <Lock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-amber-200 text-sm">
+                  As inscrições de acampante estão <strong>encerradas</strong>. Se você já se
+                  inscreveu, informe seu CPF abaixo para ver a situação e concluir o pagamento.
+                </p>
+              </div>
+            )}
             <VerificacaoCPF onVerificationComplete={handleVerificationComplete} tipo="acampante" />
+          </div>
+        )}
+
+        {currentStep === 'fechadas' && (
+          <div className="max-w-xl mx-auto bg-red-900/20 border border-red-500/30 rounded-lg p-12 text-center">
+            <Lock className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold text-white mb-2">Inscrições Encerradas</h3>
+            <p className="text-gray-300">
+              Não encontramos inscrição com esses dados, e as inscrições de acampante já foram
+              encerradas. Se você acha que se inscreveu, procure a organização.
+            </p>
+            <Button variant="outline" className="mt-6" onClick={() => navigate('/')}>Voltar</Button>
           </div>
         )}
 

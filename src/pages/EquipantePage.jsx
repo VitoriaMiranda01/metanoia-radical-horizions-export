@@ -25,7 +25,6 @@ import DadosComplementaresEquipante from '@/components/inscricao/DadosComplement
 import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao } from '@/services/inscricoesService';
-import { updateEquipanteInscrito } from '@/services/equipantesService';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
 
@@ -167,7 +166,7 @@ const EquipantePage = () => {
           ...mapDbToFormData(loadedData)
         }));
 
-        setCurrentStep('formulario');
+        setCurrentStep(equipantesAbertos ? 'formulario' : 'fechadas');
       } else {
         if (hasPaid) {
           setCurrentStep('sucesso');
@@ -176,7 +175,7 @@ const EquipantePage = () => {
         }
       }
     } else {
-      setCurrentStep('formulario');
+      setCurrentStep(equipantesAbertos ? 'formulario' : 'fechadas');
     }
   };
 
@@ -223,24 +222,18 @@ const EquipantePage = () => {
       
       if (result.success) {
         setInscricaoData(result.data);
-        const equipanteId = result.data.id;
-        
-        try {
-          await updateEquipanteInscrito(equipanteId);
-          
-          toast({ 
-            title: "Cadastro salvo com sucesso!", 
-            description: "Iniciando acompanhamento da inscrição e status atualizado." 
-          });
-        } catch (wfErr) {
-          console.warn('[Equipante Form] Inscrito update error:', wfErr.message);
-          toast({ 
-            title: "Aviso", 
-            description: "A inscrição foi salva, mas ocorreu um erro ao atualizar algumas etapas adicionais. O suporte pode verificar isso mais tarde.", 
-            variant: "destructive" 
-          });
-        }
-        
+
+        // A marca de "ja se inscreveu" NAO e mais gravada daqui: quem grava
+        // e criar_inscricao, no servidor, junto com a propria inscricao.
+        // Antes era um update direto na tabela -- e como quem se inscreve
+        // nao esta logado, ele levava 401 em silencio. A marca nunca era
+        // gravada, e ao voltar ao site a pessoa era mandada preencher o
+        // formulario de novo, como se nunca tivesse se inscrito.
+        toast({
+          title: "Inscrição enviada!",
+          description: "Acompanhe a situação dela por aqui."
+        });
+
         setCurrentStep('workflow');
       } else {
         throw new Error(result.error);
@@ -273,24 +266,6 @@ const EquipantePage = () => {
     );
   }
 
-  if (!equipantesAbertos) {
-    return (
-      <Layout>
-        <div className="max-w-xl mx-auto mt-20 bg-red-900/20 border border-red-500/30 rounded-lg p-12 text-center">
-          <Lock className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-white">Inscrições Encerradas</h3>
-          <Button 
-            variant="outline" 
-            className="mt-4" 
-            onClick={() => navigate('/')}
-          >
-            Voltar
-          </Button>
-        </div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout>
       <Helmet>
@@ -305,7 +280,35 @@ const EquipantePage = () => {
         </div>
 
         {currentStep === 'verificacao' && (
-          <VerificacaoCPF onVerificationComplete={handleVerificationComplete} tipo="equipante" />
+          <>
+            {/* Com as inscricoes fechadas a tela NAO some: quem ja se
+                inscreveu precisa entrar para ver a situacao e, quando for
+                escalado, pagar a taxa de alimentacao -- o que acontece
+                justamente depois de as inscricoes fecharem. So o cadastro
+                novo e que fica barrado. */}
+            {!equipantesAbertos && (
+              <div className="mb-6 bg-amber-500/10 border border-amber-500/25 p-4 rounded-lg flex items-start gap-3">
+                <Lock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-amber-200 text-sm">
+                  As inscrições de equipante estão <strong>encerradas</strong>. Se você já se
+                  inscreveu, informe seu CPF abaixo para acompanhar a situação da sua inscrição.
+                </p>
+              </div>
+            )}
+            <VerificacaoCPF onVerificationComplete={handleVerificationComplete} tipo="equipante" />
+          </>
+        )}
+
+        {currentStep === 'fechadas' && (
+          <div className="max-w-xl mx-auto bg-red-900/20 border border-red-500/30 rounded-lg p-12 text-center">
+            <Lock className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold text-white mb-2">Inscrições Encerradas</h3>
+            <p className="text-gray-300">
+              Não encontramos inscrição com esses dados, e as inscrições de equipante já foram
+              encerradas. Se você acha que se inscreveu, procure a organização.
+            </p>
+            <Button variant="outline" className="mt-6" onClick={() => navigate('/')}>Voltar</Button>
+          </div>
         )}
 
         {currentStep === 'formulario' && (

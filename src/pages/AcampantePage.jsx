@@ -33,7 +33,7 @@ import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao } from '@/services/inscricoesService';
 import { fetchLimitesIgrejas, fetchOcupacaoIgrejasAcampantes } from '@/services/limitesIgrejasService';
 import { fetchLimiteAcampantesPorIgrejaPadrao } from '@/services/organizerConfigService';
-import { IGREJAS_PARCEIRAS } from '@/constants/igrejas';
+import { IGREJAS_RESPONSAVEL_ACAMPANTE } from '@/constants/igrejas';
 
 const AcampantePage = () => {
   const { user } = useAuth();
@@ -86,7 +86,7 @@ const AcampantePage = () => {
         ]);
 
         const esgotadas = new Set();
-        IGREJAS_PARCEIRAS.forEach(igreja => {
+        IGREJAS_RESPONSAVEL_ACAMPANTE.forEach(igreja => {
           const limite = excecoes[igreja] !== undefined ? excecoes[igreja] : limitePadrao;
           if (limite === null || limite === undefined) return;
           const ocupados = ocupacao[igreja] || 0;

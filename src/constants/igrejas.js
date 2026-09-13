@@ -273,6 +273,31 @@ export const NAO_CONGREGA = 'NÃO SE APLICA (NÃO CONGREGA)';
 // ---------------------------------------------------------------------------
 export const OUTRA_IGREJA = 'OUTRA';
 
+// ---------------------------------------------------------------------------
+// "RADICAL 36": entrada exclusiva do formulario de ACAMPANTE.
+//
+// Nem todo acampante chega por uma igreja. Uma parte vem da edicao passada --
+// gente que participou do Radical 36 e volta agora --, e nao havia como
+// registrar isso: o campo "Igreja Responsável pela Inscrição" so aceitava uma
+// das 145 igrejas. Quem inscrevia acabava escolhendo uma igreja qualquer, e a
+// informacao se perdia.
+//
+// Fica FORA de IGREJAS_PARCEIRAS de proposito, por duas razoes:
+//   1. o formulario de EQUIPANTE usa aquela lista, e la isto nao faz sentido
+//      (pedido explicito do Patrick: so para acampante);
+//   2. nao e igreja parceira -- nao tem codigo, nao tem login, nao aprova
+//      ninguem. IGREJAS_PARA_PRIMEIRO_ACESSO tambem nao a inclui.
+//
+// O valor cai em acampantes.admin_responsavel como qualquer outra escolha,
+// entao fica gravado na ficha e aparece na tabela, na busca, no modal de
+// detalhes e na planilha -- que e justamente o "precisamos saber disso
+// depois".
+// ---------------------------------------------------------------------------
+export const IGREJA_RADICAL_36 = 'RADICAL 36';
+
+// A lista do campo "Igreja Responsável pela Inscrição" (so acampante).
+export const IGREJAS_RESPONSAVEL_ACAMPANTE = [...IGREJAS_PARCEIRAS, IGREJA_RADICAL_36];
+
 export const igrejaEhOutra = (valor) => (valor || '') === OUTRA_IGREJA;
 
 // O que mostrar nas telas do organizador: "OUTRA — NOME DIGITADO".

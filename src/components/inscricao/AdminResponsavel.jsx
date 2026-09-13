@@ -2,9 +2,14 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import FormSection from './FormSection';
 import IgrejaSelect from './IgrejaSelect';
-import { IGREJAS_PARCEIRAS } from '@/constants/igrejas';
+import { IGREJAS_RESPONSAVEL_ACAMPANTE } from '@/constants/igrejas';
 
-// igrejasEsgotadas: Set com as igrejas (mesma string de IGREJAS_PARCEIRAS)
+// A lista aqui e IGREJAS_RESPONSAVEL_ACAMPANTE, nao IGREJAS_PARCEIRAS: alem
+// das 145 igrejas ela traz "RADICAL 36", que so existe neste campo (ver o
+// comentario em constants/igrejas.js). O formulario de equipante continua com
+// a lista sem ela.
+//
+// igrejasEsgotadas: Set com as igrejas (mesma string da lista acima)
 // que ja bateram o limite de acampantes inscritos (ver
 // src/services/limitesIgrejasService.js e a sessao "Limite de Inscrições
 // por Igreja" em Configurações). So desabilita a igreja neste campo -- os
@@ -20,7 +25,7 @@ const AdminResponsavel = ({ formData, handleChange, handleSelectChange, igrejasE
             id="adminResponsavel"
             value={formData.adminResponsavel}
             onChange={(value) => handleSelectChange('adminResponsavel', value)}
-            options={IGREJAS_PARCEIRAS}
+            options={IGREJAS_RESPONSAVEL_ACAMPANTE}
             disabledOptions={igrejasEsgotadas}
           />
         </div>

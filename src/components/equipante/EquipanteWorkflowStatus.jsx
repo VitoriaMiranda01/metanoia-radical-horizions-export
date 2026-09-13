@@ -17,11 +17,40 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
     escalado,
     naoSeraEscalado,
     pago,
-    aprovacao
+    aprovacao,
+    error,
+    refresh
   } = useEquipanteWorkflow(equipanteId, age, dono);
 
   if (isLoading) {
     return <div className="text-white text-center py-8">Carregando status...</div>;
+  }
+
+  // Sem resposta do servidor a tela NAO monta o acompanhamento. Antes ela
+  // montava: com workflowData nulo, `aprovacao` virava null, e a frase
+  // "Sua igreja ainda precisa aprovar" aparecia como se fosse fato. Alguem
+  // ja aprovado e liberado para pagar era informado de que estava travado.
+  // Chute apresentado como informacao e pior que erro nenhum.
+  if (!workflowData) {
+    return (
+      <div className="bg-black/40 border border-amber-500/30 rounded-xl p-6 space-y-4">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-white font-semibold mb-1">
+              Não consegui carregar a situação da sua inscrição
+            </h3>
+            <p className="text-gray-300 text-sm">
+              {error || 'Tente de novo em instantes.'} Se continuar assim, procure a organização —
+              a sua inscrição não foi perdida.
+            </p>
+          </div>
+        </div>
+        <Button onClick={refresh} variant="outline" className="border-white/20 text-white">
+          Tentar de novo
+        </Button>
+      </div>
+    );
   }
 
   const getStatusIcon = (status) => {

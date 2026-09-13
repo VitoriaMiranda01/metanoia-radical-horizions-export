@@ -196,6 +196,39 @@ export const definirAtuacao = async (escalaId, atuacao) => {
 };
 
 // ---------------------------------------------------------------------------
+// Alocacao automatica pelas 3 preferencias
+//
+// O botao existia antes de 12/09/2026, quando aprovar ja jogava a pessoa na
+// area. A escala passou a ser montada a mao e ele saiu; voltou a pedido do
+// Patrick, agora como acao explicita -- o organizador clica quando quer, e
+// continua podendo mexer em tudo depois.
+//
+// Quem distribui e o banco (alocar_fila_automaticamente), em passadas: todo
+// mundo na 1a opcao, depois quem sobrou na 2a, depois na 3a. Assim ninguem
+// perde a 1a opcao para a 3a de outra pessoa. Quem marcou "Disponível para
+// qualquer área" fica para o fim, para nao ocupar vaga que alguem pediu pelo
+// nome.
+// ---------------------------------------------------------------------------
+
+export const alocarFilaAutomaticamente = async () => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('alocar_fila_automaticamente'),
+    { rotulo: 'alocação automática' }
+  );
+  if (error) return { success: false, error: error.message || 'Erro na alocação automática' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível alocar' };
+  return {
+    success: true,
+    alocados: data.alocados ?? 0,
+    opcao1: data.opcao1 ?? 0,
+    opcao2: data.opcao2 ?? 0,
+    opcao3: data.opcao3 ?? 0,
+    coringa: data.coringa ?? 0,
+    sobraram: data.sobraram ?? 0
+  };
+};
+
+// ---------------------------------------------------------------------------
 // Lancamento da escala
 //
 // Ter area nao basta para o equipante saber que foi escalado: a escala e

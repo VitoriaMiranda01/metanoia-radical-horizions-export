@@ -9,6 +9,7 @@ export const COLUMN_DEFINITIONS = {
     // acampantes; faltava replicar pra equipantes (ate 2026-09-03 essa
     // coluna sempre aparecia vazia).
     { key: 'whatsapp', label: 'Telefone', group: 'Contato' },
+    { key: 'data_nascimento', label: 'Data de Nascimento', group: 'Pessoal' },
     { key: 'idade', label: 'Idade', group: 'Pessoal' },
     { key: 'sexo', label: 'Gênero', group: 'Pessoal' },
     { key: 'autorizacao_imagem', label: 'Autorização de Imagem', group: 'Pessoal' },
@@ -65,6 +66,7 @@ export const COLUMN_DEFINITIONS = {
     // email existia na tabela mas nenhum formulario pedia, por isso tinha
     // sido removida daqui em 2026-09-03; agora volta a fazer sentido.
     { key: 'email', label: 'E-mail', group: 'Contato' },
+    { key: 'data_nascimento', label: 'Data de Nascimento', group: 'Pessoal' },
     { key: 'idade', label: 'Idade', group: 'Pessoal' },
     { key: 'sexo', label: 'Gênero', group: 'Pessoal' },
     { key: 'profissao', label: 'Profissão', group: 'Pessoal' },

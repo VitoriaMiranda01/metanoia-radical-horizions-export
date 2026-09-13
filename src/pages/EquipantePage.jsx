@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
@@ -24,9 +26,16 @@ import InfoSaude from '@/components/inscricao/InfoSaude';
 import DadosComplementaresEquipante from '@/components/inscricao/DadosComplementaresEquipante';
 import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
-import { criarInscricao } from '@/services/inscricoesService';
+import { criarInscricao, buscarFichaAnterior } from '@/services/inscricoesService';
+import { calcularIdade } from '@/utils/formatters';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
+
+// O banco guarda boolean; o formulario usa 'SIM'/'NAO'. Sem esta traducao a
+// ficha voltava com os menus em branco -- e pior: "Congrega em alguma
+// igreja?" em branco esconde o campo da igreja, entao a pessoa perdia a
+// igreja dela sem perceber.
+const simNao = (v) => (v === true ? 'SIM' : v === false ? 'NÃO' : '');
 
 const mapDbToFormData = (dbData) => {
   if (!dbData) return {};
@@ -39,32 +48,40 @@ const mapDbToFormData = (dbData) => {
     sexo: dbData.sexo || '',
     whatsapp: dbData.whatsapp || '',
     telefoneResidencial: dbData.telefone_residencial || '',
-    idade: dbData.idade || '',
+    dataNascimento: dbData.data_nascimento || '',
 
     // Saúde
-    temProblemaSaude: dbData.tem_problema_saude ?? '',
+    temProblemaSaude: simNao(dbData.tem_problema_saude),
     condicoesMedicas: dbData.condicoes_medicas || '',
-    temRestricaoAlimentar: dbData.tem_restricao_alimentar ?? '',
+    temRestricaoAlimentar: simNao(dbData.tem_restricao_alimentar),
     restricoesAlimentares: dbData.restricoes_alimentares || '',
 
     // Igreja
     igreja: dbData.igreja || '',
-    ePastor: dbData.e_pastor ?? '',
+    // e_pastor e boolean no banco, mas o campo na tela e uma LISTA de cargos.
+    // Do boolean nao da para saber qual cargo era, entao a pessoa responde de
+    // novo em vez de a gente chutar. (O cargo em si vive em cargo_igreja, que
+    // volta certo logo abaixo.)
+    ePastor: '',
     ePastorOutro: dbData.e_pastor_outro || '',
     pastor: dbData.pastor_nome || '',
-    estaAfastado: dbData.esta_afastado ?? '',
+    estaAfastado: simNao(dbData.esta_afastado),
     cargoIgreja: dbData.cargo_igreja || '',
     cargoIgrejaOutro: dbData.cargo_igreja_outro || '',
 
     // Participação
-    frequentaGrupoCuidado: dbData.frequenta_grupo_cuidado ?? '',
+    frequentaGrupoCuidado: simNao(dbData.frequenta_grupo_cuidado),
 
     // Habilidades
-    voceCanta: dbData.voce_canta ?? '',
-    tocaInstrumento: dbData.toca_instrumento ?? '',
+    voceCanta: simNao(dbData.voce_canta),
+    // Idem e_pastor: a lista tem VIOLÃO, TECLADO etc, e o banco guarda so
+    // "toca ou nao toca". "Nao toca" volta; "toca" a pessoa escolhe de novo.
+    tocaInstrumento: dbData.toca_instrumento === false ? 'NÃO' : '',
 
     // Familiar
-    familiarTrabalhando: dbData.familiar_trabalhando ?? '',
+    // Mesma coisa: o banco guarda "tem familiar trabalhando (sim/nao)", nao
+    // o parentesco. "Nao tenho" volta; o resto e perguntado de novo.
+    familiarTrabalhando: dbData.familiar_trabalhando === false ? 'NÃO TENHO' : '',
     familiarTrabalhandoOutro: dbData.familiar_trabalhando_outro || '',
     parentesco: dbData.parentesco || '',
     familiarNome: dbData.familiar_nome || '',
@@ -75,7 +92,7 @@ const mapDbToFormData = (dbData) => {
 
     // Experiência
     numeroEdicaoParticipou: dbData.numero_edicao_participou || '',
-    jaTrabalhouEquipe: dbData.ja_trabalhou_equipe ?? '',
+    jaTrabalhouEquipe: simNao(dbData.ja_trabalhou_equipe),
     edicaoTrabalhou: dbData.edicao_trabalhou || '',
 
     // Autorização
@@ -107,9 +124,15 @@ const EquipantePage = () => {
   const [currentStep, setCurrentStep] = useState('verificacao');
   const [inscricaoData, setInscricaoData] = useState(null);
 
+  // Reinscricao: quem ja tem ficha de uma edicao anterior digita o nome
+  // completo e o formulario vem preenchido, em vez de tudo de novo.
+  const [nomeConfirmacao, setNomeConfirmacao] = useState('');
+  const [buscandoFicha, setBuscandoFicha] = useState(false);
+  const [erroFicha, setErroFicha] = useState('');
+
   const [formData, setFormData] = useState({
     cpf: '', semCpf: false, nome: '', dataNascimento: '', sexo: '',
-    whatsapp: '', telefoneResidencial: '', idade: '',
+    whatsapp: '', telefoneResidencial: '',
     temProblemaSaude: '', condicoesMedicas: '',
     temRestricaoAlimentar: '', restricoesAlimentares: '',
     igreja: '', ePastor: '', ePastorOutro: '', pastor: '', estaAfastado: '',
@@ -166,7 +189,12 @@ const EquipantePage = () => {
           ...mapDbToFormData(loadedData)
         }));
 
-        setCurrentStep(equipantesAbertos ? 'formulario' : 'fechadas');
+        // Existe ficha de uma edicao anterior. Em vez de mandar a pessoa
+        // preencher tudo de novo, oferecemos trazer os dados dela -- mas o
+        // servidor so entrega mediante CPF **e** nome completo, entao o nome
+        // e pedido no passo 'reinscricao'. Quem preferir segue com o
+        // formulario limpo por la mesmo.
+        setCurrentStep(equipantesAbertos ? 'reinscricao' : 'fechadas');
       } else {
         if (hasPaid) {
           setCurrentStep('sucesso');
@@ -176,6 +204,38 @@ const EquipantePage = () => {
       }
     } else {
       setCurrentStep(equipantesAbertos ? 'formulario' : 'fechadas');
+    }
+  };
+
+  // Traz a ficha da edicao passada. Se o nome nao bater, o servidor recusa
+  // com a mesma mensagem que daria para um CPF inexistente -- de proposito,
+  // para nao confirmar CPFs a quem esta chutando.
+  const trazerDadosAnteriores = async () => {
+    setErroFicha('');
+
+    const nome = nomeConfirmacao.trim();
+    if (nome.length < 5 || !nome.includes(' ')) {
+      setErroFicha('Escreva seu nome completo (nome e sobrenome).');
+      return;
+    }
+
+    setBuscandoFicha(true);
+    try {
+      const r = await buscarFichaAnterior(formData.cpf, nome);
+
+      if (!r.ok) {
+        setErroFicha(r.erro);
+        return;
+      }
+
+      setFormData(prev => ({ ...prev, ...mapDbToFormData(r.ficha) }));
+      toast({
+        title: 'Dados recuperados',
+        description: 'Confira o que mudou e escolha suas áreas de trabalho desta edição.'
+      });
+      setCurrentStep('formulario');
+    } finally {
+      setBuscandoFicha(false);
     }
   };
 
@@ -200,6 +260,7 @@ const EquipantePage = () => {
     // a Direcao precisa olhar na aprovacao.
     const faltando = [];
     if (!formData.sexo) faltando.push('Sexo');
+    if (!formData.dataNascimento) faltando.push('Data de Nascimento');
     if (!formData.estaAfastado) faltando.push('Congrega em alguma igreja?');
     if (!formData.familiarTrabalhando) faltando.push('Tem algum familiar que vai trabalhar no projeto?');
     if (!formData.parentesco) faltando.push('Tem algum conhecido / familiar que vai participar como ACAMPANTE?');
@@ -208,6 +269,18 @@ const EquipantePage = () => {
       toast({
         title: faltando.length === 1 ? 'Falta responder uma pergunta' : `Faltam ${faltando.length} perguntas`,
         description: faltando.join(' · '),
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // A data de nascimento manda no "menor de 18" (autorizacao dos pais).
+    // Uma data impossivel passaria batida ate a hora de escalar.
+    const idade = calcularIdade(formData.dataNascimento);
+    if (idade === null || idade < 10 || idade > 100) {
+      toast({
+        title: 'Confira a data de nascimento',
+        description: 'A idade que essa data dá não parece certa.',
         variant: "destructive"
       });
       return;
@@ -319,6 +392,50 @@ const EquipantePage = () => {
           </>
         )}
 
+        {currentStep === 'reinscricao' && (
+          <Card className="glass-effect border-white/10 bg-black/40 max-w-xl mx-auto">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <RefreshCw className="w-5 h-5 text-blue-400" />
+                Você já participou antes
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-300 text-sm">
+                Encontramos uma inscrição sua de uma edição anterior. Digite seu nome completo
+                e trazemos seus dados preenchidos — aí você só confere o que mudou e escolhe
+                as áreas de trabalho desta edição.
+              </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="nomeConfirmacao" className="text-white">Nome completo</Label>
+                <Input
+                  id="nomeConfirmacao"
+                  value={nomeConfirmacao}
+                  onChange={(e) => { setNomeConfirmacao(e.target.value); setErroFicha(''); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') trazerDadosAnteriores(); }}
+                  placeholder="Como está na sua inscrição anterior"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                />
+                {erroFicha && <p className="text-red-300 text-sm">{erroFicha}</p>}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={trazerDadosAnteriores} disabled={buscandoFicha} className="flex-1">
+                  {buscandoFicha ? 'Buscando...' : 'Trazer meus dados'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep('formulario')}
+                  className="flex-1 border-white/20 text-gray-300 hover:text-white"
+                >
+                  Preencher do zero
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {currentStep === 'fechadas' && (
           <div className="max-w-xl mx-auto bg-red-900/20 border border-red-500/30 rounded-lg p-12 text-center">
             <Lock className="w-12 h-12 text-red-500 mx-auto mb-4" />
@@ -354,7 +471,7 @@ const EquipantePage = () => {
         {currentStep === 'workflow' && inscricaoData && (
           <EquipanteWorkflowStatus
             equipanteId={inscricaoData.id}
-            age={inscricaoData.idade ?? formData.idade}
+            age={calcularIdade(formData.dataNascimento) ?? inscricaoData.idade}
             // Prova de dono: quem se inscreve nao esta logado, entao o
             // servidor confere o CPF (ou o nome de quem nao tem CPF) antes
             // de contar a situacao da inscricao.

@@ -256,6 +256,29 @@ export const fetchConfiguracoesEvento = async () => {
 // fora dos lotes exibiria R$ 15.000,00. Sem eles, a tela mostra 0 e o servidor
 // recusa a cobranca de forma visivel (ver sicoob-pix-create), que e o
 // comportamento seguro.
+/**
+ * Vira a edicao: solta todos os equipantes para se inscreverem de novo,
+ * apaga acampantes, escalas e rastros de pagamento da edicao que acabou, e
+ * deixa as inscricoes FECHADAS para a organizacao abrir quando quiser.
+ *
+ * Era feito por duas chamadas soltas daqui (um UPDATE em equipantes e um
+ * DELETE em acampantes). Alem de deixar coisa da edicao velha para tras --
+ * as escalas, as areas de trabalho, os rastros de pagamento --, se a segunda
+ * falhasse a base ficava metade numa edicao e metade na outra. Agora e uma
+ * transacao so no servidor (resetar_para_nova_edicao).
+ *
+ * A FICHA DO EQUIPANTE NAO E APAGADA: e dela que o formulario da proxima
+ * edicao se serve para vir preenchido (ver ficha_para_reinscricao).
+ */
+export const resetarParaNovaEdicao = async (novaEdicao) => {
+  const { data, error } = await supabase.rpc('resetar_para_nova_edicao', {
+    p_nova_edicao: Number(novaEdicao)
+  });
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.erro || 'Não foi possível resetar a edição.');
+  return data;
+};
+
 export const fetchPricingConfig = async () => {
   try {
     const config = await fetchConfigPublica();

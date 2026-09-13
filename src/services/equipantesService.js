@@ -31,7 +31,8 @@ export const searchEquipanteByCPF = async (cpf) => {
       sexo: data.sexo,
       whatsapp: data.whatsapp,
       telefoneResidencial: data.telefone_residencial,
-      idade: data.idade,
+      dataNascimento: data.data_nascimento,
+      idade: data.idade,  // campo calculado (public.idade), sempre a idade de hoje
 
       // Saúde
       temProblemaSaude: data.tem_problema_saude,
@@ -184,7 +185,7 @@ export const getEquipantesByWorkflowStage = async () => {
   try {
     const { data, error } = await supabase
       .from('equipantes')
-      .select('id, nome, cpf, idade, parental_auth_file_url, status, scale_status, status_pagamento')
+      .select('id, nome, cpf, data_nascimento, idade, parental_auth_file_url, status, scale_status, status_pagamento')
       .eq('tipo', 'equipante')
 
     if (error) throw error;
@@ -215,7 +216,7 @@ export const updateEquipanteInscrito = async (equipante_id) => {
 };
 
 export const fetchEquipantesRaw = async () =>
-  comReenvio(() => supabase.from('equipantes').select('*'), { rotulo: 'equipantes' });
+  comReenvio(() => supabase.from('equipantes').select('*, idade'), { rotulo: 'equipantes' });
 
 export const updateEquipanteStatus = async (id, newStatus) => {
   return supabase.from('equipantes').update({ status: newStatus }).eq('id', id);
@@ -226,7 +227,7 @@ export const updateEquipanteStatus = async (id, newStatus) => {
 // pendentes ou rejeitadas ficam visíveis apenas na tela de Aprovações.
 export const fetchEquipantesInscritos = async () =>
   comReenvio(
-    () => supabase.from('equipantes').select('*').eq('inscrito', true).eq('status', 'aprovado'),
+    () => supabase.from('equipantes').select('*, idade').eq('inscrito', true).eq('status', 'aprovado'),
     { rotulo: 'equipantes inscritos' }
   );
 
@@ -240,25 +241,9 @@ export const countEquipantesInscritos = async () =>
     { rotulo: 'contagem de equipantes' }
   );
 
-export const resetEquipantesInscricoes = async () => {
-  try {
-    // NAO inclui parental_auth_uploaded_at aqui -- essa coluna nao existe
-    // de verdade na tabela equipantes (tentativa anterior de limpar ela
-    // junto quebrava o reset inteiro com PGRST204 "Could not find the
-    // 'parental_auth_uploaded_at' column"). A tela de detalhamento mostra
-    // essa data, mas como a coluna nunca existiu ela sempre mostrou "-"
-    // mesmo (nunca foi escrita em lugar nenhum, nem no upload do arquivo).
-    const { data, error } = await supabase
-      .from('equipantes')
-      .update({inscrito: false, status_pagamento: 'pendente', scale_status: 'pendente', status: 'pendente', parental_auth_file_url: null})
-      .eq('tipo', 'equipante')
-      .select('id');
-      
-    if (error) throw error;
-    
-    return { success: true, count: data ? data.length : 0 };
-  } catch (error) {
-    console.error("Error resetting equipantes inscriptions:", error);
-    throw error;
-  }
-};
+// O reset de edicao saiu daqui. Era um UPDATE solto do navegador que deixava
+// para tras as escalas, as areas de trabalho e os rastros de pagamento da
+// edicao velha -- e, junto com o DELETE de acampantes, eram duas chamadas
+// separadas: se a segunda falhasse, a base ficava metade numa edicao e
+// metade na outra. Agora e uma transacao so no servidor:
+// organizerConfigService.resetarParaNovaEdicao -> resetar_para_nova_edicao.

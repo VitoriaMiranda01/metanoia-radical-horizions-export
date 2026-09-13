@@ -48,7 +48,7 @@ const AcampantePage = () => {
     adminResponsavel: '',
     cpf: '', semCpf: false, nome: '', sexo: '',
     tamanho_camisa: '',
-    whatsapp: '', telefoneResidencial: '', idade: '',
+    whatsapp: '', telefoneResidencial: '', dataNascimento: '',
     email: '', profissao: '', estadoCivil: '',
     autorizacaoImagem: false,
     cep: '', endereco: '', numero: '', complemento: '',

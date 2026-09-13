@@ -3,6 +3,7 @@ import { mapFormDataToDb as mapAcampanteToDb } from '@/utils/acampanteForm';
 import { toBoolean } from '@/utils/formatters';
 import {
   verificarInscricaoPublica,
+  buscarFichaAnteriorPublica,
   criarInscricaoPublica,
   registrarMetodoPagamento,
   finalizarInscricaoGratuita,
@@ -65,7 +66,7 @@ const mapEquipanteToDb = (formData) => ({
   sexo: formData.sexo,
   whatsapp: formData.whatsapp,
   telefone_residencial: formData.telefoneResidencial,
-  idade: formData.idade ? parseInt(formData.idade) : null,
+  data_nascimento: formData.dataNascimento || null,
   tem_problema_saude: toBoolean(formData.temProblemaSaude),
   condicoes_medicas: formData.condicoesMedicas,
   tem_restricao_alimentar: toBoolean(formData.temRestricaoAlimentar),
@@ -142,6 +143,29 @@ const montarResultadoVerificacao = (resultado, cpfDigitado) => {
     pagou: !!resultado.pago,
     status_pagamento: resultado.pago ? 'confirmado' : 'pendente'
   };
+};
+
+/**
+ * Traz a ficha da edicao anterior para o formulario ja vir preenchido.
+ *
+ * Devolve { ok: true, ficha } com os campos crus da tabela (a tela passa
+ * isso pelo mesmo mapDbToFormData que ja existe), ou { ok: false, erro }.
+ *
+ * O nome completo e obrigatorio junto com o CPF -- ver o comentario em
+ * publicDataService.buscarFichaAnteriorPublica sobre por que o CPF sozinho
+ * nao basta.
+ */
+export const buscarFichaAnterior = async (cpf, nome) => {
+  try {
+    const r = await buscarFichaAnteriorPublica(cpf, nome);
+    if (!r?.ok) {
+      return { ok: false, jaInscrito: !!r?.ja_inscrito, erro: r?.erro || 'Não foi possível trazer seus dados.' };
+    }
+    return { ok: true, ficha: r.ficha || {} };
+  } catch (error) {
+    console.error('inscricaoApi - buscarFichaAnterior', error?.message || error);
+    return { ok: false, erro: 'Não foi possível trazer seus dados agora. Tente de novo.' };
+  }
 };
 
 export const verificarCPF = async (cpf, tipo) => {

@@ -30,7 +30,7 @@ export const getAcampantes = async () => {
     }
 
     const { data, error } = await comReenvio(
-      () => supabase.from('acampantes').select('*'),
+      () => supabase.from('acampantes').select('*, idade'),
       { rotulo: 'acampantes' }
     );
 
@@ -127,25 +127,6 @@ export const salvarObservacaoAcampante = async (acampanteId, observacao) => {
 // usuaria em 2026-09-09: resetar a edicao apaga o historico de pagamento
 // dos acampantes junto (o pagamento de equipante nao e afetado -- so
 // acampante e resetado por exclusao real).
-export const deleteAllAcampantes = async () => {
-  try {
-    const { error: pagamentosError } = await supabase
-      .from('pagamentos')
-      .delete()
-      .not('acampante_id', 'is', null);
-
-    if (pagamentosError) throw pagamentosError;
-
-    const { data, error } = await supabase
-      .from('acampantes')
-      .delete()
-      .not('id', 'is', null)
-      .select('id');
-
-    if (error) throw error;
-    return { success: true, count: data ? data.length : 0 };
-  } catch (error) {
-    console.error('Erro ao apagar todos os acampantes:', error);
-    throw error;
-  }
-};
+// Apagar todos os acampantes virou parte do reset de edicao, que agora
+// acontece inteiro no servidor (resetar_para_nova_edicao). Ver o comentario
+// em organizerConfigService.resetarParaNovaEdicao.

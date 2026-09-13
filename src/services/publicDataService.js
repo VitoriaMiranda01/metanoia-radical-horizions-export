@@ -88,6 +88,20 @@ export const fetchConfigPublica = async () => chamar('config_publica');
 export const verificarInscricaoPublica = async ({ tipo, cpf = null, nome = null }) =>
   chamar('verificar_inscricao', { p_tipo: tipo, p_cpf: cpf, p_nome: nome });
 
+/**
+ * A ficha da edicao passada, para o formulario da nova edicao ja vir
+ * preenchido em vez de a pessoa digitar tudo de novo.
+ *
+ * Exige CPF **e** nome completo, os dois. verificar_inscricao aqui em cima
+ * responde a um CPF solto de proposito -- se ela devolvesse a ficha inteira,
+ * bastaria varrer CPFs para colher nome, WhatsApp, igreja e condicao de
+ * saude de todo mundo. O nome completo e a trava.
+ *
+ * Nao devolve as 3 areas de trabalho: sao escolhidas de novo a cada edicao.
+ */
+export const buscarFichaAnteriorPublica = async (cpf, nome) =>
+  chamar('ficha_para_reinscricao', { p_cpf: cpf, p_nome: nome });
+
 /** { "NOME DA IGREJA": quantidade } -- sem baixar a base de acampantes. */
 export const fetchOcupacaoIgrejas = async () => chamar('ocupacao_igrejas');
 

@@ -48,3 +48,34 @@ export function toBoolean(value) {
   
   return Boolean(value);
 }
+
+/**
+ * Idade em anos completos a partir da data de nascimento ("AAAA-MM-DD").
+ *
+ * A idade deixou de ser um campo guardado: um numero gravado envelhece, e a
+ * cada edicao a idade de todo mundo ficava um ano errada -- justo o dado que
+ * decide quem e menor de 18 e precisa da autorizacao dos pais. O que fica
+ * guardado e a data de nascimento, que nao muda; a idade e conta feita na
+ * hora, aqui e no banco (funcao public.idade).
+ *
+ * Devolve null quando nao da para calcular, para a tela poder mostrar "-"
+ * em vez de um numero inventado.
+ */
+export function calcularIdade(dataNascimento) {
+  if (!dataNascimento) return null;
+
+  const partes = String(dataNascimento).slice(0, 10).split('-');
+  if (partes.length !== 3) return null;
+
+  const [ano, mes, dia] = partes.map(Number);
+  if (!ano || !mes || !dia) return null;
+
+  const hoje = new Date();
+  let idade = hoje.getFullYear() - ano;
+
+  // Ainda nao fez aniversario este ano.
+  const mesAtual = hoje.getMonth() + 1;
+  if (mesAtual < mes || (mesAtual === mes && hoje.getDate() < dia)) idade -= 1;
+
+  return idade >= 0 && idade < 130 ? idade : null;
+}

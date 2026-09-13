@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useEquipanteCPFLookup } from '@/hooks/useEquipanteCPFLookup';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { toBoolean } from '@/utils/formatters';
+import { toBoolean, calcularIdade } from '@/utils/formatters';
 
 const DadosPessoais = ({
   formData,
@@ -21,6 +21,11 @@ const DadosPessoais = ({
 
   // Use the hook internally if setFormData is provided and it's an equipante
   const { lookupEquipanteByCPF, isLoading, showRecoveryMessage } = useEquipanteCPFLookup(setFormData || (() => { }));
+
+  // Ninguem nasceu depois de hoje: fecha o calendario no dia de hoje em vez
+  // de deixar o navegador aceitar 2030 e so reclamar no envio.
+  const hojeISO = new Date().toISOString().slice(0, 10);
+  const idadeCalculada = calcularIdade(formData.dataNascimento);
 
   const onAutorizacaoChange = (checked) => {
     if (typeof handleCheckboxChange === 'function') {
@@ -148,8 +153,25 @@ const DadosPessoais = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="idade" className="text-white">Idade</Label>
-          <Input id="idade" name="idade" type="number" value={formData.idade || ''} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
+          <Label htmlFor="dataNascimento" className="text-white">Data de Nascimento</Label>
+          {/* Guardamos a data, nao a idade: um numero de idade envelhece e
+              e ele que decide quem precisa de autorizacao dos pais. A idade
+              ao lado e so conferencia para quem esta preenchendo. */}
+          <Input
+            id="dataNascimento"
+            name="dataNascimento"
+            type="date"
+            max={hojeISO}
+            value={formData.dataNascimento || ''}
+            onChange={handleChange}
+            required
+            className="bg-white/10 border-white/20 text-white placeholder:text-white/50 [color-scheme:dark]"
+          />
+          <p className="text-[10px] text-blue-200/70">
+            {idadeCalculada === null
+              ? 'Informe a data para calcularmos sua idade.'
+              : `Idade: ${idadeCalculada} ${idadeCalculada === 1 ? 'ano' : 'anos'}`}
+          </p>
         </div>
 
         {!isEquipante && (

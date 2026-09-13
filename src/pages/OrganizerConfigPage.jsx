@@ -10,10 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimiteAcampantesPorIgreja, subscribeToConfiguracoesChanges } from '@/services/organizerConfigService';
+import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimiteAcampantesPorIgreja, subscribeToConfiguracoesChanges, resetarParaNovaEdicao } from '@/services/organizerConfigService';
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
-import { resetEquipantesInscricoes } from '@/services/equipantesService';
-import { deleteAllAcampantes } from '@/services/acampantesService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users } from 'lucide-react';
@@ -51,6 +49,10 @@ const OrganizerConfigPage = () => {
   const [statusControl, setStatusControl] = useState({ equipantes: true, acampantes: true });
   const [savingStatus, setSavingStatus] = useState(false);
   const [isResettingInscricoes, setIsResettingInscricoes] = useState(false);
+  // Numero da proxima edicao. Comeca na atual + 1 quando a configuracao
+  // carrega (ver o efeito que preenche o formulario), mas fica editavel:
+  // quem vira a edicao e quem decide o numero dela.
+  const [novaEdicao, setNovaEdicao] = useState('');
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
   const { toast } = useToast();
   
@@ -108,7 +110,10 @@ const OrganizerConfigPage = () => {
     setLoadingConfig(true);
     try {
       const data = await fetchConfiguracoes();
-      
+
+      // Sugestao para o reset de edicao: a proxima. Continua editavel.
+      if (data.edicao_numero) setNovaEdicao(String(Number(data.edicao_numero) + 1));
+
       setConfig({
         edicao_numero: data.edicao_numero || '',
         max_equipantes: data.max_equipantes || '',
@@ -345,11 +350,13 @@ const OrganizerConfigPage = () => {
   const handleResetInscricoes = async () => {
     setIsResettingInscricoes(true);
     try {
-      const equipantesResult = await resetEquipantesInscricoes();
-      const acampantesResult = await deleteAllAcampantes();
+      const r = await resetarParaNovaEdicao(novaEdicao);
       toast({
-        title: "Sucesso!",
-        description: `Status de inscrição resetado para ${equipantesResult.count} equipante(s) e ${acampantesResult.count} acampante(s) apagado(s) com sucesso.`,
+        title: `Agora é a ${r.nova_edicao}ª edição`,
+        description: `${r.equipantes_liberados} equipante(s) liberado(s) para se inscrever de novo · `
+          + `${r.acampantes_apagados} acampante(s) apagado(s) · `
+          + `${r.escalas_apagadas} alocação(ões) de escala apagada(s). `
+          + `As inscrições ficaram fechadas — abra quando quiser.`,
         className: "bg-emerald-600 text-white border-none"
       });
       setShowResetConfirmDialog(false);
@@ -747,10 +754,36 @@ const OrganizerConfigPage = () => {
               <AlertCircle className="w-5 h-5" /> Confirmar Reset de Inscrições
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400 text-base">
-              Tem certeza que deseja resetar as inscrições para a próxima edição?<br /><br />
-              Isso definirá o status de inscrição como falso para <strong>TODOS</strong> os equipantes (não apaga os dados pessoais deles, apenas exige nova inscrição) e <strong className="text-red-400">apagará permanentemente todos os registros de acampantes</strong>, incluindo seus dados pessoais.
+              Isso encerra a edição atual e começa a próxima.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          <div className="space-y-4 text-sm">
+            <div className="space-y-2">
+              <Label htmlFor="novaEdicao" className="text-white">Número da nova edição</Label>
+              <Input
+                id="novaEdicao"
+                type="number"
+                min={1}
+                value={novaEdicao}
+                onChange={(e) => setNovaEdicao(e.target.value)}
+                className="bg-white/10 border-white/20 text-white w-32"
+              />
+            </div>
+
+            <div className="rounded-md border border-white/10 bg-white/5 p-3 space-y-1 text-gray-300">
+              <p className="text-white font-medium">O que fica</p>
+              <p>A ficha de cada equipante — é ela que o formulário da nova edição
+                 devolve preenchido, para a pessoa só conferir o que mudou.</p>
+            </div>
+
+            <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 space-y-1 text-red-200">
+              <p className="text-red-300 font-medium">O que some, sem volta</p>
+              <p>Todos os acampantes (dados pessoais inclusive) · a escala inteira ·
+                 as 3 áreas de trabalho de cada equipante · os pagamentos e cobranças PIX
+                 da edição que acabou.</p>
+            </div>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
               Cancelar

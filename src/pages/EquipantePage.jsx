@@ -193,6 +193,26 @@ const EquipantePage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    // Perguntas de menu suspenso. O navegador so barra sozinho os campos de
+    // digitar; estas quatro sao <Select>, e passavam em branco. Duas delas
+    // fazem falta de verdade depois: o SEXO sustenta os limites de homens e
+    // mulheres por area na escala, e "congrega em alguma igreja?" muda o que
+    // a Direcao precisa olhar na aprovacao.
+    const faltando = [];
+    if (!formData.sexo) faltando.push('Sexo');
+    if (!formData.estaAfastado) faltando.push('Congrega em alguma igreja?');
+    if (!formData.familiarTrabalhando) faltando.push('Tem algum familiar que vai trabalhar no projeto?');
+    if (!formData.parentesco) faltando.push('Tem algum conhecido / familiar que vai participar como ACAMPANTE?');
+
+    if (faltando.length > 0) {
+      toast({
+        title: faltando.length === 1 ? 'Falta responder uma pergunta' : `Faltam ${faltando.length} perguntas`,
+        description: faltando.join(' · '),
+        variant: "destructive"
+      });
+      return;
+    }
+
     // As 3 opções de área de trabalho agora são obrigatórias: sem isso, a
     // futura alocação automática (feita na aprovação, seguindo a ordem de
     // preferência) não teria o que processar pra essa pessoa.

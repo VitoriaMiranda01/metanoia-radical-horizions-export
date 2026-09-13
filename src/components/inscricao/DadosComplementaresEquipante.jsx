@@ -20,7 +20,7 @@ const DadosComplementaresEquipante = ({
         {/* Familiar Trabalhando */}
         <div className="space-y-2">
           <Label htmlFor="familiarTrabalhando" className="text-white">Tem algum familiar que vai trabalhar no projeto?</Label>
-          <Select value={formData.familiarTrabalhando} onValueChange={value => handleSelectChange('familiarTrabalhando', value)}>
+          <Select required value={formData.familiarTrabalhando} onValueChange={value => handleSelectChange('familiarTrabalhando', value)}>
             <SelectTrigger className="bg-white/10 border-white/20 text-white">
               <SelectValue placeholder="Selecione..." />
             </SelectTrigger>
@@ -40,7 +40,7 @@ const DadosComplementaresEquipante = ({
         {/* Familiar Acampando */}
         <div className="space-y-2">
           <Label htmlFor="parentesco" className="text-white">Tem algum conhecido / familiar que vai participar como ACAMPANTE no projeto?</Label>
-          <Select value={formData.parentesco} onValueChange={value => handleSelectChange('parentesco', value)}>
+          <Select required value={formData.parentesco} onValueChange={value => handleSelectChange('parentesco', value)}>
             <SelectTrigger className="bg-white/10 border-white/20 text-white">
               <SelectValue placeholder="Selecione..." />
             </SelectTrigger>

@@ -124,7 +124,14 @@ const DadosPessoais = ({
 
         <div className="space-y-2">
           <Label htmlFor="sexo" className="text-white">Sexo</Label>
-          <Select value={formData.sexo || ''} onValueChange={(value) => handleSelectChange('sexo', value)}>
+          {/* O sexo decide os limites de homens e mulheres por area na escala
+              (e o grupo de trilha do acampante): sem ele a pessoa entra na
+              fila sem dar para contar. Quem barra o envio em branco e a
+              checagem em EquipantePage.handleSubmit -- este `required` sozinho
+              nao resolve, porque o <select> que o Radix esconde no formulario
+              nasce ja com a primeira opcao e o navegador o considera
+              preenchido. Fica porque nao custa nada e vale se isso mudar. */}
+          <Select required value={formData.sexo || ''} onValueChange={(value) => handleSelectChange('sexo', value)}>
             <SelectTrigger className="bg-white/10 border-white/20 text-white">
               <SelectValue placeholder="Selecione..." />
             </SelectTrigger>

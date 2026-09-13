@@ -22,7 +22,13 @@ const InfoEclesiasticas = ({
             <Label htmlFor="estaAfastado" className="text-white text-lg font-medium">
               Congrega em alguma igreja?
             </Label>
-            <Select 
+            {/* A resposta muda o que a Direcao precisa olhar na aprovacao:
+                quem nao congrega nao tem igreja nem pastor para responder por
+                ela, e a ficha aparece marcada na tela de Aprovacoes. Quem
+                barra o envio em branco e EquipantePage.handleSubmit (ver a
+                nota em DadosPessoais sobre o `required` do Radix). */}
+            <Select
+              required
               value={formData.estaAfastado} 
               onValueChange={value => handleChange({ target: { name: 'estaAfastado', value } })}
             >

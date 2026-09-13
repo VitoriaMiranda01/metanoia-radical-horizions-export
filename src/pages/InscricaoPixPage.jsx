@@ -19,6 +19,7 @@ import { finalizeZeroValuePayment } from '@/services/paymentService';
 import { updateEquipantePaymentStatus, updateAcampantePaymentStatus } from '@/services/inscricoesService';
 import { consultarStatusPix } from '@/services/publicDataService';
 import { rotuloValor, rotuloValorEmFrase } from '@/utils/rotulosPagamento';
+import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
 
 const formatCurrency = value => {
   if (value === null || value === undefined) return 'R$ 0,00';
@@ -35,18 +36,27 @@ const InscricaoPixPage = () => {
   const [loading, setLoading] = useState(false);
   const [isFinalizingZero, setIsFinalizingZero] = useState(false);
 
-  const tipo = location.state?.tipo || 'acampante';
+  // Quem sai para o aplicativo do banco e volta pode encontrar a aba
+  // recarregada -- e ai `location.state` some junto. A sessao gravada no
+  // aparelho e o que permite retomar de onde parou, sem digitar o CPF de
+  // novo. Ver utils/sessaoInscricao.
+  const sessaoSalva = React.useMemo(() => lerSessao(), []);
+
+  const tipo = location.state?.tipo || sessaoSalva?.tipo || 'acampante';
   const edicao_numero = location.state?.numero_edicao || location.state?.edicao_numero;
-  const inscricaoId = location.state?.id;
+  const inscricaoId = location.state?.id || sessaoSalva?.id;
 
   // Fetch dynamic inscription value from database based on type
   const { currentPrice: inscriptionValue, loading: loadingValue, error: valueError } = useCurrentPrice(tipo, edicao_numero);
   
   const [formData, setFormData] = useState({
-    nome: location.state?.nome || '',
-    cpf: location.state?.cpf ? formatCPF(location.state.cpf) : ''
+    nome: location.state?.nome || sessaoSalva?.nome || '',
+    cpf: (location.state?.cpf || sessaoSalva?.cpf)
+      ? formatCPF(location.state?.cpf || sessaoSalva.cpf)
+      : ''
   });
-  const [pixData, setPixData] = useState(null);
+  // A cobranca ja gerada volta junto: e ela que a pessoa foi pagar.
+  const [pixData, setPixData] = useState(sessaoSalva?.cobranca || null);
   const [error, setError] = useState(null);
   // 'aguardando' | 'confirmado' | 'divergente' | 'expirado'
   const [statusPagamento, setStatusPagamento] = useState('aguardando');
@@ -79,6 +89,9 @@ const InscricaoPixPage = () => {
 
         if (r.pago || r.inscricao_liberada) {
           setStatusPagamento('confirmado');
+          // Pago: nao ha mais o que retomar, e deixar gravado so exporia a
+          // inscricao para quem pegasse o aparelho depois.
+          limparSessao();
           toast({
             title: 'Pagamento confirmado!',
             description: 'Sua inscrição está garantida.',
@@ -259,7 +272,19 @@ const InscricaoPixPage = () => {
         // valor ficava undefined, a consulta de status nem chegava a comecar
         // e a tela ficava parada para sempre, mesmo com o pagamento pago.
         // Era exatamente o sintoma relatado no teste de R$1.
-        setPixData({ qrcode, pixCopiaECola, txid: data.sicoob_id ?? data.txid });
+        const cobranca = { qrcode, pixCopiaECola, txid: data.sicoob_id ?? data.txid };
+        setPixData(cobranca);
+
+        // Grava para a pessoa reencontrar este mesmo QR Code ao voltar do
+        // banco, em vez de refazer o caminho todo (e gerar outra cobranca).
+        salvarSessao({
+          id: inscricaoId,
+          tipo,
+          nome: formData.nome,
+          cpf: formData.cpf.replace(/\D/g, ''),
+          nascimento: location.state?.nascimento || sessaoSalva?.nascimento || null,
+          cobranca
+        });
         toast({
           title: "PIX gerado com sucesso!",
           description: "Escaneie o QR Code ou copie o código para realizar o pagamento.",

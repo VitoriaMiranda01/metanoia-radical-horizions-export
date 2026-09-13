@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,7 @@ import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao, buscarFichaAnterior } from '@/services/inscricoesService';
 import { calcularIdade } from '@/utils/formatters';
 import { getEquipanteWorkflow } from '@/services/equipantesService';
+import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
 
@@ -168,6 +169,41 @@ const EquipantePage = () => {
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
+  // Quem já se identificou nesta sessão não recomeça do CPF.
+  //
+  // Sem isto, sair para o aplicativo do banco e voltar jogava a pessoa na
+  // tela inicial — o celular descarta a aba em segundo plano, e com ela some
+  // tudo que estava só na memória. Relatado no primeiro pagamento real.
+  useEffect(() => {
+    const sessao = lerSessao();
+    if (!sessao?.id) return;
+
+    setInscricaoData({ id: sessao.id, nome: sessao.nome, cpf: sessao.cpf });
+    setFormData(prev => ({
+      ...prev,
+      nome: sessao.nome || prev.nome,
+      cpf: sessao.cpf || prev.cpf,
+      semCpf: !sessao.cpf,
+      dataNascimento: sessao.nascimento || prev.dataNascimento
+    }));
+    if (sessao.nascimento) setNascimentoConfirmado(sessao.nascimento);
+    setCurrentStep('workflow');
+  }, []);
+
+  // Guarda quem é a pessoa para a volta. Só o necessário para retomar, e por
+  // 6 horas (ver utils/sessaoInscricao).
+  const guardarSessao = (dados) => salvarSessao({ tipo: 'equipante', ...dados });
+
+  const sairDaInscricao = () => {
+    limparSessao();
+    setInscricaoData(null);
+    setNascimentoConfirmado('');
+    setNascimentoDigitado('');
+    setVerificacao(null);
+    setFormData(prev => ({ ...prev, cpf: '', nome: '', semCpf: false }));
+    setCurrentStep('verificacao');
+  };
+
   const handleVerificationComplete = (result) => {
     if (result.semCpf) setFormData(prev => ({ ...prev, semCpf: true }));
     // Preenche o Nome/CPF já com o que foi digitado na tela de verificação
@@ -204,6 +240,8 @@ const EquipantePage = () => {
       setCurrentStep('sucesso');
     } else if (isFound && loadedData) {
       setInscricaoData(loadedData);
+
+      guardarSessao({ id: loadedData.id, nome: loadedData.nome, cpf: result.cpf || null });
 
       if (!isEnrolled) {
         setFormData(prev => ({
@@ -283,6 +321,12 @@ const EquipantePage = () => {
 
       setNascimentoConfirmado(nascimentoDigitado);
       setFormData(prev => ({ ...prev, dataNascimento: nascimentoDigitado }));
+      guardarSessao({
+        id: inscricaoData.id,
+        nome: inscricaoData?.nome || formData.nome,
+        cpf: null,
+        nascimento: nascimentoDigitado
+      });
 
       if (situacao?.pago) {
         setCurrentStep('sucesso');
@@ -589,6 +633,21 @@ const EquipantePage = () => {
               </form>
             </CardContent>
           </Card>
+        )}
+
+        {currentStep === 'workflow' && inscricaoData && (
+          <div className="flex justify-end -mb-4">
+            {/* Aparelho compartilhado: quem terminou precisa conseguir sair,
+                senão a próxima pessoa encontra esta inscrição aberta. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={sairDaInscricao}
+              className="text-gray-400 hover:text-white"
+            >
+              Não sou {inscricaoData?.nome?.split(' ')[0] || 'eu'} — sair
+            </Button>
+          </div>
         )}
 
         {currentStep === 'workflow' && inscricaoData && (

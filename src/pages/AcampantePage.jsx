@@ -15,8 +15,8 @@ import {
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
-import { RefreshCw, Lock, CheckCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { RefreshCw, Lock, CheckCircle, FlaskConical } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import FormHeader from '@/components/inscricao/FormHeader';
 import AdminResponsavel from '@/components/inscricao/AdminResponsavel';
@@ -34,12 +34,35 @@ import { criarInscricao } from '@/services/inscricoesService';
 import { fetchLimitesIgrejas, fetchOcupacaoIgrejasAcampantes } from '@/services/limitesIgrejasService';
 import { fetchLimiteAcampantesPorIgrejaPadrao } from '@/services/organizerConfigService';
 import { IGREJAS_RESPONSAVEL_ACAMPANTE } from '@/constants/igrejas';
+import { liberacaoDeTesteValida } from '@/services/publicDataService';
 
 const AcampantePage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { acampantesAbertos, loading: loadingStatus } = useInscricoesStatus();
+
+  // SESSAO DE TESTE
+  // ---------------
+  // Mesmo mecanismo do formulario de equipante: com as inscricoes fechadas,
+  // uma chave na URL (?chave=...) abre o cadastro para quem tem a chave, e so
+  // para essa pessoa. A chave vive no banco, com prazo de validade, e nunca no
+  // codigo. A tela e conveniencia: quem barra de verdade e criar_inscricao, no
+  // servidor, que exige a mesma chave.
+  const [parametros] = useSearchParams();
+  const chaveTeste = parametros.get('chave');
+  const [sessaoDeTeste, setSessaoDeTeste] = useState(false);
+
+  useEffect(() => {
+    let vivo = true;
+    if (!chaveTeste) return undefined;
+    liberacaoDeTesteValida(chaveTeste, 'acampante').then((vale) => {
+      if (vivo) setSessaoDeTeste(vale);
+    });
+    return () => { vivo = false; };
+  }, [chaveTeste]);
+
+  const podeCadastrar = acampantesAbertos || sessaoDeTeste;
 
   const [currentStep, setCurrentStep] = useState('welcome');
   const [inscricaoData, setInscricaoData] = useState(null);
@@ -130,7 +153,7 @@ const AcampantePage = () => {
         }
       });
     } else {
-      setCurrentStep(acampantesAbertos ? 'formulario' : 'fechadas');
+      setCurrentStep(podeCadastrar ? 'formulario' : 'fechadas');
     }
   };
 
@@ -164,7 +187,7 @@ const AcampantePage = () => {
         submissionData.igreja = 'NÃO SE APLICA (NÃO CONGREGA)';
         submissionData.pastor = 'NÃO SE APLICA';
       }
-      const result = await criarInscricao(submissionData, 'acampante');
+      const result = await criarInscricao(submissionData, 'acampante', chaveTeste);
       if (result.success) {
         setInscricaoData(result.data);
         toast({ title: "Inscrição Realizada!", description: "Redirecionando para o pagamento...", className: "bg-green-600 text-white" });
@@ -204,6 +227,19 @@ const AcampantePage = () => {
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto pb-20">
 
+        {/* Bem visivel de proposito: ninguem pode confundir a sessao de teste
+            com as inscricoes abertas de verdade. */}
+        {sessaoDeTeste && !acampantesAbertos && (
+          <div className="mb-6 bg-fuchsia-500/10 border border-fuchsia-500/40 p-4 rounded-lg flex items-start gap-3">
+            <FlaskConical className="w-5 h-5 text-fuchsia-300 shrink-0 mt-0.5" />
+            <p className="text-fuchsia-100 text-sm">
+              <strong>Sessão de teste.</strong> As inscrições de acampante continuam
+              encerradas para o público — este formulário abriu só para quem tem a chave.
+              O que for cadastrado aqui entra na base de verdade: apague depois do teste.
+            </p>
+          </div>
+        )}
+
         {currentStep === 'welcome' && (
           <WelcomeScreen onProceed={() => setCurrentStep('verificacao')} />
         )}
@@ -215,7 +251,7 @@ const AcampantePage = () => {
                 e ainda nao pagou precisa entrar para pagar -- e isso costuma
                 acontecer depois de as inscricoes fecharem. So o cadastro novo
                 fica barrado. */}
-            {!acampantesAbertos && (
+            {!podeCadastrar && (
               <div className="bg-amber-500/10 border border-amber-500/25 p-4 rounded-lg flex items-start gap-3">
                 <Lock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-amber-200 text-sm">

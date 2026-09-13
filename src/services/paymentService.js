@@ -198,6 +198,48 @@ export const fetchInscricoesNaoQuitadas = async () => {
 };
 
 /**
+ * A relacao de TODO MUNDO, com quem pagou e quem nao pagou.
+ *
+ * Ate agora a tela de Pagamentos so mostrava quem estava pendente: assim que
+ * a pessoa pagava, ela sumia. Nao existia em lugar nenhum a lista de quem ja
+ * pagou -- e e exatamente essa lista que e conferida no portao, no dia do
+ * evento.
+ *
+ * Traz os dois tipos juntos, com `quitado` resolvido pela mesma regra que o
+ * resto do sistema usa (STATUS_QUITADOS), para nao haver duas definicoes de
+ * "pago" no codigo.
+ */
+export const fetchRelacaoDePagamentos = async () => {
+  const colunasComuns =
+    'id, nome, cpf, nacionalidade, status_pagamento, metodo_pagamento, data_pagamento';
+
+  const [acampantes, equipantes] = await Promise.all([
+    comReenvio(() => supabase.from('acampantes').select(`${colunasComuns}, igreja, admin_responsavel`),
+      { rotulo: 'acampantes' }),
+    comReenvio(() => supabase.from('equipantes').select(`${colunasComuns}, igreja, status`),
+      { rotulo: 'equipantes' }),
+  ]);
+
+  if (acampantes.error) throw acampantes.error;
+  if (equipantes.error) throw equipantes.error;
+
+  const marcar = (linhas, tipo) =>
+    (linhas || []).map((linha) => ({
+      ...linha,
+      tipo,
+      quitado: estaQuitada(linha.status_pagamento),
+      // O acampante nao escolhe igreja: quem responde por ele e a igreja que
+      // fez a ficha. Para a conferencia no portao, e o mesmo dado.
+      igreja: linha.igreja || linha.admin_responsavel || null,
+    }));
+
+  return [
+    ...marcar(acampantes.data, 'acampante'),
+    ...marcar(equipantes.data, 'equipante'),
+  ].sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+};
+
+/**
  * Cobrancas PIX que exigem atencao humana. Dois casos, os dois significando
  * "o dinheiro entrou (ou pode ter entrado) mas a inscricao nao liberou":
  *

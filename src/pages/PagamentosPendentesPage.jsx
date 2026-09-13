@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift } from 'lucide-react';
+import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift, Download } from 'lucide-react';
 import Layout from '@/components/Layout';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
+import { exportRelacaoPagamentos } from '@/utils/excelExport';
 import {
+  fetchRelacaoDePagamentos,
   fetchInscricoesNaoQuitadas,
   fetchPixTravados,
   confirmarPagamentoManual,
@@ -26,6 +28,10 @@ const formatarValor = (valor) => {
 
 const PagamentosPendentesPage = () => {
   const [pendentes, setPendentes] = useState([]);
+  // Todo mundo, pago ou nao -- e daqui que saem a aba "Pagos" e a
+  // planilha do portao. A tela so mostrava pendentes, entao quem pagava
+  // sumia e nao existia lista nenhuma de quem ja tinha pago.
+  const [relacao, setRelacao] = useState([]);
   const [travados, setTravados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,12 +46,14 @@ const PagamentosPendentesPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const [naoQuitadas, pixTravados] = await Promise.all([
+      const [naoQuitadas, pixTravados, todos] = await Promise.all([
         fetchInscricoesNaoQuitadas(),
-        fetchPixTravados()
+        fetchPixTravados(),
+        fetchRelacaoDePagamentos()
       ]);
       setPendentes(naoQuitadas);
       setTravados(pixTravados);
+      setRelacao(todos);
     } catch (err) {
       console.error('[Pagamentos] Erro ao carregar:', err);
       setError('Falha ao carregar os pagamentos. Verifique sua conexão.');
@@ -95,8 +103,29 @@ const PagamentosPendentesPage = () => {
     }
   };
 
+  const pagos = useMemo(() => relacao.filter((i) => i.quitado), [relacao]);
+
+  const exportarRelacao = () => {
+    try {
+      const r = exportRelacaoPagamentos(relacao);
+      toast({
+        title: 'Planilha gerada',
+        description: `${r.pagaram} de ${r.total} já pagaram. A aba "Ainda não pagaram" traz o resto.`,
+        className: 'bg-emerald-600 text-white'
+      });
+    } catch (err) {
+      toast({
+        title: 'Não deu para exportar',
+        description: err.message,
+        variant: 'destructive'
+      });
+    }
+  };
+
   const linhas = useMemo(() => {
-    const base = aba === 'travados' ? travados : pendentes;
+    const base = aba === 'travados' ? travados
+      : aba === 'pagos' ? pagos
+        : pendentes;
     const busca = filterText.trim().toLowerCase();
 
     return base.filter((item) => {
@@ -106,7 +135,7 @@ const PagamentosPendentesPage = () => {
       const casaTipo = tipoFiltro === 'all' || item.tipo === tipoFiltro;
       return casaBusca && casaTipo;
     });
-  }, [aba, travados, pendentes, filterText, tipoFiltro]);
+  }, [aba, travados, pendentes, pagos, filterText, tipoFiltro]);
 
   // Pagina a lista já filtrada. No dia do evento essa tela pode ter centenas
   // de pendentes — desenhar tudo de uma vez trava celular mais simples.
@@ -233,6 +262,12 @@ const PagamentosPendentesPage = () => {
                     Pendentes ({pendentes.length})
                   </TabsTrigger>
                   <TabsTrigger
+                    value="pagos"
+                    className="flex-1 md:flex-none data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300 text-gray-400"
+                  >
+                    Pagos ({pagos.length})
+                  </TabsTrigger>
+                  <TabsTrigger
                     value="travados"
                     className="flex-1 md:flex-none data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300 text-gray-400"
                   >
@@ -260,6 +295,17 @@ const PagamentosPendentesPage = () => {
                       className="pl-9 h-11 bg-white/5 border-white/10 text-white w-full placeholder:text-gray-500 focus-visible:ring-blue-500"
                     />
                   </div>
+                  {/* A planilha que vai para o portao: todo mundo, com
+                      PAGOU / NÃO PAGOU numa coluna so. */}
+                  <Button
+                    variant="outline"
+                    onClick={exportarRelacao}
+                    disabled={loading || relacao.length === 0}
+                    className="h-11 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/5 shrink-0"
+                  >
+                    <Download className="w-4 h-4 md:mr-2" />
+                    <span className="hidden md:inline">Exportar</span>
+                  </Button>
                   <Button
                     variant="outline"
                     onClick={carregar}
@@ -299,7 +345,9 @@ const PagamentosPendentesPage = () => {
                       <TableCell colSpan={5} className="h-32 text-center text-gray-400">
                         {aba === 'travados'
                           ? 'Nenhuma cobrança travada. Tudo certo por aqui.'
-                          : 'Nenhuma inscrição pendente para os filtros atuais.'}
+                          : aba === 'pagos'
+                            ? 'Ninguém pagou ainda para os filtros atuais.'
+                            : 'Nenhuma inscrição pendente para os filtros atuais.'}
                       </TableCell>
                     </TableRow>
                   ) : (

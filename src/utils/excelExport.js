@@ -140,3 +140,66 @@ export const exportAcampantesToExcel = (rows) =>
 
 export const exportEquipantesToExcel = (rows) =>
   exportRowsToExcel(rows, { sheetName: 'Equipantes', fileNamePrefix: 'equipantes_metanoia_radical' });
+
+/**
+ * A planilha do PORTÃO: todo mundo, com PAGOU ou NÃO PAGOU bem na cara.
+ *
+ * No dia do evento a conferência é feita na entrada, nome por nome. Por isso
+ * esta lista traz TODOS -- não só quem pagou -- e a situação numa coluna só,
+ * em maiúsculas, para dar para bater o olho e seguir a fila.
+ *
+ * Vem ordenada por nome. Duas abas: a geral e uma só com quem ainda não
+ * pagou, que é a lista curta que interessa a quem está no portão.
+ */
+export const exportRelacaoPagamentos = (linhas) => {
+  if (!linhas || linhas.length === 0) {
+    throw new Error('Nenhuma inscrição para exportar.');
+  }
+
+  const paraLinha = (item) => ({
+    'Situação': item.quitado ? 'PAGOU' : 'NÃO PAGOU',
+    'Nome': item.nome || '-',
+    'CPF': item.cpf ? formatCPF(item.cpf) : '(sem CPF)',
+    'Tipo': item.tipo === 'acampante' ? 'Acampante' : 'Equipante',
+    'Igreja': item.igreja || '-',
+    'Forma de pagamento': ({
+      pix: 'PIX',
+      manual: 'Cartão / Dinheiro',
+      isento: 'Isento',
+    })[item.metodo_pagamento] || '-',
+    'Data do pagamento': item.data_pagamento
+      ? new Date(item.data_pagamento).toLocaleString('pt-BR', {
+          day: '2-digit', month: '2-digit', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        })
+      : '-',
+  });
+
+  const larguras = [
+    { wch: 12 }, // Situação
+    { wch: 40 }, // Nome
+    { wch: 18 }, // CPF
+    { wch: 12 }, // Tipo
+    { wch: 38 }, // Igreja
+    { wch: 20 }, // Forma
+    { wch: 18 }, // Data
+  ];
+
+  const wb = XLSX.utils.book_new();
+
+  const wsTodos = XLSX.utils.json_to_sheet(linhas.map(paraLinha));
+  wsTodos['!cols'] = larguras;
+  XLSX.utils.book_append_sheet(wb, wsTodos, 'Conferência no portão');
+
+  const faltando = linhas.filter((i) => !i.quitado);
+  if (faltando.length > 0) {
+    const wsFaltando = XLSX.utils.json_to_sheet(faltando.map(paraLinha));
+    wsFaltando['!cols'] = larguras;
+    XLSX.utils.book_append_sheet(wb, wsFaltando, 'Ainda não pagaram');
+  }
+
+  const hoje = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Pagamentos_Metanoia_Radical_${hoje}.xlsx`);
+
+  return { total: linhas.length, pagaram: linhas.length - faltando.length };
+};

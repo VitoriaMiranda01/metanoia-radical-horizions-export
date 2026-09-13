@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
+import { OUTRA_IGREJA } from '@/constants/igrejas';
 import { mapFormDataToDb as mapAcampanteToDb } from '@/utils/acampanteForm';
 import { toBoolean } from '@/utils/formatters';
 import {
@@ -74,6 +75,12 @@ const mapEquipanteToDb = (formData) => ({
   tem_restricao_alimentar: toBoolean(formData.temRestricaoAlimentar),
   restricoes_alimentares: formData.restricoesAlimentares,
   igreja: formData.igreja,
+  // So tem valor quando a igreja escolhida e OUTRA. Nos demais casos vai
+  // NULO de proposito: quem se reinscreve trocando OUTRA por uma igreja da
+  // lista precisa que o nome antigo saia junto.
+  igreja_outra: formData.igreja === OUTRA_IGREJA
+    ? (formData.igrejaOutra || '').trim().toUpperCase() || null
+    : null,
   e_pastor: toBoolean(formData.ePastor),
   e_pastor_outro: formData.ePastorOutro,
   pastor_nome: formData.pastor,

@@ -30,6 +30,7 @@ import { criarInscricao, buscarFichaAnterior } from '@/services/inscricoesServic
 import { calcularIdade } from '@/utils/formatters';
 import { getEquipanteWorkflow } from '@/services/equipantesService';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
+import { igrejaEhOutra } from '@/constants/igrejas';
 import { liberacaoDeTesteValida } from '@/services/publicDataService';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
@@ -62,6 +63,7 @@ const mapDbToFormData = (dbData) => {
 
     // Igreja
     igreja: dbData.igreja || '',
+    igrejaOutra: dbData.igreja_outra || '',
     // e_pastor e boolean no banco, mas o campo na tela e uma LISTA de cargos.
     // Do boolean nao da para saber qual cargo era, entao a pessoa responde de
     // novo em vez de a gente chutar. (O cargo em si vive em cargo_igreja, que
@@ -177,7 +179,8 @@ const EquipantePage = () => {
     whatsapp: '', telefoneResidencial: '',
     temProblemaSaude: '', condicoesMedicas: '',
     temRestricaoAlimentar: '', restricoesAlimentares: '',
-    igreja: '', ePastor: '', ePastorOutro: '', pastor: '', estaAfastado: '',
+    igreja: '',
+    igrejaOutra: '', ePastor: '', ePastorOutro: '', pastor: '', estaAfastado: '',
     cargoIgreja: '', cargoIgrejaOutro: '',
     frequentaGrupoCuidado: '',
     voceCanta: '', tocaInstrumento: '',
@@ -402,6 +405,12 @@ const EquipantePage = () => {
     // organizador nao tem como saber quem e essa pessoa na lista.
     if (formData.semCpf && !formData.nacionalidade) faltando.push('Nacionalidade');
     if (!formData.estaAfastado) faltando.push('Congrega em alguma igreja?');
+    // Escolher OUTRA sem dizer qual e nao ajuda ninguem: a ficha chegaria ao
+    // organizador com "OUTRA" e mais nada.
+    if (formData.estaAfastado === 'SIM' && igrejaEhOutra(formData.igreja)
+        && (formData.igrejaOutra || '').trim().length < 3) {
+      faltando.push('Qual é a sua igreja?');
+    }
     if (!formData.familiarTrabalhando) faltando.push('Tem algum familiar que vai trabalhar no projeto?');
     if (!formData.parentesco) faltando.push('Tem algum conhecido / familiar que vai participar como ACAMPANTE?');
 

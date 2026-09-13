@@ -1,7 +1,7 @@
 import React from 'react';
 import { Eye, CheckCircle, XCircle, AlertTriangle, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { naoCongrega } from '@/constants/igrejas';
+import { naoCongrega, nomeDaIgreja } from '@/constants/igrejas';
 import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 
@@ -42,7 +42,7 @@ const InscricaoCard = ({
         </div>
         <div className="flex justify-between items-center gap-2">
           <span className="font-medium text-gray-500 shrink-0">Igreja:</span>
-          <span className="text-gray-300 text-right truncate">{inscricao.igreja || inscricao.nome_igreja || 'Não informada'}</span>
+          <span className="text-gray-300 text-right truncate">{nomeDaIgreja(inscricao) || 'Não informada'}</span>
         </div>
       </div>
 

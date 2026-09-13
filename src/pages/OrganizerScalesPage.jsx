@@ -21,6 +21,7 @@ import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
 import EquipantesGridDisplay from '@/components/scales/EquipantesGridDisplay';
 import AreasExtraDialog from '@/components/scales/AreasExtraDialog';
 import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
+import { nomeDaIgreja } from '@/constants/igrejas';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
@@ -142,7 +143,7 @@ const OrganizerScalesPage = () => {
   const filaFiltrada = termoBusca
     ? waitlist.filter(eq =>
         semAcento(eq.nome).includes(termoBusca) ||
-        semAcento(eq.igreja).includes(termoBusca) ||
+        semAcento(nomeDaIgreja(eq)).includes(termoBusca) ||
         (digitosBusca !== '' && (eq.cpf || '').replace(/\D/g, '').includes(digitosBusca)) ||
         semAcento(eq.area_trabalho_opcao1).includes(termoBusca) ||
         semAcento(eq.area_trabalho_opcao2).includes(termoBusca) ||
@@ -180,7 +181,7 @@ const OrganizerScalesPage = () => {
   const termoEscalados = semAcento(buscaEscalados.trim());
   const escaladosEncontrados = !termoEscalados ? [] : Object.values(
     allocations.reduce((acc, a) => {
-      (acc[a.id] = acc[a.id] || { id: a.id, nome: a.nome, igreja: a.igreja, cpf: a.cpf, areas: [] })
+      (acc[a.id] = acc[a.id] || { id: a.id, nome: a.nome, igreja: nomeDaIgreja(a), cpf: a.cpf, areas: [] })
         .areas.push({ area: a.allocatedArea, atuacao: a.atuacao, escalaId: a.escalaId });
       return acc;
     }, {})
@@ -905,7 +906,7 @@ const OrganizerScalesPage = () => {
                     <p className="text-white font-medium truncate">
                       {eq.nome} <span className="text-xs text-red-300/70">({eq.sexo})</span>
                     </p>
-                    <p className="text-[11px] text-gray-500 truncate mb-1.5" title={eq.igreja || ''}>{eq.igreja || '—'}</p>
+                    <p className="text-[11px] text-gray-500 truncate mb-1.5" title={nomeDaIgreja(eq) || ''}>{nomeDaIgreja(eq) || '—'}</p>
 
                     {/* As 3 areas que a PESSOA marcou na inscricao. E
                         sugestao: a escolha final e sua -- por isso o menu

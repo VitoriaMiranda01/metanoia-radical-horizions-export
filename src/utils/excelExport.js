@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { formatCPF } from '@/utils/formatters';
+import { nomeDaIgreja } from '@/constants/igrejas';
 
 // Helper to set column widths and styling
 const configureWorksheet = (ws) => {
@@ -28,7 +29,7 @@ export const exportEquipantesByArea = (areaName, equipantes) => {
   const data = equipantes.map(eq => ({
     'Nome': eq.nome || '-',
     'CPF': formatCPF(eq.cpf || ''),
-    'Igreja': eq.igreja || '-',
+    'Igreja': nomeDaIgreja(eq) || '-',
     'Atuação': eq.atuacao || '-',
     'Cor': eq.cor || '-'
   }));
@@ -70,7 +71,7 @@ export const exportAllEquipantes = (allocations) => {
     const data = grouped[areaName].map(eq => ({
       'Nome': eq.nome || '-',
       'CPF': formatCPF(eq.cpf || ''),
-      'Igreja': eq.igreja || '-',
+      'Igreja': nomeDaIgreja(eq) || '-',
       'Atuação': eq.atuacao || '-',
       'Cor': eq.cor || '-'
     }));
@@ -87,7 +88,7 @@ export const exportAllEquipantes = (allocations) => {
     'Área': eq.allocatedArea || 'Sem Área',
     'Nome': eq.nome || '-',
     'CPF': formatCPF(eq.cpf || ''),
-    'Igreja': eq.igreja || '-',
+    'Igreja': nomeDaIgreja(eq) || '-',
     'Atuação': eq.atuacao || '-',
     'Cor': eq.cor || '-'
   }));

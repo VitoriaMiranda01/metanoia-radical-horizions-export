@@ -104,8 +104,13 @@ const IgrejaSelect = ({
             opcoesFiltradas.map(opcao => {
               const desabilitada = !!disabledOptions?.has(opcao);
               const selecionada = opcao === value;
-              const [codigo, ...resto] = opcao.split(' - ');
-              const nome = resto.join(' - ');
+              // Nem toda opcao tem codigo: "OUTRA" e as igrejas que o
+              // organizador adicionou entram so com o nome. Sem esta
+              // separacao, elas apareciam como "OUTRA -" seguido de nada.
+              const separador = opcao.indexOf(' - ');
+              const temCodigo = separador !== -1 && /^\d+$/.test(opcao.slice(0, separador));
+              const codigo = temCodigo ? opcao.slice(0, separador) : null;
+              const nome = temCodigo ? opcao.slice(separador + 3) : opcao;
               return (
                 <button
                   key={opcao}
@@ -121,7 +126,9 @@ const IgrejaSelect = ({
                         : 'text-gray-100 hover:bg-white/10'
                   ].join(' ')}
                 >
-                  <span className="mr-1 text-blue-300 tabular-nums shrink-0">{codigo} -</span>
+                  {codigo && (
+                    <span className="mr-1 text-blue-300 tabular-nums shrink-0">{codigo} -</span>
+                  )}
                   <span className="truncate">{destacarTrecho(nome, busca)}</span>
                   {desabilitada && <span className="ml-2 shrink-0 text-xs text-red-300">{disabledSuffix}</span>}
                 </button>

@@ -1,6 +1,7 @@
 import { supabase } from '@/services/supabaseClient';
 import { comReenvio } from '@/services/serviceHelpers';
 import { finalizarInscricaoGratuita } from '@/services/publicDataService';
+import { nomeDaIgreja } from '@/constants/igrejas';
 
 export const savePaymentInfo = async (paymentData) => {
   try {
@@ -216,7 +217,7 @@ export const fetchRelacaoDePagamentos = async () => {
   const [acampantes, equipantes] = await Promise.all([
     comReenvio(() => supabase.from('acampantes').select(`${colunasComuns}, igreja, admin_responsavel`),
       { rotulo: 'acampantes' }),
-    comReenvio(() => supabase.from('equipantes').select(`${colunasComuns}, igreja, status`),
+    comReenvio(() => supabase.from('equipantes').select(`${colunasComuns}, igreja, igreja_outra, status`),
       { rotulo: 'equipantes' }),
   ]);
 
@@ -230,7 +231,7 @@ export const fetchRelacaoDePagamentos = async () => {
       quitado: estaQuitada(linha.status_pagamento),
       // O acampante nao escolhe igreja: quem responde por ele e a igreja que
       // fez a ficha. Para a conferencia no portao, e o mesmo dado.
-      igreja: linha.igreja || linha.admin_responsavel || null,
+      igreja: nomeDaIgreja(linha) || linha.admin_responsavel || null,
     }));
 
   return [

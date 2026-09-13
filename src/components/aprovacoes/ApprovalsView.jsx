@@ -249,7 +249,8 @@ const ApprovalsView = ({
       (inscricao.email && inscricao.email.toLowerCase().includes(term)) ||
       (inscricao.cpf && inscricao.cpf.includes(term)) ||
       (inscricao.tipo && inscricao.tipo.toLowerCase().includes(term)) ||
-      (inscricao.igreja && inscricao.igreja.toLowerCase().includes(term))
+      (inscricao.igreja && inscricao.igreja.toLowerCase().includes(term)) ||
+      (inscricao.igreja_outra && inscricao.igreja_outra.toLowerCase().includes(term))
     );
   };
 

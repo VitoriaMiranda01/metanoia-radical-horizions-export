@@ -251,6 +251,38 @@ export const IGREJAS_PARA_PRIMEIRO_ACESSO = [...IGREJAS_PARCEIRAS, ...IGREJAS_TE
 // o aviso simplesmente nao existia pra quem aprovava no computador.
 export const NAO_CONGREGA = 'NÃO SE APLICA (NÃO CONGREGA)';
 
+// ---------------------------------------------------------------------------
+// A opcao OUTRA.
+//
+// A lista acima e fechada e nao cobre todo mundo -- quem congrega numa igreja
+// que nao esta la nao tinha o que escolher. Escolhendo OUTRA, o formulario
+// abre um campo de texto e o nome digitado vai para `igreja_outra`, uma
+// coluna a parte.
+//
+// `igreja` continua guardando o marcador 'OUTRA', de proposito: assim toda a
+// logica que ja existe olhando `igreja` (o parceiro so ve quem tem o prefixo
+// "NN - " da igreja dele, os limites por igreja, os relatorios) segue
+// funcionando sem saber que OUTRA existe. E, sem codigo, essas fichas caem
+// naturalmente para os organizadores -- que e o certo, porque nao ha parceiro
+// para responder por elas.
+//
+// Os nomes digitados viram uma relacao a parte em Configuracoes, de onde o
+// organizador promove o que quiser para `igrejas_extras`. Essas passam a
+// aparecer no formulario junto com as 145, sem publicar o site de novo e sem
+// tocar na lista acima.
+// ---------------------------------------------------------------------------
+export const OUTRA_IGREJA = 'OUTRA';
+
+export const igrejaEhOutra = (valor) => (valor || '') === OUTRA_IGREJA;
+
+// O que mostrar nas telas do organizador: "OUTRA — NOME DIGITADO".
+export const nomeDaIgreja = (inscricao) => {
+  const igreja = inscricao?.igreja || inscricao?.nome_igreja || '';
+  if (!igrejaEhOutra(igreja)) return igreja;
+  const digitada = (inscricao?.igreja_outra || '').trim();
+  return digitada ? `${OUTRA_IGREJA} — ${digitada}` : `${OUTRA_IGREJA} (não informada)`;
+};
+
 export const naoCongrega = (inscricao) =>
   (inscricao?.igreja || inscricao?.nome_igreja || '') === NAO_CONGREGA;
 

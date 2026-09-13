@@ -1,4 +1,5 @@
 import React from 'react';
+import { nomeDaIgreja } from '@/constants/igrejas';
 import {
   Table,
   TableBody,
@@ -128,8 +129,8 @@ const EquipantesGridDisplay = ({
                 <TableCell className="text-gray-400 hidden sm:table-cell font-mono text-xs">
                   {formatCPF(eq.cpf)}
                 </TableCell>
-                <TableCell className="text-gray-400 hidden md:table-cell text-[12.5px] max-w-[220px] truncate" title={eq.igreja || '-'}>
-                  {eq.igreja || '-'}
+                <TableCell className="text-gray-400 hidden md:table-cell text-[12.5px] max-w-[220px] truncate" title={nomeDaIgreja(eq) || '-'}>
+                  {nomeDaIgreja(eq) || '-'}
                 </TableCell>
                 {mostrarAtuacao && (
                   <TableCell>

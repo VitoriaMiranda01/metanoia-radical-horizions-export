@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
+import { nomeDaIgreja } from '@/constants/igrejas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Users, Eye, Download, Search, Filter, X } from 'lucide-react';
@@ -49,6 +50,10 @@ const formatarData = (dataString) => {
 };
 
 const getColumnValue = (item, filterKey) => {
+  // "OUTRA" sozinha nao diz nada a quem le a lista: mostra o nome digitado.
+  if (filterKey === 'igreja') {
+    return nomeDaIgreja(item);
+  }
   if (filterKey === 'endereco_completo') {
     return formatEnderecoCompleto(item);
   }
@@ -194,7 +199,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
         item.email,
         item.whatsapp,
         item.telefone,
-        item.igreja,
+        nomeDaIgreja(item),
         item.status,
         item.grupo_trailha,
         item.responsavel_nome
@@ -227,6 +232,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
 
   const renderCellContent = (item, key) => {
     if (key === 'status') return getStatusBadge(item.status);
+    if (key === 'igreja') return nomeDaIgreja(item) || '-';
     if (key === 'endereco_completo') return formatEnderecoCompleto(item) || '-';
     if (key === 'area_trabalho') return formatAreaTrabalho(item) || '-';
     if (typeof item[key] === 'boolean') return item[key] ? 'Sim' : 'Não';

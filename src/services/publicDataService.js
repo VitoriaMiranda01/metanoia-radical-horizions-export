@@ -189,3 +189,24 @@ export const finalizarInscricaoGratuita = async (tipo, id, cupom, cpf = null, no
     p_tipo: tipo, p_id: id, p_cupom: cupom ?? null,
     p_cpf: cpf ?? null, p_nome: nome ?? null, p_nascimento: nascimento ?? null,
   }, { tentativas: 1 });
+
+/**
+ * Igrejas que o organizador adicionou a partir dos nomes digitados em "OUTRA".
+ *
+ * O formulario junta estas com as 145 do arquivo. Vem do banco de proposito:
+ * assim o organizador acrescenta uma igreja sem esperar uma publicacao do
+ * site, e a lista original -- que a usuaria montou numa ordem proposital --
+ * continua intocada.
+ *
+ * Falha aqui nao pode derrubar o formulario: sem as extras a pessoa ainda tem
+ * as 145 e a propria opcao OUTRA.
+ */
+export const listarIgrejasExtras = async () => {
+  try {
+    const r = await chamar('igrejas_extras_publicas');
+    return Array.isArray(r) ? r : [];
+  } catch (erro) {
+    console.error('publicData - igrejas extras', erro?.message || erro);
+    return [];
+  }
+};

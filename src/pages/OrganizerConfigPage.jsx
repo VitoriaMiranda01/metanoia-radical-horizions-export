@@ -14,11 +14,12 @@ import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimi
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
-import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users } from 'lucide-react';
+import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users, Church } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
 import LimiteIgrejasManager from '@/components/organizer/LimiteIgrejasManager';
+import OutrasIgrejasManager from '@/components/organizer/OutrasIgrejasManager';
 import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizadoresManager';
 import { Button } from '@/components/ui/button';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
@@ -575,6 +576,27 @@ const OrganizerConfigPage = () => {
                   limiteGeral={config.limite_acampantes_por_igreja}
                   onSaveLimiteGeral={handleSaveLimiteAcampantesPorIgreja}
                 />
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* A relacao das igrejas "OUTRA": nomes que os equipantes digitaram
+              porque a igreja deles nao esta nas 145 da lista. Daqui o
+              organizador promove um nome para dentro do formulario. */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+            <Card className="glass-effect border-white/10 bg-black/40">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-white">
+                  <Church className="w-5 h-5 text-emerald-400" />
+                  <span>Igrejas “OUTRA”</span>
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Quem não achou a própria igreja na lista escolhe “OUTRA” e escreve o nome.
+                  Aqui você decide quais desses nomes entram na lista do formulário.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <OutrasIgrejasManager />
               </CardContent>
             </Card>
           </motion.div>

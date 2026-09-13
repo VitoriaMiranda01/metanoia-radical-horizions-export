@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, AlertTriangle } from 'lucide-react';
-import { naoCongrega } from '@/constants/igrejas';
+import { naoCongrega, nomeDaIgreja } from '@/constants/igrejas';
 import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { bandeiraENome } from '@/constants/nacionalidades';
@@ -272,7 +272,7 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">Igreja:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.igreja || inscricao.nome_igreja)}</p>
+                <p className="text-white font-medium">{displayValue(nomeDaIgreja(inscricao))}</p>
               </div>
               <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">Congrega em alguma igreja?</span>

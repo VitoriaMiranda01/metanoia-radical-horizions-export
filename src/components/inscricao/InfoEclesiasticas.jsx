@@ -1,17 +1,37 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
 import IgrejaSelect from './IgrejaSelect';
-import { IGREJAS_PARCEIRAS } from '@/constants/igrejas';
+import { IGREJAS_PARCEIRAS, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
+import { listarIgrejasExtras } from '@/services/publicDataService';
 
 const InfoEclesiasticas = ({
   formData,
   handleChange,
   isEquipante = false
 }) => {
+  // As igrejas que o organizador acrescentou a partir dos nomes digitados em
+  // OUTRA. Vem do banco; se a consulta falhar, a lista segue com as 145 do
+  // arquivo mais a propria opcao OUTRA -- ninguem fica sem se inscrever por
+  // causa disso.
+  const [extras, setExtras] = useState([]);
+
+  useEffect(() => {
+    let vivo = true;
+    listarIgrejasExtras().then((lista) => { if (vivo) setExtras(lista); });
+    return () => { vivo = false; };
+  }, []);
+
+  // OUTRA fica no FIM da lista, depois das extras: e a saida para quem nao
+  // achou a igreja, nao a primeira coisa a considerar.
+  const opcoesDeIgreja = useMemo(
+    () => [...IGREJAS_PARCEIRAS, ...extras, OUTRA_IGREJA],
+    [extras]
+  );
+
   // --- EQUIPANTE LAYOUT (Conditional) ---
   if (isEquipante) {
     return (
@@ -59,10 +79,36 @@ const InfoEclesiasticas = ({
                       id="igreja"
                       value={formData.igreja}
                       onChange={(value) => handleChange({ target: { name: 'igreja', value } })}
-                      options={IGREJAS_PARCEIRAS}
+                      options={opcoesDeIgreja}
                       placeholder="Selecione sua igreja..."
                     />
+                    {igrejaEhOutra(formData.igreja) && (
+                      <p className="text-[11px] text-blue-200/70">
+                        Não achou sua igreja na lista? Escreva o nome dela ao lado.
+                      </p>
+                    )}
                   </div>
+
+                  {/* So aparece com OUTRA escolhida. Em maiusculas como o
+                      resto da lista -- e para a mesma igreja digitada por
+                      duas pessoas virar uma linha so na relacao do
+                      organizador, e nao duas. */}
+                  {igrejaEhOutra(formData.igreja) && (
+                    <div className="space-y-2">
+                      <Label htmlFor="igrejaOutra" className="text-white">Qual é a sua igreja?</Label>
+                      <Input
+                        id="igrejaOutra"
+                        name="igrejaOutra"
+                        value={formData.igrejaOutra || ''}
+                        onChange={(e) => handleChange({
+                          target: { name: 'igrejaOutra', value: e.target.value.toUpperCase() }
+                        })}
+                        maxLength={80}
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                        placeholder="Nome completo da igreja"
+                      />
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="pastor" className="text-white">Nome do Pastor</Label>

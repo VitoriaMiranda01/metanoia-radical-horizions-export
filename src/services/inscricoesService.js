@@ -291,7 +291,7 @@ export const atualizarStatusPagamento = async (idInscricao, tipo, status, metodo
   try {
     // `dono` leva o CPF (ou o nome, para quem se inscreveu sem CPF) como
     // prova de que a inscrição é dessa pessoa -- o servidor recusa sem isso.
-    const resposta = await registrarMetodoPagamento(tipo, idInscricao, metodo, dono.cpf, dono.nome);
+    const resposta = await registrarMetodoPagamento(tipo, idInscricao, metodo, dono.cpf, dono.nome, dono.nascimento);
     if (!resposta?.ok) {
       return { success: false, error: resposta?.erro || 'Erro ao atualizar pagamento.' };
     }

@@ -113,7 +113,7 @@ export const finalizeZeroValuePayment = async (inscriptionType, inscriptionId, c
 
     // `dono` leva o CPF (ou o nome, para quem se inscreveu sem CPF) como
     // prova de que a inscrição é dessa pessoa -- o servidor recusa sem isso.
-    const resposta = await finalizarInscricaoGratuita(inscriptionType, inscriptionId, couponCode, dono.cpf, dono.nome);
+    const resposta = await finalizarInscricaoGratuita(inscriptionType, inscriptionId, couponCode, dono.cpf, dono.nome, dono.nascimento);
 
     if (!resposta?.ok) {
       return { success: false, error: resposta?.erro || 'Não foi possível finalizar a inscrição.' };

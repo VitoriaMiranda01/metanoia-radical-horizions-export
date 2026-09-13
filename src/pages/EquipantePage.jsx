@@ -28,6 +28,7 @@ import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao, buscarFichaAnterior } from '@/services/inscricoesService';
 import { calcularIdade } from '@/utils/formatters';
+import { getEquipanteWorkflow } from '@/services/equipantesService';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
 
@@ -127,6 +128,17 @@ const EquipantePage = () => {
   // Reinscricao: quem ja tem ficha de uma edicao anterior digita o nome
   // completo e o formulario vem preenchido, em vez de tudo de novo.
   const [nomeConfirmacao, setNomeConfirmacao] = useState('');
+
+  // "Não tenho CPF": depois do nome vem uma tela pedindo a data de
+  // nascimento. Sem ela bastaria saber o nome de alguém para abrir a
+  // inscrição dessa pessoa -- e nome de gente não é segredo. A data fica
+  // guardada porque o servidor a exige em TODA chamada seguinte: situação,
+  // forma de pagamento, autorização dos pais.
+  const [verificacao, setVerificacao] = useState(null);
+  const [nascimentoConfirmado, setNascimentoConfirmado] = useState('');
+  const [nascimentoDigitado, setNascimentoDigitado] = useState('');
+  const [conferindoNascimento, setConferindoNascimento] = useState(false);
+  const [erroNascimento, setErroNascimento] = useState('');
   const [buscandoFicha, setBuscandoFicha] = useState(false);
   const [erroFicha, setErroFicha] = useState('');
 
@@ -178,6 +190,15 @@ const EquipantePage = () => {
     // pagou: o equipante ja inscrito e pago caia no formulario de nova
     // inscricao, preenchia tudo de novo e so no envio recebia "Erro ao
     // processar inscricao" (o banco recusando o CPF repetido).
+    // Entrou sem CPF e a ficha existe: antes de mostrar qualquer coisa,
+    // confirma a data de nascimento. É ela que substitui o CPF como prova.
+    if (isFound && result.semCpf && loadedData?.id) {
+      setInscricaoData(loadedData);
+      setVerificacao({ inscrito: isEnrolled });
+      setCurrentStep('confirmar-nascimento');
+      return;
+    }
+
     if (isFound && hasPaid) {
       setCurrentStep('sucesso');
     } else if (isFound && loadedData) {
@@ -236,6 +257,49 @@ const EquipantePage = () => {
       setCurrentStep('formulario');
     } finally {
       setBuscandoFicha(false);
+    }
+  };
+
+  // Confere a data contra o SERVIDOR antes de deixar entrar. Quem decide é
+  // situacao_inscricao: com a data errada ela recusa, e é essa recusa que
+  // vira a mensagem aqui. A tela não confere nada por conta própria -- se
+  // conferisse, bastaria burlar o navegador.
+  const confirmarNascimento = async () => {
+    setErroNascimento('');
+
+    if (!nascimentoDigitado) {
+      setErroNascimento('Informe a sua data de nascimento.');
+      return;
+    }
+
+    setConferindoNascimento(true);
+    try {
+      const situacao = await getEquipanteWorkflow(inscricaoData.id, {
+        cpf: null,
+        nome: inscricaoData?.nome || formData.nome,
+        nascimento: nascimentoDigitado
+      });
+
+      setNascimentoConfirmado(nascimentoDigitado);
+      setFormData(prev => ({ ...prev, dataNascimento: nascimentoDigitado }));
+
+      if (situacao?.pago) {
+        setCurrentStep('sucesso');
+      } else if (verificacao?.inscrito) {
+        setCurrentStep('workflow');
+      } else {
+        // Ficha de uma edição anterior. Sem CPF não dá para trazer a ficha
+        // preenchida (ficha_para_reinscricao exige CPF **e** nome), então
+        // segue para o formulário com o que já sabemos.
+        setCurrentStep(equipantesAbertos ? 'formulario' : 'fechadas');
+      }
+    } catch (err) {
+      // getEquipanteWorkflow levanta com a mensagem do servidor. Aqui a causa
+      // é sempre a mesma: a data não bateu.
+      console.error('confirmarNascimento', err?.message || err);
+      setErroNascimento('A data de nascimento não confere com esta inscrição.');
+    } finally {
+      setConferindoNascimento(false);
     }
   };
 
@@ -344,7 +408,10 @@ const EquipantePage = () => {
         id: inscricaoData?.id,
         tipo: 'equipante',
         nome: inscricaoData?.nome || formData.nome,
-        cpf: inscricaoData?.cpf || formData.cpf
+        cpf: inscricaoData?.cpf || formData.cpf,
+        // Quem entrou sem CPF provou com nome + data de nascimento; a data
+        // precisa seguir junto, senao o servidor recusa o pagamento.
+        nascimento: nascimentoConfirmado || null
       }
     });
   };
@@ -390,6 +457,58 @@ const EquipantePage = () => {
             )}
             <VerificacaoCPF onVerificationComplete={handleVerificationComplete} tipo="equipante" />
           </>
+        )}
+
+        {currentStep === 'confirmar-nascimento' && (
+          <Card className="glass-effect border-white/10 bg-black/40 max-w-xl mx-auto">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Lock className="w-5 h-5 text-blue-400" />
+                Confirme que é você
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-300 text-sm">
+                Encontramos a inscrição de <strong className="text-white">{inscricaoData?.nome}</strong>.
+                Como você entrou sem CPF, confirme a sua data de nascimento para abrir a inscrição.
+              </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="nascimentoConfirmacao" className="text-white">Data de nascimento</Label>
+                <Input
+                  id="nascimentoConfirmacao"
+                  type="date"
+                  max={new Date().toISOString().slice(0, 10)}
+                  value={nascimentoDigitado}
+                  onChange={(e) => { setNascimentoDigitado(e.target.value); setErroNascimento(''); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') confirmarNascimento(); }}
+                  className="bg-white/10 border-white/20 text-white [color-scheme:dark]"
+                />
+                {erroNascimento && <p className="text-red-300 text-sm">{erroNascimento}</p>}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={confirmarNascimento} disabled={conferindoNascimento} className="flex-1">
+                  {conferindoNascimento ? 'Conferindo...' : 'Confirmar'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setCurrentStep('verificacao');
+                    setNascimentoDigitado('');
+                    setErroNascimento('');
+                  }}
+                  className="flex-1 border-white/20 text-gray-300 hover:text-white"
+                >
+                  Voltar
+                </Button>
+              </div>
+
+              <p className="text-[11px] text-gray-500">
+                Sem CPF, é a data de nascimento que prova que a inscrição é sua.
+              </p>
+            </CardContent>
+          </Card>
         )}
 
         {currentStep === 'reinscricao' && (
@@ -475,7 +594,11 @@ const EquipantePage = () => {
             // Prova de dono: quem se inscreve nao esta logado, entao o
             // servidor confere o CPF (ou o nome de quem nao tem CPF) antes
             // de contar a situacao da inscricao.
-            dono={{ cpf: inscricaoData?.cpf || formData.cpf, nome: inscricaoData?.nome || formData.nome }}
+            dono={{
+              cpf: inscricaoData?.cpf || formData.cpf,
+              nome: inscricaoData?.nome || formData.nome,
+              nascimento: nascimentoConfirmado || null
+            }}
             onProceedToPayment={proceedToPayment}
           />
         )}

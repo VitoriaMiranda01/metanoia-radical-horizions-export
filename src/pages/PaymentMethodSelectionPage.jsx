@@ -36,7 +36,7 @@ const PaymentMethodSelectionPage = () => {
           // Prova de que a inscrição é desta pessoa. Quem se inscreveu sem
           // CPF prova pelo nome -- é a mesma evidência que ela usou para
           // chegar até aqui.
-          { cpf: location.state?.cpf, nome: location.state?.nome }
+          { cpf: location.state?.cpf, nome: location.state?.nome, nascimento: location.state?.nascimento }
         );
       } catch (error) {
         console.error("Failed to update payment method:", error);

@@ -147,15 +147,18 @@ export const consultarStatusPix = async (txid) =>
 //
 // Sem reenvio automatico nao: repetir grava o mesmo valor, entao e seguro.
 //
-// O CPF (ou o nome, para quem se inscreveu sem CPF) vai junto como prova de
-// que a inscricao e sua. Sem isso, so o id bastava -- e o id nao e segredo:
-// verificar_inscricao devolve o id de quem ainda nao pagou, e aceita busca
-// so pelo nome. Ver
-// database/migrations/schema-update-20260912j-prova-de-dono-da-inscricao.sql.
-export const registrarMetodoPagamento = async (tipo, id, metodo, cpf = null, nome = null) =>
+// A prova de dono vai junto. Sem ela so o id bastava -- e o id nao e segredo:
+// verificar_inscricao devolve o id de quem ainda nao pagou, e aceita busca so
+// pelo nome.
+//
+// Quem tem CPF prova com o CPF. Quem se inscreveu sem CPF prova com nome
+// completo + DATA DE NASCIMENTO: nome de gente nao e segredo, entao o nome
+// sozinho deixaria qualquer um mexer na inscricao alheia. Ver
+// _inscricao_e_sua.
+export const registrarMetodoPagamento = async (tipo, id, metodo, cpf = null, nome = null, nascimento = null) =>
   chamar('registrar_metodo_pagamento', {
     p_tipo: tipo, p_id: id, p_metodo: metodo,
-    p_cpf: cpf ?? null, p_nome: nome ?? null,
+    p_cpf: cpf ?? null, p_nome: nome ?? null, p_nascimento: nascimento ?? null,
   });
 
 // Inscricao que ficou em R$ 0,00 por cupom.
@@ -164,8 +167,8 @@ export const registrarMetodoPagamento = async (tipo, id, metodo, cpf = null, nom
 // desconto do cupom). Se fosse o navegador, bastaria chamar esta funcao para
 // sair sem pagar.
 // Mesma prova de dono da funcao acima.
-export const finalizarInscricaoGratuita = async (tipo, id, cupom, cpf = null, nome = null) =>
+export const finalizarInscricaoGratuita = async (tipo, id, cupom, cpf = null, nome = null, nascimento = null) =>
   chamar('finalizar_inscricao_gratuita', {
     p_tipo: tipo, p_id: id, p_cupom: cupom ?? null,
-    p_cpf: cpf ?? null, p_nome: nome ?? null,
+    p_cpf: cpf ?? null, p_nome: nome ?? null, p_nascimento: nascimento ?? null,
   }, { tentativas: 1 });

@@ -150,6 +150,7 @@ export const uploadParentalAuthFile = async (equipante_id, file, dono = {}) => {
       p_url: publicUrlData?.publicUrl,
       p_cpf: dono.cpf ?? null,
       p_nome: dono.nome ?? null,
+      p_nascimento: dono.nascimento ?? null,
     });
 
     if (error) throw error;
@@ -170,6 +171,7 @@ export const getEquipanteWorkflow = async (equipante_id, dono = {}) => {
       p_id: equipante_id,
       p_cpf: dono.cpf ?? null,
       p_nome: dono.nome ?? null,
+      p_nascimento: dono.nascimento ?? null,
     });
 
     if (error) throw error;

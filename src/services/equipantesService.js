@@ -136,7 +136,16 @@ export const uploadParentalAuthFile = async (equipante_id, file, dono = {}) => {
       .from(PARENTAL_AUTH_BUCKET)
       .upload(fileName, file);
 
-    if (uploadError) throw uploadError;
+    // O erro cru do Storage chegava inteiro na tela da pessoa -- ela via
+    // "new row violates row-level security policy" e nao tinha o que fazer
+    // com aquilo. A causa real fica no console, para quem for investigar.
+    if (uploadError) {
+      console.error('equipanteApi - upload no Storage', uploadError);
+      throw new Error(
+        'Não conseguimos guardar o arquivo. Tente de novo; se continuar, '
+        + 'avise a organização.'
+      );
+    }
 
     const { data: publicUrlData } = supabase.storage
       .from(PARENTAL_AUTH_BUCKET)

@@ -123,8 +123,25 @@ export const validarCupomPublico = async (codigo) =>
  * dessa operacao fica em inscricoesService.js, que sabe distinguir erro
  * passageiro de erro de regra (CPF duplicado, limite da igreja).
  */
-export const criarInscricaoPublica = async (tipo, dados) =>
-  chamar('criar_inscricao', { p_tipo: tipo, p_dados: dados }, { tentativas: 1 });
+export const criarInscricaoPublica = async (tipo, dados, chave = null) =>
+  chamar('criar_inscricao', { p_tipo: tipo, p_dados: dados, p_chave: chave }, { tentativas: 1 });
+
+/**
+ * A chave de sessao de teste vale? Responde so sim ou nao.
+ *
+ * Serve para o site abrir o formulario com as inscricoes fechadas, para uma
+ * pessoa so. A tela e conveniencia: quem barra de verdade e criar_inscricao,
+ * que exige a mesma chave no servidor.
+ */
+export const liberacaoDeTesteValida = async (chave, tipo) => {
+  if (!chave) return false;
+  try {
+    return !!(await chamar('liberacao_valida', { p_chave: chave, p_tipo: tipo }));
+  } catch (erro) {
+    console.error('publicData - liberacao de teste', erro?.message || erro);
+    return false;
+  }
+};
 
 /**
  * Status de UMA cobranca PIX, pelo txid.

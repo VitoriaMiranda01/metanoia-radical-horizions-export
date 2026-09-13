@@ -200,7 +200,7 @@ export const verificarNome = async (nome, tipo) => {
   }
 };
 
-export const criarInscricao = async (formData, tipo) => {
+export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
   if (!formData) {
     console.error('inscricaoApi - criarInscricao: FormData nulo fornecido');
     return { success: false, error: 'Dados do formulário inválidos' };
@@ -228,7 +228,7 @@ export const criarInscricao = async (formData, tipo) => {
     // define status de pagamento, dados de transação, aprovação e grupo de
     // trilha, e devolve só o id. Sem isso, qualquer um podia se inserir já
     // marcado como "confirmado".
-    const resultado = await comReenvio(() => criarInscricaoPublica(tipo, payload));
+    const resultado = await comReenvio(() => criarInscricaoPublica(tipo, payload, chaveTeste));
 
     if (!resultado?.id) {
       throw new Error('A inscrição não retornou identificador.');

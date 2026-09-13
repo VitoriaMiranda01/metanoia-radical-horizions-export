@@ -17,8 +17,8 @@ import {
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
-import { RefreshCw, Lock, CheckCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { RefreshCw, Lock, CheckCircle, FlaskConical } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import DadosPessoais from '@/components/inscricao/DadosPessoais';
 import InfoEclesiasticas from '@/components/inscricao/InfoEclesiasticas';
@@ -30,6 +30,7 @@ import { criarInscricao, buscarFichaAnterior } from '@/services/inscricoesServic
 import { calcularIdade } from '@/utils/formatters';
 import { getEquipanteWorkflow } from '@/services/equipantesService';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
+import { liberacaoDeTesteValida } from '@/services/publicDataService';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
 
@@ -123,6 +124,33 @@ const EquipantePage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { equipantesAbertos, loading: loadingStatus } = useInscricoesStatus();
+
+  // SESSAO DE TESTE
+  // ---------------
+  // Com as inscricoes fechadas, uma chave na URL (?chave=...) abre o
+  // formulario para quem tem a chave -- e so para essa pessoa. Serve para a
+  // organizacao percorrer o cadastro a mao antes de abrir para o publico.
+  //
+  // A chave nao mora no codigo: vive numa tabela do banco, com prazo de
+  // validade. Aqui so perguntamos "vale?" e usamos a resposta para escolher
+  // entre o formulario e a tela de encerradas. Quem barra de verdade e o
+  // servidor, em criar_inscricao, que exige a mesma chave -- burlar esta
+  // tela nao cria inscricao nenhuma.
+  const [parametros] = useSearchParams();
+  const chaveTeste = parametros.get('chave');
+  const [sessaoDeTeste, setSessaoDeTeste] = useState(false);
+
+  useEffect(() => {
+    let vivo = true;
+    if (!chaveTeste) return undefined;
+    liberacaoDeTesteValida(chaveTeste, 'equipante').then((vale) => {
+      if (vivo) setSessaoDeTeste(vale);
+    });
+    return () => { vivo = false; };
+  }, [chaveTeste]);
+
+  // O portao efetivo do cadastro novo, usado no lugar de equipantesAbertos.
+  const podeCadastrar = equipantesAbertos || sessaoDeTeste;
 
   const [currentStep, setCurrentStep] = useState('verificacao');
   const [inscricaoData, setInscricaoData] = useState(null);
@@ -254,7 +282,7 @@ const EquipantePage = () => {
         // servidor so entrega mediante CPF **e** nome completo, entao o nome
         // e pedido no passo 'reinscricao'. Quem preferir segue com o
         // formulario limpo por la mesmo.
-        setCurrentStep(equipantesAbertos ? 'reinscricao' : 'fechadas');
+        setCurrentStep(podeCadastrar ? 'reinscricao' : 'fechadas');
       } else {
         if (hasPaid) {
           setCurrentStep('sucesso');
@@ -263,7 +291,7 @@ const EquipantePage = () => {
         }
       }
     } else {
-      setCurrentStep(equipantesAbertos ? 'formulario' : 'fechadas');
+      setCurrentStep(podeCadastrar ? 'formulario' : 'fechadas');
     }
   };
 
@@ -336,7 +364,7 @@ const EquipantePage = () => {
         // Ficha de uma edição anterior. Sem CPF não dá para trazer a ficha
         // preenchida (ficha_para_reinscricao exige CPF **e** nome), então
         // segue para o formulário com o que já sabemos.
-        setCurrentStep(equipantesAbertos ? 'formulario' : 'fechadas');
+        setCurrentStep(podeCadastrar ? 'formulario' : 'fechadas');
       }
     } catch (err) {
       // getEquipanteWorkflow levanta com a mensagem do servidor. Aqui a causa
@@ -423,7 +451,7 @@ const EquipantePage = () => {
         submissionData.igreja = 'NÃO SE APLICA (NÃO CONGREGA)';
       }
       
-      const result = await criarInscricao(submissionData, 'equipante');
+      const result = await criarInscricao(submissionData, 'equipante', chaveTeste);
       
       if (result.success) {
         setInscricaoData(result.data);
@@ -487,6 +515,19 @@ const EquipantePage = () => {
           </h2>
         </div>
 
+        {/* Fica bem visivel de proposito: ninguem pode confundir a sessao de
+            teste com as inscricoes abertas de verdade. */}
+        {sessaoDeTeste && !equipantesAbertos && (
+          <div className="bg-fuchsia-500/10 border border-fuchsia-500/40 p-4 rounded-lg flex items-start gap-3">
+            <FlaskConical className="w-5 h-5 text-fuchsia-300 shrink-0 mt-0.5" />
+            <p className="text-fuchsia-100 text-sm">
+              <strong>Sessão de teste.</strong> As inscrições continuam encerradas para o
+              público — este formulário abriu só para quem tem a chave. O que for cadastrado
+              aqui entra na base de verdade: apague depois do teste.
+            </p>
+          </div>
+        )}
+
         {currentStep === 'verificacao' && (
           <>
             {/* Com as inscricoes fechadas a tela NAO some: quem ja se
@@ -494,7 +535,7 @@ const EquipantePage = () => {
                 escalado, pagar a taxa de alimentacao -- o que acontece
                 justamente depois de as inscricoes fecharem. So o cadastro
                 novo e que fica barrado. */}
-            {!equipantesAbertos && (
+            {!podeCadastrar && (
               <div className="mb-6 bg-amber-500/10 border border-amber-500/25 p-4 rounded-lg flex items-start gap-3">
                 <Lock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-amber-200 text-sm">

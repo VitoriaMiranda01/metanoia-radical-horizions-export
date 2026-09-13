@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import FormSection from './FormSection';
 import { cn } from '@/lib/utils';
 import { AREAS_INSCRICAO, AREA_DISPONIVEL_QUALQUER } from '@/constants/workAreas';
+import { FRASES_AREAS_EXTRA } from '@/constants/areasExtra';
 
 // A lista de areas NAO mora mais aqui: mora em src/constants/workAreas.js,
 // junto com a lista que a tela de Geracao de Escalas usa. Eram duas listas
@@ -20,11 +21,9 @@ import { AREAS_INSCRICAO, AREA_DISPONIVEL_QUALQUER } from '@/constants/workAreas
 const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
   const AREAS = AREAS_INSCRICAO;
 
-  const EXTRA_OPTIONS = [
-    "Disponível para ajudar a carregar o caminhão na Centenario Quinta-Feira 19h.",
-    "Disponível para cozinha da Centenario na Sexta-Feira a tarde preparando o lanche dos ACAMPANTES.",
-    "Disponível para ajudar na limpeza da Centenario após a saída dos ACAMPANTES na Sexta-Feira."
-  ];
+  // As frases vivem em src/constants/areasExtra.js: a tela de Geracao de
+  // Escalas precisa da mesma lista para montar a relacao de quem se ofereceu.
+  const EXTRA_OPTIONS = FRASES_AREAS_EXTRA;
 
   // Helper to check if an area is selected in other fields
   const isAreaDisabled = (area, currentFieldName) => {

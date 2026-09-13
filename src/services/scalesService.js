@@ -238,3 +238,46 @@ export const desfazerLancamentoEscala = async () => {
   if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível desfazer' };
   return { success: true };
 };
+
+// ---------------------------------------------------------------------------
+// Areas de Trabalho Extra
+//
+// As 3 disponibilidades opcionais do fim do formulario (caminhao na quinta,
+// cozinha na sexta, limpeza na sexta). Nao tem nada a ver com a escala: sao
+// mutiroes na Centenario, fora do acampamento. Ate agora a resposta ficava
+// so gravada numa coluna de texto e ninguem tinha como montar a lista de
+// quem se ofereceu -- e muito menos responder "sim, conto com voce".
+//
+// O servidor devolve UMA LINHA POR (pessoa, area oferecida): quem marcou as
+// tres aparece em tres linhas. A tela agrupa por area.
+// ---------------------------------------------------------------------------
+
+export const fetchDisponibilidadesExtra = async () => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('disponibilidades_extra'),
+    { rotulo: 'disponibilidades extras' }
+  );
+  if (error) {
+    console.error('scalesApi - disponibilidades extras', error?.message || error);
+    return { success: false, error: error.message || 'Erro ao carregar as disponibilidades', itens: [] };
+  }
+  if (!data?.ok) {
+    return { success: false, error: data?.erro || 'Não foi possível carregar', itens: [] };
+  }
+  return { success: true, itens: data.itens || [] };
+};
+
+// aprovado: true = conto com você · false = dispensado · null = desfaz a resposta
+export const decidirDisponibilidadeExtra = async (equipanteId, area, aprovado) => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('decidir_disponibilidade_extra', {
+      p_equipante_id: equipanteId,
+      p_area: area,
+      p_aprovado: aprovado
+    }),
+    { rotulo: 'resposta à disponibilidade' }
+  );
+  if (error) return { success: false, error: error.message || 'Erro ao salvar a resposta' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar a resposta' };
+  return { success: true, decididoPor: data.decidido_por || null, decididoEm: data.decidido_em || null };
+};

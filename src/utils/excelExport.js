@@ -203,3 +203,68 @@ export const exportRelacaoPagamentos = (linhas) => {
 
   return { total: linhas.length, pagaram: linhas.length - faltando.length };
 };
+
+/**
+ * Áreas de Trabalho Extra: uma aba por mutirão (Caminhão, Cozinha, Limpeza).
+ *
+ * É a lista que o organizador leva no dia — quem se ofereceu, o telefone, e
+ * se a disponibilidade foi aceita. Recebe as linhas já vindas do servidor
+ * (uma por pessoa+área) e a lista de áreas para saber a ordem e o nome de
+ * cada aba.
+ */
+export const exportDisponibilidadesExtra = (itens, areas) => {
+  if (!itens || itens.length === 0) {
+    throw new Error('Ninguém se ofereceu para as áreas extras ainda.');
+  }
+
+  const paraLinha = (item) => ({
+    'Resposta': item.aprovado === true ? 'APROVADO'
+      : item.aprovado === false ? 'RECUSADO'
+        : 'SEM RESPOSTA',
+    'Nome': item.nome || '-',
+    'Telefone': item.whatsapp || '-',
+    'CPF': item.cpf ? formatCPF(item.cpf) : '(sem CPF)',
+    'Igreja': item.igreja || '-',
+    'Inscrição': ({
+      aprovado: 'Aprovada',
+      pendente: 'Pendente',
+      rejeitado: 'Rejeitada',
+    })[item.status] || (item.status || '-'),
+    'Respondido por': item.decidido_por || '-',
+  });
+
+  const larguras = [
+    { wch: 14 }, // Resposta
+    { wch: 40 }, // Nome
+    { wch: 18 }, // Telefone
+    { wch: 18 }, // CPF
+    { wch: 38 }, // Igreja
+    { wch: 12 }, // Inscrição
+    { wch: 24 }, // Respondido por
+  ];
+
+  const wb = XLSX.utils.book_new();
+  let abas = 0;
+
+  areas.forEach((area) => {
+    const doGrupo = itens.filter((i) => i.area === area.chave);
+    if (doGrupo.length === 0) return;
+
+    const ws = XLSX.utils.json_to_sheet(doGrupo.map(paraLinha));
+    ws['!cols'] = larguras;
+    // O Excel não aceita nome de aba com mais de 31 caracteres nem com
+    // travessão/dois-pontos em algumas versões — daí o corte e a limpeza.
+    const nomeAba = area.rotulo.replace(/[\/?*[\]:—]/g, '-').substring(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, nomeAba || area.chave);
+    abas += 1;
+  });
+
+  if (abas === 0) {
+    throw new Error('Ninguém se ofereceu para as áreas extras ainda.');
+  }
+
+  const hoje = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Areas_Extras_Metanoia_Radical_${hoje}.xlsx`);
+
+  return { total: itens.length };
+};

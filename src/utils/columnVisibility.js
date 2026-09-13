@@ -54,7 +54,14 @@ export const COLUMN_DEFINITIONS = {
     { key: 'status_pagamento', label: 'Status Pagamento', group: 'Sistema' },
     { key: 'metodo_pagamento', label: 'Método Pagamento', group: 'Sistema' },
     { key: 'data_pagamento', label: 'Data do Pagamento', group: 'Sistema' },
-    { key: 'status', label: 'Status', group: 'Sistema' }
+    { key: 'status', label: 'Status', group: 'Sistema' },
+
+    // Quem aprovou ou rejeitou. Escrito pelo servidor a partir do crachá
+    // (ver decidir_inscricao) -- a mesma tela é usada por organizador e por
+    // parceiro, então sem isto não dava para saber de que lado veio.
+    { key: 'decidido_por', label: 'Decidido por', group: 'Sistema' },
+    { key: 'decidido_por_igreja', label: 'Igreja de quem decidiu', group: 'Sistema' },
+    { key: 'decidido_em', label: 'Data da decisão', group: 'Sistema' }
   ],
   acampantes: [
     // Identificação

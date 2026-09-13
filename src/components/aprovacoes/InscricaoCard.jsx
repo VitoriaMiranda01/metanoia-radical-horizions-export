@@ -1,7 +1,8 @@
 import React from 'react';
-import { Eye, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Eye, CheckCircle, XCircle, AlertTriangle, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { naoCongrega } from '@/constants/igrejas';
+import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
 
 const InscricaoCard = ({ 
   inscricao, 
@@ -47,6 +48,16 @@ const InscricaoCard = ({
       {/* Toda inscrição de equipante já passa por aprovação. Esta aqui é a
           que a Direção precisa olhar com mais atenção: não há igreja nem
           pastor para responder pela pessoa. */}
+      {/* Quem assinou a decisão. Só aparece depois que alguém decide. */}
+      {decisaoDaInscricao(inscricao) && (
+        <div className="flex items-start gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-2">
+          <UserCheck className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+          <span className="text-gray-300 text-xs leading-snug">
+            {decisaoDaInscricao(inscricao).frase}
+          </span>
+        </div>
+      )}
+
       {naoCongrega(inscricao) && (
         <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2">
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />

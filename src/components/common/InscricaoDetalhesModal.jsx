@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, AlertTriangle } from 'lucide-react';
 import { naoCongrega } from '@/constants/igrejas';
+import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
 import { getEquipanteStageLabel } from '@/utils/equipanteWorkflow';
 
 const getStatusBadge = (status) => {
@@ -563,6 +564,24 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
               <span className="text-sm text-gray-400 block mb-1">Status:</span>
               <div className="mt-1">{getStatusBadge(inscricao.status)}</div>
             </div>
+
+            {/* Quem assinou a decisão. Vem carimbado pelo servidor a partir
+                do crachá de quem clicou (ver decidir_inscricao) -- a mesma
+                tela é usada por organizador e por parceiro. */}
+            {decisaoDaInscricao(inscricao) && (
+              <div className="bg-white/5 p-3 rounded-md">
+                <span className="text-sm text-gray-400 block mb-1">
+                  {decisaoDaInscricao(inscricao).verbo} por:
+                </span>
+                <p className="text-white font-medium">{decisaoDaInscricao(inscricao).por}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {decisaoDaInscricao(inscricao).origem}
+                  {decisaoDaInscricao(inscricao).quando
+                    ? ` · ${decisaoDaInscricao(inscricao).quando}`
+                    : ''}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

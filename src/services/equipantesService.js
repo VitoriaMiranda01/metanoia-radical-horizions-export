@@ -218,8 +218,28 @@ export const updateEquipanteInscrito = async (equipante_id) => {
 export const fetchEquipantesRaw = async () =>
   comReenvio(() => supabase.from('equipantes').select('*, idade'), { rotulo: 'equipantes' });
 
+/**
+ * Aprova, rejeita ou devolve para pendente -- registrando QUEM decidiu.
+ *
+ * Era um UPDATE direto no campo "status", e por isso nao sobrava registro
+ * nenhum do autor. Como a mesma tela e usada por organizador e por parceiro,
+ * nem dava para saber de que lado veio a decisao.
+ *
+ * Agora quem escreve o nome e o servidor, lendo o cracha. De proposito: se o
+ * nome viesse daqui, daria para assinar a aprovacao com o nome de outra
+ * pessoa.
+ *
+ * Devolve { data: { status, decidido_por, decidido_por_tipo,
+ * decidido_por_igreja, decidido_em } } para a tela mostrar na hora.
+ */
 export const updateEquipanteStatus = async (id, newStatus) => {
-  return supabase.from('equipantes').update({ status: newStatus }).eq('id', id);
+  const { data, error } = await supabase.rpc('decidir_inscricao', {
+    p_id: id,
+    p_status: newStatus
+  });
+  if (error) return { error };
+  if (!data?.ok) return { error: new Error(data?.erro || 'Não foi possível registrar a decisão.') };
+  return { data };
 };
 
 // Tabela geral dos organizadores: só mostra equipantes cuja inscrição já foi

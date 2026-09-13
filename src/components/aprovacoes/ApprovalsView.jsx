@@ -88,32 +88,43 @@ const ApprovalsView = ({
     }
   };
   
+  // Devolve a DECISAO (quem assinou, quando) em vez de um true/false, para
+  // quem chamou poder dizer na hora "Aprovado por Fulano". Devolve null se
+  // deu errado.
   const updateInscricaoStatus = async (id, tipo, newStatus) => {
     try {
-      const { error } = await updateEquipanteStatus(id, newStatus);
+      const { data, error } = await updateEquipanteStatus(id, newStatus);
 
       if (error) throw error;
 
-      // Update local state to reflect change immediately
-      const novasInscricoes = inscricoes.map(inscricao => 
+      // O servidor devolve quem assinou a decisao. Guardamos junto para a
+      // linha ja aparecer com o autor, sem esperar o recarregamento.
+      const novasInscricoes = inscricoes.map(inscricao =>
         inscricao.id === id
-          ? { ...inscricao, status: newStatus }
+          ? {
+              ...inscricao,
+              status: newStatus,
+              decidido_por: data?.decidido_por ?? null,
+              decidido_por_tipo: data?.decidido_por_tipo ?? null,
+              decidido_por_igreja: data?.decidido_por_igreja ?? null,
+              decidido_em: data?.decidido_em ?? null
+            }
           : inscricao
       );
       setInscricoes(novasInscricoes);
-      
+
       // Trigger background refresh to ensure sync
       carregarInscricoes(false);
-      
-      return true;
+
+      return data || {};
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
-      toast({ 
-        title: "Erro na atualização", 
-        description: "Não foi possível atualizar o status da inscrição.", 
-        variant: "destructive" 
+      toast({
+        title: "Erro na atualização",
+        description: error?.message || "Não foi possível atualizar o status da inscrição.",
+        variant: "destructive"
       });
-      return false;
+      return null;
     }
   };
 
@@ -130,9 +141,9 @@ const ApprovalsView = ({
       return;
     }
 
-    const success = await updateInscricaoStatus(id, inscricao.tipo, 'aprovado');
-    
-    if (!success) return;
+    const decisao = await updateInscricaoStatus(id, inscricao.tipo, 'aprovado');
+
+    if (!decisao) return;
 
     // A aprovacao NAO escala mais ninguem automaticamente (decidido com o
     // Patrick em 12/09/2026). Antes, aprovar ja jogava a pessoa na primeira
@@ -141,7 +152,9 @@ const ApprovalsView = ({
     // uma na area, olhando o conjunto. As preferencias continuam gravadas e
     // aparecem ali do lado, como sugestao -- so nao decidem sozinhas.
     toast({
-      title: "Equipante aprovado!",
+      title: decisao.decidido_por
+        ? `Aprovado por ${decisao.decidido_por}`
+        : "Equipante aprovado!",
       description: `${inscricao.nome} entrou na fila para ser escalado em Geração de Escalas.`,
       className: "bg-green-600 text-white"
     });
@@ -159,11 +172,13 @@ const ApprovalsView = ({
       return;
     }
 
-    const success = await updateInscricaoStatus(id, inscricao.tipo, 'rejeitado');
-    
-    if (success) {
+    const decisao = await updateInscricaoStatus(id, inscricao.tipo, 'rejeitado');
+
+    if (decisao) {
       toast({ 
-        title: "Inscrição rejeitada", 
+        title: decisao.decidido_por
+          ? `Rejeitada por ${decisao.decidido_por}`
+          : "Inscrição rejeitada", 
         variant: "destructive" 
       });
     }
@@ -196,9 +211,9 @@ const ApprovalsView = ({
     const inscricao = inscricaoParaCancelar;
     setInscricaoParaCancelar(null);
 
-    const success = await updateInscricaoStatus(inscricao.id, inscricao.tipo, 'rejeitado');
+    const decisao = await updateInscricaoStatus(inscricao.id, inscricao.tipo, 'rejeitado');
 
-    if (!success) return;
+    if (!decisao) return;
 
     toast({
       title: "Aprovação cancelada",

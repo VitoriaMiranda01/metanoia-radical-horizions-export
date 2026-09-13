@@ -176,7 +176,7 @@ const estaQuitada = (status) =>
  * cujo PIX nunca foi confirmado (ex.: o Sicoob nao chamou o webhook).
  */
 export const fetchInscricoesNaoQuitadas = async () => {
-  const colunas = 'id, nome, cpf, status_pagamento, metodo_pagamento, data_pagamento';
+  const colunas = 'id, nome, cpf, nacionalidade, status_pagamento, metodo_pagamento, data_pagamento';
 
   const [acampantes, equipantes] = await Promise.all([
     comReenvio(() => supabase.from('acampantes').select(colunas), { rotulo: 'acampantes pendentes' }),

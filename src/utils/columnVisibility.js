@@ -12,6 +12,9 @@ export const COLUMN_DEFINITIONS = {
     { key: 'data_nascimento', label: 'Data de Nascimento', group: 'Pessoal' },
     { key: 'idade', label: 'Idade', group: 'Pessoal' },
     { key: 'sexo', label: 'Gênero', group: 'Pessoal' },
+    // Só quem se inscreveu sem CPF tem nacionalidade -- para os demais
+    // a coluna fica vazia, que e a leitura certa: brasileiro com CPF.
+    { key: 'nacionalidade', label: 'Nacionalidade', group: 'Pessoal' },
     { key: 'autorizacao_imagem', label: 'Autorização de Imagem', group: 'Pessoal' },
 
     // Endereço removido do seletor de equipantes -- o formulario de

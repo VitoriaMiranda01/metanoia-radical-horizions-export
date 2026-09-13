@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDropdown';
 import InscricaoCard from '@/components/aprovacoes/InscricaoCard';
 import { naoCongrega } from '@/constants/igrejas';
+import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { 
   getVisibleColumnsFromStorage, 
   saveVisibleColumnsToStorage,
@@ -367,7 +368,7 @@ const AprovacoesTable = ({
                                 title="Não congrega em nenhuma igreja — não há pastor ou igreja para responder por esta pessoa. Avaliem antes de aprovar."
                               />
                             )}
-                            {inscricao.nome}
+                            <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} />
                           </span>
                         </TableCell>
                         

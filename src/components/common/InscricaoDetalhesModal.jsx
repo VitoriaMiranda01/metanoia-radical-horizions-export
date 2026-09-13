@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { X, AlertTriangle } from 'lucide-react';
 import { naoCongrega } from '@/constants/igrejas';
 import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
+import NomeComBandeira from '@/components/common/NomeComBandeira';
+import { bandeiraENome } from '@/constants/nacionalidades';
 import { getEquipanteStageLabel } from '@/utils/equipanteWorkflow';
 
 const getStatusBadge = (status) => {
@@ -104,12 +106,22 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">Nome:</span>
-                <p className="text-white font-medium">{displayValue(inscricao.nome)}</p>
+                <p className="text-white font-medium">
+                  <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} />
+                </p>
               </div>
               <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">CPF:</span>
                 <p className="text-white font-medium">{displayValue(inscricao.cpf)}</p>
               </div>
+              {/* So aparece para quem se inscreveu sem CPF. Brasileiro entra
+                  pelo CPF, entao ausencia aqui significa brasileiro. */}
+              {inscricao.nacionalidade && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Nacionalidade:</span>
+                  <p className="text-white font-medium">{bandeiraENome(inscricao.nacionalidade)}</p>
+                </div>
+              )}
               <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">Sexo:</span>
                 <p className="text-white font-medium">{displayValue(inscricao.sexo)}</p>

@@ -46,7 +46,7 @@ const AcampantePage = () => {
 
   const [formData, setFormData] = useState({
     adminResponsavel: '',
-    cpf: '', semCpf: false, nome: '', sexo: '',
+    cpf: '', semCpf: false, nacionalidade: '', nome: '', sexo: '',
     tamanho_camisa: '',
     whatsapp: '', telefoneResidencial: '', dataNascimento: '',
     email: '', profissao: '', estadoCivil: '',

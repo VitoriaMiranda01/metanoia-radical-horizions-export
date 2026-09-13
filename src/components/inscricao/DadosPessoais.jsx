@@ -8,6 +8,7 @@ import { useEquipanteCPFLookup } from '@/hooks/useEquipanteCPFLookup';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toBoolean, calcularIdade } from '@/utils/formatters';
+import { NACIONALIDADES, bandeiraDoPais } from '@/constants/nacionalidades';
 
 const DadosPessoais = ({
   formData,
@@ -98,6 +99,12 @@ const DadosPessoais = ({
             )}
           </div>
 
+          {formData.semCpf && (
+            <p className="text-[10px] text-amber-200/80 mt-auto pt-1">
+              Inscrição sem CPF: informe a sua nacionalidade abaixo.
+            </p>
+          )}
+
           {!formData.semCpf && (
             <p className="text-[10px] text-blue-200/70 mt-auto pt-1">
               {isEquipante
@@ -151,6 +158,33 @@ const DadosPessoais = ({
           <Label htmlFor="whatsapp" className="text-white">WhatsApp</Label>
           <Input id="whatsapp" name="whatsapp" value={formData.whatsapp || ''} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="(11) 99999-9999" />
         </div>
+
+        {/* So para quem se inscreve sem CPF. A lista nao tem Brasil de
+            proposito: brasileiro entra pelo CPF (ver constants/nacionalidades). */}
+        {formData.semCpf && (
+          <div className="space-y-2">
+            <Label htmlFor="nacionalidade" className="text-white">Nacionalidade</Label>
+            <Select
+              required
+              value={formData.nacionalidade || ''}
+              onValueChange={(value) => handleSelectChange('nacionalidade', value)}
+            >
+              <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder="Selecione o seu país..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {NACIONALIDADES.map(pais => (
+                  <SelectItem key={pais.iso} value={pais.iso}>
+                    <span className="flex items-center gap-2">
+                      <span aria-hidden="true">{bandeiraDoPais(pais.iso)}</span>
+                      {pais.nome}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="dataNascimento" className="text-white">Data de Nascimento</Label>

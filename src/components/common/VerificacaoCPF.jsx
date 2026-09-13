@@ -119,8 +119,19 @@ const VerificacaoCPF = ({
           setCpf('');
           setNome('');
         }} />
-          <Label htmlFor="search-mode" className="text-white cursor-pointer select-none">Não tenho CPF</Label>
+          {/* Era "Não tenho CPF". Virou "Sou estrangeiro" porque e disso que
+              se trata: brasileiro se inscreve com CPF, obrigatoriamente --
+              quem entra por aqui informa a nacionalidade no cadastro. */}
+          <Label htmlFor="search-mode" className="text-white cursor-pointer select-none">
+            Sou estrangeiro (não tenho CPF)
+          </Label>
         </div>
+
+        {useNameSearch && (
+          <p className="text-[11px] text-amber-200/80 -mt-4 mb-6">
+            Esta opção é para quem não tem CPF. Se você é brasileiro, desligue e informe o seu CPF.
+          </p>
+        )}
 
         <form onSubmit={handleVerify} className="space-y-4">
           <div className="space-y-2">

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Users, Eye, Download, Search, Filter, X } from 'lucide-react';
@@ -335,7 +336,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
                 <div key={item.id} className="bg-white/5 border border-white/10 shadow-sm rounded-lg p-5 flex flex-col gap-4 relative overflow-hidden transition-all hover:bg-white/10">
                   <div className="flex justify-between items-start gap-3">
                     <h3 className="font-semibold text-white text-lg leading-tight break-words">
-                      {item.nome}
+                      <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} />
                     </h3>
                     <div className="shrink-0 mt-0.5">
                       {getStatusBadge(item.status)}
@@ -411,7 +412,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
                   {paginacao.itensDaPagina.map((item) => (
                     <TableRow key={item.id} className="hover:bg-white/5 transition-colors border-white/10 group">
                       <TableCell className="text-white font-medium sticky left-0 z-10 bg-black group-hover:bg-neutral-900">
-                          {item.nome}
+                          <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} />
                       </TableCell>
 
                       {visibleColumns.map(colKey => {

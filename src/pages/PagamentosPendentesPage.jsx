@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift } from 'lucide-react';
 import Layout from '@/components/Layout';
+import NomeComBandeira from '@/components/common/NomeComBandeira';
 import {
   fetchInscricoesNaoQuitadas,
   fetchPixTravados,
@@ -304,7 +305,9 @@ const PagamentosPendentesPage = () => {
                   ) : (
                     paginacao.itensDaPagina.map((item) => (
                       <TableRow key={item.id} className="border-white/10 hover:bg-white/5 transition-colors">
-                        <TableCell className="font-medium text-white">{item.nome}</TableCell>
+                        <TableCell className="font-medium text-white">
+                          <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} />
+                        </TableCell>
                         <TableCell className="text-gray-400">{item.cpf}</TableCell>
                         <TableCell>
                           <Badge

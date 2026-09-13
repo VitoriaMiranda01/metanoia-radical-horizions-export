@@ -3,7 +3,7 @@ import { validateEscala } from '@/utils/validation';
 import { comReenvio } from '@/services/serviceHelpers';
 
 const COLUNAS_EQUIPANTE =
-  'id, nome, whatsapp, sexo, igreja, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, numero_edicao, status, status_pagamento, cpf';
+  'id, nome, whatsapp, sexo, igreja, nacionalidade, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, numero_edicao, status, status_pagamento, cpf';
 
 // O PostgREST corta a resposta num teto de linhas (padrao 1000 no Supabase) e
 // NAO avisa: devolve as primeiras N como se fossem todas. As edicoes reais

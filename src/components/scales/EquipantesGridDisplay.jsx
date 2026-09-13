@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { formatCPF, formatNomeExibicao } from '@/utils/formatters';
 import { User, Download, Loader2, Star, X, Plus } from 'lucide-react';
 import { WORK_AREAS, CORES_GRUPO } from '@/constants/workAreas';
+import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { cn } from '@/lib/utils';
 
 const EquipantesGridDisplay = ({
@@ -104,7 +105,7 @@ const EquipantesGridDisplay = ({
                 <TableCell className="font-semibold text-white">
                   <div className="flex flex-col">
                     <span className="flex items-center gap-1.5">
-                      {formatNomeExibicao(eq.nome)}
+                      <NomeComBandeira nome={formatNomeExibicao(eq.nome)} nacionalidade={eq.nacionalidade} />
                       {ehLider(eq.atuacao) && (
                         <Star
                           className="h-3 w-3 text-amber-400 shrink-0"

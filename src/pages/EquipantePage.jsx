@@ -50,6 +50,7 @@ const mapDbToFormData = (dbData) => {
     whatsapp: dbData.whatsapp || '',
     telefoneResidencial: dbData.telefone_residencial || '',
     dataNascimento: dbData.data_nascimento || '',
+    nacionalidade: dbData.nacionalidade || '',
 
     // Saúde
     temProblemaSaude: simNao(dbData.tem_problema_saude),
@@ -143,7 +144,7 @@ const EquipantePage = () => {
   const [erroFicha, setErroFicha] = useState('');
 
   const [formData, setFormData] = useState({
-    cpf: '', semCpf: false, nome: '', dataNascimento: '', sexo: '',
+    cpf: '', semCpf: false, nacionalidade: '', nome: '', dataNascimento: '', sexo: '',
     whatsapp: '', telefoneResidencial: '',
     temProblemaSaude: '', condicoesMedicas: '',
     temRestricaoAlimentar: '', restricoesAlimentares: '',
@@ -325,6 +326,9 @@ const EquipantePage = () => {
     const faltando = [];
     if (!formData.sexo) faltando.push('Sexo');
     if (!formData.dataNascimento) faltando.push('Data de Nascimento');
+    // Quem se inscreve sem CPF e estrangeiro: sem a nacionalidade o
+    // organizador nao tem como saber quem e essa pessoa na lista.
+    if (formData.semCpf && !formData.nacionalidade) faltando.push('Nacionalidade');
     if (!formData.estaAfastado) faltando.push('Congrega em alguma igreja?');
     if (!formData.familiarTrabalhando) faltando.push('Tem algum familiar que vai trabalhar no projeto?');
     if (!formData.parentesco) faltando.push('Tem algum conhecido / familiar que vai participar como ACAMPANTE?');

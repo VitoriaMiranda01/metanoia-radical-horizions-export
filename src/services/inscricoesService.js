@@ -67,6 +67,8 @@ const mapEquipanteToDb = (formData) => ({
   whatsapp: formData.whatsapp,
   telefone_residencial: formData.telefoneResidencial,
   data_nascimento: formData.dataNascimento || null,
+  // So quem se inscreve sem CPF tem nacionalidade. O banco recusa 'BR'.
+  nacionalidade: formData.semCpf ? (formData.nacionalidade || null) : null,
   tem_problema_saude: toBoolean(formData.temProblemaSaude),
   condicoes_medicas: formData.condicoesMedicas,
   tem_restricao_alimentar: toBoolean(formData.temRestricaoAlimentar),

@@ -19,6 +19,7 @@ export const mapFormDataToDb = (formData, user) => {
     sexo: formData.sexo || null,
     tamanho_camisa: formData.tamanho_camisa || null,
     data_nascimento: formData.dataNascimento || null,
+    nacionalidade: formData.semCpf ? (formData.nacionalidade || null) : null,
     profissao: formData.profissao || null,
     estado_civil: formData.estadoCivil || null,
 

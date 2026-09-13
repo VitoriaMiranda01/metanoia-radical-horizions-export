@@ -3,6 +3,7 @@ import { Eye, CheckCircle, XCircle, AlertTriangle, UserCheck } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { naoCongrega } from '@/constants/igrejas';
 import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
+import NomeComBandeira from '@/components/common/NomeComBandeira';
 
 const InscricaoCard = ({ 
   inscricao, 
@@ -20,7 +21,7 @@ const InscricaoCard = ({
       {/* Header: Name and Status */}
       <div className="flex justify-between items-start gap-3">
         <h3 className="font-semibold text-white text-lg leading-tight break-words">
-          {inscricao.nome}
+          <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} />
         </h3>
         <div className="shrink-0 mt-0.5">
           {statusBadge}

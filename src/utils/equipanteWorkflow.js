@@ -15,8 +15,19 @@ export const getEquipanteStageLabel = (equipante) => {
   const idade = Number(equipante.idade);
   const isMinor = !Number.isNaN(idade) && idade < 18;
 
-  if (isMinor && !equipante.parental_auth_file_url) {
-    return 'Aguardando autorização dos pais';
+  // Dois caminhos concluem a autorizacao: o arquivo anexado, ou a carta
+  // entregue em maos (declarada pelo proprio menor). A conferencia da igreja
+  // vem depois e nao trava nada -- por isso ela so muda o texto.
+  if (isMinor) {
+    if (equipante.autorizacao_conferida_em) {
+      return 'Autorização dos pais conferida';
+    }
+    if (equipante.autorizacao_entregue_em) {
+      return 'Autorização entregue em mãos — a conferir';
+    }
+    if (!equipante.parental_auth_file_url) {
+      return 'Aguardando autorização dos pais';
+    }
   }
   if (equipante.status === 'rejeitado') {
     return 'Inscrição rejeitada';

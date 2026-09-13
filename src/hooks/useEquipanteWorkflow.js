@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   getEquipanteWorkflow,
   uploadParentalAuthFile,
-  updateWorkflowStage
+  updateWorkflowStage,
+  declararAutorizacaoEntregue
 } from '@/services/equipantesService';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -51,6 +52,29 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     }
   };
 
+  // "Já entregue" / desfazer. Mesma forma do uploadFile: a tela nao decide
+  // nada, so avisa o servidor e recarrega a situacao que ele devolver.
+  const declararEntrega = async (entregue = true) => {
+    try {
+      setIsLoading(true);
+      const updated = await declararAutorizacaoEntregue(equipante_id, entregue, dono);
+      setWorkflowData(updated);
+      toast({
+        title: entregue ? 'Anotado' : 'Desfeito',
+        description: entregue
+          ? 'Registramos que você entregou a autorização em mãos.'
+          : 'A entrega da autorização foi desmarcada.'
+      });
+      return updated;
+    } catch (err) {
+      setError(err.message);
+      toast({ title: 'Não deu certo', description: err.message, variant: 'destructive' });
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const updateStage = async (updates) => {
     try {
       setIsLoading(true);
@@ -80,9 +104,16 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     stages.push({ id: 'inscricao', label: 'Inscrição enviada', status: 'ok' });
 
     if (workflowData.menor_de_idade) {
+      // Concluida por qualquer um dos dois caminhos: arquivo anexado ou
+      // carta entregue em maos. O rotulo conta em que pe esta a conferencia
+      // da igreja -- que acontece DEPOIS e nao trava o pagamento.
       stages.push({
         id: 'parental_auth',
-        label: 'Autorização dos pais',
+        label: workflowData.autorizacao_conferida
+          ? 'Autorização dos pais (conferida pela igreja)'
+          : workflowData.autorizacao_entregue_maos
+            ? 'Autorização dos pais (entregue em mãos)'
+            : 'Autorização dos pais',
         status: workflowData.autorizacao_pais_enviada ? 'ok' : 'em_processo',
       });
     }
@@ -129,6 +160,10 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     pago: !!workflowData?.pago,
     aprovacao: workflowData?.aprovacao ?? null,
     workflowStages: getWorkflowStages(),
+    entregueEmMaos: !!workflowData?.autorizacao_entregue_maos,
+    autorizacaoConferida: !!workflowData?.autorizacao_conferida,
+    conferidaPor: workflowData?.autorizacao_conferida_por ?? null,
+    declararEntrega,
     isLoading,
     error,
     updateStage,

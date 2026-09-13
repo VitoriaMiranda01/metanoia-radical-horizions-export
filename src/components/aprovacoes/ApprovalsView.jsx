@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { ShieldCheck } from 'lucide-react';
+import ConferenciaMenoresDialog from '@/components/aprovacoes/ConferenciaMenoresDialog';
 import AprovacoesStatsCards from '@/components/aprovacoes/AprovacoesStatsCards';
 import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
 import AprovacoesTable from '@/components/aprovacoes/AprovacoesTable';
-import { fetchEquipantesRaw, updateEquipanteStatus } from '@/services/equipantesService';
+import { fetchEquipantesRaw, updateEquipanteStatus, fetchMenoresParaConferencia } from '@/services/equipantesService';
 import { useAuth } from '@/contexts/AuthContext';
 import { liberarVagaERealocar } from '@/services/equipanteAllocationService';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -28,6 +32,24 @@ const ApprovalsView = ({
   const [searchTermPendentes, setSearchTermPendentes] = useState('');
   const [searchTermAprovadas, setSearchTermAprovadas] = useState('');
   const [searchTermRejeitadas, setSearchTermRejeitadas] = useState('');
+
+  // Conferencia das cartas dos menores. O numero no botao conta so quem JA
+  // entregou (arquivo ou declaracao) e ainda espera o visto -- e essa a fila
+  // de trabalho. Quem nao entregou nada aparece na lista, mas nao no contador:
+  // ali nao ha o que conferir ainda.
+  const [verMenores, setVerMenores] = useState(false);
+  const [menoresAConferir, setMenoresAConferir] = useState(0);
+
+  const carregarMenores = async () => {
+    const r = await fetchMenoresParaConferencia();
+    if (!r.success) return;
+    setMenoresAConferir(r.itens.filter(
+      (i) => !i.autorizacao_conferida_em
+        && (i.parental_auth_file_url || i.autorizacao_entregue_em)
+    ).length);
+  };
+
+  useEffect(() => { carregarMenores(); }, []);
 
   useEffect(() => {
     carregarInscricoes();
@@ -279,7 +301,26 @@ const ApprovalsView = ({
           <h1 className="text-3xl font-bold text-white mb-2">{pageTitle}</h1>
           <p className="text-blue-200">{pageDescription}</p>
         </div>
+
+        {/* A conferencia das cartas dos menores. Fica a parte da aprovacao da
+            inscricao de proposito: sao duas decisoes diferentes, e a carta
+            costuma chegar em outro momento. O numero e so dos menores que ja
+            entregaram e esperam o visto. */}
+        <Button
+          onClick={() => setVerMenores(true)}
+          variant="outline"
+          className="bg-amber-600/20 text-amber-300 border-amber-600/50 hover:bg-amber-600/40 hover:text-amber-200 shrink-0"
+        >
+          <ShieldCheck className="mr-2 h-4 w-4" />
+          Autorizações dos menores{menoresAConferir > 0 ? ` (${menoresAConferir})` : ''}
+        </Button>
       </div>
+
+      <AnimatePresence>
+        {verMenores && (
+          <ConferenciaMenoresDialog onClose={() => { setVerMenores(false); carregarMenores(); }} />
+        )}
+      </AnimatePresence>
 
       {showStatistics && (
         <AprovacoesStatsCards

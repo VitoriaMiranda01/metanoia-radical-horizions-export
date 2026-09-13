@@ -172,6 +172,31 @@ export const uploadParentalAuthFile = async (equipante_id, file, dono = {}) => {
   }
 };
 
+/**
+ * "Já entregue": o menor declara que entregou a carta assinada em MAOS na
+ * igreja, em vez de anexar o arquivo.
+ *
+ * Conclui a etapa na hora e libera o pagamento -- foi decisao explicita, para
+ * nao travar o menor esperando a igreja. A conferencia do parceiro vem depois
+ * e, se ele disser que nao recebeu, a declaracao cai e o pagamento volta a
+ * travar (ver conferir_autorizacao_menor no banco).
+ *
+ * `entregue = false` desfaz, e so funciona enquanto ninguem conferiu.
+ */
+export const declararAutorizacaoEntregue = async (equipante_id, entregue, dono = {}) => {
+  const { data, error } = await supabase.rpc('declarar_autorizacao_entregue', {
+    p_id: equipante_id,
+    p_entregue: entregue,
+    p_cpf: dono.cpf ?? null,
+    p_nome: dono.nome ?? null,
+    p_nascimento: dono.nascimento ?? null,
+  });
+
+  if (error) throw new Error(error.message || 'Não foi possível registrar a entrega.');
+  if (!data?.ok) throw new Error(data?.erro || 'Não foi possível registrar a entrega.');
+  return await getEquipanteWorkflow(equipante_id, dono);
+};
+
 export const getEquipanteWorkflow = async (equipante_id, dono = {}) => {
   if (!equipante_id) return null;
   try {
@@ -278,3 +303,48 @@ export const countEquipantesInscritos = async () =>
 // separadas: se a segunda falhasse, a base ficava metade numa edicao e
 // metade na outra. Agora e uma transacao so no servidor:
 // organizerConfigService.resetarParaNovaEdicao -> resetar_para_nova_edicao.
+
+// ---------------------------------------------------------------------------
+// Conferencia das autorizacoes de menores.
+//
+// O menor conclui a etapa sozinho -- anexando o arquivo ou marcando "Já
+// entregue". Depois a igreja (ou a organizacao) confirma que tem a carta em
+// maos. Parceiro so enxerga os menores da propria igreja; organizador ve
+// todos, inclusive quem escolheu OUTRA ou nao congrega e por isso nao tem
+// parceiro nenhum para conferir.
+// ---------------------------------------------------------------------------
+
+export const fetchMenoresParaConferencia = async () => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('menores_para_conferencia'),
+    { rotulo: 'autorizações de menores' }
+  );
+  if (error) {
+    console.error('equipanteApi - menores para conferência', error?.message || error);
+    return { success: false, error: error.message || 'Erro ao carregar', itens: [] };
+  }
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível carregar', itens: [] };
+  return { success: true, itens: data.itens || [], papel: data.papel };
+};
+
+// conferida = false não é só tirar o visto: quando a autorização veio por
+// declaração (sem arquivo), significa "não recebi esta carta" -- a declaração
+// cai junto e o pagamento do menor volta a travar. Quem decide isso é o
+// servidor; aqui só relatamos o que ele respondeu.
+export const conferirAutorizacaoMenor = async (equipanteId, conferida) => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('conferir_autorizacao_menor', {
+      p_id: equipanteId,
+      p_conferida: conferida
+    }),
+    { rotulo: 'conferência da autorização' }
+  );
+  if (error) return { success: false, error: error.message || 'Erro ao salvar' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar' };
+  return {
+    success: true,
+    conferida: !!data.conferida,
+    declaracaoRemovida: !!data.declaracao_removida,
+    por: data.por || null
+  };
+};

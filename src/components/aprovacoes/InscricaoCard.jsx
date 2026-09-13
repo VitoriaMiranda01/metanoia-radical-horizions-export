@@ -1,11 +1,7 @@
 import React from 'react';
 import { Eye, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-// Quem respondeu que NAO congrega em igreja nenhuma. O formulario grava esse
-// texto no lugar do nome da igreja (ver EquipantePage/AcampantePage), entao e
-// por ele que da para reconhecer.
-const NAO_CONGREGA = 'NÃO SE APLICA (NÃO CONGREGA)';
+import { naoCongrega } from '@/constants/igrejas';
 
 const InscricaoCard = ({ 
   inscricao, 
@@ -51,7 +47,7 @@ const InscricaoCard = ({
       {/* Toda inscrição de equipante já passa por aprovação. Esta aqui é a
           que a Direção precisa olhar com mais atenção: não há igreja nem
           pastor para responder pela pessoa. */}
-      {(inscricao.igreja || '') === NAO_CONGREGA && (
+      {naoCongrega(inscricao) && (
         <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2">
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <span className="text-amber-200 text-xs leading-snug">

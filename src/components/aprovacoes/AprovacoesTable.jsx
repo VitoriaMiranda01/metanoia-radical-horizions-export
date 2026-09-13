@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Eye, CheckCircle, XCircle, Clock, Search, Filter, X } from 'lucide-react';
+import { Users, Eye, CheckCircle, XCircle, Clock, Search, Filter, X, AlertTriangle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDropdown';
 import InscricaoCard from '@/components/aprovacoes/InscricaoCard';
+import { naoCongrega } from '@/constants/igrejas';
 import { 
   getVisibleColumnsFromStorage, 
   saveVisibleColumnsToStorage,
@@ -355,7 +356,19 @@ const AprovacoesTable = ({
                     paginacao.itensDaPagina.map((inscricao) => (
                       <TableRow key={inscricao.id} className="hover:bg-white/5 transition-colors border-white/10 group">
                         <TableCell className="text-white font-medium sticky left-0 z-10 bg-black group-hover:bg-neutral-900">
+                          {/* O mesmo alerta que o card do celular mostra por
+                              extenso. Aqui ele vira um sinal na coluna do
+                              nome -- que e a coluna fixa, entao continua a
+                              vista mesmo com a tabela rolada pro lado. */}
+                          <span className="flex items-center gap-1.5">
+                            {naoCongrega(inscricao) && (
+                              <AlertTriangle
+                                className="w-4 h-4 text-amber-400 shrink-0"
+                                title="Não congrega em nenhuma igreja — não há pastor ou igreja para responder por esta pessoa. Avaliem antes de aprovar."
+                              />
+                            )}
                             {inscricao.nome}
+                          </span>
                         </TableCell>
                         
                         {visibleColumns.map(colKey => {

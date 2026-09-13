@@ -242,6 +242,18 @@ export const IGREJAS_PARA_PRIMEIRO_ACESSO = [...IGREJAS_PARCEIRAS, ...IGREJAS_TE
 // de "01". Devolvendo o codigo canonico, a tela consegue corrigir o campo
 // sozinha -- e o parceiro ve a correcao acontecer, sem magica escondida.
 // ---------------------------------------------------------------------------
+// Quem respondeu que NAO congrega em igreja nenhuma. O formulario grava esse
+// texto no lugar do nome da igreja (ver EquipantePage/AcampantePage), entao e
+// por ele que da para reconhecer -- nao ha coluna propria pra isso.
+//
+// Mora aqui porque tres telas precisam da mesma resposta: o card do celular,
+// a tabela do desktop e o modal de detalhes. Enquanto so o card sabia disso,
+// o aviso simplesmente nao existia pra quem aprovava no computador.
+export const NAO_CONGREGA = 'NÃO SE APLICA (NÃO CONGREGA)';
+
+export const naoCongrega = (inscricao) =>
+  (inscricao?.igreja || inscricao?.nome_igreja || '') === NAO_CONGREGA;
+
 export const buscarIgrejaPorCodigo = (codigo) => {
   const digitado = String(codigo ?? '').trim();
   if (!digitado || !/^\d+$/.test(digitado)) return null;

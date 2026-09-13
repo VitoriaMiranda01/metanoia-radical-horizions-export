@@ -2,7 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
+import { naoCongrega } from '@/constants/igrejas';
 import { getEquipanteStageLabel } from '@/utils/equipanteWorkflow';
 
 const getStatusBadge = (status) => {
@@ -244,6 +245,17 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
             <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
               Igreja
             </h4>
+            {/* Quem abre os detalhes para decidir aprovar precisa ver isso
+                aqui, sem depender do tamanho da tela. */}
+            {naoCongrega(inscricao) && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <span className="text-amber-200 text-sm leading-snug">
+                  Não congrega em nenhuma igreja — não há pastor ou igreja para responder por esta pessoa.
+                  Avaliem antes de aprovar.
+                </span>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">Igreja:</span>

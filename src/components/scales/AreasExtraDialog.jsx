@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Check, Download, Loader2, RotateCcw, Search, Truck, X } from 'lucide-react';
+import { Check, Download, Loader2, Search, Truck, X } from 'lucide-react';
 import { AREAS_EXTRA } from '@/constants/areasExtra';
 import { fetchDisponibilidadesExtra, decidirDisponibilidadeExtra } from '@/services/scalesService';
 import { exportDisponibilidadesExtra } from '@/utils/excelExport';
@@ -254,14 +254,6 @@ const AreasExtraDialog = ({ onClose }) => {
             className="h-9 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/5"
           >
             <Download className="h-4 w-4 mr-2" /> Exportar
-          </Button>
-          <Button
-            variant="outline"
-            onClick={carregar}
-            disabled={loading}
-            className="h-9 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/5"
-          >
-            <RotateCcw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} /> Atualizar
           </Button>
         </div>
 

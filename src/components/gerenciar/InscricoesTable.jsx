@@ -6,7 +6,7 @@ import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Eye, Download, Search, Filter, X } from 'lucide-react';
+import { Users, Eye, Pencil, Download, Search, Filter, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -162,7 +162,7 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data }) =
   );
 };
 
-const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onSearchChange }) => {
+const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchTerm, onSearchChange }) => {
   const { toast } = useToast();
   const [filters, setFilters] = useState({});
   const [visibleColumns, setVisibleColumns] = useState([]);
@@ -371,6 +371,14 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
                       <Eye className="w-4 h-4 mr-2" />
                       Detalhes
                     </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => onEdit(item)}
+                      className="flex-1 min-h-[44px] bg-transparent border-white/10 text-amber-300 hover:text-white hover:bg-amber-500/20 transition-colors shadow-sm"
+                    >
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Editar
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -434,6 +442,9 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, searchTerm, onS
                         <div className="flex justify-end space-x-2">
                           <Button variant="ghost" size="sm" onClick={() => onSelect(item)} className="hover:bg-blue-500/20 text-blue-300 transition-colors">
                             <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => onEdit(item)} className="hover:bg-amber-500/20 text-amber-300 transition-colors">
+                            <Pencil className="w-4 h-4" />
                           </Button>
                         </div>
                       </TableCell>

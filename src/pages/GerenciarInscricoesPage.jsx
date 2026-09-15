@@ -23,8 +23,9 @@ import GruposTrailhaCards from '@/components/gerenciar/GruposTrailhaCards';
 import GruposTrailhaModal from '@/components/gerenciar/GruposTrailhaModal';
 import AcampantesStatsCards from '@/components/gerenciar/AcampantesStatsCards';
 import AcampantesDetailModal from '@/components/gerenciar/AcampantesDetailModal';
-import { deleteAcampante, getAcampantes, countAcampantes, realocarGrupoTrailha, salvarObservacaoAcampante } from '@/services/acampantesService';
-import { fetchEquipantesInscritos, countEquipantesInscritos } from '@/services/equipantesService';
+import EditarInscricaoModal from '@/components/gerenciar/EditarInscricaoModal';
+import { deleteAcampante, getAcampantes, countAcampantes, realocarGrupoTrailha, salvarObservacaoAcampante, updateAcampante } from '@/services/acampantesService';
+import { fetchEquipantesInscritos, countEquipantesInscritos, updateEquipante } from '@/services/equipantesService';
 import { groupAcampantesByTrilha } from '@/utils/gruposTrailha';
 
 const GerenciarInscricoesPage = () => {
@@ -40,6 +41,7 @@ const GerenciarInscricoesPage = () => {
   const [errorAcampantes, setErrorAcampantes] = useState(null);
   
   const [selectedInscricao, setSelectedInscricao] = useState(null);
+  const [inscricaoParaEditar, setInscricaoParaEditar] = useState(null);
   const [searchTermEquipantes, setSearchTermEquipantes] = useState('');
 
   const [acampanteToDeactivate, setAcampanteToDeactivate] = useState(null);
@@ -265,6 +267,33 @@ const GerenciarInscricoesPage = () => {
     return result;
   };
 
+  // Abre o modal de edicao (EditarInscricaoModal.jsx) para um acampante ou
+  // equipante -- os dois vem daqui, o modal decide o que mostrar olhando
+  // para inscricao.tipo.
+  const handleEditarInscricao = (item) => {
+    setInscricaoParaEditar(item);
+  };
+
+  // Salva as alteracoes feitas no modal de edicao. Depois de salvar, busca a
+  // lista de novo (mesmo padrao ja usado em confirmarDesativacaoAcampante /
+  // handleRealocarGrupoTrailha) para a tabela refletir o dado atualizado.
+  const handleSalvarEdicaoInscricao = async (id, dadosAlterados) => {
+    const ehEquipante = inscricaoParaEditar?.tipo === 'equipante';
+    const resultado = ehEquipante
+      ? await updateEquipante(id, dadosAlterados)
+      : await updateAcampante(id, dadosAlterados);
+
+    if (resultado.success) {
+      if (ehEquipante) {
+        await carregarEquipantes();
+      } else {
+        await fetchAcampantesSupabase();
+      }
+    }
+
+    return resultado;
+  };
+
   const handleStatsCardClick = (title, data) => {
     setStatsModalTitle(title);
     setStatsModalData(data);
@@ -333,6 +362,7 @@ const GerenciarInscricoesPage = () => {
                     loading={loadingAcampantes}
                     onViewDetails={handleViewDetails}
                     onDelete={handleDeleteAcampante}
+                    onEdit={handleEditarInscricao}
                   />
                 </>
               )}
@@ -343,6 +373,7 @@ const GerenciarInscricoesPage = () => {
                 dados={filteredEquipantes} 
                 tipo="equipantes" 
                 onSelect={setSelectedInscricao} 
+                onEdit={handleEditarInscricao}
                 searchTerm={searchTermEquipantes}
                 onSearchChange={setSearchTermEquipantes}
               />
@@ -351,6 +382,14 @@ const GerenciarInscricoesPage = () => {
 
           {selectedInscricao && (
             <InscricaoDetalhesModal inscricao={selectedInscricao} onClose={() => setSelectedInscricao(null)} />
+          )}
+
+          {inscricaoParaEditar && (
+            <EditarInscricaoModal
+              inscricao={inscricaoParaEditar}
+              onClose={() => setInscricaoParaEditar(null)}
+              onSave={handleSalvarEdicaoInscricao}
+            />
           )}
 
           {selectedGroup && (

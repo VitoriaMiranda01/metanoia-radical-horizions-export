@@ -251,6 +251,36 @@ export const updateEquipanteInscrito = async (equipante_id) => {
   }
 };
 
+// Atualiza os dados cadastrais de um equipante (nome, contato, saude, igreja,
+// familiar, experiencia etc.) a partir do botao "Editar" na tela de
+// Gerenciar Inscricoes (EditarInscricaoModal.jsx). So os campos que vieram em
+// `dados` sao alterados -- a tela so manda os campos daquela secao/formulario.
+//
+// Fora do escopo de proposito: pagamento, decisao de aprovacao
+// (decidido_por/status -- tem tela propria, updateEquipanteStatus), escala/
+// area de trabalho (OrganizerScalesPage) e o workflow da autorizacao de
+// menor de idade -- editar esses por aqui poderia descolar o dado da tela
+// que realmente controla aquele fluxo.
+export const updateEquipante = async (equipanteId, dados) => {
+  if (!equipanteId) {
+    return { success: false, error: 'Equipante não informado' };
+  }
+
+  try {
+    const { error } = await supabase
+      .from('equipantes')
+      .update(dados)
+      .eq('id', equipanteId)
+      .eq('tipo', 'equipante');
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('equipanteApi - updateEquipante', error, { equipanteId, dados });
+    return { success: false, error: error.message || 'Erro ao tentar salvar as alterações.' };
+  }
+};
+
 export const fetchEquipantesRaw = async () =>
   comReenvio(() => supabase.from('equipantes').select('*, idade'), { rotulo: 'equipantes' });
 

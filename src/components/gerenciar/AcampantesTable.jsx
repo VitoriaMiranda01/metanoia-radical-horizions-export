@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Eye, Trash2, Search, RefreshCw, UserCheck, Download, Filter, X } from 'lucide-react';
+import { Eye, Pencil, Trash2, Search, RefreshCw, UserCheck, Download, Filter, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,7 +139,8 @@ const AcampantesTable = ({
   data, 
   loading, 
   onViewDetails, 
-  onDelete 
+  onDelete,
+  onEdit
 }) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -362,6 +363,14 @@ const AcampantesTable = ({
                     </Button>
                     <Button 
                       variant="outline" 
+                      onClick={() => onEdit(item)}
+                      className="flex-1 h-11 bg-transparent border-white/20 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                    >
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Editar
+                    </Button>
+                    <Button 
+                      variant="outline" 
                       onClick={() => onDelete(item)}
                       className="flex-1 h-11 bg-transparent border-white/20 text-red-400 hover:text-red-300 hover:bg-red-500/20"
                     >
@@ -434,6 +443,14 @@ const AcampantesTable = ({
                             className="hover:bg-blue-500/20 text-blue-300 transition-colors h-7 w-7 md:h-8 md:w-8 p-0"
                           >
                             <Eye className="w-3 h-3 md:w-4 md:h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => onEdit(item)}
+                            className="hover:bg-amber-500/20 text-amber-300 transition-colors h-7 w-7 md:h-8 md:w-8 p-0"
+                          >
+                            <Pencil className="w-3 h-3 md:w-4 md:h-4" />
                           </Button>
                           <Button 
                             variant="ghost" 

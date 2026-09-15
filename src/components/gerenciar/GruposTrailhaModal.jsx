@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getGroupColor, GROUPS } from '@/utils/gruposTrailha';
-import { User, MapPin, Phone, Loader2, ArrowRightLeft, Save } from 'lucide-react';
+import { User, Users, MapPin, Phone, Loader2, ArrowRightLeft, Save } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -46,6 +46,13 @@ const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao }) => {
   }, [observacao]);
 
   const outrosGrupos = GROUPS.filter(g => g !== acampante.grupo_trailha);
+
+  // "Vai com": quem o acampante indicou como conhecido/familiar já no
+  // projeto, respondido na inscrição (QuemIndicou.jsx) e nunca editável
+  // aqui -- é só leitura, pra organizador saber que existe alguém pra tentar
+  // juntar no mesmo grupo. Fica separado da Observação (que é texto livre
+  // do próprio organizador) mesmo quando os dois existem.
+  const temConhecido = acampante.conhecido_no_projeto && acampante.conhecido_no_projeto !== 'NÃO TENHO';
 
   const handleRealocar = async () => {
     if (!novoGrupo || !onRealocar) return;
@@ -90,6 +97,14 @@ const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao }) => {
                 </span>
               )}
             </div>
+            {temConhecido && (
+              <div className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
+                <Users className="w-3 h-3 shrink-0" />
+                <span className="truncate">
+                  Vai com: {acampante.nome_familiar_conhecido || '—'} ({acampante.conhecido_no_projeto})
+                </span>
+              </div>
+            )}
           </div>
         </div>
         <Badge variant="outline" className={`${isMale ? 'border-blue-500/30 text-blue-400' : 'border-pink-500/30 text-pink-400'} whitespace-nowrap`}>

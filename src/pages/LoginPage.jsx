@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
-import { Eye, EyeOff, Heart, Shield, Users, AlertCircle, CheckCircle2, KeyRound, MailCheck, UserPlus, Copy, Check } from 'lucide-react';
+import { Eye, EyeOff, Heart, Shield, Users, AlertCircle, CheckCircle2, KeyRound, MailCheck, UserPlus } from 'lucide-react';
 import { buscarIgrejaPorCodigo, IGREJAS_PARA_PRIMEIRO_ACESSO } from '@/constants/igrejas';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
 import {
@@ -16,7 +16,8 @@ import {
   solicitarRedefinicaoSenha,
   trocarSenhaOrganizador,
   primeiroAcessoHabilitado,
-  primeiroAcessoParceiro
+  primeiroAcessoParceiro,
+  definirSenhaPrimeiroAcesso
 } from '@/services/senhasParceirosService';
 
 // Espelha as regras que o banco aplica em _criticar_senha (ver migration
@@ -59,7 +60,7 @@ const LoginPage = () => {
   const [igrejaDoCodigo, setIgrejaDoCodigo] = useState(null);
   const [codigoDesconhecido, setCodigoDesconhecido] = useState(false);
 
-  // 'login' | 'primeiro-acesso' | 'primeiro-acesso-ok' | 'definir-senha' | 'pedido-enviado'
+  // 'login' | 'primeiro-acesso' | 'definir-senha' | 'pedido-enviado'
   const [etapa, setEtapa] = useState('login');
 
   // Primeiro acesso do parceiro. O botao so aparece quando o banco diz que
@@ -68,8 +69,10 @@ const LoginPage = () => {
   const [primeiroAcessoAberto, setPrimeiroAcessoAberto] = useState(false);
   const [paNome, setPaNome] = useState('');
   const [paIgreja, setPaIgreja] = useState('');
-  const [paResultado, setPaResultado] = useState(null);
-  const [copiado, setCopiado] = useState(false);
+  // true quando a criacao de senha veio do primeiro acesso (sem senha atual
+  // para provar identidade) -- diferente da troca de senha temporaria
+  // (organizador ou igreja liberada na mao), que ainda usa senhaTemporaria.
+  const [primeiroAcessoEmAndamento, setPrimeiroAcessoEmAndamento] = useState(false);
   const [senhaTemporaria, setSenhaTemporaria] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmaSenha, setConfirmaSenha] = useState('');
@@ -195,9 +198,11 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      const resposta = ehParceiro
-        ? await trocarSenhaIgreja(formData.identifier, senhaTemporaria, novaSenha)
-        : await trocarSenhaOrganizador(formData.identifier, senhaTemporaria, novaSenha);
+      const resposta = primeiroAcessoEmAndamento
+        ? await definirSenhaPrimeiroAcesso(formData.identifier, novaSenha)
+        : ehParceiro
+          ? await trocarSenhaIgreja(formData.identifier, senhaTemporaria, novaSenha)
+          : await trocarSenhaOrganizador(formData.identifier, senhaTemporaria, novaSenha);
 
       if (!resposta?.ok) {
         showError(resposta?.erro || 'Não foi possível criar a senha. Tente novamente.');
@@ -217,6 +222,7 @@ const LoginPage = () => {
       setSenhaTemporaria('');
       setNovaSenha('');
       setConfirmaSenha('');
+      setPrimeiroAcessoEmAndamento(false);
       setFormData({ identifier: '', password: '' });
       navigate(ehParceiro ? '/parceiros' : '/gerenciar');
     } catch (error) {
@@ -252,26 +258,21 @@ const LoginPage = () => {
         showError(r?.erro || 'Não foi possível concluir o primeiro acesso.');
         return;
       }
-      setPaResultado(r);
-      setEtapa('primeiro-acesso-ok');
+      // Identificação confirmada: vai direto para a criação da senha, sem
+      // etapa intermediária nem senha temporária nenhuma para copiar.
+      setFormData({ identifier: r.codigo, password: '' });
+      setIgrejaDoCodigo({ codigo: r.codigo, nome: r.igreja });
+      setCodigoDesconhecido(false);
+      setSenhaTemporaria('');
+      setNovaSenha('');
+      setConfirmaSenha('');
+      setPrimeiroAcessoEmAndamento(true);
+      setEtapa('definir-senha');
     } catch (error) {
       showError('Não foi possível concluir o primeiro acesso agora. Tente de novo em instantes.');
     } finally {
       setLoading(false);
     }
-  };
-
-  // Do "aqui esta seu acesso" direto para a criacao da senha propria: o
-  // parceiro nao precisa digitar de novo o que acabou de receber.
-  const handleSeguirParaSenha = () => {
-    if (!paResultado) return;
-    setFormData({ identifier: paResultado.codigo, password: '' });
-    setIgrejaDoCodigo({ codigo: paResultado.codigo, nome: paResultado.igreja });
-    setCodigoDesconhecido(false);
-    setSenhaTemporaria(paResultado.senha);
-    setNovaSenha('');
-    setConfirmaSenha('');
-    setEtapa('definir-senha');
   };
 
   const handlePedirNovaSenha = async () => {
@@ -310,7 +311,7 @@ const LoginPage = () => {
     setIgrejaDoCodigo(null);
     setCodigoDesconhecido(false);
     setEtapa('login');
-    setPaResultado(null);
+    setPrimeiroAcessoEmAndamento(false);
     setPaNome('');
     setPaIgreja('');
   };
@@ -319,7 +320,7 @@ const LoginPage = () => {
     setEtapa('login');
     setErrorMessage('');
     setFormData(prev => ({ ...prev, password: '' }));
-    setPaResultado(null);
+    setPrimeiroAcessoEmAndamento(false);
     setPaNome('');
     setPaIgreja('');
   };
@@ -385,8 +386,9 @@ const LoginPage = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-400 mb-4">
-                  Esta é a primeira vez que você entra. A senha que recebeu é temporária —
-                  escolha agora uma senha sua, que ninguém mais conhece.
+                  {primeiroAcessoEmAndamento
+                    ? 'Escolha agora a senha que você vai usar para entrar — é ela que vale daqui em diante.'
+                    : 'Esta é a primeira vez que você entra. A senha que recebeu é temporária — escolha agora uma senha sua, que ninguém mais conhece.'}
                 </p>
 
                 {avisoErro}
@@ -459,7 +461,7 @@ const LoginPage = () => {
               <CardContent>
                 <p className="text-sm text-gray-400 mb-4">
                   Diga quem você é e por qual igreja você responde. Na tela seguinte
-                  aparece o seu código de acesso e a senha para entrar.
+                  você já cria a senha que vai usar para entrar.
                 </p>
 
                 {avisoErro}
@@ -492,81 +494,19 @@ const LoginPage = () => {
                   </div>
 
                   <p className="text-xs text-gray-500">
-                    Cada igreja faz o primeiro acesso uma única vez, e fica registrado
-                    quem fez. Se a sua igreja já entrou alguma vez, use "Esqueci minha senha".
+                    Fica registrado quem se apresentou por cada igreja. Depois que a senha
+                    própria é criada, esse acesso não pode ser refeito — nesse caso use
+                    "Esqueci minha senha".
                   </p>
 
                   <Button type="submit" className="w-full bg-gradient-to-r from-green-700 to-green-900 hover:from-green-600 hover:to-green-800 text-white font-bold py-2 px-4 rounded-md transition-all duration-200 shadow-lg mt-2 disabled:opacity-50" disabled={loading}>
-                    {loading ? 'Verificando...' : 'RECEBER MEU ACESSO'}
+                    {loading ? 'Verificando...' : 'CONTINUAR'}
                   </Button>
 
                   <button type="button" onClick={voltarParaLogin} className="w-full text-sm text-gray-500 hover:text-gray-300 transition-colors">
                     Voltar
                   </button>
                 </form>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* ------------------------------------------------------------- */}
-          {/* Primeiro acesso concluido: aqui esta o codigo e a senha        */}
-          {/* ------------------------------------------------------------- */}
-          {etapa === 'primeiro-acesso-ok' && paResultado && (
-            <Card className="glass-effect border-white/10 shadow-2xl bg-black/60">
-              <CardHeader className="text-center pb-2">
-                <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-green-500/10 border border-green-500/40 flex items-center justify-center">
-                  <CheckCircle2 className="w-6 h-6 text-green-500" />
-                </div>
-                <CardTitle className="text-2xl text-white">Acesso liberado</CardTitle>
-                <CardDescription className="text-gray-400">{paResultado.igreja}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-gray-300">
-                  Anote estes dados. É com eles que você entra:
-                </p>
-
-                <div className="rounded-lg border border-green-500/40 bg-green-500/10 p-4 space-y-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-green-300/80">Código da igreja</p>
-                    <p className="font-mono text-2xl text-white">{paResultado.codigo}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-green-300/80">Senha</p>
-                    <p className="font-mono text-2xl text-white break-all">{paResultado.senha}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(
-                          `Código: ${paResultado.codigo}\nSenha: ${paResultado.senha}`
-                        );
-                        setCopiado(true);
-                        setTimeout(() => setCopiado(false), 2000);
-                      } catch {
-                        showError('Não consegui copiar. Anote os dados à mão.');
-                      }
-                    }}
-                    className="inline-flex items-center gap-1.5 text-sm text-green-300 hover:text-green-200 transition-colors"
-                  >
-                    {copiado
-                      ? <><Check className="w-4 h-4" />Copiado</>
-                      : <><Copy className="w-4 h-4" />Copiar código e senha</>}
-                  </button>
-                </div>
-
-                <p className="text-sm text-gray-400">
-                  Esta senha é temporária. No passo seguinte você cria a sua própria —
-                  e é ela que vale daí em diante.
-                </p>
-
-                <Button
-                  type="button"
-                  onClick={handleSeguirParaSenha}
-                  className="w-full bg-gradient-to-r from-green-700 to-green-900 hover:from-green-600 hover:to-green-800 text-white font-bold"
-                >
-                  CRIAR MINHA SENHA E ENTRAR
-                </Button>
               </CardContent>
             </Card>
           )}

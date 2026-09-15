@@ -64,15 +64,29 @@ export const primeiroAcessoHabilitado = async () =>
   chamar('primeiro_acesso_habilitado', undefined, 'primeiro acesso');
 
 /**
- * Faz o primeiro acesso de uma igreja. Devolve
- * { ok, codigo, igreja, senha } -- a senha em texto, uma vez so, porque e
- * ela que o parceiro vai usar na tela seguinte para criar a senha propria.
+ * Faz o primeiro acesso de uma igreja: so confirma quem e a pessoa e por
+ * qual igreja ela responde. Devolve { ok, codigo, igreja } -- sem senha
+ * nenhuma. Pode ser chamado de novo pela mesma igreja quantas vezes for
+ * preciso, enquanto ela ainda nao tiver criado a senha propria (ver
+ * definirSenhaPrimeiroAcesso, abaixo).
  */
 export const primeiroAcessoParceiro = async (codigo, nomeResponsavel) =>
   chamar('primeiro_acesso_parceiro', {
     p_codigo: String(codigo || '').trim(),
     p_responsavel: String(nomeResponsavel || '').trim(),
   }, 'primeiro acesso do parceiro');
+
+/**
+ * Grava a senha que a propria pessoa escolheu, direto depois do primeiro
+ * acesso acima -- sem pedir senha atual, porque nesse fluxo nao existe uma.
+ * So funciona para uma igreja com acesso_liberado = true e ainda sem senha
+ * propria; fora disso o banco recusa.
+ */
+export const definirSenhaPrimeiroAcesso = async (codigo, senhaNova) =>
+  chamar('definir_senha_primeiro_acesso', {
+    p_codigo: String(codigo || '').trim(),
+    p_senha_nova: senhaNova,
+  }, 'criação de senha do primeiro acesso');
 
 // --- daqui para baixo, so organizador ---------------------------------------
 

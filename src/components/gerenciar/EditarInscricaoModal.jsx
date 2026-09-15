@@ -127,11 +127,15 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
     return () => { vivo = false; };
   }, []);
 
-  const opcoesIgreja = useMemo(
-    () => (isEquipante
-      ? [...IGREJAS_PARCEIRAS, ...extras, OUTRA_IGREJA]
-      : IGREJAS_RESPONSAVEL_ACAMPANTE),
-    [isEquipante, extras]
+  // "Igreja que frequenta" (equipante) -- unico campo de igreja do
+  // formulario de equipante, por isso usa lista fechada com busca. O
+  // acampante NAO tem um select equivalente: "Igreja que frequenta" e
+  // texto livre la (ver InfoEclesiasticas.jsx, layout ACAMPANTE) -- quem
+  // usa lista fechada, pro acampante, e o campo abaixo,
+  // "Igreja Responsável pela Ficha" (admin_responsavel).
+  const opcoesIgrejaQueFrequenta = useMemo(
+    () => [...IGREJAS_PARCEIRAS, ...extras, OUTRA_IGREJA],
+    [extras]
   );
 
   const set = (campo) => (valor) => setForm((prev) => ({ ...prev, [campo]: valor }));
@@ -195,6 +199,19 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
         </div>
 
         <div className="overflow-y-auto p-6 space-y-6">
+          {!isEquipante && (
+            <Secao titulo="Responsável pela Ficha">
+              <div className="space-y-1.5">
+                <Label className="text-white text-sm">Igreja Responsável pela Ficha</Label>
+                <IgrejaSelect
+                  value={form.admin_responsavel}
+                  onChange={set('admin_responsavel')}
+                  options={IGREJAS_RESPONSAVEL_ACAMPANTE}
+                />
+              </div>
+            </Secao>
+          )}
+
           <Secao titulo="Dados Pessoais">
             <CampoTexto label="Nome" valor={form.nome} onChange={set('nome')} />
             <CampoTexto label="CPF" valor={form.cpf} onChange={set('cpf')} />
@@ -251,19 +268,27 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
           </Secao>
 
           <Secao titulo="Igreja">
-            <div className="space-y-1.5">
-              <Label className="text-white text-sm">Igreja</Label>
-              <IgrejaSelect
-                value={form.igreja}
-                onChange={set('igreja')}
-                options={opcoesIgreja}
-              />
-            </div>
-            {igrejaEhOutra(form.igreja) && (
+            {isEquipante ? (
+              <div className="space-y-1.5">
+                <Label className="text-white text-sm">Igreja que Frequenta</Label>
+                <IgrejaSelect
+                  value={form.igreja}
+                  onChange={set('igreja')}
+                  options={opcoesIgrejaQueFrequenta}
+                />
+              </div>
+            ) : (
+              <CampoTexto label="Igreja que Frequenta" valor={form.igreja} onChange={set('igreja')} />
+            )}
+            {isEquipante && igrejaEhOutra(form.igreja) && (
               <CampoTexto label="Nome da Igreja (digitado em OUTRA)" valor={form.igreja_outra} onChange={set('igreja_outra')} />
             )}
             <CampoBooleano label="Congrega em alguma igreja?" name="esta_afastado" valor={form.esta_afastado} onChange={set('esta_afastado')} />
-            <CampoTexto label="Pastor Responsável" valor={form.pastor_nome} onChange={set('pastor_nome')} />
+            {isEquipante ? (
+              <CampoTexto label="Pastor Responsável" valor={form.pastor_nome} onChange={set('pastor_nome')} />
+            ) : (
+              <CampoTexto label="Pastor Responsável" valor={form.pastor} onChange={set('pastor')} />
+            )}
             <CampoTexto label="Cargo na Igreja" valor={form.cargo_igreja} onChange={set('cargo_igreja')} />
             <CampoTexto label="Cargo na Igreja (Outro)" valor={form.cargo_igreja_outro} onChange={set('cargo_igreja_outro')} />
             {isEquipante && (

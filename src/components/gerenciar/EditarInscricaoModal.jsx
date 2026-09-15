@@ -344,7 +344,7 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
         </div>
 
         <div className="flex justify-end gap-3 p-4 border-t border-white/10 bg-zinc-900">
-          <Button variant="outline" onClick={onClose} disabled={salvando} className="border-white/20 text-white hover:bg-white/10">
+          <Button variant="outline" onClick={onClose} disabled={salvando} className="bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white">
             Cancelar
           </Button>
           <Button onClick={handleSalvar} disabled={salvando} className="bg-blue-600 hover:bg-blue-700 text-white">

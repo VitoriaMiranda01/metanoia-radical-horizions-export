@@ -882,10 +882,6 @@ const OrganizerScalesPage = () => {
               Alocar automático{waitlist.length > 0 ? ` (${waitlist.length})` : ''}
             </Button>
 
-            <Button onClick={handleExportAll} disabled={allocations.length === 0} variant="outline" className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300">
-              <Download className="mr-2 h-4 w-4" /> Exportar
-            </Button>
-
             <Button onClick={() => setVerAreasEspeciais(true)} variant="outline"
               className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
               <Sparkles className="mr-2 h-4 w-4" /> Áreas Especiais ({totalEspeciais})
@@ -921,6 +917,10 @@ const OrganizerScalesPage = () => {
                 Lançar escala{escala?.faltam > 0 ? ` (faltam ${escala.faltam})` : ''}
               </Button>
             )}
+
+            <Button onClick={handleExportAll} disabled={allocations.length === 0} variant="outline" className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300">
+              <Download className="mr-2 h-4 w-4" /> Exportar
+            </Button>
           </div>
         </div>
 

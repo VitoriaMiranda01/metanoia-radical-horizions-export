@@ -100,7 +100,7 @@ const DadosComplementaresEquipante = ({
 
           {formData.jaTrabalhouEquipe === 'SIM' && (
             <div className="space-y-2">
-              <Label htmlFor="edicaoTrabalhou" className="text-white">Em qual edição você trabalhou?</Label>
+              <Label htmlFor="edicaoTrabalhou" className="text-white">Qual o número da última edição que trabalhou?</Label>
               <Input id="edicaoTrabalhou" name="edicaoTrabalhou" value={formData.edicaoTrabalhou} onChange={handleChange} type="number" required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
             </div>
           )}

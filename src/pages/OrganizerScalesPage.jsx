@@ -824,7 +824,7 @@ const OrganizerScalesPage = () => {
               <Grid className="h-8 w-8 text-red-500" />
               Geração de Escalas
             </h1>
-            <p className="text-gray-400">Você monta a escala: aprovar não coloca ninguém em área nenhuma.</p>
+            <p className="text-gray-400">Geração de escalas automáticas</p>
 
             {/* Onde cada equipante esta no caminho ate a escala. Amarelo e
                 trabalho do parceiro; vermelho e trabalho seu; verde ja

@@ -259,7 +259,7 @@ const PagamentosPendentesPage = () => {
                     value="pendentes"
                     className="flex-1 md:flex-none data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400"
                   >
-                    Pendentes ({pendentes.length})
+                    Pagamentos manuais ({pendentes.length})
                   </TabsTrigger>
                   <TabsTrigger
                     value="pagos"

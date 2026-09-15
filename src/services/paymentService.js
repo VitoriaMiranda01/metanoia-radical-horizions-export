@@ -172,16 +172,24 @@ const estaQuitada = (status) =>
   STATUS_QUITADOS.includes(String(status || '').toLowerCase());
 
 /**
- * Inscricoes que ainda nao estao quitadas, independente do metodo de
- * pagamento. E daqui que sai a liberacao manual de quem diz que pagou mas
- * cujo PIX nunca foi confirmado (ex.: o Sicoob nao chamou o webhook).
+ * Inscricoes com pagamento MANUAL ou ISENTO ainda nao quitadas -- a aba
+ * "Pagamentos manuais" da tela, onde o organizador confirma na mao quem
+ * pagou em dinheiro/deposito ou foi isentado.
+ *
+ * Ate 2026-09-11 esta funcao trazia TODAS as nao quitadas, qualquer metodo,
+ * para pegar tambem o PIX que travasse (pago no Sicoob mas nao liberado por
+ * falha no webhook). Voltou a filtrar por metodo aqui -- pedido da usuaria
+ * em 2026-09-15, porque a aba passou a mostrar todo mundo, nao so quem
+ * precisa de confirmacao manual. O PIX travado continua coberto: e
+ * exatamente o que a aba "Precisa de atenção" (fetchPixTravados, abaixo)
+ * já existe para pegar, sem misturar com esta.
  */
 export const fetchInscricoesNaoQuitadas = async () => {
   const colunas = 'id, nome, cpf, nacionalidade, status_pagamento, metodo_pagamento, data_pagamento';
 
   const [acampantes, equipantes] = await Promise.all([
-    comReenvio(() => supabase.from('acampantes').select(colunas), { rotulo: 'acampantes pendentes' }),
-    comReenvio(() => supabase.from('equipantes').select(colunas), { rotulo: 'equipantes pendentes' }),
+    comReenvio(() => supabase.from('acampantes').select(colunas).in('metodo_pagamento', ['manual', 'isento']), { rotulo: 'acampantes pendentes' }),
+    comReenvio(() => supabase.from('equipantes').select(colunas).in('metodo_pagamento', ['manual', 'isento']), { rotulo: 'equipantes pendentes' }),
   ]);
 
   if (acampantes.error) throw acampantes.error;

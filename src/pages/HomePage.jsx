@@ -342,7 +342,7 @@ const HomePage = () => {
               <p className="text-gray-400 text-sm flex items-center gap-1">
                 Desenvolvido com <Heart className="w-3 h-3 text-red-600 fill-red-600" /> por:
               </p>
-              <a href="https://wa.me/5521979371559" target="_blank" rel="noopener noreferrer" className="text-red-500 hover:text-red-400 font-medium text-sm transition-colors mt-1">Vitória Miranda</a>
+              <a href="https://wa.me/5521979371559" target="_blank" rel="noopener noreferrer" className="text-red-500 hover:text-red-400 font-medium text-sm transition-colors mt-1">Metanoia Radical Serra</a>
             </div>
           </div>
         </footer>

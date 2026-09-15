@@ -26,9 +26,10 @@ export const SCHEMA_DEFINITIONS = {
       'max_acampantes_mulheres', 'edicao_numero',
       'equipante_pricing_periods', 'acampante_pricing_periods',
       'valor_equipante', 'valor_acampante', 'updated_at',
-      // cpfs_area_guia / cpfs_area_inimigo / cpfs_area_espirito_santo
-      // existem no banco mas estao obsoletas desde 12/09/2026 (migration
-      // 20260912u): os tres papeis se definem so na tela de escalas.
+      // Voltaram a ser usadas em 15/09/2026 (migration
+      // 20260915-cpfs-areas-especiais-volta): cadastro por CPF de Guia,
+      // Inimigo e Espirito Santo em Configuracoes.
+      'cpfs_area_guia', 'cpfs_area_inimigo', 'cpfs_area_espirito_santo',
       'inscricoes_equipantes', 'inscricoes_acampantes'
     ]
   },

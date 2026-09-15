@@ -285,6 +285,29 @@ export const fetchEquipantesRaw = async () =>
   comReenvio(() => supabase.from('equipantes').select('*, idade'), { rotulo: 'equipantes' });
 
 /**
+ * Lista enxuta para o organizador ESCOLHER pessoas pelo nome (ex.: as areas
+ * especiais Guia / Inimigo / Espirito Santo, em CpfsAreaEspecialManager.jsx).
+ *
+ * Traz so o necessario para identificar alguem na tela -- nome, CPF, igreja e
+ * situacao da inscricao. O CPF vem porque continua sendo a CHAVE usada para
+ * casar a pessoa na hora de alocar (nome nao serve de chave: dois equipantes
+ * podem se chamar igual, e nome digitado com erro falharia em silencio). Na
+ * tela, quem aparece e o nome; o CPF fica so como desempate.
+ *
+ * Sem filtro de status de proposito: o organizador pode pre-cadastrar
+ * alguem para uma area especial antes mesmo da aprovacao (a tela mostra a
+ * situacao ao lado do nome).
+ */
+export const fetchEquipantesParaSelecao = async () =>
+  comReenvio(
+    () => supabase
+      .from('equipantes')
+      .select('id, nome, cpf, igreja, status')
+      .order('nome', { ascending: true }),
+    { rotulo: 'equipantes para seleção' }
+  );
+
+/**
  * Aprova, rejeita ou devolve para pendente -- registrando QUEM decidiu.
  *
  * Era um UPDATE direto no campo "status", e por isso nao sobrava registro

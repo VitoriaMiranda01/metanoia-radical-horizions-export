@@ -12,8 +12,9 @@ import { fetchLimitesAreas, saveLimiteAreaComGenero, getLimiteAreaComGenero } fr
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { exportEquipantesByArea, exportAllEquipantes } from '@/utils/excelExport';
 import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
-import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao } from '@/services/equipanteAllocationService';
-import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2 } from 'lucide-react';
+import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf } from '@/services/equipanteAllocationService';
+import { fetchConfiguracoes } from '@/services/organizerConfigService';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, UserCheck } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -88,6 +89,13 @@ const OrganizerScalesPage = () => {
   const [manualAreaChoice, setManualAreaChoice] = useState({});
   const [manualAllocating, setManualAllocating] = useState({});
 
+  // Todos os aprovados (escalados ou nao) -- fetchApprovedEquipantes ja
+  // busca isso, mas so era usado para calcular a waitlist e descartado.
+  // Guardado aqui para o "Aplicar CPFs cadastrados" achar a pessoa pelo
+  // CPF mesmo quando ela ja esta em outra area (ver
+  // alocarAreasEspeciaisPorCpf, em equipanteAllocationService.js).
+  const [equipantesAprovados, setEquipantesAprovados] = useState([]);
+
   // Atuacoes possiveis de cada area (a coluna ATUAÇÃO da escala oficial),
   // vindas do banco: { "Segurança": [{atuacao, ehPadrao, ehLider}, ...] }.
   // Buscadas uma vez no load -- e uma lista fixa por edicao, nao muda no
@@ -134,6 +142,10 @@ const OrganizerScalesPage = () => {
   // em scalesService.alocarFilaAutomaticamente.
   const [confirmandoAuto, setConfirmandoAuto] = useState(false);
   const [alocandoAuto, setAlocandoAuto] = useState(false);
+
+  // Aplicacao das 3 listas de CPF pre-cadastradas em Configuracoes -- ver
+  // handleAlocarPorCpf, abaixo.
+  const [alocandoPorCpf, setAlocandoPorCpf] = useState(false);
 
   const semAcento = (texto) => (texto || '')
     .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -211,6 +223,7 @@ const OrganizerScalesPage = () => {
       ]);
       
       setLimitsMap(limitsData);
+      setEquipantesAprovados(equipantes || []);
 
       const idsAlocados = new Set((existingAllocations || []).map(a => a.id));
       setWaitlist((equipantes || []).filter(eq => !idsAlocados.has(eq.id)));
@@ -607,6 +620,55 @@ const OrganizerScalesPage = () => {
     fetchBackgroundData(false);
   };
 
+  // Aplica as 3 listas de CPF pre-cadastradas em Configuracoes -> Areas de
+  // Trabalho Especiais (Guia, Inimigo, Espirito Santo -- ver
+  // CpfsAreaEspecialManager.jsx) contra quem ja esta aprovado, casando por
+  // CPF. Busca a configuracao na hora do clique (em vez de manter uma copia
+  // sincronizada aqui) porque e uma acao pontual, nao algo que precisa
+  // reagir a mudanca em tempo real.
+  const handleAlocarPorCpf = async () => {
+    setAlocandoPorCpf(true);
+    try {
+      const configAtual = await fetchConfiguracoes();
+      const cpfsPorArea = {
+        guia: configAtual.cpfs_area_guia || [],
+        inimigo: configAtual.cpfs_area_inimigo || [],
+        espirito_santo: configAtual.cpfs_area_espirito_santo || []
+      };
+
+      if (Object.values(cpfsPorArea).every(lista => lista.length === 0)) {
+        toast({
+          title: 'Nada para aplicar',
+          description: 'Cadastre CPFs em Configurações → Áreas de Trabalho Especiais primeiro.'
+        });
+        return;
+      }
+
+      const r = await alocarAreasEspeciaisPorCpf(cpfsPorArea, equipantesAprovados, allocations);
+      const aplicados = r.alocados + r.realocados;
+
+      const detalhe = [
+        r.alocados > 0 && `${r.alocados} alocado(s)`,
+        r.realocados > 0 && `${r.realocados} realocado(s)`,
+        r.semCorrespondencia.length > 0 && `${r.semCorrespondencia.length} CPF(s) sem equipante aprovado correspondente`,
+        r.erros.length > 0 && `${r.erros.length} erro(s): ${r.erros.map(e => `${e.nome || e.cpf} (${e.erro})`).join('; ')}`
+      ].filter(Boolean).join('. ');
+
+      toast({
+        title: aplicados === 0 && r.erros.length === 0 ? 'Ninguém para aplicar' : `${aplicados} aplicado(s)`,
+        description: detalhe || 'Todos já estavam nas áreas certas.',
+        variant: r.erros.length > 0 ? 'destructive' : undefined,
+        className: aplicados > 0 && r.erros.length === 0 ? 'bg-green-600 text-white' : undefined
+      });
+
+      if (aplicados > 0) fetchBackgroundData(false);
+    } catch (error) {
+      toast({ title: 'Erro ao aplicar CPFs', description: error.message, variant: 'destructive' });
+    } finally {
+      setAlocandoPorCpf(false);
+    }
+  };
+
   const handleLancarEscala = async () => {
     setLancando(true);
     const r = await lancarEscala();
@@ -827,6 +889,17 @@ const OrganizerScalesPage = () => {
             <Button onClick={() => setVerAreasEspeciais(true)} variant="outline"
               className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
               <Sparkles className="mr-2 h-4 w-4" /> Áreas Especiais ({totalEspeciais})
+            </Button>
+
+            {/* Aplica as listas de CPF pre-cadastradas em Configuracoes para
+                Guia/Inimigo/Espirito Santo -- ver handleAlocarPorCpf. */}
+            <Button onClick={handleAlocarPorCpf} disabled={alocandoPorCpf} variant="outline"
+              title="Aplica as listas de CPF cadastradas em Configurações → Áreas de Trabalho Especiais."
+              className="bg-indigo-600/20 text-indigo-300 border-indigo-600/50 hover:bg-indigo-600/40 hover:text-indigo-200">
+              {alocandoPorCpf
+                ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                : <UserCheck className="mr-2 h-4 w-4" />}
+              Aplicar CPFs cadastrados
             </Button>
 
             {/* Os 3 mutiroes da Centenario (caminhao, cozinha, limpeza). Fica

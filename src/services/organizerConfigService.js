@@ -16,7 +16,7 @@ export const fetchConfiguracoes = async () => {
     try {
       if (!navigator.onLine) return { max_equipantes: 0, max_acampantes: 0, max_acampantes_homens: 0, max_acampantes_mulheres: 0, equipante_pricing_periods: [], acampante_pricing_periods: [], edicao_numero: '' };
       
-      let configQuery = supabase.from('configuracoes').select('id, data_evento_inicio, data_evento_fim, horario_saida_igreja, horario_retorno_sitio, data_limite_inscricao_pagamento, max_equipantes, max_acampantes, updated_at, equipante_pricing_periods, acampante_pricing_periods, max_acampantes_homens, max_acampantes_mulheres, edicao_numero, limite_acampantes_por_igreja');
+      let configQuery = supabase.from('configuracoes').select('id, data_evento_inicio, data_evento_fim, horario_saida_igreja, horario_retorno_sitio, data_limite_inscricao_pagamento, max_equipantes, max_acampantes, updated_at, equipante_pricing_periods, acampante_pricing_periods, max_acampantes_homens, max_acampantes_mulheres, edicao_numero, limite_acampantes_por_igreja, cpfs_area_guia, cpfs_area_inimigo, cpfs_area_espirito_santo');
       
       const { data, error } = await configQuery.order('updated_at', { ascending: false }).limit(1).maybeSingle();
       if (error && !['PGRST205', '42P01', '42703'].includes(error.code)) {
@@ -38,7 +38,10 @@ export const fetchConfiguracoes = async () => {
         acampante_pricing_periods: data?.acampante_pricing_periods || [],
         data_evento_inicio: data?.data_evento_inicio || '',
         data_evento_fim: data?.data_evento_fim || '',
-        limite_acampantes_por_igreja: data?.limite_acampantes_por_igreja ?? null
+        limite_acampantes_por_igreja: data?.limite_acampantes_por_igreja ?? null,
+        cpfs_area_guia: data?.cpfs_area_guia || [],
+        cpfs_area_inimigo: data?.cpfs_area_inimigo || [],
+        cpfs_area_espirito_santo: data?.cpfs_area_espirito_santo || []
       };
 
       return mergedConfig;
@@ -83,6 +86,59 @@ export const updatePricingPeriods = async (type, periods) => {
     return data;
   } catch (error) {
     console.error(`[updatePricingPeriods] Error updating ${type} periods:`, error);
+    throw error;
+  }
+};
+
+// Salva a lista de CPFs escolhidos pelo organizador pra uma das 3 areas
+// especiais (Guia, Inimigo, Espirito Santo), que nao aparecem no
+// formulario de equipante. Mesmo padrao de updatePricingPeriods: salva
+// direto na tabela configuracoes, de forma independente do botao "Salvar
+// Configuracoes Gerais". Quem aplica essas listas de fato (casando CPF com
+// equipante aprovado e alocando) e o botao "Aplicar CPFs cadastrados" na
+// tela de Geracao de Escalas -- ver alocarAreasEspeciaisPorCpf em
+// equipanteAllocationService.js.
+const CPFS_AREA_COLUMN_MAP = {
+  guia: 'cpfs_area_guia',
+  inimigo: 'cpfs_area_inimigo',
+  espirito_santo: 'cpfs_area_espirito_santo'
+};
+
+export const updateCpfsAreaEspecial = async (area, cpfs) => {
+  try {
+    if (!navigator.onLine) throw new Error("Você está offline. Verifique sua conexão.");
+
+    const column = CPFS_AREA_COLUMN_MAP[area];
+    if (!column) throw new Error(`Área especial desconhecida: ${area}`);
+
+    const { data: existing, error: checkError } = await supabase
+      .from('configuracoes')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+
+    let data, error;
+    if (existing?.id) {
+      ({ data, error } = await supabase
+        .from('configuracoes')
+        .update({ [column]: cpfs, updated_at: new Date().toISOString() })
+        .eq('id', existing.id)
+        .select()
+        .single());
+    } else {
+      ({ data, error } = await supabase
+        .from('configuracoes')
+        .insert({ [column]: cpfs, updated_at: new Date().toISOString() })
+        .select()
+        .single());
+    }
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error(`[updateCpfsAreaEspecial] Error updating ${area} CPFs:`, error);
     throw error;
   }
 };

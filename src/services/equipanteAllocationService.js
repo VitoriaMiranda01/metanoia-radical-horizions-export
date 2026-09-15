@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
+import { AREAS_ESPECIAIS } from '@/constants/workAreas';
 
 // Camada de service pra alocacao automatica/manual de equipantes em areas de
 // trabalho. Toda a decisao (preferencias, capacidade, limite por sexo,
@@ -152,4 +153,79 @@ export const removerAlocacao = async (escalaId) => {
 export const fetchListaEspera = async (equipantesAprovados, alocacoesAtuais) => {
   const idsAlocados = new Set((alocacoesAtuais || []).map(a => a.id));
   return (equipantesAprovados || []).filter(eq => !idsAlocados.has(eq.id));
+};
+
+// Aplica as listas de CPF pre-cadastradas em Configuracoes (Guia/Inimigo/
+// Espirito Santo -- ver CpfsAreaEspecialManager.jsx e
+// updateCpfsAreaEspecial em organizerConfigService.js) contra quem ja foi
+// aprovado, casando por CPF (chave estavel, nao muda com reinscricao nem
+// com nome digitado diferente) e alocando/realocando cada equipante
+// encontrado na area especial correspondente.
+//
+// Nao precisou de nenhuma funcao nova no banco: reaproveita
+// alocarEquipanteManualmente (quem ainda esta na fila "A escalar") e
+// realocarAlocacao (quem ja tem alguma alocacao -- inclusive numa das
+// OUTRAS 2 areas especiais, e ai a exclusividade quem barra e o proprio
+// banco, _area_especial(), migration 20260912t-uma-area-especial-por-
+// pessoa -- nao duplicamos essa regra aqui).
+//
+// cpfsPorArea: { guia: [cpf, ...], inimigo: [...], espirito_santo: [...] }
+//   (formato salvo em configuracoes.cpfs_area_*)
+// equipantesAprovados / allocations: os mesmos arrays que a tela de
+// Geracao de Escalas ja mantem em memoria (fetchApprovedEquipantes /
+// fetchAllAllocations, em scalesService.js) -- esta funcao nao faz
+// nenhuma consulta nova, so orquestra chamadas de alocacao/realocacao.
+export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovados, allocations) => {
+  const resultado = { alocados: 0, realocados: 0, semCorrespondencia: [], erros: [] };
+
+  const soDigitos = (v) => (v || '').replace(/\D/g, '');
+
+  const equipantePorCpf = new Map();
+  (equipantesAprovados || []).forEach(eq => {
+    const cpf = soDigitos(eq.cpf);
+    if (cpf) equipantePorCpf.set(cpf, eq);
+  });
+
+  // allocations tem uma linha por PARTICIPACAO (a mesma pessoa pode estar
+  // em mais de uma area desde 12/09/2026) -- por isso guardamos as duas
+  // coisas que precisamos separadamente: se a pessoa ja esta EXATAMENTE
+  // nesta area (nada a fazer) e, se nao esta, qual e a primeira alocacao
+  // dela em qualquer area (para decidir entre "alocar" e "realocar").
+  const alocacaoPorEquipanteEArea = new Map();
+  const primeiraAlocacaoPorEquipante = new Map();
+  (allocations || []).forEach(a => {
+    alocacaoPorEquipanteEArea.set(`${a.id}::${a.allocatedArea}`, a);
+    if (!primeiraAlocacaoPorEquipante.has(a.id)) primeiraAlocacaoPorEquipante.set(a.id, a);
+  });
+
+  for (const areaInfo of AREAS_ESPECIAIS) {
+    const cpfs = cpfsPorArea?.[areaInfo.key] || [];
+
+    for (const cpfBruto of cpfs) {
+      const cpf = soDigitos(cpfBruto);
+      const equipante = equipantePorCpf.get(cpf);
+
+      if (!equipante) {
+        resultado.semCorrespondencia.push({ cpf, area: areaInfo.label });
+        continue;
+      }
+
+      if (alocacaoPorEquipanteEArea.has(`${equipante.id}::${areaInfo.label}`)) {
+        continue; // ja esta exatamente onde deveria -- nada a fazer
+      }
+
+      const alocacaoExistente = primeiraAlocacaoPorEquipante.get(equipante.id);
+      const r = alocacaoExistente
+        ? await realocarAlocacao(alocacaoExistente.escalaId, areaInfo.label)
+        : await alocarEquipanteManualmente(equipante.id, areaInfo.label);
+
+      if (r.success) {
+        if (alocacaoExistente) resultado.realocados += 1; else resultado.alocados += 1;
+      } else {
+        resultado.erros.push({ cpf, nome: equipante.nome, area: areaInfo.label, erro: r.error });
+      }
+    }
+  }
+
+  return resultado;
 };

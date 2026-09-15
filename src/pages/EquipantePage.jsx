@@ -20,6 +20,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { RefreshCw, Lock, CheckCircle, FlaskConical } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
+import CampoDataNascimento from '@/components/inscricao/CampoDataNascimento';
 import DadosPessoais from '@/components/inscricao/DadosPessoais';
 import InfoEclesiasticas from '@/components/inscricao/InfoEclesiasticas';
 import InfoSaude from '@/components/inscricao/InfoSaude';
@@ -573,9 +574,8 @@ const EquipantePage = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="nascimentoConfirmacao" className="text-white">Data de nascimento</Label>
-                <Input
+                <CampoDataNascimento
                   id="nascimentoConfirmacao"
-                  type="date"
                   max={new Date().toISOString().slice(0, 10)}
                   value={nascimentoDigitado}
                   onChange={(e) => { setNascimentoDigitado(e.target.value); setErroNascimento(''); }}

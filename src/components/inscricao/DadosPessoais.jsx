@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
+import CampoDataNascimento from './CampoDataNascimento';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useEquipanteCPFLookup } from '@/hooks/useEquipanteCPFLookup';
 import { CheckCircle2, Loader2 } from 'lucide-react';
@@ -191,12 +192,10 @@ const DadosPessoais = ({
           {/* Guardamos a data, nao a idade: um numero de idade envelhece e
               e ele que decide quem precisa de autorizacao dos pais. A idade
               ao lado e so conferencia para quem esta preenchendo. */}
-          <Input
+          <CampoDataNascimento
             id="dataNascimento"
-            name="dataNascimento"
-            type="date"
             max={hojeISO}
-            value={formData.dataNascimento || ''}
+            value={formData.dataNascimento}
             onChange={handleChange}
             required
             className="bg-white/10 border-white/20 text-white placeholder:text-white/50 [color-scheme:dark]"

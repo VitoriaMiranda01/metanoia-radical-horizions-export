@@ -14,7 +14,7 @@ import { exportEquipantesByArea, exportAllEquipantes } from '@/utils/excelExport
 import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
 import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf } from '@/services/equipanteAllocationService';
 import { fetchConfiguracoes } from '@/services/organizerConfigService';
-import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, UserCheck } from 'lucide-react';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -891,17 +891,6 @@ const OrganizerScalesPage = () => {
               <Sparkles className="mr-2 h-4 w-4" /> Áreas Especiais ({totalEspeciais})
             </Button>
 
-            {/* Aplica as listas de CPF pre-cadastradas em Configuracoes para
-                Guia/Inimigo/Espirito Santo -- ver handleAlocarPorCpf. */}
-            <Button onClick={handleAlocarPorCpf} disabled={alocandoPorCpf} variant="outline"
-              title="Aplica as listas de CPF cadastradas em Configurações → Áreas de Trabalho Especiais."
-              className="bg-indigo-600/20 text-indigo-300 border-indigo-600/50 hover:bg-indigo-600/40 hover:text-indigo-200">
-              {alocandoPorCpf
-                ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                : <UserCheck className="mr-2 h-4 w-4" />}
-              Aplicar CPFs cadastrados
-            </Button>
-
             {/* Os 3 mutiroes da Centenario (caminhao, cozinha, limpeza). Fica
                 aqui porque e o organizador de escalas quem organiza isso --
                 mas e uma lista a parte: nao entra na escala, nao conta para
@@ -1138,7 +1127,12 @@ const OrganizerScalesPage = () => {
         <AnimatePresence>
           {verAreasExtra && <AreasExtraDialog onClose={() => setVerAreasExtra(false)} />}
           {verAreasEspeciais && (
-            <AreasEspeciaisDialog total={totalEspeciais} onClose={() => setVerAreasEspeciais(false)}>
+            <AreasEspeciaisDialog
+              total={totalEspeciais}
+              onClose={() => setVerAreasEspeciais(false)}
+              onAplicarCpfs={handleAlocarPorCpf}
+              aplicandoPorCpf={alocandoPorCpf}
+            >
               {NOMES_ESPECIAIS.map(renderCartaoArea)}
             </AreasEspeciaisDialog>
           )}

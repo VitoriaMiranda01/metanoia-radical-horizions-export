@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Sparkles, X } from 'lucide-react';
+import { Sparkles, X, Loader2, UserCheck } from 'lucide-react';
 
 /**
  * Guia, Inimigo e Espírito Santo em um módulo à parte.
@@ -14,8 +14,14 @@ import { Sparkles, X } from 'lucide-react';
  * página (mesmo cabeçalho de limite, mesma grade, mesmos botões de realocar,
  * atuação, cor e remover) e chegam como children — assim não existe uma
  * segunda versão da tabela para sair do lugar quando a primeira mudar.
+ *
+ * onAplicarCpfs / aplicandoPorCpf (opcionais): o botão "Aplicar CPFs
+ * cadastrados" mora aqui dentro -- e não na barra de ações da página --
+ * porque só faz sentido para estas 3 áreas (ver handleAlocarPorCpf em
+ * OrganizerScalesPage.jsx e alocarAreasEspeciaisPorCpf em
+ * equipanteAllocationService.js). Sem onAplicarCpfs o botão nem aparece.
  */
-const AreasEspeciaisDialog = ({ onClose, total = 0, children }) => {
+const AreasEspeciaisDialog = ({ onClose, total = 0, children, onAplicarCpfs, aplicandoPorCpf = false }) => {
   useEffect(() => {
     const aoTeclar = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', aoTeclar);
@@ -59,7 +65,17 @@ const AreasEspeciaisDialog = ({ onClose, total = 0, children }) => {
           <div className="flex flex-col gap-6">{children}</div>
         </div>
 
-        <div className="p-4 border-t border-white/10 bg-zinc-900 flex justify-end">
+        <div className="p-4 border-t border-white/10 bg-zinc-900 flex justify-end gap-3">
+          {onAplicarCpfs && (
+            <Button onClick={onAplicarCpfs} disabled={aplicandoPorCpf} variant="outline"
+              title="Aplica as listas de CPF cadastradas em Configurações → Áreas de Trabalho Especiais."
+              className="bg-indigo-600/20 text-indigo-300 border-indigo-600/50 hover:bg-indigo-600/40 hover:text-indigo-200">
+              {aplicandoPorCpf
+                ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                : <UserCheck className="mr-2 h-4 w-4" />}
+              Aplicar CPFs cadastrados
+            </Button>
+          )}
           <Button onClick={onClose} variant="outline" className="border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white">
             Fechar
           </Button>

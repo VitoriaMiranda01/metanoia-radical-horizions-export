@@ -6,11 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { formatCPF } from '@/utils/formatters';
 import { validateCPF } from '@/utils/validation';
+import { AREAS_ESPECIAIS } from '@/constants/workAreas';
 
 /**
  * Escolha dos equipantes de UMA area especial (Guia, Inimigo, Espirito
- * Santo, Depressao, Perseguidos ou Infiltrados -- ver AREAS_ESPECIAIS em
- * constants/workAreas.js).
+ * Santo, Depressao, Perseguidos, Infiltrados, Familia muculmana,
+ * Apresentadores, Equipe de Manutencao ou Pastor Invisivel -- ver
+ * AREAS_ESPECIAIS em constants/workAreas.js).
  *
  * POR QUE A TELA MOSTRA NOME MAS GUARDA CPF
  * -----------------------------------------
@@ -31,11 +33,12 @@ import { validateCPF } from '@/utils/validation';
  *
  * UMA AREA ESPECIAL POR PESSOA
  * ----------------------------
- * Os seis papeis atravessam o acampamento inteiro, cada um com seu roteiro,
+ * Os dez papeis atravessam o acampamento inteiro, cada um com seu roteiro,
  * todos ao mesmo tempo -- ninguem cumpre dois. "areaPorCpf" traz quem ja
- * esta em uma das outras cinco listas, para a tela nem oferecer a pessoa.
- * Quem garante mesmo assim e o banco (ver migration 20260912t e
- * schema-update-20260916-mais-3-areas-especiais.sql); isto aqui e para o
+ * esta em uma das outras nove listas, para a tela nem oferecer a pessoa.
+ * Quem garante mesmo assim e o banco (ver migration 20260912t,
+ * schema-update-20260916-mais-3-areas-especiais.sql e
+ * schema-update-20260916b-mais-4-areas-especiais.sql); isto aqui e para o
  * organizador nao chegar a errar.
  */
 const CpfsAreaEspecialManager = ({
@@ -147,7 +150,7 @@ const CpfsAreaEspecialManager = ({
       return;
     }
     if (areaPorCpf[cpf]) {
-      setError(`${equipante.nome} já é ${areaPorCpf[cpf]}. Cada pessoa só pode ter um desses seis papéis — tire de lá primeiro.`);
+      setError(`${equipante.nome} já é ${areaPorCpf[cpf]}. Cada pessoa só pode ter um desses ${AREAS_ESPECIAIS.length} papéis — tire de lá primeiro.`);
       return;
     }
     salvarLista([...cpfs, cpf], {
@@ -170,7 +173,7 @@ const CpfsAreaEspecialManager = ({
       return;
     }
     if (areaPorCpf[digitos]) {
-      setError(`Este CPF já está na lista de ${areaPorCpf[digitos]}. Cada pessoa só pode ter um desses seis papéis.`);
+      setError(`Este CPF já está na lista de ${areaPorCpf[digitos]}. Cada pessoa só pode ter um desses ${AREAS_ESPECIAIS.length} papéis.`);
       return;
     }
     salvarLista([...cpfs, digitos], {
@@ -279,7 +282,7 @@ const CpfsAreaEspecialManager = ({
                     <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>
                       {emOutroPapel.map((e) => `${e.nome} já é ${areaPorCpf[soDigitos(e.cpf)]}`).join('; ')}.
-                      Cada pessoa só pode ter um dos seis papéis especiais.
+                      Cada pessoa só pode ter um dos {AREAS_ESPECIAIS.length} papéis especiais.
                     </span>
                   </span>
                 ) : jaNaLista.length > 0 ? (

@@ -49,7 +49,9 @@ export const AREAS_INSCRICAO = [
   { valor: AREA_DISPONIVEL_QUALQUER },
   { valor: 'Falsa baiana' },
   { valor: 'Família' },
-  { valor: 'Família muçulmana' },
+  // Família muçulmana saiu daqui em 16/09/2026: virou uma das dez areas
+  // especiais, pre-cadastrada por CPF pelo organizador. Ver
+  // AREAS_ESPECIAIS abaixo.
   { valor: 'Fotografia', rotulo: 'Fotografia (necessário possuir equipamento próprio)' },
   { valor: 'Hospital (Cena teatral)', rotulo: 'Hospital (cena teatral)' },
   { valor: 'Igreja subterrânea' },
@@ -59,7 +61,7 @@ export const AREAS_INSCRICAO = [
   { valor: 'Marcador' },
   { valor: 'Oração Itinerante', rotulo: 'Oração itinerante' },
   { valor: 'Pastor Enforcado', rotulo: 'Pastor enforcado' },
-  // Perseguidos saiu daqui em 16/09/2026: virou um dos seis papeis
+  // Perseguidos saiu daqui em 16/09/2026: virou um dos dez papeis
   // especiais, pre-cadastrado por CPF pelo organizador. Ver
   // AREAS_ESPECIAIS abaixo.
   { valor: 'Presídio' },
@@ -75,7 +77,7 @@ export const AREAS_INSCRICAO = [
 
 export { AREA_DISPONIVEL_QUALQUER };
 
-// Os seis papeis que atravessam o acampamento inteiro. Ficam fora do
+// Os dez papeis que atravessam o acampamento inteiro. Ficam fora do
 // formulario de inscricao -- ninguem se candidata a eles -- e sao escolhidos
 // pelo organizador na tela de Geracao de Escalas, como qualquer outra area.
 //
@@ -93,21 +95,31 @@ export { AREA_DISPONIVEL_QUALQUER };
 // acumular Depressao com qualquer outra area). Perseguidos entrou no mesmo
 // dia vindo de AREAS_INSCRICAO (la, era o proprio equipante quem escolhia).
 //
-// Uma pessoa so pode ter UM destes seis (roteiros simultaneos, ninguem
+// No mesmo dia, mais tarde, entraram Familia muculmana (vinda de
+// AREAS_INSCRICAO) e Apresentadores/Equipe de Manutencao/Pastor Invisivel
+// (vindas de AREAS_SOMENTE_ORGANIZADOR, pelo mesmo motivo de Depressao e
+// Infiltrados acima).
+//
+// Uma pessoa so pode ter UM destes dez (roteiros simultaneos, ninguem
 // cumpre dois). A regra e do banco -- _area_especial(), migration 20260912t
-// (as 3 originais) e schema-update-20260916-mais-3-areas-especiais.sql (as
-// 3 novas) --, e esta lista precisa continuar espelhando a de la.
+// (as 3 originais), schema-update-20260916-mais-3-areas-especiais.sql (mais
+// 3) e schema-update-20260916b-mais-4-areas-especiais.sql (mais 4) --, e
+// esta lista precisa continuar espelhando a de la.
 //
 // `label` e o nome exibido, que e tambem o nome canonico da area -- por
-// isso Depressao/Infiltrados/Perseguidos mantiveram o nome exato que ja
-// tinham antes de virar especiais (nada mudou nas escalas ja lancadas).
+// isso as areas que entraram depois mantiveram o nome exato que ja tinham
+// antes de virar especiais (nada mudou nas escalas ja lancadas).
 export const AREAS_ESPECIAIS = [
   { key: 'guia', label: 'Guia' },
   { key: 'inimigo', label: 'Inimigo' },
   { key: 'espirito_santo', label: 'Espírito Santo' },
   { key: 'depressao', label: 'Depressão' },
   { key: 'perseguidos', label: 'Perseguidos' },
-  { key: 'infiltrados', label: 'Infiltrados' }
+  { key: 'infiltrados', label: 'Infiltrados' },
+  { key: 'familia_muculmana', label: 'Família muçulmana' },
+  { key: 'apresentadores', label: 'Apresentadores' },
+  { key: 'manutencao', label: 'Equipe de Manutenção' },
+  { key: 'pastor_invisivel', label: 'Pastor Invisível' }
 ];
 
 // Areas que existem na escala oficial e NAO sao oferecidas ao equipante: quem
@@ -125,14 +137,12 @@ export const AREAS_ESPECIAIS = [
 // Sao ~60 pessoas por edicao (6,6% da escala) que ate agora nao cabiam no
 // sistema.
 export const AREAS_SOMENTE_ORGANIZADOR = [
-  'Apresentadores',
+  // Apresentadores, Depressao, Equipe de Manutencao, Infiltrados e Pastor
+  // Invisivel sairam daqui em 16/09/2026: viraram areas especiais (ver
+  // AREAS_ESPECIAIS acima), exclusivas entre si.
   'Ataque / Madrugada',
   'Base Operacional',
-  // Depressao e Infiltrados sairam daqui em 16/09/2026: viraram areas
-  // especiais (ver AREAS_ESPECIAIS acima), exclusivas entre si.
-  'Equipe de Manutenção',
   'Estacionamento',
-  'Pastor Invisível',
   // As duas recepcoes entraram aqui em 12/09/2026: o equipante nao escolhe
   // recepcao. E o organizador que separa quem fica na mesa de cracha da
   // igreja e quem recebe no sitio.

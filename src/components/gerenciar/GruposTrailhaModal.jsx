@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getGroupColor, GROUPS } from '@/utils/gruposTrailha';
-import { User, Users, MapPin, Phone, Loader2, ArrowRightLeft, Save } from 'lucide-react';
+import { User, Users, Fingerprint, Phone, Loader2, ArrowRightLeft, Save } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -86,9 +86,9 @@ const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao }) => {
           <div className="flex flex-col overflow-hidden">
             <span className="text-white font-medium truncate">{acampante.nome}</span>
             <div className="flex items-center gap-2 text-xs text-gray-400">
-              {acampante.cidade && (
+              {acampante.cpf && (
                 <span className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3" /> {acampante.cidade}
+                  <Fingerprint className="w-3 h-3" /> {acampante.cpf}
                 </span>
               )}
               {acampante.whatsapp && (

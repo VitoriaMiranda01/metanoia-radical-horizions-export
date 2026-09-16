@@ -13,7 +13,8 @@ import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { exportEquipantesByArea, exportAllEquipantes } from '@/utils/excelExport';
 import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
 import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf } from '@/services/equipanteAllocationService';
-import { fetchConfiguracoes } from '@/services/organizerConfigService';
+import { fetchConfiguracoes, updateCpfsAreaEspecial } from '@/services/organizerConfigService';
+import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
 import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
 import EquipantesGridDisplay from '@/components/scales/EquipantesGridDisplay';
 import AreasExtraDialog from '@/components/scales/AreasExtraDialog';
 import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
+import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
@@ -143,9 +145,19 @@ const OrganizerScalesPage = () => {
   const [confirmandoAuto, setConfirmandoAuto] = useState(false);
   const [alocandoAuto, setAlocandoAuto] = useState(false);
 
-  // Aplicacao das 3 listas de CPF pre-cadastradas em Configuracoes -- ver
-  // handleAlocarPorCpf, abaixo.
+  // Aplicacao das 3 listas de CPF pre-cadastradas -- ver handleAlocarPorCpf,
+  // abaixo.
   const [alocandoPorCpf, setAlocandoPorCpf] = useState(false);
+
+  // O cadastro por CPF (Guia, Inimigo, Espirito Santo) morava em
+  // Configuracoes -> Areas de Trabalho Especiais e mudou pra ca a pedido:
+  // so faz sentido cadastrar perto de quem aplica (handleAlocarPorCpf).
+  // Mesmo padrao de estado que o CpfsAreaEspecialManager usava la --
+  // carregado uma vez e mantido em sincronia pelos onSave dos 3 gerenciadores
+  // (ver handleSaveCpfsAreaEspecial).
+  const [cpfsAreaEspecial, setCpfsAreaEspecial] = useState({ guia: [], inimigo: [], espirito_santo: [] });
+  const [equipantesParaSelecao, setEquipantesParaSelecao] = useState([]);
+  const [carregandoEquipantesParaSelecao, setCarregandoEquipantesParaSelecao] = useState(true);
 
   const semAcento = (texto) => (texto || '')
     .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -324,7 +336,9 @@ const OrganizerScalesPage = () => {
 
   useEffect(() => {
     loadInitialData();
-  }, []); 
+    loadCpfsAreaEspecial();
+    loadEquipantesParaSelecao();
+  }, []);
 
   useEffect(() => {
     const intervalId = setInterval(() => fetchBackgroundData(false), 30000);
@@ -620,12 +634,61 @@ const OrganizerScalesPage = () => {
     fetchBackgroundData(false);
   };
 
-  // Aplica as 3 listas de CPF pre-cadastradas em Configuracoes -> Areas de
-  // Trabalho Especiais (Guia, Inimigo, Espirito Santo -- ver
-  // CpfsAreaEspecialManager.jsx) contra quem ja esta aprovado, casando por
-  // CPF. Busca a configuracao na hora do clique (em vez de manter uma copia
-  // sincronizada aqui) porque e uma acao pontual, nao algo que precisa
-  // reagir a mudanca em tempo real.
+  // As 3 listas de CPF (Guia, Inimigo, Espirito Santo) moraram em
+  // Configuracoes ate aqui. Carregada uma vez so no mount -- ver o comentario
+  // no estado cpfsAreaEspecial.
+  const loadCpfsAreaEspecial = async () => {
+    try {
+      const configAtual = await fetchConfiguracoes();
+      setCpfsAreaEspecial({
+        guia: configAtual.cpfs_area_guia || [],
+        inimigo: configAtual.cpfs_area_inimigo || [],
+        espirito_santo: configAtual.cpfs_area_espirito_santo || []
+      });
+    } catch (error) {
+      console.error('[OrganizerScalesPage] Error loading CPFs das areas especiais:', error);
+    }
+  };
+
+  // Para o organizador ESCOLHER pelo nome, nos 3 gerenciadores de CPF (ver
+  // CpfsAreaEspecialManager.jsx) -- carregada uma vez so e compartilhada
+  // pelas 3 instancias do componente.
+  const loadEquipantesParaSelecao = async () => {
+    setCarregandoEquipantesParaSelecao(true);
+    try {
+      const { data, error } = await fetchEquipantesParaSelecao();
+      if (error) throw error;
+      setEquipantesParaSelecao(data || []);
+    } catch (error) {
+      console.error('[OrganizerScalesPage] Error loading equipantes para selecao:', error);
+    } finally {
+      setCarregandoEquipantesParaSelecao(false);
+    }
+  };
+
+  // Quem ja esta em uma das OUTRAS 2 areas especiais, para o
+  // CpfsAreaEspecialManager da area `areaKeyAtual` nem oferecer -- ver o
+  // comentario sobre exclusividade no proprio componente.
+  const cpfsDosOutrosPapeis = (areaKeyAtual) => {
+    const mapa = {};
+    AREAS_ESPECIAIS.forEach(({ key, label }) => {
+      if (key === areaKeyAtual) return;
+      (cpfsAreaEspecial[key] || []).forEach((cpf) => { mapa[cpf] = label; });
+    });
+    return mapa;
+  };
+
+  const handleSaveCpfsAreaEspecial = async (areaKey, novaLista) => {
+    await updateCpfsAreaEspecial(areaKey, novaLista);
+    setCpfsAreaEspecial(prev => ({ ...prev, [areaKey]: novaLista }));
+  };
+
+  // Aplica as 3 listas de CPF pre-cadastradas acima (Guia, Inimigo, Espirito
+  // Santo -- ver CpfsAreaEspecialManager.jsx) contra quem ja esta aprovado,
+  // casando por CPF. Busca a configuracao de novo na hora do clique (em vez
+  // de usar cpfsAreaEspecial direto) porque e uma acao pontual, nao algo que
+  // precisa reagir a mudanca em tempo real -- e assim continua valendo
+  // mesmo que essa aba tenha ficado aberta um tempao sem recarregar.
   const handleAlocarPorCpf = async () => {
     setAlocandoPorCpf(true);
     try {
@@ -1133,7 +1196,22 @@ const OrganizerScalesPage = () => {
               onAplicarCpfs={handleAlocarPorCpf}
               aplicandoPorCpf={alocandoPorCpf}
             >
-              {NOMES_ESPECIAIS.map(renderCartaoArea)}
+              {AREAS_ESPECIAIS.map(({ key, label }) => (
+                <div key={key} className="space-y-3">
+                  <div className="space-y-2 p-3 rounded-lg bg-white/5 border border-white/10">
+                    <h4 className="text-sm font-medium text-gray-300">Pré-cadastro por CPF — {label}</h4>
+                    <CpfsAreaEspecialManager
+                      areaLabel={label}
+                      cpfs={cpfsAreaEspecial[key] || []}
+                      equipantes={equipantesParaSelecao}
+                      carregandoEquipantes={carregandoEquipantesParaSelecao}
+                      areaPorCpf={cpfsDosOutrosPapeis(key)}
+                      onSave={(novaLista) => handleSaveCpfsAreaEspecial(key, novaLista)}
+                    />
+                  </div>
+                  {renderCartaoArea(label)}
+                </div>
+              ))}
             </AreasEspeciaisDialog>
           )}
         </AnimatePresence>

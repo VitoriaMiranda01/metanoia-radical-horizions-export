@@ -10,8 +10,9 @@ import { Sparkles, X, Loader2, UserCheck } from 'lucide-react';
  * mudam pouco de uma edição para a outra, e ficavam no meio das ~30 áreas
  * disputando atenção com o que realmente muda toda edição.
  *
- * Só a MOLDURA mora aqui. As três tabelas continuam sendo montadas pela
- * página (mesmo cabeçalho de limite, mesma grade, mesmos botões de realocar,
+ * Só a MOLDURA mora aqui. Os gerenciadores de CPF (CpfsAreaEspecialManager,
+ * um por área) e as três tabelas continuam sendo montados pela página
+ * (mesmo cabeçalho de limite, mesma grade, mesmos botões de realocar,
  * atuação, cor e remover) e chegam como children — assim não existe uma
  * segunda versão da tabela para sair do lugar quando a primeira mudar.
  *
@@ -68,7 +69,7 @@ const AreasEspeciaisDialog = ({ onClose, total = 0, children, onAplicarCpfs, apl
         <div className="p-4 border-t border-white/10 bg-zinc-900 flex justify-end gap-3">
           {onAplicarCpfs && (
             <Button onClick={onAplicarCpfs} disabled={aplicandoPorCpf} variant="outline"
-              title="Aplica as listas de CPF cadastradas em Configurações → Áreas de Trabalho Especiais."
+              title="Aplica as 3 listas de CPF pré-cadastradas acima contra quem já está aprovado."
               className="bg-indigo-600/20 text-indigo-300 border-indigo-600/50 hover:bg-indigo-600/40 hover:text-indigo-200">
               {aplicandoPorCpf
                 ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />

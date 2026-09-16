@@ -10,20 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimiteAcampantesPorIgreja, updateCpfsAreaEspecial, subscribeToConfiguracoesChanges, resetarParaNovaEdicao } from '@/services/organizerConfigService';
+import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimiteAcampantesPorIgreja, subscribeToConfiguracoesChanges, resetarParaNovaEdicao } from '@/services/organizerConfigService';
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
-import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
-import { AREAS_ESPECIAIS } from '@/constants/workAreas';
-import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users, Church, Shield } from 'lucide-react';
+import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users, Church } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
 import LimiteIgrejasManager from '@/components/organizer/LimiteIgrejasManager';
 import OutrasIgrejasManager from '@/components/organizer/OutrasIgrejasManager';
 import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizadoresManager';
-import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import { Button } from '@/components/ui/button';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
 
@@ -43,10 +40,7 @@ const OrganizerConfigPage = () => {
     data_limite_inscricao_pagamento: '',
     equipante_pricing_periods: [],
     acampante_pricing_periods: [],
-    limite_acampantes_por_igreja: null,
-    cpfs_area_guia: [],
-    cpfs_area_inimigo: [],
-    cpfs_area_espirito_santo: []
+    limite_acampantes_por_igreja: null
   });
 
   const [loadingConfig, setLoadingConfig] = useState(true);
@@ -69,16 +63,9 @@ const OrganizerConfigPage = () => {
   const [isCreatingCoupon, setIsCreatingCoupon] = useState(false);
   const [couponToDelete, setCouponToDelete] = useState(null);
 
-  // Para o organizador ESCOLHER pelo nome, nas 3 listas de CPF das áreas
-  // especiais (ver CpfsAreaEspecialManager.jsx) -- carregada uma vez só e
-  // compartilhada pelas 3 instâncias do componente.
-  const [equipantesParaSelecao, setEquipantesParaSelecao] = useState([]);
-  const [carregandoEquipantes, setCarregandoEquipantes] = useState(true);
-
   useEffect(() => {
     checkDb();
     loadCoupons();
-    loadEquipantesParaSelecao();
   }, []);
 
   useEffect(() => {
@@ -141,10 +128,7 @@ const OrganizerConfigPage = () => {
         data_limite_inscricao_pagamento: data.data_limite_inscricao_pagamento || '',
         equipante_pricing_periods: data.equipante_pricing_periods || [],
         acampante_pricing_periods: data.acampante_pricing_periods || [],
-        limite_acampantes_por_igreja: data.limite_acampantes_por_igreja ?? null,
-        cpfs_area_guia: data.cpfs_area_guia || [],
-        cpfs_area_inimigo: data.cpfs_area_inimigo || [],
-        cpfs_area_espirito_santo: data.cpfs_area_espirito_santo || []
+        limite_acampantes_por_igreja: data.limite_acampantes_por_igreja ?? null
       });
     } catch (error) {
       console.error("[OrganizerConfigPage] Error loading config data:", error);
@@ -209,47 +193,15 @@ const OrganizerConfigPage = () => {
     }));
   };
 
-  const loadEquipantesParaSelecao = async () => {
-    setCarregandoEquipantes(true);
-    try {
-      const { data, error } = await fetchEquipantesParaSelecao();
-      if (error) throw error;
-      setEquipantesParaSelecao(data || []);
-    } catch (error) {
-      console.error('[OrganizerConfigPage] Error loading equipantes para seleção:', error);
-    } finally {
-      setCarregandoEquipantes(false);
-    }
-  };
-
-  // Quem já está em uma das OUTRAS 2 áreas especiais, para o
-  // CpfsAreaEspecialManager da área `areaKeyAtual` nem oferecer -- ver o
-  // comentário sobre exclusividade no próprio componente.
-  const cpfsDosOutrosPapeis = (areaKeyAtual) => {
-    const mapa = {};
-    AREAS_ESPECIAIS.forEach(({ key, label }) => {
-      if (key === areaKeyAtual) return;
-      (config[`cpfs_area_${key}`] || []).forEach((cpf) => { mapa[cpf] = label; });
-    });
-    return mapa;
-  };
-
-  const handleSaveCpfsAreaEspecial = async (areaKey, novaLista) => {
-    await updateCpfsAreaEspecial(areaKey, novaLista);
-    setConfig(prev => ({ ...prev, [`cpfs_area_${areaKey}`]: novaLista }));
-  };
-
   const handleSaveAll = async () => {
     if (!validateGeneralConfigFields(config)) return;
 
     setIsSavingAll(true);
     try {
-      // Deliberately extracting out pricing periods and the special-area CPF
-      // lists so they aren't included in the global save -- both are saved
-      // independently (updatePricingPeriods / updateCpfsAreaEspecial).
+      // Deliberately extracting out pricing periods so they aren't included
+      // in the global save -- saved independently (updatePricingPeriods).
       const {
         equipante_pricing_periods, acampante_pricing_periods,
-        cpfs_area_guia, cpfs_area_inimigo, cpfs_area_espirito_santo,
         ...otherConfigs
       } = config;
       
@@ -630,41 +582,11 @@ const OrganizerConfigPage = () => {
             </Card>
           </motion.div>
 
-          {/* Guia, Inimigo e Espirito Santo: os 3 papeis que nao aparecem no
-              formulario de inscricao e sao pre-cadastrados aqui, por CPF
-              (mostrado por nome -- ver CpfsAreaEspecialManager.jsx). Quem
-              aplica essas listas contra os equipantes ja aprovados e o botao
-              "Aplicar CPFs cadastrados" na tela de Geracao de Escalas. */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
-            <Card className="glass-effect border-white/10 bg-black/40">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-white">
-                  <Shield className="w-5 h-5 text-indigo-400" />
-                  <span>Áreas de Trabalho Especiais</span>
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Pré-cadastre por nome quem vai ocupar Guia, Inimigo e Espírito Santo — áreas que não
-                  aparecem no formulário de inscrição. Depois, na tela de Geração de Escalas, use "Aplicar
-                  CPFs cadastrados" para alocar todo mundo de uma vez.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-8">
-                {AREAS_ESPECIAIS.map(({ key, label }) => (
-                  <div key={key} className="space-y-3">
-                    <h3 className="text-lg font-medium text-white border-b border-white/10 pb-2">{label}</h3>
-                    <CpfsAreaEspecialManager
-                      areaLabel={label}
-                      cpfs={config[`cpfs_area_${key}`] || []}
-                      equipantes={equipantesParaSelecao}
-                      carregandoEquipantes={carregandoEquipantes}
-                      areaPorCpf={cpfsDosOutrosPapeis(key)}
-                      onSave={(novaLista) => handleSaveCpfsAreaEspecial(key, novaLista)}
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
+          {/* Guia, Inimigo e Espirito Santo: o cadastro por CPF desses 3
+              papeis morava aqui e mudou pra tela de Geracao de Escalas, a
+              pedido -- so faz sentido perto de quem aplica ("Aplicar CPFs
+              cadastrados", dentro do dialogo Areas Especiais). Ver
+              CpfsAreaEspecialManager.jsx e OrganizerScalesPage.jsx. */}
 
           {/* A relacao das igrejas "OUTRA": nomes que os equipantes digitaram
               porque a igreja deles nao esta nas 145 da lista. Daqui o

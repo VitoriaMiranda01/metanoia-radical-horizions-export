@@ -1,6 +1,12 @@
 import { supabase } from '@/services/supabaseClient';
 import { withRetry } from '@/services/serviceHelpers';
 import { fetchConfigPublica } from '@/services/publicDataService';
+import { AREAS_ESPECIAIS } from '@/constants/workAreas';
+
+// Nome de coluna -> chave de area, para as duas colecoes abaixo lerem e
+// escreverem sem repetir os 6 nomes na mao (e sem esquecer um se um setimo
+// papel especial entrar -- so mexe em AREAS_ESPECIAIS).
+const CPFS_AREA_COLUMNS = AREAS_ESPECIAIS.map(({ key }) => `cpfs_area_${key}`);
 
 // Não busca mais data_edicao_dia_inicio/dia_fim/mes/ano na tabela
 // "organizadores" (removido em 2026-09-04, a pedido da usuaria). Motivo:
@@ -16,7 +22,9 @@ export const fetchConfiguracoes = async () => {
     try {
       if (!navigator.onLine) return { max_equipantes: 0, max_acampantes: 0, max_acampantes_homens: 0, max_acampantes_mulheres: 0, equipante_pricing_periods: [], acampante_pricing_periods: [], edicao_numero: '' };
       
-      let configQuery = supabase.from('configuracoes').select('id, data_evento_inicio, data_evento_fim, horario_saida_igreja, horario_retorno_sitio, data_limite_inscricao_pagamento, max_equipantes, max_acampantes, updated_at, equipante_pricing_periods, acampante_pricing_periods, max_acampantes_homens, max_acampantes_mulheres, edicao_numero, limite_acampantes_por_igreja, cpfs_area_guia, cpfs_area_inimigo, cpfs_area_espirito_santo');
+      let configQuery = supabase.from('configuracoes').select(
+        `id, data_evento_inicio, data_evento_fim, horario_saida_igreja, horario_retorno_sitio, data_limite_inscricao_pagamento, max_equipantes, max_acampantes, updated_at, equipante_pricing_periods, acampante_pricing_periods, max_acampantes_homens, max_acampantes_mulheres, edicao_numero, limite_acampantes_por_igreja, ${CPFS_AREA_COLUMNS.join(', ')}`
+      );
       
       const { data, error } = await configQuery.order('updated_at', { ascending: false }).limit(1).maybeSingle();
       if (error && !['PGRST205', '42P01', '42703'].includes(error.code)) {
@@ -39,9 +47,7 @@ export const fetchConfiguracoes = async () => {
         data_evento_inicio: data?.data_evento_inicio || '',
         data_evento_fim: data?.data_evento_fim || '',
         limite_acampantes_por_igreja: data?.limite_acampantes_por_igreja ?? null,
-        cpfs_area_guia: data?.cpfs_area_guia || [],
-        cpfs_area_inimigo: data?.cpfs_area_inimigo || [],
-        cpfs_area_espirito_santo: data?.cpfs_area_espirito_santo || []
+        ...Object.fromEntries(CPFS_AREA_COLUMNS.map((coluna) => [coluna, data?.[coluna] || []]))
       };
 
       return mergedConfig;
@@ -90,19 +96,17 @@ export const updatePricingPeriods = async (type, periods) => {
   }
 };
 
-// Salva a lista de CPFs escolhidos pelo organizador pra uma das 3 areas
-// especiais (Guia, Inimigo, Espirito Santo), que nao aparecem no
-// formulario de equipante. Mesmo padrao de updatePricingPeriods: salva
+// Salva a lista de CPFs escolhidos pelo organizador pra uma das areas
+// especiais (AREAS_ESPECIAIS, em constants/workAreas.js), que nao aparecem
+// no formulario de equipante. Mesmo padrao de updatePricingPeriods: salva
 // direto na tabela configuracoes, de forma independente do botao "Salvar
 // Configuracoes Gerais". Quem aplica essas listas de fato (casando CPF com
 // equipante aprovado e alocando) e o botao "Aplicar CPFs cadastrados" na
 // tela de Geracao de Escalas -- ver alocarAreasEspeciaisPorCpf em
 // equipanteAllocationService.js.
-const CPFS_AREA_COLUMN_MAP = {
-  guia: 'cpfs_area_guia',
-  inimigo: 'cpfs_area_inimigo',
-  espirito_santo: 'cpfs_area_espirito_santo'
-};
+const CPFS_AREA_COLUMN_MAP = Object.fromEntries(
+  AREAS_ESPECIAIS.map(({ key }) => [key, `cpfs_area_${key}`])
+);
 
 export const updateCpfsAreaEspecial = async (area, cpfs) => {
   try {

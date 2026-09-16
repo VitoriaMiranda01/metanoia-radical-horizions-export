@@ -59,7 +59,9 @@ export const AREAS_INSCRICAO = [
   { valor: 'Marcador' },
   { valor: 'Oração Itinerante', rotulo: 'Oração itinerante' },
   { valor: 'Pastor Enforcado', rotulo: 'Pastor enforcado' },
-  { valor: 'Perseguidos' },
+  // Perseguidos saiu daqui em 16/09/2026: virou um dos seis papeis
+  // especiais, pre-cadastrado por CPF pelo organizador. Ver
+  // AREAS_ESPECIAIS abaixo.
   { valor: 'Presídio' },
   { valor: 'Primeiros socorros - Saúde', rotulo: 'Primeiros socorros – Saúde' },
   // Recepção saiu daqui em 12/09/2026: quem trabalha na recepcao (e em
@@ -73,24 +75,39 @@ export const AREAS_INSCRICAO = [
 
 export { AREA_DISPONIVEL_QUALQUER };
 
-// Os 3 papeis que atravessam o acampamento inteiro. Ficam fora do
+// Os seis papeis que atravessam o acampamento inteiro. Ficam fora do
 // formulario de inscricao -- ninguem se candidata a eles -- e sao escolhidos
 // pelo organizador na tela de Geracao de Escalas, como qualquer outra area.
 //
 // Ate 12/09/2026 havia um segundo caminho: listas de CPF em Configuracoes
 // mais um botao "Alocar Áreas Especiais" que aplicava tudo de uma vez. Dois
 // lugares para dizer a mesma coisa, que podiam discordar entre si. O Patrick
-// decidiu ficar so com a tela de escalas, e o outro caminho foi removido.
+// decidiu ficar so com a tela de escalas, e o outro caminho foi removido --
+// e em 15/09/2026 o cadastro por CPF voltou (a pedido), mas dentro do
+// proprio dialogo de Areas Especiais na tela de escalas, nao mais em
+// Configuracoes.
 //
-// Uma pessoa so pode ter UM destes tres (roteiros simultaneos, ninguem
+// Guia, Inimigo e Espirito Santo sempre foram assim. Depressao e Infiltrados
+// entraram em 16/09/2026 vindos de AREAS_SOMENTE_ORGANIZADOR (la, o
+// organizador aloca a mao mas SEM exclusividade -- uma pessoa podia
+// acumular Depressao com qualquer outra area). Perseguidos entrou no mesmo
+// dia vindo de AREAS_INSCRICAO (la, era o proprio equipante quem escolhia).
+//
+// Uma pessoa so pode ter UM destes seis (roteiros simultaneos, ninguem
 // cumpre dois). A regra e do banco -- _area_especial(), migration 20260912t
-// --, e esta lista precisa continuar espelhando a de la.
+// (as 3 originais) e schema-update-20260916-mais-3-areas-especiais.sql (as
+// 3 novas) --, e esta lista precisa continuar espelhando a de la.
 //
-// `label` e o nome exibido, que e tambem o nome canonico da area.
+// `label` e o nome exibido, que e tambem o nome canonico da area -- por
+// isso Depressao/Infiltrados/Perseguidos mantiveram o nome exato que ja
+// tinham antes de virar especiais (nada mudou nas escalas ja lancadas).
 export const AREAS_ESPECIAIS = [
   { key: 'guia', label: 'Guia' },
   { key: 'inimigo', label: 'Inimigo' },
-  { key: 'espirito_santo', label: 'Espírito Santo' }
+  { key: 'espirito_santo', label: 'Espírito Santo' },
+  { key: 'depressao', label: 'Depressão' },
+  { key: 'perseguidos', label: 'Perseguidos' },
+  { key: 'infiltrados', label: 'Infiltrados' }
 ];
 
 // Areas que existem na escala oficial e NAO sao oferecidas ao equipante: quem
@@ -111,10 +128,10 @@ export const AREAS_SOMENTE_ORGANIZADOR = [
   'Apresentadores',
   'Ataque / Madrugada',
   'Base Operacional',
-  'Depressão',
+  // Depressao e Infiltrados sairam daqui em 16/09/2026: viraram areas
+  // especiais (ver AREAS_ESPECIAIS acima), exclusivas entre si.
   'Equipe de Manutenção',
   'Estacionamento',
-  'Infiltrados',
   'Pastor Invisível',
   // As duas recepcoes entraram aqui em 12/09/2026: o equipante nao escolhe
   // recepcao. E o organizador que separa quem fica na mesa de cracha da

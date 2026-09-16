@@ -145,17 +145,18 @@ const OrganizerScalesPage = () => {
   const [confirmandoAuto, setConfirmandoAuto] = useState(false);
   const [alocandoAuto, setAlocandoAuto] = useState(false);
 
-  // Aplicacao das 3 listas de CPF pre-cadastradas -- ver handleAlocarPorCpf,
+  // Aplicacao das listas de CPF pre-cadastradas -- ver handleAlocarPorCpf,
   // abaixo.
   const [alocandoPorCpf, setAlocandoPorCpf] = useState(false);
 
-  // O cadastro por CPF (Guia, Inimigo, Espirito Santo) morava em
+  // O cadastro por CPF (um por area em AREAS_ESPECIAIS) morava em
   // Configuracoes -> Areas de Trabalho Especiais e mudou pra ca a pedido:
   // so faz sentido cadastrar perto de quem aplica (handleAlocarPorCpf).
   // Mesmo padrao de estado que o CpfsAreaEspecialManager usava la --
-  // carregado uma vez e mantido em sincronia pelos onSave dos 3 gerenciadores
-  // (ver handleSaveCpfsAreaEspecial).
-  const [cpfsAreaEspecial, setCpfsAreaEspecial] = useState({ guia: [], inimigo: [], espirito_santo: [] });
+  // carregado uma vez e mantido em sincronia pelos onSave dos gerenciadores
+  // (ver handleSaveCpfsAreaEspecial). Comeca vazio -- loadCpfsAreaEspecial
+  // preenche uma chave por area assim que a configuracao carrega.
+  const [cpfsAreaEspecial, setCpfsAreaEspecial] = useState({});
   const [equipantesParaSelecao, setEquipantesParaSelecao] = useState([]);
   const [carregandoEquipantesParaSelecao, setCarregandoEquipantesParaSelecao] = useState(true);
 
@@ -634,25 +635,27 @@ const OrganizerScalesPage = () => {
     fetchBackgroundData(false);
   };
 
-  // As 3 listas de CPF (Guia, Inimigo, Espirito Santo) moraram em
+  // As listas de CPF (uma por area em AREAS_ESPECIAIS) moraram em
   // Configuracoes ate aqui. Carregada uma vez so no mount -- ver o comentario
-  // no estado cpfsAreaEspecial.
+  // no estado cpfsAreaEspecial. Generico de proposito: se uma setima area
+  // especial entrar, so precisa de uma coluna cpfs_area_<key> nova (ver
+  // CPFS_AREA_COLUMN_MAP em organizerConfigService.js) -- nada aqui muda.
   const loadCpfsAreaEspecial = async () => {
     try {
       const configAtual = await fetchConfiguracoes();
-      setCpfsAreaEspecial({
-        guia: configAtual.cpfs_area_guia || [],
-        inimigo: configAtual.cpfs_area_inimigo || [],
-        espirito_santo: configAtual.cpfs_area_espirito_santo || []
+      const novasListas = {};
+      AREAS_ESPECIAIS.forEach(({ key }) => {
+        novasListas[key] = configAtual[`cpfs_area_${key}`] || [];
       });
+      setCpfsAreaEspecial(novasListas);
     } catch (error) {
       console.error('[OrganizerScalesPage] Error loading CPFs das areas especiais:', error);
     }
   };
 
-  // Para o organizador ESCOLHER pelo nome, nos 3 gerenciadores de CPF (ver
+  // Para o organizador ESCOLHER pelo nome, nos gerenciadores de CPF (ver
   // CpfsAreaEspecialManager.jsx) -- carregada uma vez so e compartilhada
-  // pelas 3 instancias do componente.
+  // por todas as instancias do componente.
   const loadEquipantesParaSelecao = async () => {
     setCarregandoEquipantesParaSelecao(true);
     try {
@@ -666,7 +669,7 @@ const OrganizerScalesPage = () => {
     }
   };
 
-  // Quem ja esta em uma das OUTRAS 2 areas especiais, para o
+  // Quem ja esta em uma das OUTRAS areas especiais, para o
   // CpfsAreaEspecialManager da area `areaKeyAtual` nem oferecer -- ver o
   // comentario sobre exclusividade no proprio componente.
   const cpfsDosOutrosPapeis = (areaKeyAtual) => {
@@ -683,26 +686,26 @@ const OrganizerScalesPage = () => {
     setCpfsAreaEspecial(prev => ({ ...prev, [areaKey]: novaLista }));
   };
 
-  // Aplica as 3 listas de CPF pre-cadastradas acima (Guia, Inimigo, Espirito
-  // Santo -- ver CpfsAreaEspecialManager.jsx) contra quem ja esta aprovado,
-  // casando por CPF. Busca a configuracao de novo na hora do clique (em vez
-  // de usar cpfsAreaEspecial direto) porque e uma acao pontual, nao algo que
-  // precisa reagir a mudanca em tempo real -- e assim continua valendo
-  // mesmo que essa aba tenha ficado aberta um tempao sem recarregar.
+  // Aplica as listas de CPF pre-cadastradas acima (uma por area em
+  // AREAS_ESPECIAIS -- ver CpfsAreaEspecialManager.jsx) contra quem ja esta
+  // aprovado, casando por CPF. Busca a configuracao de novo na hora do
+  // clique (em vez de usar cpfsAreaEspecial direto) porque e uma acao
+  // pontual, nao algo que precisa reagir a mudanca em tempo real -- e assim
+  // continua valendo mesmo que essa aba tenha ficado aberta um tempao sem
+  // recarregar.
   const handleAlocarPorCpf = async () => {
     setAlocandoPorCpf(true);
     try {
       const configAtual = await fetchConfiguracoes();
-      const cpfsPorArea = {
-        guia: configAtual.cpfs_area_guia || [],
-        inimigo: configAtual.cpfs_area_inimigo || [],
-        espirito_santo: configAtual.cpfs_area_espirito_santo || []
-      };
+      const cpfsPorArea = {};
+      AREAS_ESPECIAIS.forEach(({ key }) => {
+        cpfsPorArea[key] = configAtual[`cpfs_area_${key}`] || [];
+      });
 
       if (Object.values(cpfsPorArea).every(lista => lista.length === 0)) {
         toast({
           title: 'Nada para aplicar',
-          description: 'Cadastre CPFs em Configurações → Áreas de Trabalho Especiais primeiro.'
+          description: 'Cadastre os CPFs aqui em cima primeiro.'
         });
         return;
       }

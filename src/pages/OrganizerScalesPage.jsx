@@ -939,13 +939,13 @@ const OrganizerScalesPage = () => {
               </p>
             )}
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-stretch gap-3 w-full md:w-auto flex-wrap justify-end">
-            {/* Estes dois abrem uma janela à parte (cadastro/gestão de outra
-                lista) -- não mudam nada na escala por si só. A setinha no
-                final e o agrupamento/separador abaixo são só para isso ficar
-                visualmente óbvio ao lado dos botões de ação, que fazem algo
-                direto nesta tela. */}
-            <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col items-stretch sm:items-end gap-2.5 w-full md:w-auto">
+            {/* Duas fileiras, de proposito: a de cima abre uma janela à parte
+                (cadastro/gestão de outra lista) -- não muda nada na escala
+                por si só (setinha no final). A de baixo age direto nesta
+                tela. Empilhadas (em vez de lado a lado) pra caber sem
+                espremer numa tela mais estreita. */}
+            <div className="flex flex-col sm:flex-row gap-3 flex-wrap sm:justify-end w-full">
               {/* So leitura: demanda por area entre todo mundo ja inscrito,
                   antes mesmo da fila de aprovacao zerar. Ver
                   PreEscalaDialog.jsx. */}
@@ -972,13 +972,7 @@ const OrganizerScalesPage = () => {
               </Button>
             </div>
 
-            {/* Separador entre "abre outra janela" (acima) e "age direto
-                nesta escala" (abaixo/ao lado). Linha horizontal quando os
-                botões empilham (mobile), vertical quando ficam lado a lado. */}
-            <div className="h-px w-full bg-white/10 sm:hidden" />
-            <div className="hidden sm:block w-px self-stretch bg-white/10" />
-
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 flex-wrap sm:justify-end w-full">
               {/* Distribui a fila pelas preferencias da inscricao. So aparece
                   habilitado quando ha alguem esperando. */}
               <Button onClick={() => setConfirmandoAuto(true)}

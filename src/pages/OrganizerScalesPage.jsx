@@ -15,7 +15,7 @@ import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
 import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf } from '@/services/equipanteAllocationService';
 import { fetchConfiguracoes, updateCpfsAreaEspecial } from '@/services/organizerConfigService';
 import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
-import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2 } from 'lucide-react';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -934,59 +934,76 @@ const OrganizerScalesPage = () => {
               </p>
             )}
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto flex-wrap justify-end">
-            {/* Distribui a fila pelas preferencias da inscricao. So aparece
-                habilitado quando ha alguem esperando. */}
-            <Button onClick={() => setConfirmandoAuto(true)}
-              disabled={waitlist.length === 0 || alocandoAuto}
-              variant="outline"
-              title={waitlist.length === 0 ? 'A fila "A escalar" está vazia.' : undefined}
-              className="bg-purple-600/20 text-purple-300 border-purple-600/50 hover:bg-purple-600/40 hover:text-purple-200">
-              {alocandoAuto
-                ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                : <Wand2 className="mr-2 h-4 w-4" />}
-              Alocar automático{waitlist.length > 0 ? ` (${waitlist.length})` : ''}
-            </Button>
-
-            <Button onClick={() => setVerAreasEspeciais(true)} variant="outline"
-              className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
-              <Sparkles className="mr-2 h-4 w-4" /> Áreas Especiais ({totalEspeciais})
-            </Button>
-
-            {/* Os 3 mutiroes da Centenario (caminhao, cozinha, limpeza). Fica
-                aqui porque e o organizador de escalas quem organiza isso --
-                mas e uma lista a parte: nao entra na escala, nao conta para
-                "faltam N" e nao interfere no lancamento. */}
-            <Button onClick={() => setVerAreasExtra(true)} variant="outline"
-              className="bg-blue-600/20 text-blue-300 border-blue-600/50 hover:bg-blue-600/40 hover:text-blue-200">
-              <Truck className="mr-2 h-4 w-4" /> Áreas Extras
-            </Button>
-
-            {/* Lancar a escala e o que faz o equipante ver a etapa concluida
-                e poder pagar. So libera com a fila zerada -- todo aprovado
-                precisa ter destino, nem que seja "Não será escalado". */}
-            {escala?.lancada_em ? (
-              <Button onClick={() => setConfirmandoDesfazer(true)} variant="outline"
+          <div className="flex flex-col sm:flex-row sm:items-stretch gap-3 w-full md:w-auto flex-wrap justify-end">
+            {/* Estes dois abrem uma janela à parte (cadastro/gestão de outra
+                lista) -- não mudam nada na escala por si só. A setinha no
+                final e o agrupamento/separador abaixo são só para isso ficar
+                visualmente óbvio ao lado dos botões de ação, que fazem algo
+                direto nesta tela. */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button onClick={() => setVerAreasEspeciais(true)} variant="outline"
                 className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
-                <Undo2 className="mr-2 h-4 w-4" /> Desfazer lançamento
+                <Sparkles className="mr-2 h-4 w-4" /> Áreas Especiais ({totalEspeciais})
+                <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
               </Button>
-            ) : (
-              <Button onClick={() => setConfirmandoLancamento(true)}
-                disabled={!escala || escala.faltam > 0 || !escala.escalados}
-                title={escala?.faltam > 0
-                  ? 'Distribua todos os equipantes antes de lançar a escala.'
-                  : escala && !escala.escalados
-                    ? 'Não há ninguém escalado. Coloque pelo menos um equipante em uma área.'
-                    : undefined}
-                className="bg-amber-600 hover:bg-amber-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
-                <Send className="mr-2 h-4 w-4" />
-                Lançar escala{escala?.faltam > 0 ? ` (faltam ${escala.faltam})` : ''}
-              </Button>
-            )}
 
-            <Button onClick={handleExportAll} disabled={allocations.length === 0} variant="outline" className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300">
-              <Download className="mr-2 h-4 w-4" /> Exportar
-            </Button>
+              {/* Os 3 mutiroes da Centenario (caminhao, cozinha, limpeza). Fica
+                  aqui porque e o organizador de escalas quem organiza isso --
+                  mas e uma lista a parte: nao entra na escala, nao conta para
+                  "faltam N" e nao interfere no lancamento. */}
+              <Button onClick={() => setVerAreasExtra(true)} variant="outline"
+                className="bg-blue-600/20 text-blue-300 border-blue-600/50 hover:bg-blue-600/40 hover:text-blue-200">
+                <Truck className="mr-2 h-4 w-4" /> Áreas Extras
+                <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
+              </Button>
+            </div>
+
+            {/* Separador entre "abre outra janela" (acima) e "age direto
+                nesta escala" (abaixo/ao lado). Linha horizontal quando os
+                botões empilham (mobile), vertical quando ficam lado a lado. */}
+            <div className="h-px w-full bg-white/10 sm:hidden" />
+            <div className="hidden sm:block w-px self-stretch bg-white/10" />
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Distribui a fila pelas preferencias da inscricao. So aparece
+                  habilitado quando ha alguem esperando. */}
+              <Button onClick={() => setConfirmandoAuto(true)}
+                disabled={waitlist.length === 0 || alocandoAuto}
+                variant="outline"
+                title={waitlist.length === 0 ? 'A fila "A escalar" está vazia.' : undefined}
+                className="bg-purple-600/20 text-purple-300 border-purple-600/50 hover:bg-purple-600/40 hover:text-purple-200">
+                {alocandoAuto
+                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  : <Wand2 className="mr-2 h-4 w-4" />}
+                Alocar automático{waitlist.length > 0 ? ` (${waitlist.length})` : ''}
+              </Button>
+
+              {/* Lancar a escala e o que faz o equipante ver a etapa concluida
+                  e poder pagar. So libera com a fila zerada -- todo aprovado
+                  precisa ter destino, nem que seja "Não será escalado". */}
+              {escala?.lancada_em ? (
+                <Button onClick={() => setConfirmandoDesfazer(true)} variant="outline"
+                  className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
+                  <Undo2 className="mr-2 h-4 w-4" /> Desfazer lançamento
+                </Button>
+              ) : (
+                <Button onClick={() => setConfirmandoLancamento(true)}
+                  disabled={!escala || escala.faltam > 0 || !escala.escalados}
+                  title={escala?.faltam > 0
+                    ? 'Distribua todos os equipantes antes de lançar a escala.'
+                    : escala && !escala.escalados
+                      ? 'Não há ninguém escalado. Coloque pelo menos um equipante em uma área.'
+                      : undefined}
+                  className="bg-amber-600 hover:bg-amber-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
+                  <Send className="mr-2 h-4 w-4" />
+                  Lançar escala{escala?.faltam > 0 ? ` (faltam ${escala.faltam})` : ''}
+                </Button>
+              )}
+
+              <Button onClick={handleExportAll} disabled={allocations.length === 0} variant="outline" className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300">
+                <Download className="mr-2 h-4 w-4" /> Exportar
+              </Button>
+            </div>
           </div>
         </div>
 

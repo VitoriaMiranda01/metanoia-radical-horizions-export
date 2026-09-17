@@ -308,6 +308,28 @@ export const fetchEquipantesParaSelecao = async () =>
   );
 
 /**
+ * Para a "Pré-escala" (ver PreEscalaDialog.jsx): todo mundo que já se
+ * inscreveu, de QUALQUER status -- inclusive pendente -- agrupado depois
+ * pela 1ª opção de área que marcou. É de proposito, antes mesmo das
+ * aprovações acontecerem: a ideia é o organizador enxergar a demanda por
+ * área cedo, pra planejar, sem esperar a fila de aprovação zerar.
+ *
+ * `inscrito = true` e `tipo = 'equipante'` seguem o mesmo filtro usado no
+ * resto do sistema pra dizer "isto é uma inscrição de equipante de
+ * verdade" (ver fetchEquipantesInscritos, searchEquipanteByCPF).
+ */
+export const fetchEquipantesParaPreEscala = async () =>
+  comReenvio(
+    () => supabase
+      .from('equipantes')
+      .select('id, nome, igreja, status, area_trabalho_opcao1')
+      .eq('tipo', 'equipante')
+      .eq('inscrito', true)
+      .order('nome', { ascending: true }),
+    { rotulo: 'equipantes para pré-escala' }
+  );
+
+/**
  * Aprova, rejeita ou devolve para pendente -- registrando QUEM decidiu.
  *
  * Era um UPDATE direto no campo "status", e por isso nao sobrava registro

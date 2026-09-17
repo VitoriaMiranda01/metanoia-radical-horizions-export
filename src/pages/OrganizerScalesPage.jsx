@@ -15,7 +15,7 @@ import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
 import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf } from '@/services/equipanteAllocationService';
 import { fetchConfiguracoes, updateCpfsAreaEspecial } from '@/services/organizerConfigService';
 import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
-import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight } from 'lucide-react';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,6 +23,7 @@ import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
 import EquipantesGridDisplay from '@/components/scales/EquipantesGridDisplay';
 import AreasExtraDialog from '@/components/scales/AreasExtraDialog';
 import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
+import PreEscalaDialog from '@/components/scales/PreEscalaDialog';
 import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -139,6 +140,10 @@ const OrganizerScalesPage = () => {
   // Nao mexe em escalas nem no lancamento -- ver AreasExtraDialog.jsx.
   const [verAreasExtra, setVerAreasExtra] = useState(false);
   const [verAreasEspeciais, setVerAreasEspeciais] = useState(false);
+
+  // Pre-escala: so leitura, ve-se a demanda por area entre TODO MUNDO ja
+  // inscrito (qualquer status). Nao mexe em nada -- ver PreEscalaDialog.jsx.
+  const [verPreEscala, setVerPreEscala] = useState(false);
 
   // Alocacao automatica pelas 3 preferencias -- ver o comentario grande
   // em scalesService.alocarFilaAutomaticamente.
@@ -941,6 +946,15 @@ const OrganizerScalesPage = () => {
                 visualmente óbvio ao lado dos botões de ação, que fazem algo
                 direto nesta tela. */}
             <div className="flex flex-col sm:flex-row gap-3">
+              {/* So leitura: demanda por area entre todo mundo ja inscrito,
+                  antes mesmo da fila de aprovacao zerar. Ver
+                  PreEscalaDialog.jsx. */}
+              <Button onClick={() => setVerPreEscala(true)} variant="outline"
+                className="bg-teal-600/20 text-teal-300 border-teal-600/50 hover:bg-teal-600/40 hover:text-teal-200">
+                <ClipboardCheck className="mr-2 h-4 w-4" /> Pré-escala
+                <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
+              </Button>
+
               <Button onClick={() => setVerAreasEspeciais(true)} variant="outline"
                 className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
                 <Sparkles className="mr-2 h-4 w-4" /> Áreas Especiais ({totalEspeciais})
@@ -1208,6 +1222,7 @@ const OrganizerScalesPage = () => {
         )}
 
         <AnimatePresence>
+          {verPreEscala && <PreEscalaDialog onClose={() => setVerPreEscala(false)} />}
           {verAreasExtra && <AreasExtraDialog onClose={() => setVerAreasExtra(false)} />}
           {verAreasEspeciais && (
             <AreasEspeciaisDialog

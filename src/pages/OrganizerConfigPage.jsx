@@ -21,6 +21,7 @@ import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager'
 import LimiteIgrejasManager from '@/components/organizer/LimiteIgrejasManager';
 import OutrasIgrejasManager from '@/components/organizer/OutrasIgrejasManager';
 import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizadoresManager';
+import BackupStatusCard from '@/components/organizer/BackupStatusCard';
 import { Button } from '@/components/ui/button';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
 
@@ -734,6 +735,11 @@ const OrganizerConfigPage = () => {
               permissao maxima, geracao de senha para os outros. */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
             <SenhasOrganizadoresManager />
+          </motion.div>
+
+          {/* Backups: o quadro some sozinho para quem nao e a conta Desenvolvedores. */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48 }}>
+            <BackupStatusCard />
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>

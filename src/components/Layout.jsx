@@ -6,6 +6,7 @@ import { LogOut, Users, UserCheck, Tent, Wrench, Settings, Grid, HeartHandshake,
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { fetchContadoresDoMenu } from '@/services/menuContadoresService';
+import AvisoBackup from '@/components/organizer/AvisoBackup';
 
 // Selo vermelho de "tem coisa te esperando aqui". Some sozinho quando o
 // numero e zero -- selo permanente vira paisagem e para de ser aviso.
@@ -225,6 +226,9 @@ const Layout = ({ children }) => {
           </div>
         </div>
       </nav>
+
+      {/* So a conta Desenvolvedores chega a ver: o banco devolve nada para os outros. */}
+      {isOrganizer && <AvisoBackup />}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}

@@ -1,0 +1,25 @@
+-- =============================================================================
+-- Parceiro sem UPDATE direto em equipantes (02/10/2026)
+--
+-- A policy "parceiro atualiza so a propria igreja" deixava a igreja parceira
+-- alterar QUALQUER coluna das inscricoes da propria igreja falando direto com
+-- a API -- inclusive status_pagamento ('pago' sem pagar) e status (aprovar
+-- sem passar por decidir_inscricao, sem o carimbo de quem decidiu).
+-- Simulacao desfeita em 02/10: o login da igreja 64 conseguia marcar as 131
+-- inscricoes dela como pagas.
+--
+-- A tela do parceiro nao precisa disso: aprovar, rejeitar, liberar vaga e
+-- conferir menores passam todos por funcoes SECURITY DEFINER (decidir_inscricao,
+-- liberar_vaga_e_realocar, realocar_alocacao, conferir_autorizacao_menor),
+-- que conferem o cracha e registram quem decidiu.
+--
+-- O parceiro continua VENDO as inscricoes da propria igreja (policy de SELECT).
+--
+-- Para desfazer:
+--   create policy "parceiro atualiza so a propria igreja" on public.equipantes
+--     as permissive for update to authenticated
+--     using (eh_parceiro() and igreja is not null and igreja like jwt_igreja() || ' - %')
+--     with check (eh_parceiro() and igreja is not null and igreja like jwt_igreja() || ' - %');
+-- =============================================================================
+
+drop policy if exists "parceiro atualiza so a propria igreja" on public.equipantes;

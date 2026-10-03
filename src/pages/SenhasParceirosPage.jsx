@@ -10,8 +10,13 @@ import {
   listarContasParceiros,
   liberarPrimeiroAcesso,
   redefinirSenhaParceiro,
-  descartarSolicitacaoSenha
+  descartarSolicitacaoSenha,
+  souOrganizadorMaximo,
+  listarLoginsBloqueados,
+  chaveBloqueio,
+  liberarLogin
 } from '@/services/senhasParceirosService';
+import BloqueioLogin from '@/components/organizer/BloqueioLogin';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -80,6 +85,10 @@ const SenhasParceirosPage = () => {
   const [ocupado, setOcupado] = useState(null);          // codigo em processamento
   const [confirmandoNova, setConfirmandoNova] = useState(null); // codigo aguardando confirmacao
   const [senhaGerada, setSenhaGerada] = useState(null);   // { codigo, nome, senha }
+  // Bloqueios por senha errada: so a conta Desenvolvedores ve e libera.
+  const [souMaximo, setSouMaximo] = useState(false);
+  const [bloqueios, setBloqueios] = useState({});
+  const [liberando, setLiberando] = useState(null);
   const { toast } = useToast();
 
   const carregar = async () => {
@@ -88,6 +97,9 @@ const SenhasParceirosPage = () => {
     try {
       const dados = await listarContasParceiros();
       setContas(dados || []);
+      const maximo = (await souOrganizadorMaximo().catch(() => false)) === true;
+      setSouMaximo(maximo);
+      if (maximo) setBloqueios(await listarLoginsBloqueados().catch(() => ({})));
     } catch (err) {
       console.error('SenhasParceirosPage - carregar', err);
       setError('Não foi possível carregar as contas. Verifique sua conexão e tente de novo.');
@@ -160,6 +172,28 @@ const SenhasParceirosPage = () => {
       });
     }
   };
+
+  const liberarAgora = async (codigo) => {
+    setLiberando(codigo);
+    try {
+      const r = await liberarLogin('igreja', codigo);
+      if (!r?.ok) {
+        toast({ title: 'Não deu certo', description: r?.erro, variant: 'destructive' });
+        return;
+      }
+      toast({ title: `Igreja ${codigo} liberada`, description: 'Já pode tentar entrar de novo.', className: 'bg-green-600 text-white' });
+      setBloqueios(await listarLoginsBloqueados().catch(() => ({})));
+    } catch (err) {
+      console.error('SenhasParceirosPage - liberar', err);
+      toast({ title: 'Erro de conexão', description: 'Tente de novo.', variant: 'destructive' });
+    } finally {
+      setLiberando(null);
+    }
+  };
+
+  // Igrejas da lista que estao bloqueadas agora (para o aviso acima da tabela,
+  // ja que a igreja bloqueada pode estar em outra pagina).
+  const bloqueadasAgora = contas.filter((c) => bloqueios[chaveBloqueio('igreja', c.codigo)]);
 
   const descartarPedido = (conta) =>
     executar(conta.codigo, () => descartarSolicitacaoSenha(conta.codigo));
@@ -359,6 +393,20 @@ const SenhasParceirosPage = () => {
               </div>
             </div>
 
+            {souMaximo && bloqueadasAgora.length > 0 && (
+              <div className="mx-6 mb-4 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-200">
+                Bloqueadas agora por senha errada:{' '}
+                {bloqueadasAgora.map((c, i) => (
+                  <React.Fragment key={c.codigo}>
+                    {i > 0 && ', '}
+                    <button type="button" className="underline hover:text-white" onClick={() => setBusca(c.codigo)}>
+                      {c.codigo} - {c.nome}
+                    </button>
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
+
             {loading ? (
               <div className="p-12 text-center text-gray-400">
                 <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" />
@@ -407,6 +455,15 @@ const SenhasParceirosPage = () => {
                                 >
                                   descartar
                                 </button>
+                              </span>
+                            )}
+                            {souMaximo && (
+                              <span className="block">
+                                <BloqueioLogin
+                                  bloqueio={bloqueios[chaveBloqueio('igreja', conta.codigo)]}
+                                  liberando={liberando === conta.codigo}
+                                  onLiberar={() => liberarAgora(conta.codigo)}
+                                />
                               </span>
                             )}
                           </TableCell>

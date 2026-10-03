@@ -165,3 +165,29 @@ export const redefinirSenhaOrganizador = async (nome) =>
   chamar('redefinir_senha_organizador', {
     p_nome: String(nome || '').trim(),
   }, 'nova senha do organizador');
+
+// ---------------------------------------------------------------------------
+// Logins bloqueados por senha errada (migration 20261003b)
+//
+// 10 senhas erradas seguidas bloqueiam o login por 10 minutos. So a conta
+// Desenvolvedores enxerga a lista e libera na hora -- para os outros logins
+// o banco devolve lista vazia / recusa.
+// ---------------------------------------------------------------------------
+
+/**
+ * Indexa os bloqueios ativos por "tipo:identificador" (identificador em
+ * minusculas: o nome do organizador ou o codigo da igreja).
+ */
+export const listarLoginsBloqueados = async () => {
+  const lista = (await chamar('logins_bloqueados', undefined, 'logins bloqueados')) || [];
+  return Object.fromEntries(lista.map((b) => [`${b.tipo}:${b.identificador}`, b]));
+};
+
+export const chaveBloqueio = (tipo, identificador) =>
+  `${tipo}:${String(identificador || '').trim().toLowerCase()}`;
+
+export const liberarLogin = async (tipo, identificador) =>
+  chamar('liberar_login', {
+    p_tipo: tipo,
+    p_identificador: String(identificador || '').trim(),
+  }, 'liberação do login');

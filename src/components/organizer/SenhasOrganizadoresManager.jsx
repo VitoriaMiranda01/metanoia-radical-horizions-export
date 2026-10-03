@@ -15,8 +15,12 @@ import {
   redefinirSenhaOrganizador,
   primeiroAcessoHabilitado,
   definirPrimeiroAcessoParceiros,
-  reabrirPrimeiroAcesso
+  reabrirPrimeiroAcesso,
+  listarLoginsBloqueados,
+  chaveBloqueio,
+  liberarLogin
 } from '@/services/senhasParceirosService';
+import BloqueioLogin from '@/components/organizer/BloqueioLogin';
 
 /**
  * Senhas dos organizadores, dentro de Configuracoes.
@@ -84,6 +88,9 @@ const SenhasOrganizadoresManager = () => {
 
   const [souMaximo, setSouMaximo] = useState(false);
   const [lista, setLista] = useState([]);
+  // Logins bloqueados por senha errada, indexados por "organizador:nome".
+  const [bloqueios, setBloqueios] = useState({});
+  const [liberando, setLiberando] = useState(null);
   const [carregando, setCarregando] = useState(false);
   const [confirmando, setConfirmando] = useState(null);
   const [ocupado, setOcupado] = useState(null);
@@ -102,6 +109,7 @@ const SenhasOrganizadoresManager = () => {
       setSouMaximo(maximo === true);
       if (maximo === true) {
         setLista((await listarOrganizadores()) || []);
+        setBloqueios(await listarLoginsBloqueados().catch(() => ({})));
         setPrimeiroAcesso((await primeiroAcessoHabilitado()) === true);
       }
     } catch (err) {
@@ -196,6 +204,24 @@ const SenhasOrganizadoresManager = () => {
       toast({ title: 'Erro de conexão', description: 'Tente de novo.', variant: 'destructive' });
     } finally {
       setReabrindo(false);
+    }
+  };
+
+  const liberarAgora = async (nome) => {
+    setLiberando(nome);
+    try {
+      const r = await liberarLogin('organizador', nome);
+      if (!r?.ok) {
+        toast({ title: 'Não deu certo', description: r?.erro, variant: 'destructive' });
+        return;
+      }
+      toast({ title: `${nome} liberado`, description: 'Já pode tentar entrar de novo.', className: 'bg-green-600 text-white' });
+      setBloqueios(await listarLoginsBloqueados().catch(() => ({})));
+    } catch (err) {
+      console.error('SenhasOrganizadoresManager - liberar', err?.message || err);
+      toast({ title: 'Erro de conexão', description: 'Tente de novo.', variant: 'destructive' });
+    } finally {
+      setLiberando(null);
     }
   };
 
@@ -399,6 +425,11 @@ const SenhasOrganizadoresManager = () => {
                       Último acesso: {formatarData(o.ultimo_acesso)}
                       {' · '}Senha alterada: {formatarData(o.senha_atualizada_em)}
                     </p>
+                    <BloqueioLogin
+                      bloqueio={bloqueios[chaveBloqueio('organizador', o.nome)]}
+                      liberando={liberando === o.nome}
+                      onLiberar={() => liberarAgora(o.nome)}
+                    />
                   </div>
 
                   {o.eh_o_maximo ? (

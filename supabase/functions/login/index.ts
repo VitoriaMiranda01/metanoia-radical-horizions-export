@@ -10,20 +10,30 @@
 // administradores e igrejas e quebra-los offline.
 //
 // Aqui a conferencia acontece no servidor, com a service_role (secreta, nunca
-// exposta ao navegador). O hash nunca sai do servidor. Depois disso, a leitura
-// anonima dessas duas tabelas pode ser revogada no banco.
+// exposta ao navegador). O hash nunca sai do servidor.
+//
+// TRAVAS DE PRIMEIRO ACESSO
+// -------------------------
+// - igreja: a senha inicial e uma formula ("<codigo><sufixo>", com o sufixo
+//   guardado so no banco), escolhida para facilitar a distribuicao para as
+//   145 igrejas. Como formula vaza, a conta so entra depois que um
+//   organizador LIBERA aquela igreja (acesso_liberado);
+// - organizador: recebe senha gerada pelo login de permissao maxima.
+//
+// Nos dois casos, enquanto senha_definida for false a conta esta com senha
+// temporaria e o site obriga a pessoa a criar a dela antes de usar o sistema.
+//
+// LIMITE DE TENTATIVAS (03/10/2026)
+// ---------------------------------
+// 10 senhas erradas seguidas bloqueiam aquele login por 10 minutos (HTTP 429).
+// A conta Desenvolvedores pode liberar na hora pelas telas de senhas.
 //
 // O QUE ELA DEVOLVE
 // -----------------
-// { success: true, token, user } -- onde "user" e a linha do usuario SEM a
-// coluna "senha", e "token" e um JWT assinado (HS256) com o JWT Secret do
-// projeto, carregando o papel da pessoa (user_role) e, para igreja, o codigo.
-//
-// IMPORTANTE (Passo 1): o site GUARDA esse token mas ainda NAO o usa para
-// acessar dados -- o acesso continua como hoje. O token passa a valer no
-// Passo 2, quando as tabelas forem trancadas por RLS baseada no claim
-// "user_role". Fazer assim mantem este passo contido e sem risco de quebrar
-// as telas existentes.
+// { success: true, token, precisa_trocar_senha, user } -- "user" e a linha
+// SEM a coluna "senha", e "token" e um JWT assinado (HS256) com o JWT Secret
+// do projeto, carregando o papel da pessoa (user_role), o id em "sub" e,
+// para igreja, o codigo.
 
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 import bcrypt from "npm:bcryptjs@2.4.3";
@@ -43,6 +53,24 @@ const corsHeaders = {
 const DUMMY_HASH = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 
 const GENERIC_ERROR = "Usuário ou senha inválidos";
+
+// Limite de tentativas (migration 20261003b): 10 senhas erradas seguidas
+// bloqueiam aquele login por 10 minutos. Conta igual para usuario que nao
+// existe, entao o bloqueio nao revela quais contas existem.
+const horaBrasilia = (iso: string) =>
+  new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+
+const respostaBloqueio = (ate: string) =>
+  json({
+    success: false,
+    bloqueado_ate: ate,
+    error: `Muitas tentativas com senha errada. Por segurança, este login ficou bloqueado até ${horaBrasilia(ate)}. ` +
+      "Tente de novo depois desse horário ou peça à organização para liberar.",
+  }, 429);
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -81,6 +109,15 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    // Login bloqueado por excesso de senhas erradas? Se o controle falhar,
+    // o login segue: e protecao extra, nao pode impedir ninguem de entrar.
+    const contador = { p_tipo: tipo, p_identificador: identifier };
+    {
+      const { data: bloqueadoAte, error } = await admin.rpc("login_bloqueado_ate", contador);
+      if (error) console.error("[login] falha ao consultar bloqueio:", error.message);
+      else if (bloqueadoAte) return respostaBloqueio(bloqueadoAte);
+    }
 
     let row: Record<string, unknown> | null = null;
     let userRole = "organizador";
@@ -122,7 +159,16 @@ Deno.serve(async (req: Request) => {
 
     // Mensagem unica para "nao existe" e "senha errada" (sem enumeracao).
     if (!row || !senhaConfere) {
+      const { data: bloqueouAgora, error } = await admin.rpc("registrar_falha_login", contador);
+      if (error) console.error("[login] falha ao registrar tentativa:", error.message);
+      else if (bloqueouAgora) return respostaBloqueio(bloqueouAgora);
       return json({ success: false, error: GENERIC_ERROR }, 401);
+    }
+
+    // Senha certa: zera as tentativas erradas desse login.
+    {
+      const { error } = await admin.rpc("limpar_falhas_login", contador);
+      if (error) console.error("[login] falha ao zerar tentativas:", error.message);
     }
 
     // Trava de primeiro acesso (igrejas parceiras).

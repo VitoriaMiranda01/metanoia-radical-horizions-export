@@ -41,6 +41,17 @@ const ACESSO_NAO_LIBERADO =
 const mensagemParaErro = async (error) => {
   const status = error?.context?.status;
   if (status === 401 || status === 400) return GENERIC_ERROR;
+  // 429: login bloqueado por 10 senhas erradas seguidas (migration
+  // 20261003b). O texto do servidor traz ate que horas.
+  if (status === 429) {
+    try {
+      const corpo = await error.context.clone().json();
+      if (typeof corpo?.error === 'string' && corpo.error) return corpo.error;
+    } catch {
+      /* segue com o texto fixo */
+    }
+    return 'Muitas tentativas com senha errada. Aguarde 10 minutos ou peça à organização para liberar.';
+  }
   if (status === 403) {
     // O supabase-js entrega a resposta crua em error.context. Se por algum
     // motivo nao der para ler o corpo, o texto fixo diz a mesma coisa.

@@ -1,0 +1,21 @@
+-- =============================================================================
+-- limites_igrejas: so organizador escreve (02/10/2026)
+--
+-- A policy antiga "Admin write access for limites_igrejas" era FOR ALL TO
+-- public USING (true): apesar do nome, liberava INSERT/UPDATE/DELETE para
+-- QUALQUER login (o grant de authenticated existe), inclusive igreja parceira.
+-- Pela API, um parceiro podia aumentar o proprio limite de acampantes ou
+-- zerar o das outras igrejas.
+--
+-- Continuam:
+--   - "organizador faz tudo"         -> Configuracoes segue editando
+--   - leitura publica (duas policies) -> o formulario de acampante e a trava
+--     _acampantes_verificar_limite_igreja (SECURITY INVOKER, so le) seguem
+--     enxergando os limites.
+--
+-- Para desfazer:
+--   create policy "Admin write access for limites_igrejas" on public.limites_igrejas
+--     as permissive for all to public using (true);
+-- =============================================================================
+
+drop policy if exists "Admin write access for limites_igrejas" on public.limites_igrejas;

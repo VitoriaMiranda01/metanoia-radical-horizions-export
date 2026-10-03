@@ -119,6 +119,16 @@ Deno.serve(async (req: Request) => {
       else if (bloqueadoAte) return respostaBloqueio(bloqueadoAte);
     }
 
+    // O nome/codigo e procurado com "ilike" (sem diferenciar maiusculas), que
+    // trata % _ (e o * do PostgREST) como curingas: "raque_" acharia a Raquel
+    // com OUTRO contador de tentativas, driblando o limite acima. Nenhum nome
+    // de organizador nem codigo de igreja tem esses caracteres.
+    if (/[%_*\\]/.test(identifier)) {
+      const { data: bloqueouAgora } = await admin.rpc("registrar_falha_login", contador);
+      if (bloqueouAgora) return respostaBloqueio(bloqueouAgora);
+      return json({ success: false, error: GENERIC_ERROR }, 401);
+    }
+
     let row: Record<string, unknown> | null = null;
     let userRole = "organizador";
     const extraClaims: Record<string, unknown> = {};

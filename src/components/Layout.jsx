@@ -78,7 +78,7 @@ const Layout = ({ children }) => {
     { path: '/acampante', label: 'Área do Acampante', icon: Tent, roles: ['acampante'] },
     { path: '/equipante', label: 'Área do Equipante', icon: Wrench, roles: ['equipante'] },
     { path: '/gerenciar', label: 'Gerenciar Inscrições', icon: Users, roles: ['organizador'],
-      dica: 'Lista de acampantes e equipantes inscritos: ver, editar, exportar e fazer inscrição manual.' },
+      dica: 'Lista de acampantes e equipantes inscritos: ver, editar e exportar.' },
     { path: '/aprovacoes', label: 'Aprovações Equipe', icon: UserCheck, roles: ['organizador', 'organizador-aprovador'], contador: 'aprovacoes',
       dica: 'Aprovar ou recusar as inscrições de equipantes e conferir as autorizações dos menores.' }
   ];

@@ -225,7 +225,7 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
                           variant="ghost" 
                           size="icon"
                           onClick={() => handleDelete(period.id)}
-                          data-dica="Apagar este lote."
+                          data-dica="Apagar este lote (pede confirmação)."
                           className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/20"
                           disabled={isEditing || isSaving}
                         >

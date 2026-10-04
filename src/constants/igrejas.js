@@ -225,6 +225,9 @@ export const IGREJAS_PARCEIRAS = [
   "160 - PROJETO SEMEAR BREJAL",
   "161 - REFÚGIO DE LUZ",
   "162 - UNIVERSAL DO REINO DE DEUS",
+  // 04/10/2026: duas que estavam em OUTRA esperando a diretoria (pedido do Patrick).
+  "163 - CARA DE LEÃO IRAJÁ",
+  "164 - METODISTA WESLEYANA",
 ];
 
 // ---------------------------------------------------------------------------

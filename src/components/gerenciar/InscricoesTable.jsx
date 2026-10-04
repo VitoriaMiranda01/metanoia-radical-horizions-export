@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { nomeDaIgreja } from '@/constants/igrejas';
+import { casaBusca } from '@/utils/busca';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Users, Eye, Pencil, Download, Search, Filter, X } from 'lucide-react';
@@ -209,23 +210,19 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
 
   const filteredData = useMemo(() => {
     return dados.filter(item => {
-      // Global Search
-      const searchLower = searchTerm.toLowerCase();
-      const searchFields = [
+      // Busca: sem diferenca de acento, CPF com ou sem pontos (utils/busca.js).
+      const matchesSearch = casaBusca(searchTerm, [
         item.nome,
         item.cpf,
         item.email,
         item.whatsapp,
         item.telefone,
         nomeDaIgreja(item),
+        item.igreja_outra,
         item.status,
         item.grupo_trailha,
         item.responsavel_nome
-      ];
-      
-      const matchesSearch = searchFields.some(field => 
-        (field || '').toLowerCase().includes(searchLower)
-      );
+      ]);
 
       if (!matchesSearch) return false;
 

@@ -163,15 +163,10 @@ const GerenciarInscricoesPage = () => {
   // lista fixa de colunas (incluindo Email/Pastor/Status, que nem apareciam
   // mais na tabela) e sempre a lista completa, ignorando os filtros.
 
-  const filterInscricoes = (list, searchTerm) => {
-    if (!searchTerm.trim()) return list;
-    const term = searchTerm.toLowerCase();
-    return list.filter(item => 
-      (item.nome && item.nome.toLowerCase().includes(term)) ||
-      (item.email && item.email.toLowerCase().includes(term)) ||
-      (item.telefone && item.telefone.toLowerCase().includes(term))
-    );
-  };
+  // A busca fica na tabela (InscricoesTable, utils/busca.js). Filtrar aqui
+  // antes, so por nome/e-mail/telefone, fazia a busca pela igreja nao achar
+  // ninguem (04/10/2026). A lista vai inteira.
+  const filterInscricoes = (list) => list;
 
   const { equipantes, filteredEquipantes } = useMemo(() => {
     const equipantes = inscricoes.filter(i => i.tipo === 'equipante');

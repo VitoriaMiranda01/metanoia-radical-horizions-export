@@ -17,7 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDropdown';
 import InscricaoCard from '@/components/aprovacoes/InscricaoCard';
-import { naoCongrega } from '@/constants/igrejas';
+import { naoCongrega, nomeDaIgreja } from '@/constants/igrejas';
+import { casaBusca } from '@/utils/busca';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { 
   getVisibleColumnsFromStorage, 
@@ -191,13 +192,10 @@ const AprovacoesTable = ({
   const filteredData = useMemo(() => {
     let data = dados;
     
+    // Nome, CPF, e-mail, telefone e igreja (inclusive o nome escrito em
+    // OUTRA), sem diferenca de acento -- ver utils/busca.js.
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      data = data.filter(item => 
-        (item.nome && item.nome.toLowerCase().includes(term)) ||
-        (item.email && item.email.toLowerCase().includes(term)) ||
-        (item.cpf && item.cpf.includes(term))
-      );
+      data = data.filter(item => casaBusca(searchTerm, [item.nome, item.nome_completo, item.cpf, item.email, item.whatsapp, item.telefone, nomeDaIgreja(item), item.igreja, item.igreja_outra]));
     }
 
     return data.filter(item => {

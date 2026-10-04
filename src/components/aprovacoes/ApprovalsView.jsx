@@ -261,20 +261,10 @@ const ApprovalsView = ({
     }
   };
 
-  const filterInscricoes = (inscricoes, searchTerm) => {
-    if (!searchTerm.trim()) return inscricoes;
-    
-    const term = searchTerm.toLowerCase();
-    return inscricoes.filter(inscricao => 
-      (inscricao.nome && inscricao.nome.toLowerCase().includes(term)) ||
-      (inscricao.nome_completo && inscricao.nome_completo.toLowerCase().includes(term)) ||
-      (inscricao.email && inscricao.email.toLowerCase().includes(term)) ||
-      (inscricao.cpf && inscricao.cpf.includes(term)) ||
-      (inscricao.tipo && inscricao.tipo.toLowerCase().includes(term)) ||
-      (inscricao.igreja && inscricao.igreja.toLowerCase().includes(term)) ||
-      (inscricao.igreja_outra && inscricao.igreja_outra.toLowerCase().includes(term))
-    );
-  };
+  // A busca em si fica na tabela (AprovacoesTable, utils/busca.js): filtrar
+  // aqui e de novo la, com campos diferentes, fazia sumir quem casava pela
+  // igreja (04/10/2026). A lista vai inteira.
+  const filterInscricoes = (inscricoes) => inscricoes;
 
   const { 
     pendentes, aprovadas, rejeitadas,

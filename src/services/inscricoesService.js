@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
+import { ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
 import { OUTRA_IGREJA } from '@/constants/igrejas';
 import { mapFormDataToDb as mapAcampanteToDb } from '@/utils/acampanteForm';
 import { toBoolean } from '@/utils/formatters';
@@ -264,6 +265,11 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     }
     if (error?.message?.includes('NOME_OBRIGATORIO')) {
       return { success: false, error: 'Informe o nome completo para concluir a inscrição.' };
+    }
+    if (error?.message?.includes('TELEFONE_INVALIDO')) {
+      const campo = (error.message.match(/TELEFONE_INVALIDO:(\w+)/) || [])[1];
+      const rotulo = ROTULO_CAMPO_TELEFONE[campo] || 'telefone';
+      return { success: false, error: `Confira o ${rotulo}: precisa ter DDD e o número completo, ex.: (21) 99999-9999.` };
     }
     if (error?.message?.includes('IGREJA_OBRIGATORIA')) {
       return { success: false, error: 'Escolha a igreja que você frequenta (ou "OUTRA" e escreva o nome).' };

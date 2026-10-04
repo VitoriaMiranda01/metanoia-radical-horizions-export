@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
+import TelefoneInput from './TelefoneInput';
 import CampoDataNascimento from './CampoDataNascimento';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useEquipanteCPFLookup } from '@/hooks/useEquipanteCPFLookup';
@@ -157,7 +158,7 @@ const DadosPessoais = ({
 
         <div className="space-y-2">
           <Label htmlFor="whatsapp" className="text-white">WhatsApp</Label>
-          <Input id="whatsapp" name="whatsapp" value={formData.whatsapp || ''} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="(11) 99999-9999" />
+          <TelefoneInput id="whatsapp" name="whatsapp" value={formData.whatsapp} onChange={handleChange} required estrangeiro={!!formData.semCpf} />
         </div>
 
         {/* So para quem se inscreve sem CPF. A lista nao tem Brasil de

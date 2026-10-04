@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
+import TelefoneInput from './TelefoneInput';
 
 const QuemIndicou = ({ formData, handleChange, handleSelectChange }) => {
   return (
@@ -26,13 +27,13 @@ const QuemIndicou = ({ formData, handleChange, handleSelectChange }) => {
         {/* Telefone de quem indicou */}
         <div className="space-y-2">
           <Label htmlFor="telefoneQuemIndicou" className="text-white">Telefone de quem indicou (opcional)</Label>
-          <Input 
-            id="telefoneQuemIndicou" 
-            name="telefoneQuemIndicou" 
-            value={formData.telefoneQuemIndicou || ''} 
-            onChange={handleChange} 
-            className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
-            placeholder="(00) 00000-0000" 
+          <TelefoneInput
+            id="telefoneQuemIndicou"
+            name="telefoneQuemIndicou"
+            value={formData.telefoneQuemIndicou}
+            onChange={handleChange}
+            aceitaFixo
+            estrangeiro={!!formData.semCpf}
           />
         </div>
 

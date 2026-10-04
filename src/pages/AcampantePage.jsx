@@ -31,6 +31,7 @@ import WelcomeScreen from '@/components/inscricao/WelcomeScreen';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao } from '@/services/inscricoesService';
+import { problemaTelefone } from '@/utils/telefone';
 import { fetchLimitesIgrejas, fetchOcupacaoIgrejasAcampantes } from '@/services/limitesIgrejasService';
 import { fetchLimiteAcampantesPorIgrejaPadrao } from '@/services/organizerConfigService';
 import { IGREJAS_RESPONSAVEL_ACAMPANTE } from '@/constants/igrejas';
@@ -173,6 +174,21 @@ const AcampantePage = () => {
     if (!formData.termoAceito) {
       toast({ title: "Atenção", description: "Aceite os termos para continuar.", variant: "destructive" });
       return;
+    }
+
+    // Telefones conferidos antes de enviar (a mascara ja evita quase tudo).
+    // Emergencia e quem indicou aceitam fixo; quem e estrangeiro, formato livre.
+    const telefones = [
+      ['WhatsApp', formData.whatsapp, {}],
+      ['telefone de emergência', formData.telefoneEmergencia, { aceitaFixo: true }],
+      ['telefone de quem indicou', formData.telefoneQuemIndicou, { aceitaFixo: true }],
+    ];
+    for (const [rotulo, valor, opcoes] of telefones) {
+      const problema = problemaTelefone(valor, { ...opcoes, estrangeiro: !!formData.semCpf });
+      if (problema) {
+        toast({ title: `Confira o ${rotulo}`, description: problema, variant: 'destructive' });
+        return;
+      }
     }
     setShowConfirmDialog(true);
   };

@@ -28,6 +28,7 @@ import DadosComplementaresEquipante from '@/components/inscricao/DadosComplement
 import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao, buscarFichaAnterior } from '@/services/inscricoesService';
+import { problemaTelefone } from '@/utils/telefone';
 import { calcularIdade } from '@/utils/formatters';
 import { getEquipanteWorkflow } from '@/services/equipantesService';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
@@ -427,6 +428,15 @@ const EquipantePage = () => {
         description: faltando.join(' · '),
         variant: "destructive"
       });
+      return;
+    }
+
+    // WhatsApp e o unico contato do equipante: com digito faltando ou a mais
+    // a organizacao nao consegue falar com a pessoa (9 fichas assim ate
+    // 03/10/2026). A mascara ja evita quase tudo; isto pega o resto.
+    const erroWhatsapp = problemaTelefone(formData.whatsapp, { estrangeiro: !!formData.semCpf });
+    if (erroWhatsapp) {
+      toast({ title: 'Confira o seu WhatsApp', description: erroWhatsapp, variant: 'destructive' });
       return;
     }
 

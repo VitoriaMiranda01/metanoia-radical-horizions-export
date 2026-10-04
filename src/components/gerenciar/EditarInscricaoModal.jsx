@@ -11,6 +11,7 @@ import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
 import { IGREJAS_PARCEIRAS, IGREJAS_RESPONSAVEL_ACAMPANTE, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
 import { listarIgrejasExtras } from '@/services/publicDataService';
 import { toBoolean } from '@/utils/formatters';
+import { mascararTelefone, problemaTelefone, ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
 
 /**
  * Edicao dos dados cadastrais de uma inscricao (acampante ou equipante),
@@ -46,6 +47,35 @@ const CampoTexto = ({ label, valor, onChange, tipo = 'text', placeholder, classN
     />
   </div>
 );
+
+// Telefone com mascara. Numero antigo errado aparece destacado, com o
+// motivo, mas NAO impede salvar o resto da ficha: so barra se o proprio
+// telefone for alterado e continuar errado (o banco faz a mesma conta).
+const CAMPOS_TELEFONE = {
+  whatsapp: { aceitaFixo: false },
+  telefone_residencial: { aceitaFixo: true },
+  quem_indicou_telefone: { aceitaFixo: true },
+  contato_emergencia_telefone: { aceitaFixo: true },
+};
+
+const ehEstrangeiro = (form) => !String(form?.cpf || '').replace(/\D/g, '');
+
+const CampoTelefone = ({ label, campo, form, onChange, className = '' }) => {
+  const estrangeiro = ehEstrangeiro(form);
+  const problema = problemaTelefone(form[campo], { ...CAMPOS_TELEFONE[campo], estrangeiro });
+  return (
+    <div className={`space-y-1.5 ${className}`}>
+      <Label className="text-white text-sm">{label}</Label>
+      <Input
+        value={form[campo] ?? ''}
+        inputMode="tel"
+        onChange={(e) => onChange(estrangeiro ? e.target.value : mascararTelefone(e.target.value))}
+        className={`bg-white/10 text-white placeholder:text-white/40 ${problema ? 'border-amber-500/70' : 'border-white/20'}`}
+      />
+      {problema && <p className="text-xs text-amber-300">Telefone parece incorreto: {problema}</p>}
+    </div>
+  );
+};
 
 const CampoArea = ({ label, valor, onChange, className = '' }) => (
   <div className={`space-y-1.5 md:col-span-2 ${className}`}>
@@ -158,6 +188,16 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
       return;
     }
 
+    // Telefone alterado precisa sair certo; os que nao mudaram passam como estao.
+    for (const campo of Object.keys(CAMPOS_TELEFONE)) {
+      if (!(campo in alterados) || !alterados[campo]) continue;
+      const problema = problemaTelefone(alterados[campo], { ...CAMPOS_TELEFONE[campo], estrangeiro: ehEstrangeiro(form) });
+      if (problema) {
+        toast({ title: `Confira o ${ROTULO_CAMPO_TELEFONE[campo]}`, description: problema, variant: 'destructive' });
+        return;
+      }
+    }
+
     setSalvando(true);
     const resultado = await onSave(inscricao.id, alterados);
     setSalvando(false);
@@ -168,7 +208,9 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
     } else {
       toast({
         title: 'Erro ao salvar',
-        description: resultado?.error || 'Não foi possível salvar as alterações.',
+        description: String(resultado?.error || '').includes('TELEFONE_INVALIDO')
+          ? 'Um dos telefones alterados está incompleto ou com dígitos a mais. Ex.: (21) 99999-9999.'
+          : resultado?.error || 'Não foi possível salvar as alterações.',
         variant: 'destructive',
       });
     }
@@ -230,9 +272,9 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
             {!isEquipante && (
               <CampoSelect label="Estado Civil" valor={form.estado_civil} onChange={set('estado_civil')} opcoes={ESTADOS_CIVIS} />
             )}
-            <CampoTexto label="WhatsApp" valor={form.whatsapp} onChange={set('whatsapp')} />
+            <CampoTelefone label="WhatsApp" campo="whatsapp" form={form} onChange={set('whatsapp')} />
             {isEquipante && (
-              <CampoTexto label="Telefone Residencial" valor={form.telefone_residencial} onChange={set('telefone_residencial')} />
+              <CampoTelefone label="Telefone Residencial" campo="telefone_residencial" form={form} onChange={set('telefone_residencial')} />
             )}
           </Secao>
 
@@ -321,7 +363,7 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
           {!isEquipante && (
             <Secao titulo="Quem Indicou e Conhecidos">
               <CampoTexto label="Nome de Quem Indicou" valor={form.quem_indicou_nome} onChange={set('quem_indicou_nome')} />
-              <CampoTexto label="Telefone de Quem Indicou" valor={form.quem_indicou_telefone} onChange={set('quem_indicou_telefone')} />
+              <CampoTelefone label="Telefone de Quem Indicou" campo="quem_indicou_telefone" form={form} onChange={set('quem_indicou_telefone')} />
               <CampoTexto label="Conhecido/Familiar no Projeto" valor={form.conhecido_no_projeto} onChange={set('conhecido_no_projeto')} />
               <CampoTexto label="Nome do Conhecido/Familiar" valor={form.nome_familiar_conhecido} onChange={set('nome_familiar_conhecido')} />
             </Secao>
@@ -339,7 +381,7 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
 
           <Secao titulo="Contato de Emergência">
             <CampoTexto label="Nome do Contato" valor={form.contato_emergencia_nome} onChange={set('contato_emergencia_nome')} />
-            <CampoTexto label="Telefone do Contato" valor={form.contato_emergencia_telefone} onChange={set('contato_emergencia_telefone')} />
+            <CampoTelefone label="Telefone do Contato" campo="contato_emergencia_telefone" form={form} onChange={set('contato_emergencia_telefone')} />
           </Secao>
         </div>
 

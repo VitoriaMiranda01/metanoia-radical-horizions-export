@@ -2,6 +2,7 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import FormSection from './FormSection';
+import TelefoneInput from './TelefoneInput';
 
 const ContatoEmergencia = ({ formData, handleChange }) => (
   <FormSection title="Contato de Emergência">
@@ -12,7 +13,8 @@ const ContatoEmergencia = ({ formData, handleChange }) => (
       </div>
       <div className="space-y-2">
         <Label htmlFor="telefoneEmergencia" className="text-white">Telefone de Emergência</Label>
-        <Input id="telefoneEmergencia" name="telefoneEmergencia" value={formData.telefoneEmergencia} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="(11) 99999-9999" />
+        {/* Aceita fixo: o contato de emergencia pode ser o telefone de casa. */}
+        <TelefoneInput id="telefoneEmergencia" name="telefoneEmergencia" value={formData.telefoneEmergencia} onChange={handleChange} required aceitaFixo estrangeiro={!!formData.semCpf} />
       </div>
     </div>
   </FormSection>

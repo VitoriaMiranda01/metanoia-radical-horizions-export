@@ -228,6 +228,7 @@ export const IGREJAS_PARCEIRAS = [
   // 04/10/2026: duas que estavam em OUTRA esperando a diretoria (pedido do Patrick).
   "163 - CARA DE LEÃO IRAJÁ",
   "164 - METODISTA WESLEYANA",
+  "165 - METODISTA WESLEYANA CARANGOLA",
 ];
 
 // ---------------------------------------------------------------------------

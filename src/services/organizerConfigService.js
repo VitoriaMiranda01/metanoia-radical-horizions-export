@@ -198,15 +198,10 @@ export const updateLimiteAcampantesPorIgreja = async (valor) => {
 // precisa do resto da configuracao geral que essa tela nao usa).
 export const fetchLimiteAcampantesPorIgrejaPadrao = async () => {
   try {
-    const { data, error } = await supabase
-      .from('configuracoes')
-      .select('limite_acampantes_por_igreja')
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) throw error;
-    return data?.limite_acampantes_por_igreja ?? null;
+    // Formulario publico: le pela config_publica (a tabela e trancada para
+    // visitante, e a leitura direta falhava em silencio).
+    const c = await fetchConfigPublica();
+    return c?.limite_acampantes_por_igreja ?? null;
   } catch (error) {
     console.error('[fetchLimiteAcampantesPorIgrejaPadrao] Error:', error);
     return null;
@@ -299,13 +294,28 @@ export const subscribeToConfiguracoesChanges = (channelName, onChange) => {
   return () => supabase.removeChannel(channel);
 };
 
+// Usada pela tela de boas-vindas do formulario de acampante, que e PUBLICA:
+// visitante nao pode ler a tabela "configuracoes" (trancada em 11/09), e a
+// leitura direta falhava em silencio -- a tela mostrava "Data nao
+// configurada" e "Data limite: Nao definida" para todo mundo. Passa pela
+// config_publica, que devolve exatamente estes campos. Formato mantido.
 export const fetchConfiguracoesEvento = async () => {
-  return supabase
-    .from('configuracoes')
-    .select('data_evento_inicio, data_evento_fim, horario_saida_igreja, horario_retorno_sitio, data_limite_inscricao_pagamento, updated_at')
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  try {
+    const c = await fetchConfigPublica();
+    return {
+      data: c ? {
+        data_evento_inicio: c.data_evento_inicio,
+        data_evento_fim: c.data_evento_fim,
+        horario_saida_igreja: c.horario_saida_igreja,
+        horario_retorno_sitio: c.horario_retorno_sitio,
+        data_limite_inscricao_pagamento: c.data_limite_inscricao_pagamento,
+        updated_at: c.updated_at,
+      } : null,
+      error: null,
+    };
+  } catch (error) {
+    return { data: null, error };
+  }
 };
 
 // Usada pelas telas publicas de pagamento (useCurrentPrice) -- por isso passa

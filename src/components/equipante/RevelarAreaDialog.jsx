@@ -44,6 +44,9 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, onPagar, onPendencias
   const [etapa, setEtapa] = useState('buscando'); // buscando | suspense | revelado | fora | erro
   const [areas, setAreas] = useState([]);
   const [erro, setErro] = useState('');
+  // O servidor ja respondeu com a area (e gravou que a pessoa viu).
+  const viu = etapa === 'suspense' || etapa === 'revelado';
+  const fechar = () => onClose?.(viu);
 
   useEffect(() => {
     let vivo = true;
@@ -82,7 +85,7 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, onPagar, onPendencias
       className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
     >
       <div className="relative w-full max-w-md min-h-[360px] rounded-2xl border border-white/10 bg-gradient-to-b from-neutral-900 to-black shadow-2xl overflow-hidden flex flex-col">
-        <button type="button" onClick={onClose} aria-label="Fechar"
+        <button type="button" onClick={fechar} aria-label="Fechar"
           className="absolute right-3 top-3 z-10 text-gray-500 hover:text-white">
           <X className="w-5 h-5" />
         </button>
@@ -168,7 +171,7 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, onPagar, onPendencias
                 Seguir para o pagamento da taxa de alimentação <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             )}
-            <Button variant="outline" onClick={onClose}
+            <Button variant="outline" onClick={fechar}
               className="w-full border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white">
               Fechar
             </Button>

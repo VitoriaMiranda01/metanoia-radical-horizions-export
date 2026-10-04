@@ -33,7 +33,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
   // So o proprio equipante (que provou ser dono) ve a janela de correcao
   // sozinha; o organizador abrindo a ficha pela tela dele, nao.
   const ehOProprio = !!(dono && (dono.cpf || dono.nome));
-  const [correcao, setCorrecao] = useState(null);   // null | { antesDeRevelar }
+  const [correcao, setCorrecao] = useState(null);   // null | { antesDeRevelar, pendencias? }
   const [fechouCorrecao, setFechouCorrecao] = useState(false);
   const [revelando, setRevelando] = useState(false);
   const [revelouAgora, setRevelouAgora] = useState(false);
@@ -333,7 +333,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
             key="correcao"
             equipanteId={equipanteId}
             dono={dono}
-            pendencias={pendencias}
+            pendencias={correcao.pendencias || pendencias}
             antesDeRevelar={correcao.antesDeRevelar}
             onClose={() => { setCorrecao(null); setFechouCorrecao(true); }}
             onCorrigido={aoCorrigir}
@@ -346,8 +346,12 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
             dono={dono}
             podePagar={canProceedToPayment}
             onPagar={() => { setRevelando(false); onProceedToPayment?.({ nome: workflowData?.nome }); }}
-            onPendencias={() => { setRevelando(false); setCorrecao({ antesDeRevelar: true }); }}
-            onClose={() => { setRevelando(false); setRevelouAgora(true); refresh(); }}
+            // As pendencias que o servidor acabou de devolver valem mais que as
+            // da ultima leitura do acompanhamento.
+            onPendencias={(lista) => { setRevelando(false); setCorrecao({ antesDeRevelar: true, pendencias: lista }); }}
+            // So libera o pagamento se a area chegou a aparecer (fechar no meio
+            // da busca ou num erro nao conta como "viu").
+            onClose={(viu) => { setRevelando(false); if (viu) setRevelouAgora(true); refresh(); }}
           />
         )}
       </AnimatePresence>

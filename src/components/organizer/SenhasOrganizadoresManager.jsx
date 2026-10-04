@@ -272,6 +272,7 @@ const SenhasOrganizadoresManager = () => {
               <Button type="button" variant="ghost" size="sm"
                 className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                 onClick={() => setMostrando(!mostrando)}>
+                data-dica="Mostrar ou esconder a senha digitada."
                 {mostrando ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
               </Button>
             </div>
@@ -284,7 +285,7 @@ const SenhasOrganizadoresManager = () => {
           </div>
 
           <div className="md:col-span-3 flex flex-wrap items-center gap-4">
-            <Button type="submit" disabled={salvando}
+            <Button data-dica="Trocar a sua senha pela nova digitada." type="submit" disabled={salvando}
               className="bg-blue-600 hover:bg-blue-700 text-white">
               {salvando ? 'Salvando...' : 'Salvar nova senha'}
             </Button>
@@ -326,6 +327,7 @@ const SenhasOrganizadoresManager = () => {
               disabled={mudandoPrimeiroAcesso || carregando}
               onCheckedChange={alternarPrimeiroAcesso}
               aria-label="Abrir ou fechar o primeiro acesso dos parceiros"
+              data-dica="Ligado: as igrejas parceiras conseguem criar a senha delas no primeiro acesso."
             />
           </div>
 
@@ -341,7 +343,7 @@ const SenhasOrganizadoresManager = () => {
                 placeholder="Código (ex: 07)"
               />
             </div>
-            <Button type="submit" variant="outline" disabled={reabrindo || !codigoReabrir.trim()}
+            <Button data-dica="Zerar o cadastro desta igreja: volta a senha de fábrica e tranca a conta." type="submit" variant="outline" disabled={reabrindo || !codigoReabrir.trim()}
               className="border-white/20 bg-transparent text-gray-200 hover:bg-white/10">
               {reabrindo ? 'Zerando...' : 'Zerar essa igreja'}
             </Button>
@@ -448,7 +450,7 @@ const SenhasOrganizadoresManager = () => {
                       </Button>
                     </div>
                   ) : (
-                    <Button size="sm" onClick={() => setConfirmando(o.nome)}
+                    <Button data-dica="Gerar uma senha nova para este organizador (a antiga para de funcionar)." size="sm" onClick={() => setConfirmando(o.nome)}
                       className="h-8 bg-blue-600 hover:bg-blue-700 text-white">
                       <KeyRound className="w-4 h-4 mr-1.5" />
                       Nova senha

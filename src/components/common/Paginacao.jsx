@@ -121,6 +121,7 @@ const Paginacao = ({ pagina, setPagina, porPagina, setPorPagina, totalPaginas, t
             key={n}
             size="sm"
             onClick={() => setPorPagina(n)}
+            data-dica="Quantas linhas mostrar por página."
             className={`h-9 px-3 ${
               n === porPagina
                 ? 'bg-white/15 text-white border border-white/20'

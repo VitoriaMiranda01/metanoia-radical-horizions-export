@@ -183,6 +183,7 @@ const PagamentosPendentesPage = () => {
           size="sm"
           variant="outline"
           onClick={() => setAcaoPendente({ id: item.id, tipo: item.tipo, acao: 'isentar' })}
+          data-dica="Dispensar esta pessoa da taxa (fica como quitado sem pagar). Pede confirmação."
           className="h-8 px-3 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10"
         >
           <Gift className="w-4 h-4 mr-1.5" />
@@ -191,6 +192,9 @@ const PagamentosPendentesPage = () => {
         <Button
           size="sm"
           onClick={() => setAcaoPendente({ id: item.id, tipo: item.tipo, acao: 'liberar' })}
+          data-dica={aba === 'travados'
+            ? 'O PIX foi pago mas não confirmou sozinho: marca como pago. Pede confirmação.'
+            : 'Confirmar que o pagamento foi recebido (dinheiro, depósito...). Pede confirmação.'}
           className="bg-blue-600 hover:bg-blue-700 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all"
         >
           <CheckCircle className="w-4 h-4 mr-1.5" />
@@ -257,18 +261,21 @@ const PagamentosPendentesPage = () => {
                 <TabsList className="bg-white/5 border border-white/10 w-full md:w-auto flex">
                   <TabsTrigger
                     value="pendentes"
+                    data-dica="Quem escolheu pagar em mãos (ou foi isentado) e ainda não teve o pagamento confirmado."
                     className="flex-1 md:flex-none data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400"
                   >
                     Pagamentos manuais ({pendentes.length})
                   </TabsTrigger>
                   <TabsTrigger
                     value="pagos"
+                    data-dica="Quem já está com o pagamento quitado."
                     className="flex-1 md:flex-none data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300 text-gray-400"
                   >
                     Pagos ({pagos.length})
                   </TabsTrigger>
                   <TabsTrigger
                     value="travados"
+                    data-dica="PIX que pode ter sido pago mas não confirmou sozinho. Confira e libere."
                     className="flex-1 md:flex-none data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300 text-gray-400"
                   >
                     Precisam de atenção ({travados.length})
@@ -300,6 +307,7 @@ const PagamentosPendentesPage = () => {
                   <Button
                     variant="outline"
                     onClick={exportarRelacao}
+                    data-dica="Baixa a planilha com todo mundo e se já pagou (para conferir no portão)."
                     disabled={loading || relacao.length === 0}
                     className="h-11 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/5 shrink-0"
                   >
@@ -312,6 +320,7 @@ const PagamentosPendentesPage = () => {
                     disabled={loading}
                     className="h-11 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/5 shrink-0"
                     aria-label="Atualizar lista"
+                    data-dica="Buscar a lista de novo, com os últimos pagamentos."
                   >
                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   </Button>

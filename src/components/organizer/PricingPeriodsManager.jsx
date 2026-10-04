@@ -215,6 +215,7 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
                           variant="ghost" 
                           size="icon"
                           onClick={() => handleEdit(period)}
+                          data-dica="Editar este lote (datas e valor)."
                           className="h-8 w-8 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
                           disabled={isEditing || isSaving}
                         >
@@ -224,6 +225,7 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
                           variant="ghost" 
                           size="icon"
                           onClick={() => handleDelete(period.id)}
+                          data-dica="Apagar este lote."
                           className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/20"
                           disabled={isEditing || isSaving}
                         >
@@ -297,6 +299,7 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
             <div className="flex space-x-3 pt-2">
               <Button 
                 onClick={handleSave}
+                data-dica="Gravar o lote."
                 disabled={isSaving}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
@@ -325,6 +328,7 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
         <Button 
           variant="outline" 
           onClick={handleAddNew}
+          data-dica="Criar um lote novo de preço, com período e valor."
           disabled={isSaving}
           className="w-full border-dashed border-white/20 text-black hover:bg-white/5 hover:text-white hover:border-white/40"
         >

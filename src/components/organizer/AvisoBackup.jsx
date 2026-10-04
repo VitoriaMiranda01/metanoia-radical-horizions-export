@@ -89,6 +89,7 @@ const AvisoBackup = () => {
           <Button
             size="sm" variant="outline"
             onClick={() => marcarCiente(a.id)}
+            data-dica="Some com este aviso: confirma que você já viu a queda de registros."
             className="h-8 shrink-0 bg-transparent text-amber-200 border-amber-500/40 hover:bg-amber-500/15 hover:text-white"
           >
             Estou ciente

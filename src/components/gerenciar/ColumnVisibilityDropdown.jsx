@@ -44,7 +44,7 @@ const ColumnVisibilityDropdown = ({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button 
+        <Button data-dica="Escolher quais colunas aparecem na tabela (e vão para a planilha)." 
           variant="outline" 
           size="sm" 
           className="bg-white/5 text-white hover:bg-white/10 hover:text-white border-white/20"
@@ -61,6 +61,7 @@ const ColumnVisibilityDropdown = ({
                 variant="ghost" 
                 size="xs" 
                 onClick={handleSelectAll} 
+                data-dica="Marcar todas as colunas."
                 className="h-6 text-[10px] text-gray-400 hover:text-white px-2 hover:bg-white/10"
               >
                 Todos
@@ -69,6 +70,7 @@ const ColumnVisibilityDropdown = ({
                 variant="ghost" 
                 size="xs" 
                 onClick={handleClearAll} 
+                data-dica="Desmarcar todas as colunas."
                 className="h-6 text-[10px] text-gray-400 hover:text-white px-2 hover:bg-white/10"
               >
                 Limpar

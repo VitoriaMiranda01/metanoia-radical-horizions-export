@@ -89,7 +89,7 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data }) =
       <span className="text-white font-medium whitespace-nowrap">{title}</span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button 
+          <Button data-dica={`Filtrar a lista por ${title}.`} 
             variant="ghost" 
             size="sm" 
             className={cn(
@@ -236,6 +236,7 @@ const AprovacoesTable = ({
                     variant="ghost" 
                     size="sm" 
                     onClick={clearAllFilters} 
+                    data-dica="Tira todos os filtros e volta a mostrar a lista inteira."
                     className="text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20"
                   >
                     <X className="w-4 h-4 mr-2" />
@@ -383,26 +384,26 @@ const AprovacoesTable = ({
 
                         <TableCell className="sticky right-0 z-10 bg-black group-hover:bg-neutral-900">
                           <div className="flex justify-end space-x-2">
-                            <Button variant="ghost" size="sm" onClick={() => onSelect(inscricao)} className="hover:bg-blue-500/20 text-blue-300 transition-colors">
+                            <Button data-dica="Ver a ficha completa." variant="ghost" size="sm" onClick={() => onSelect(inscricao)} className="hover:bg-blue-500/20 text-blue-300 transition-colors">
                               <Eye className="w-4 h-4" />
                             </Button>
                             {showActions && (
                               <>
-                                <Button variant="ghost" size="sm" onClick={() => onAprovar(inscricao.id)} className="hover:bg-green-500/20 text-green-300 transition-colors">
+                                <Button data-dica="Aprovar: a pessoa entra para a escala." variant="ghost" size="sm" onClick={() => onAprovar(inscricao.id)} className="hover:bg-green-500/20 text-green-300 transition-colors">
                                   <CheckCircle className="w-4 h-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => onRejeitar(inscricao.id)} className="hover:bg-red-500/20 text-red-300 transition-colors">
+                                <Button data-dica="Recusar a inscrição (vai para a aba Rejeitadas)." variant="ghost" size="sm" onClick={() => onRejeitar(inscricao.id)} className="hover:bg-red-500/20 text-red-300 transition-colors">
                                   <XCircle className="w-4 h-4" />
                                 </Button>
                               </>
                             )}
                             {showApproveOnly && (
-                              <Button variant="ghost" size="sm" onClick={() => onAprovar(inscricao.id)} className="hover:bg-green-500/20 text-green-300 transition-colors" aria-label="Aprovar inscrição" title="Aprovar inscrição">
+                              <Button variant="ghost" size="sm" onClick={() => onAprovar(inscricao.id)} className="hover:bg-green-500/20 text-green-300 transition-colors" aria-label="Aprovar inscrição" data-dica="Aprovar mesmo assim: volta para as Aprovadas e entra na escala.">
                                 <CheckCircle className="w-4 h-4" />
                               </Button>
                             )}
                             {showCancelAction && (
-                              <Button variant="ghost" size="sm" onClick={() => onCancelar(inscricao.id)} className="hover:bg-red-500/20 text-red-300 transition-colors" aria-label="Cancelar aprovação" title="Cancelar aprovação">
+                              <Button variant="ghost" size="sm" onClick={() => onCancelar(inscricao.id)} className="hover:bg-red-500/20 text-red-300 transition-colors" aria-label="Cancelar aprovação" data-dica="Desfazer a aprovação: a inscrição vai para Rejeitadas (pede confirmação).">
                                 <XCircle className="w-4 h-4" />
                               </Button>
                             )}

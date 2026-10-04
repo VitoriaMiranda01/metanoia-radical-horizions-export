@@ -46,7 +46,7 @@ const formatarData = (valor) => {
 // Um botao que copia e confirma na propria etiqueta. No dia a dia o
 // organizador copia varias mensagens seguidas -- sem esse retorno visual,
 // e facil mandar a mensagem da igreja errada achando que copiou.
-const BotaoCopiar = ({ texto, rotulo, icone: Icone = Copy, className = '' }) => {
+const BotaoCopiar = ({ texto, rotulo, icone: Icone = Copy, className = '', dica }) => {
   const [copiado, setCopiado] = useState(false);
   const { toast } = useToast();
 
@@ -67,7 +67,7 @@ const BotaoCopiar = ({ texto, rotulo, icone: Icone = Copy, className = '' }) => 
   };
 
   return (
-    <Button size="sm" variant="outline" onClick={copiar}
+    <Button size="sm" variant="outline" onClick={copiar} data-dica={dica}
       className={`h-8 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10 ${className}`}>
       {copiado
         ? <><Check className="w-4 h-4 mr-1.5 text-emerald-400" />Copiado</>
@@ -236,12 +236,16 @@ const SenhasParceirosPage = () => {
           <BotaoCopiar
             icone={MessageSquare}
             rotulo="Mensagem"
+            dica="Copiar a mensagem pronta de primeiro acesso para mandar no WhatsApp da igreja."
             texto={conta.mensagem_pronta}
           />
         )}
 
         <Button size="sm" variant="outline" disabled={processando}
           onClick={() => alternarLiberacao(conta)}
+          data-dica={conta.acesso_liberado
+            ? 'Bloquear o primeiro acesso desta igreja (a senha temporária deixa de entrar).'
+            : 'Liberar o primeiro acesso: a igreja passa a entrar com a senha temporária e cria a dela.'}
           className={`h-8 px-3 bg-transparent border-white/10 hover:bg-white/10 ${conta.acesso_liberado ? 'text-gray-300 hover:text-white' : 'text-emerald-300 hover:text-emerald-200 border-emerald-500/30'}`}>
           {processando
             ? <RefreshCw className="w-4 h-4 animate-spin" />
@@ -252,6 +256,7 @@ const SenhasParceirosPage = () => {
 
         <Button size="sm" disabled={processando}
           onClick={() => setConfirmandoNova(conta.codigo)}
+          data-dica="Gerar uma senha nova para esta igreja (a antiga para de funcionar). Pede confirmação."
           className="h-8 bg-blue-600 hover:bg-blue-700 text-white">
           <KeyRound className="w-4 h-4 mr-1.5" />
           Nova senha
@@ -320,11 +325,12 @@ const SenhasParceirosPage = () => {
               </Button>
             </div>
             <div className="flex flex-wrap gap-2 mt-4">
-              <BotaoCopiar texto={senhaGerada.senha} rotulo="Copiar senha" />
+              <BotaoCopiar texto={senhaGerada.senha} rotulo="Copiar senha" dica="Copiar a senha nova para colar onde precisar." />
               {senhaGerada.mensagem && (
                 <BotaoCopiar
                   icone={MessageSquare}
                   rotulo="Copiar mensagem pronta"
+                  dica="Copiar a mensagem com a senha nova, pronta para mandar à igreja."
                   texto={senhaGerada.mensagem}
                 />
               )}
@@ -364,19 +370,19 @@ const SenhasParceirosPage = () => {
             <div className="p-4 md:p-6 border-b border-white/10 flex flex-col gap-4">
               <Tabs value={aba} onValueChange={setAba}>
                 <TabsList className="bg-white/5 border border-white/10 w-full md:w-auto flex flex-wrap h-auto">
-                  <TabsTrigger value="todas" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
+                  <TabsTrigger value="todas" data-dica="Todas as igrejas parceiras." className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
                     Todas ({totais.total})
                   </TabsTrigger>
-                  <TabsTrigger value="pedidos" className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300 text-gray-400">
+                  <TabsTrigger value="pedidos" data-dica="Igrejas que pediram uma senha nova pela tela de login." className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300 text-gray-400">
                     Pedindo senha ({totais.pedidos})
                   </TabsTrigger>
-                  <TabsTrigger value="aguardando" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
+                  <TabsTrigger value="aguardando" data-dica="Igrejas cujo primeiro acesso ainda não foi liberado." className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
                     Aguardando liberação ({totais.total - totais.liberadas})
                   </TabsTrigger>
-                  <TabsTrigger value="liberadas" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
+                  <TabsTrigger value="liberadas" data-dica="Liberadas, mas ainda não criaram a senha própria." className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
                     Senha temporária ({totais.liberadas - totais.comSenhaPropria})
                   </TabsTrigger>
-                  <TabsTrigger value="prontas" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
+                  <TabsTrigger value="prontas" data-dica="Igrejas que já criaram a senha própria." className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">
                     Senha própria ({totais.comSenhaPropria})
                   </TabsTrigger>
                 </TabsList>
@@ -451,6 +457,7 @@ const SenhasParceirosPage = () => {
                                 <button
                                   type="button"
                                   onClick={() => descartarPedido(conta)}
+                                  data-dica="Ignorar este pedido de senha nova (a senha atual continua valendo)."
                                   className="underline hover:text-amber-300"
                                 >
                                   descartar

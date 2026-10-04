@@ -16,6 +16,7 @@ const GroupCard = ({ name, data, onClick }) => {
       <Card 
         className={`cursor-pointer overflow-hidden backdrop-blur-sm transition-all duration-300 ${colors.bg} border ${colors.border} ${colors.hoverBorder}`}
         onClick={() => onClick(name, data)}
+        data-dica="Ver os acampantes deste grupo de trilha, realocar e anotar observações."
       >
         <CardContent className="p-6">
           <div className="flex justify-between items-start mb-4">

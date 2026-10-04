@@ -144,6 +144,7 @@ const PreEscalaDialog = ({ onClose }) => {
                       <button
                         type="button"
                         onClick={() => alternar(area)}
+                        data-dica="Ver quem escolheu esta área."
                         className={cn(
                           'w-full flex items-center gap-3 py-2 px-1 rounded-md transition-colors text-left',
                           aberta ? 'bg-indigo-500/10' : 'hover:bg-white/5'

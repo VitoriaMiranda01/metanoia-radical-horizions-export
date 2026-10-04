@@ -77,6 +77,7 @@ const EquipantesGridDisplay = ({
             size="sm"
             variant="outline"
             onClick={() => onExport(areaName, equipantes)}
+            data-dica="Baixar a lista desta área em planilha."
             className="h-8 text-xs bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white"
           >
             <Download className="mr-2 h-3 w-3" />
@@ -209,6 +210,7 @@ const EquipantesGridDisplay = ({
                       <Button
                         size="sm"
                         onClick={() => onRealocar(eq.escalaId, eq.nome, areaName)}
+                        data-dica="Mudar a pessoa desta área para a área escolhida ao lado."
                         disabled={!realocarAreaChoice[eq.escalaId] || realocando[eq.escalaId]}
                         className="h-8 text-xs font-semibold whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20"
                       >

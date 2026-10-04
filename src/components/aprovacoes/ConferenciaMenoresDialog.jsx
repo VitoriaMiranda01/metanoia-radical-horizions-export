@@ -207,6 +207,7 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
                 <Button
                   size="sm" disabled={emVoo}
                   onClick={() => conferir(item, true)}
+                  data-dica="Confirmar que a carta assinada dos responsáveis está com você."
                   className="h-8 bg-green-600 hover:bg-green-700 text-white"
                 >
                   <Check className="h-4 w-4 mr-1" /> Tenho a carta
@@ -279,6 +280,7 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
           </div>
           <Button
             variant="outline" onClick={carregar} disabled={loading}
+            data-dica="Buscar a lista de novo, com as últimas mudanças."
             className="h-9 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/5"
           >
             <RotateCcw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} /> Atualizar
@@ -307,6 +309,7 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
           {podeManual ? (
             <Button
               variant="outline" onClick={() => setManualAberta(true)}
+              data-dica="Cadastrar um menor que não se inscreveu pelo link, já com a carta vinculada."
               className="border-emerald-500/40 bg-transparent text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200"
             >
               <UserPlus className="h-4 w-4 mr-2" /> Carta sem cadastro? Inscrição manual

@@ -308,6 +308,7 @@ const ApprovalsView = ({
             entregaram e esperam o visto. */}
         <Button
           onClick={() => setVerMenores(true)}
+          data-dica="Conferir as cartas de autorização dos menores de idade e vincular cartas recebidas em mãos."
           variant="outline"
           className="bg-amber-600/20 text-amber-300 border-amber-600/50 hover:bg-amber-600/40 hover:text-amber-200 shrink-0"
         >

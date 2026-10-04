@@ -953,6 +953,7 @@ const OrganizerScalesPage = () => {
                 <button
                   type="button"
                   onClick={() => setMostrarNaoViram(v => !v)}
+                  data-dica="Lista de escalados que ainda não abriram &quot;Ver qual área fui escalado&quot; no site."
                   className="text-xs text-gray-400 underline underline-offset-2 hover:text-white"
                 >
                   {mostrarNaoViram ? 'esconder' : `ver quem ainda não viu (${naoViramArea.length})`}
@@ -983,13 +984,13 @@ const OrganizerScalesPage = () => {
               {/* So leitura: demanda por area entre todo mundo ja inscrito,
                   antes mesmo da fila de aprovacao zerar. Ver
                   PreEscalaDialog.jsx. */}
-              <Button onClick={() => setVerPreEscala(true)} variant="outline"
+              <Button data-dica="Só consulta: quantos inscritos escolheram cada área, antes de montar a escala." onClick={() => setVerPreEscala(true)} variant="outline"
                 className="bg-teal-600/20 text-teal-300 border-teal-600/50 hover:bg-teal-600/40 hover:text-teal-200">
                 <ClipboardCheck className="mr-2 h-4 w-4" /> Pré-escala
                 <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
               </Button>
 
-              <Button onClick={() => setVerAreasEspeciais(true)} variant="outline"
+              <Button data-dica="Escolher quem fica nos papéis especiais (Guia, Inimigo, Espírito Santo...)." onClick={() => setVerAreasEspeciais(true)} variant="outline"
                 className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
                 <Sparkles className="mr-2 h-4 w-4" /> Áreas Especiais ({totalEspeciais})
                 <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
@@ -999,7 +1000,7 @@ const OrganizerScalesPage = () => {
                   aqui porque e o organizador de escalas quem organiza isso --
                   mas e uma lista a parte: nao entra na escala, nao conta para
                   "faltam N" e nao interfere no lancamento. */}
-              <Button onClick={() => setVerAreasExtra(true)} variant="outline"
+              <Button data-dica="Listas dos mutirões (caminhão, cozinha, limpeza). Não mexe na escala." onClick={() => setVerAreasExtra(true)} variant="outline"
                 className="bg-blue-600/20 text-blue-300 border-blue-600/50 hover:bg-blue-600/40 hover:text-blue-200">
                 <Truck className="mr-2 h-4 w-4" /> Áreas Extras
                 <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
@@ -1012,7 +1013,9 @@ const OrganizerScalesPage = () => {
               <Button onClick={() => setConfirmandoAuto(true)}
                 disabled={waitlist.length === 0 || alocandoAuto}
                 variant="outline"
-                title={waitlist.length === 0 ? 'A fila "A escalar" está vazia.' : undefined}
+                data-dica={waitlist.length === 0
+                  ? 'A fila "A escalar" está vazia.'
+                  : 'Distribuir todo mundo da fila "A escalar" pelas áreas que escolheram na inscrição. Pede confirmação.'}
                 className="bg-purple-600/20 text-purple-300 border-purple-600/50 hover:bg-purple-600/40 hover:text-purple-200">
                 {alocandoAuto
                   ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1024,25 +1027,25 @@ const OrganizerScalesPage = () => {
                   e poder pagar. So libera com a fila zerada -- todo aprovado
                   precisa ter destino, nem que seja "Não será escalado". */}
               {escala?.lancada_em ? (
-                <Button onClick={() => setConfirmandoDesfazer(true)} variant="outline"
+                <Button data-dica="Esconder a escala do site de novo: os equipantes deixam de ver a área e de poder pagar. Pede confirmação." onClick={() => setConfirmandoDesfazer(true)} variant="outline"
                   className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
                   <Undo2 className="mr-2 h-4 w-4" /> Desfazer lançamento
                 </Button>
               ) : (
                 <Button onClick={() => setConfirmandoLancamento(true)}
                   disabled={!escala || escala.faltam > 0 || !escala.escalados}
-                  title={escala?.faltam > 0
+                  data-dica={escala?.faltam > 0
                     ? 'Distribua todos os equipantes antes de lançar a escala.'
                     : escala && !escala.escalados
                       ? 'Não há ninguém escalado. Coloque pelo menos um equipante em uma área.'
-                      : undefined}
+                      : 'Publicar a escala: cada equipante vê a área no site e pode pagar. Pede confirmação.'}
                   className="bg-amber-600 hover:bg-amber-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
                   <Send className="mr-2 h-4 w-4" />
                   Lançar escala{escala?.faltam > 0 ? ` (faltam ${escala.faltam})` : ''}
                 </Button>
               )}
 
-              <Button onClick={handleExportAll} disabled={allocations.length === 0} variant="outline" className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300">
+              <Button data-dica="Baixar a escala completa em planilha." onClick={handleExportAll} disabled={allocations.length === 0} variant="outline" className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300">
                 <Download className="mr-2 h-4 w-4" /> Exportar
               </Button>
             </div>
@@ -1172,6 +1175,7 @@ const OrganizerScalesPage = () => {
                     <Button
                       size="sm"
                       onClick={() => handleManualAllocate(eq.id, eq.nome)}
+                      data-dica="Colocar esta pessoa na(s) área(s) escolhida(s) ao lado."
                       disabled={(areasDaFila[eq.id] || []).length === 0 || manualAllocating[eq.id]}
                       className="bg-blue-600 hover:bg-blue-700 text-white h-9"
                     >

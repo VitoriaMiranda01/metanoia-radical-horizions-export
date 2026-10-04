@@ -75,7 +75,7 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data }) =
       <span className="text-white font-medium whitespace-nowrap text-xs md:text-sm">{title}</span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button 
+          <Button data-dica={`Filtrar a lista por ${title}.`} 
             variant="ghost" 
             size="sm" 
             className={cn(
@@ -273,6 +273,7 @@ const AcampantesTable = ({
                     variant="ghost" 
                     size="sm" 
                     onClick={clearAllFilters} 
+                    data-dica="Tira todos os filtros e volta a mostrar a lista inteira."
                     className="text-red-400 hover:text-red-300 hover:bg-black/10 border border-red-500/20 text-xs md:text-sm h-8 md:h-9"
                   >
                     <X className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
@@ -290,6 +291,7 @@ const AcampantesTable = ({
                   variant="outline" 
                   size="sm" 
                   onClick={handleExport}
+                  data-dica="Baixa uma planilha com o que está na tela (filtros e colunas escolhidas)."
                   className="bg-white/5 text-white hover:bg-white/10 hover:text-white border-white/20 text-xs md:text-sm h-8 md:h-9"
                 >
                   <Download className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
@@ -440,6 +442,7 @@ const AcampantesTable = ({
                             variant="ghost" 
                             size="sm" 
                             onClick={() => onViewDetails(item)}
+                            data-dica="Ver a ficha completa."
                             className="hover:bg-blue-500/20 text-blue-300 transition-colors h-7 w-7 md:h-8 md:w-8 p-0"
                           >
                             <Eye className="w-3 h-3 md:w-4 md:h-4" />
@@ -448,6 +451,7 @@ const AcampantesTable = ({
                             variant="ghost" 
                             size="sm" 
                             onClick={() => onEdit(item)}
+                            data-dica="Editar os dados da ficha."
                             className="hover:bg-amber-500/20 text-amber-300 transition-colors h-7 w-7 md:h-8 md:w-8 p-0"
                           >
                             <Pencil className="w-3 h-3 md:w-4 md:h-4" />
@@ -455,7 +459,8 @@ const AcampantesTable = ({
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            onClick={() => onDelete(item.id)}
+                            onClick={() => onDelete(item)}
+                            data-dica="Excluir esta inscrição (pede confirmação)."
                             className="hover:bg-red-500/20 text-red-300 transition-colors h-7 w-7 md:h-8 md:w-8 p-0"
                           >
                             <Trash2 className="w-3 h-3 md:w-4 md:h-4" />

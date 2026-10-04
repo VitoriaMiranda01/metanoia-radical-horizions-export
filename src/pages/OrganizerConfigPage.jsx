@@ -516,7 +516,7 @@ const OrganizerConfigPage = () => {
 
               </CardContent>
               <CardFooter className="bg-black/20 border-t border-white/10 pt-6">
-                <Button onClick={handleSaveAll} disabled={loadingConfig || isSavingAll} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 ml-auto">
+                <Button data-dica="Gravar as datas, horários e prazos preenchidos acima." onClick={handleSaveAll} disabled={loadingConfig || isSavingAll} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 ml-auto">
                   {isSavingAll ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -639,7 +639,7 @@ const OrganizerConfigPage = () => {
                         </div>
                         <Switch id="ativo" checked={newCoupon.ativo} onCheckedChange={checked => setNewCoupon({ ...newCoupon, ativo: checked })} disabled={isCreatingCoupon} />
                       </div>
-                      <Button type="submit" disabled={isCreatingCoupon} className="w-full bg-purple-600 hover:bg-purple-700 text-white mt-2">
+                      <Button data-dica="Criar o cupom com o código e o desconto preenchidos." type="submit" disabled={isCreatingCoupon} className="w-full bg-purple-600 hover:bg-purple-700 text-white mt-2">
                         {isCreatingCoupon ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
                         Criar Cupom
                       </Button>
@@ -679,10 +679,10 @@ const OrganizerConfigPage = () => {
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-right space-x-2">
-                                  <Button variant="outline" size="sm" onClick={() => handleToggleCoupon(coupon.id, coupon.ativo)} className="bg-transparent border-white/10 text-gray-300 hover:bg-white/10 hover:text-white">
+                                  <Button data-dica="Ligar ou desligar o cupom (desligado, ninguém consegue usar)." variant="outline" size="sm" onClick={() => handleToggleCoupon(coupon.id, coupon.ativo)} className="bg-transparent border-white/10 text-gray-300 hover:bg-white/10 hover:text-white">
                                     {coupon.ativo ? "Desativar" : "Ativar"}
                                   </Button>
-                                  <Button variant="destructive" size="icon" onClick={() => setCouponToDelete(coupon)} className="bg-red-500/20 text-red-400 hover:bg-red-500/40 hover:text-red-200 border-none">
+                                  <Button data-dica="Apagar o cupom (pede confirmação)." variant="destructive" size="icon" onClick={() => setCouponToDelete(coupon)} className="bg-red-500/20 text-red-400 hover:bg-red-500/40 hover:text-red-200 border-none">
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </TableCell>
@@ -715,7 +715,7 @@ const OrganizerConfigPage = () => {
                       <p className="text-sm text-gray-400">{statusControl.equipantes ? 'Inscrições abertas' : 'Inscrições fechadas'}</p>
                     </div>
                   </div>
-                  <Switch checked={statusControl.equipantes} onCheckedChange={c => handleToggleInscriptionStatus('equipantes', c)} disabled={savingStatus} />
+                  <Switch data-dica="Abrir ou fechar o formulário de inscrição de equipantes no site." checked={statusControl.equipantes} onCheckedChange={c => handleToggleInscriptionStatus('equipantes', c)} disabled={savingStatus} />
                 </div>
                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
                   <div className="flex items-center space-x-3">
@@ -725,7 +725,7 @@ const OrganizerConfigPage = () => {
                       <p className="text-sm text-gray-400">{statusControl.acampantes ? 'Inscrições abertas' : 'Inscrições fechadas'}</p>
                     </div>
                   </div>
-                  <Switch checked={statusControl.acampantes} onCheckedChange={c => handleToggleInscriptionStatus('acampantes', c)} disabled={savingStatus} />
+                  <Switch data-dica="Abrir ou fechar o formulário de inscrição de acampantes no site." checked={statusControl.acampantes} onCheckedChange={c => handleToggleInscriptionStatus('acampantes', c)} disabled={savingStatus} />
                 </div>
               </CardContent>
             </Card>
@@ -757,7 +757,7 @@ const OrganizerConfigPage = () => {
                     <h4 className="text-white font-medium mb-1">Resetar Inscrições para Nova Edição</h4>
                     <p className="text-sm text-gray-400">Marca todos os equipantes atuais como "não inscritos" (forçando todos a passarem pelo fluxo de inscrição novamente) e apaga permanentemente todos os registros de acampantes. Esta ação não pode ser desfeita.</p>
                   </div>
-                  <Button onClick={() => setShowResetConfirmDialog(true)} variant="destructive" className="bg-red-600 hover:bg-red-700 text-white font-bold whitespace-nowrap">
+                  <Button data-dica="Começar uma edição nova: apaga acampantes e escala e libera os equipantes para se inscreverem de novo. Pede confirmação." onClick={() => setShowResetConfirmDialog(true)} variant="destructive" className="bg-red-600 hover:bg-red-700 text-white font-bold whitespace-nowrap">
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Resetar Inscrições
                   </Button>

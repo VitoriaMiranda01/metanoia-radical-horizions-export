@@ -325,6 +325,7 @@ const GerenciarInscricoesPage = () => {
             {podeManual && (
               <Button
                 onClick={() => setManualAberta(true)}
+                data-dica="Cadastrar um equipante que não se inscreveu pelo link. Só o nome é obrigatório."
                 className="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 <UserPlus className="w-4 h-4 mr-2" /> Inscrição manual de equipante

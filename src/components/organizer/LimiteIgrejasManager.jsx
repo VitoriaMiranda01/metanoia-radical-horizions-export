@@ -188,7 +188,7 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
             onChange={e => setLimiteGeralInput(e.target.value)}
             className="bg-white/5 border-white/10 text-white [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
-          <Button type="button" onClick={handleSalvarGeral} disabled={savingGeral} variant="outline" className="border-dashed border-white/20 text-black hover:bg-white/10 hover:text-white hover:border-white/40 whitespace-nowrap">
+          <Button data-dica="Gravar o limite de acampantes que vale para todas as igrejas (vazio = sem limite)." type="button" onClick={handleSalvarGeral} disabled={savingGeral} variant="outline" className="border-dashed border-white/20 text-black hover:bg-white/10 hover:text-white hover:border-white/40 whitespace-nowrap">
             {savingGeral ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Salvar
           </Button>
@@ -254,19 +254,19 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
                         <div className="flex items-center justify-end space-x-2">
                           {editingIgreja === igreja ? (
                             <>
-                              <Button variant="ghost" size="icon" onClick={() => handleSalvarEdicao(igreja)} disabled={savingIgreja === igreja} className="h-8 w-8 text-green-400 hover:text-green-300 hover:bg-green-500/20">
+                              <Button data-dica="Salvar o novo limite desta igreja." variant="ghost" size="icon" onClick={() => handleSalvarEdicao(igreja)} disabled={savingIgreja === igreja} className="h-8 w-8 text-green-400 hover:text-green-300 hover:bg-green-500/20">
                                 {savingIgreja === igreja ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={handleCancelarEdicao} disabled={savingIgreja === igreja} className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/20">
+                              <Button data-dica="Cancelar a edição." variant="ghost" size="icon" onClick={handleCancelarEdicao} disabled={savingIgreja === igreja} className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/20">
                                 <X className="w-4 h-4" />
                               </Button>
                             </>
                           ) : (
                             <>
-                              <Button variant="ghost" size="icon" onClick={() => handleEditar(igreja, limite_maximo)} disabled={savingIgreja === igreja} className="h-8 w-8 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20">
+                              <Button data-dica="Mudar o limite desta igreja." variant="ghost" size="icon" onClick={() => handleEditar(igreja, limite_maximo)} disabled={savingIgreja === igreja} className="h-8 w-8 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20">
                                 <Edit2 className="w-3.5 h-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => setExcecaoToDelete(igreja)} disabled={savingIgreja === igreja} className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/20">
+                              <Button data-dica="Tirar a exceção: a igreja volta a seguir o limite geral (pede confirmação)." variant="ghost" size="icon" onClick={() => setExcecaoToDelete(igreja)} disabled={savingIgreja === igreja} className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/20">
                                 {savingIgreja === igreja ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                               </Button>
                             </>
@@ -316,7 +316,7 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
               className="bg-white/5 border-white/10 text-white [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
-          <Button type="button" onClick={handleAdicionar} disabled={isAdding} variant="outline" className="border-dashed border-white/20 text-black hover:bg-white/10 hover:text-white hover:border-white/40 whitespace-nowrap">
+          <Button data-dica="Dar a esta igreja um limite diferente do geral." type="button" onClick={handleAdicionar} disabled={isAdding} variant="outline" className="border-dashed border-white/20 text-black hover:bg-white/10 hover:text-white hover:border-white/40 whitespace-nowrap">
             {isAdding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
             Adicionar
           </Button>

@@ -8,6 +8,7 @@ const StatCard = ({ title, count, icon: Icon, color, onClick, loading }) => (
     <Card 
       className={`cursor-pointer overflow-hidden backdrop-blur-sm border-l-4 ${color.border} bg-white/5 border-y-white/5 border-r-white/5 hover:bg-white/10 transition-all ${loading ? 'opacity-70 pointer-events-none' : ''}`}
       onClick={!loading ? onClick : undefined}
+      data-dica="Clique para ver a lista de quem está nesta contagem."
     >
       <CardContent className="p-4 flex items-center justify-between">
         <div>
@@ -31,6 +32,7 @@ const ShirtCard = ({ size, count, onClick, loading }) => (
     <div 
       className={`cursor-pointer bg-white/5 border border-white/10 rounded-lg p-3 text-center hover:bg-white/10 transition-colors h-full flex flex-col justify-center items-center ${loading ? 'opacity-70 pointer-events-none' : ''}`}
       onClick={!loading ? onClick : undefined}
+      data-dica="Clique para ver quem pediu camisa deste tamanho."
     >
       <div className="flex justify-center mb-1 text-purple-400 opacity-80">
         <Shirt className="w-4 h-4" />

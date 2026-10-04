@@ -228,6 +228,7 @@ const CpfsAreaEspecialManager = ({
                 <button
                   type="button"
                   onClick={() => remover(cpf)}
+                  data-dica="Tirar esta pessoa desta área especial."
                   disabled={isSaving || removendo === cpf}
                   className="rounded-full p-0.5 text-gray-400 hover:text-red-300 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                   aria-label={`Remover ${pessoa ? pessoa.nome : formatCPF(cpf)} de ${areaLabel}`}
@@ -265,6 +266,7 @@ const CpfsAreaEspecialManager = ({
                   key={eq.id}
                   type="button"
                   onClick={() => adicionarEquipante(eq)}
+                  data-dica="Colocar este equipante nesta área especial."
                   disabled={isSaving}
                   className="w-full text-left px-3 py-2 hover:bg-white/10 transition-colors border-b border-white/5 last:border-0 disabled:opacity-50"
                 >
@@ -304,6 +306,7 @@ const CpfsAreaEspecialManager = ({
                     type="button"
                     size="sm"
                     onClick={adicionarPorCpfDigitado}
+                    data-dica="Adicionar pelo CPF digitado (vale mesmo se a pessoa ainda não se inscreveu)."
                     disabled={isSaving}
                     className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white"
                   >

@@ -250,6 +250,7 @@ const AreasExtraDialog = ({ onClose }) => {
           <Button
             variant="outline"
             onClick={exportar}
+            data-dica="Baixar a lista dos mutirões em planilha."
             disabled={loading || itens.length === 0}
             className="h-9 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/5"
           >

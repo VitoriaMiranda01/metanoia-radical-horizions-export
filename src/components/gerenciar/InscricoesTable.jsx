@@ -120,7 +120,7 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data }) =
       <span className="text-white font-medium whitespace-nowrap">{title}</span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button 
+          <Button data-dica={`Filtrar a lista por ${title}.`} 
             variant="ghost" 
             size="sm" 
             className={cn(
@@ -307,6 +307,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                     variant="ghost" 
                     size="sm" 
                     onClick={clearAllFilters} 
+                    data-dica="Tira todos os filtros e volta a mostrar a lista inteira."
                     className="text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20"
                   >
                     <X className="w-4 h-4 mr-2" />
@@ -320,7 +321,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                     onApply={handleSaveColumns}
                   />
                 </div>
-                <Button onClick={handleExport} variant="outline" size="sm" className="bg-white/5 text-white hover:bg-white/10 hover:text-white border-white/20">
+                <Button data-dica="Baixa uma planilha com o que está na tela (filtros e colunas escolhidas)." onClick={handleExport} variant="outline" size="sm" className="bg-white/5 text-white hover:bg-white/10 hover:text-white border-white/20">
                   <Download className="w-4 h-4 mr-2" />Exportar
                 </Button>
             </div>
@@ -459,10 +460,10 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                       
                       <TableCell className="sticky right-0 z-10 bg-black group-hover:bg-neutral-900">
                         <div className="flex justify-end space-x-2">
-                          <Button variant="ghost" size="sm" onClick={() => onSelect(item)} className="hover:bg-blue-500/20 text-blue-300 transition-colors">
+                          <Button data-dica="Ver a ficha completa." variant="ghost" size="sm" onClick={() => onSelect(item)} className="hover:bg-blue-500/20 text-blue-300 transition-colors">
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => onEdit(item)} className="hover:bg-amber-500/20 text-amber-300 transition-colors">
+                          <Button data-dica="Editar os dados da ficha." variant="ghost" size="sm" onClick={() => onEdit(item)} className="hover:bg-amber-500/20 text-amber-300 transition-colors">
                             <Pencil className="w-4 h-4" />
                           </Button>
                         </div>

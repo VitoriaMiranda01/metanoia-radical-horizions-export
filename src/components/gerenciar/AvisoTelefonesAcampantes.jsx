@@ -95,6 +95,7 @@ const ItemAcampante = ({ item, onSalvo, onAbrirFicha }) => {
           )}
           <Button
             size="sm" variant="outline" onClick={() => onAbrirFicha?.(item.id)}
+            data-dica="Abrir a ficha completa deste acampante para editar."
             className="h-8 border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white"
           >
             <Pencil className="w-3.5 h-3.5 mr-1" /> Abrir ficha
@@ -129,7 +130,7 @@ const ItemAcampante = ({ item, onSalvo, onAbrirFicha }) => {
             );
           })}
         </div>
-        <Button onClick={salvar} disabled={salvando} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white">
+        <Button data-dica="Gravar o número corrigido. A ficha sai deste quadro." onClick={salvar} disabled={salvando} className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white">
           {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
         </Button>
       </div>

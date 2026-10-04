@@ -125,6 +125,7 @@ const OutrasIgrejasManager = () => {
           </div>
           <Button
             variant="outline" size="sm" onClick={carregar} disabled={loading}
+            data-dica="Buscar de novo os nomes que as pessoas escreveram em &quot;OUTRA&quot;."
             className="border-white/10 bg-transparent text-gray-300 hover:bg-white/5 hover:text-white shrink-0"
           >
             <RotateCcw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> Atualizar
@@ -171,6 +172,7 @@ const OutrasIgrejasManager = () => {
                     size="sm"
                     disabled={!!salvando[chave]}
                     onClick={() => adicionar(d.nome, chave)}
+                    data-dica="Colocar este nome na lista de igrejas do formulário, para os próximos escolherem."
                     className="bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
                   >
                     {salvando[chave]
@@ -203,6 +205,7 @@ const OutrasIgrejasManager = () => {
           />
           <Button
             type="submit" disabled={criando || novoNome.trim().length < 3}
+            data-dica="Adicionar uma igreja nova à lista do formulário."
             className="bg-blue-600 hover:bg-blue-700 text-white shrink-0"
           >
             {criando ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> Adicionar</>}

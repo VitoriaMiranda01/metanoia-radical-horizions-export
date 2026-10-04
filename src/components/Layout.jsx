@@ -75,8 +75,10 @@ const Layout = ({ children }) => {
   const navigationItems = [
     { path: '/acampante', label: 'Área do Acampante', icon: Tent, roles: ['acampante'] },
     { path: '/equipante', label: 'Área do Equipante', icon: Wrench, roles: ['equipante'] },
-    { path: '/gerenciar', label: 'Gerenciar Inscrições', icon: Users, roles: ['organizador'] },
-    { path: '/aprovacoes', label: 'Aprovações Equipe', icon: UserCheck, roles: ['organizador', 'organizador-aprovador'], contador: 'aprovacoes' }
+    { path: '/gerenciar', label: 'Gerenciar Inscrições', icon: Users, roles: ['organizador'],
+      dica: 'Lista de acampantes e equipantes inscritos: ver, editar, exportar e fazer inscrição manual.' },
+    { path: '/aprovacoes', label: 'Aprovações Equipe', icon: UserCheck, roles: ['organizador', 'organizador-aprovador'], contador: 'aprovacoes',
+      dica: 'Aprovar ou recusar as inscrições de equipantes e conferir as autorizações dos menores.' }
   ];
 
   // Organizer specific navigation (Settings/Scales)
@@ -87,10 +89,14 @@ const Layout = ({ children }) => {
   // "contador" e a chave do selo. Escalas nao tem de proposito: a fila "a
   // escalar" e o estado normal do trabalho, nao uma pendencia atrasada.
   const organizerItems = [
-    { path: '/organizer/escalas', label: 'Escalas', icon: Grid },
-    { path: '/pagamentos-pendentes', label: 'Pagamentos Pendentes', icon: Banknote, contador: 'pagamentos' },
-    { path: '/senhas-parceiros', label: 'Senhas dos Parceiros', icon: KeyRound, contador: 'senhas' },
-    { path: '/organizer/configuracoes', label: 'Configurações', icon: Settings }
+    { path: '/organizer/escalas', label: 'Escalas', icon: Grid,
+      dica: 'Montar a escala: distribuir os equipantes aprovados pelas áreas e lançar para eles verem.' },
+    { path: '/pagamentos-pendentes', label: 'Pagamentos Pendentes', icon: Banknote, contador: 'pagamentos',
+      dica: 'Confirmar pagamentos em dinheiro/isentos, liberar PIX travado e ver a relação de quem pagou.' },
+    { path: '/senhas-parceiros', label: 'Senhas dos Parceiros', icon: KeyRound, contador: 'senhas',
+      dica: 'Senhas das igrejas parceiras: primeiro acesso, pedidos de nova senha e logins bloqueados.' },
+    { path: '/organizer/configuracoes', label: 'Configurações', icon: Settings,
+      dica: 'Datas do evento, abrir/fechar inscrições, preços, limites por igreja e senhas dos organizadores.' }
   ];
 
   const availableItems = user ? navigationItems.filter(item => 
@@ -151,6 +157,7 @@ const Layout = ({ children }) => {
                     key={item.path}
                     variant={isActive ? "default" : "ghost"}
                     onClick={() => navigate(item.path)}
+                    data-dica={item.dica}
                     className={`relative flex items-center space-x-2 transition-all duration-300 ${
                       isActive
                         ? 'bg-red-700 hover:bg-red-800 text-white shadow-lg shadow-red-900/20'
@@ -168,6 +175,7 @@ const Layout = ({ children }) => {
                 <Button
                   variant={location.pathname === '/parceiros' ? "default" : "ghost"}
                   onClick={() => navigate('/parceiros')}
+                  data-dica="As inscrições da sua igreja: aprovar equipantes e acompanhar os inscritos."
                   className={`flex items-center space-x-2 transition-all duration-300 ${
                     location.pathname === '/parceiros'
                       ? 'bg-red-700 hover:bg-red-800 text-white shadow-lg shadow-red-900/20' 
@@ -189,11 +197,9 @@ const Layout = ({ children }) => {
                         key={item.path}
                         variant={isActive ? "default" : "ghost"}
                         onClick={() => navigate(item.path)}
-                        title={
-                          item.contador && contadores[item.contador]
-                            ? `${item.label} (${contadores[item.contador]} aguardando)`
-                            : item.label
-                        }
+                        aria-label={item.label}
+                        data-dica={`${item.label}${item.contador && contadores[item.contador]
+                          ? ` (${contadores[item.contador]} aguardando)` : ''}: ${item.dica}`}
                         className={`relative transition-all duration-300 ${
                           isActive
                             ? 'bg-red-700 hover:bg-red-800 text-white'
@@ -216,6 +222,8 @@ const Layout = ({ children }) => {
                     variant="ghost"
                     size="sm"
                     onClick={handleLogout}
+                    aria-label="Sair"
+                    data-dica="Sair do sistema neste computador."
                     className="hover:bg-red-900/20 hover:text-red-400 text-gray-400"
                   >
                     <LogOut className="w-4 h-4" />

@@ -24,6 +24,7 @@ const BloqueioLogin = ({ bloqueio, onLiberar, liberando = false }) => {
       <Button
         type="button" size="sm" variant="outline" disabled={liberando}
         onClick={onLiberar}
+        data-dica="Desbloquear agora, sem esperar os 10 minutos."
         className="h-7 px-2.5 text-xs bg-transparent text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/15 hover:text-emerald-200"
       >
         {liberando

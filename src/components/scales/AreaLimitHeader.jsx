@@ -148,7 +148,7 @@ const AreaLimitHeader = ({
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-1">
-              <Button size="sm" variant="ghost" className="h-7 hover:bg-green-600/20 hover:text-green-400" onClick={handleSave} disabled={saving}>
+              <Button data-dica="Gravar os novos limites desta área." size="sm" variant="ghost" className="h-7 hover:bg-green-600/20 hover:text-green-400" onClick={handleSave} disabled={saving}>
                 <Save className="w-4 h-4 mr-1" /> Salvar
               </Button>
               <Button size="sm" variant="ghost" className="h-7 hover:bg-red-600/20 hover:text-red-400" onClick={handleCancel} disabled={saving}>
@@ -182,7 +182,7 @@ const AreaLimitHeader = ({
               // sumiu informacao.
               <span className="italic text-gray-500">Sem limite por gênero</span>
             )}
-            {isOrganizer && <Button variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10 shrink-0" onClick={() => setIsEditing(true)}>
+            {isOrganizer && <Button data-dica="Mudar quantas pessoas cabem nesta área (total, homens e mulheres)." variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10 shrink-0" onClick={() => setIsEditing(true)}>
                 <Edit2 className="w-3 h-3 mr-1" />
                 <span className="text-[10px]">Alterar</span>
               </Button>}

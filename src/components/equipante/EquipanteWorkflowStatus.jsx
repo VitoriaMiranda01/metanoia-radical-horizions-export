@@ -1,10 +1,12 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useEquipanteWorkflow } from '@/hooks/useEquipanteWorkflow';
-import { CheckCircle2, Clock, AlertCircle, XCircle, ArrowRight, Hand, Undo2 } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, XCircle, ArrowRight, Hand, Undo2, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import ParentalAuthUpload from './ParentalAuthUpload';
 import { Button } from '@/components/ui/button';
+import CorrecaoCadastroDialog from './CorrecaoCadastroDialog';
+import RevelarAreaDialog from './RevelarAreaDialog';
 
 const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment }) => {
   const {
@@ -22,9 +24,43 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
     autorizacaoConferida,
     conferidaPor,
     declararEntrega,
+    pendencias,
+    areaVista,
     error,
     refresh
   } = useEquipanteWorkflow(equipanteId, age, dono);
+
+  // So o proprio equipante (que provou ser dono) ve a janela de correcao
+  // sozinha; o organizador abrindo a ficha pela tela dele, nao.
+  const ehOProprio = !!(dono && (dono.cpf || dono.nome));
+  const [correcao, setCorrecao] = useState(null);   // null | { antesDeRevelar }
+  const [fechouCorrecao, setFechouCorrecao] = useState(false);
+  const [revelando, setRevelando] = useState(false);
+  const [revelouAgora, setRevelouAgora] = useState(false);
+
+  // Ao entrar no acompanhamento: se ha pendencia, abre a correcao uma vez.
+  // Fechar ("Agora nao") vale ate a proxima visita -- e antes de revelar a
+  // area ela volta, porque sem corrigir o servidor nao revela.
+  useEffect(() => {
+    if (ehOProprio && pendencias.length > 0 && !correcao && !fechouCorrecao) {
+      setCorrecao({ antesDeRevelar: false });
+    }
+  }, [ehOProprio, pendencias.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const abrirRevelacao = () => {
+    if (ehOProprio && pendencias.length > 0) {
+      setCorrecao({ antesDeRevelar: true });
+      return;
+    }
+    setRevelando(true);
+  };
+
+  const aoCorrigir = async (sobraram) => {
+    const revelarDepois = correcao?.antesDeRevelar;
+    setCorrecao(null);
+    await refresh();
+    if (revelarDepois && sobraram.length === 0) setRevelando(true);
+  };
 
   if (isLoading) {
     return <div className="text-white text-center py-8">Carregando status...</div>;
@@ -123,9 +159,8 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
             <p className="text-red-300 text-sm flex items-start">
               <XCircle className="w-5 h-5 mr-2 shrink-0" />
               <span>
-                <strong>Cancelado — verificar com a Direção.</strong> Sua inscrição foi aprovada,
-                mas você não entrou na escala desta edição. Procure a Direção para entender o
-                caso.
+                <strong>Sua escala ainda precisa ser conversada.</strong> Por favor, verifique a
+                sua escala com o Dudu.
               </span>
             </p>
           </div>
@@ -259,7 +294,28 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
         {/* O botao so existe quando o servidor libera. Antes ele aparecia
             desabilitado, o que fazia parecer que faltava alguma coisa a
             fazer -- quando na verdade e so aguardar a escala. */}
-        {canProceedToPayment && (
+        {/* Revelacao da area: aparece quando a escala foi lancada e a pessoa
+            esta nela. O pagamento so abre depois que ela viu a area. */}
+        {escalado && (
+          <div className="mt-8 pt-6 border-t border-white/10 space-y-3">
+            {!areaVista && !revelouAgora && (
+              <p className="text-center text-gray-300 text-sm">
+                A escala foi divulgada e você está nela!
+              </p>
+            )}
+            <Button
+              onClick={abrirRevelacao}
+              className={`w-full py-6 text-lg ${areaVista || revelouAgora
+                ? 'bg-transparent border border-white/20 text-gray-200 hover:bg-white/10'
+                : 'bg-gradient-to-r from-red-700 to-green-700 hover:from-red-600 hover:to-green-600 text-white shadow-lg shadow-red-900/30'}`}
+            >
+              <Sparkles className="mr-2 w-5 h-5" />
+              {areaVista || revelouAgora ? 'Ver minha área de novo' : 'Ver qual área fui escalado'}
+            </Button>
+          </div>
+        )}
+
+        {canProceedToPayment && (areaVista || revelouAgora || !ehOProprio) && (
           <div className="mt-8 pt-6 border-t border-white/10">
             <Button
               onClick={() => onProceedToPayment?.({ nome: workflowData?.nome })}
@@ -270,6 +326,31 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {correcao && (
+          <CorrecaoCadastroDialog
+            key="correcao"
+            equipanteId={equipanteId}
+            dono={dono}
+            pendencias={pendencias}
+            antesDeRevelar={correcao.antesDeRevelar}
+            onClose={() => { setCorrecao(null); setFechouCorrecao(true); }}
+            onCorrigido={aoCorrigir}
+          />
+        )}
+        {revelando && (
+          <RevelarAreaDialog
+            key="revelar"
+            equipanteId={equipanteId}
+            dono={dono}
+            podePagar={canProceedToPayment}
+            onPagar={() => { setRevelando(false); onProceedToPayment?.({ nome: workflowData?.nome }); }}
+            onPendencias={() => { setRevelando(false); setCorrecao({ antesDeRevelar: true }); }}
+            onClose={() => { setRevelando(false); setRevelouAgora(true); refresh(); }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

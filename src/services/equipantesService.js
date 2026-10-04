@@ -217,6 +217,44 @@ export const getEquipanteWorkflow = async (equipante_id, dono = {}) => {
   }
 };
 
+/**
+ * A propria pessoa completa o que esta pendente na ficha (igreja que faltou,
+ * WhatsApp fora do padrao), no acompanhamento. Quem decide o que pode ser
+ * mudado e o servidor (corrigir_minha_inscricao): so o que esta pendente, e
+ * so com a prova de dono (CPF, ou nome + nascimento). Devolve as pendencias
+ * que sobraram.
+ */
+export const corrigirMinhaInscricao = async (equipante_id, dono = {}, { igreja, igrejaOutra, whatsapp } = {}) => {
+  const { data, error } = await supabase.rpc('corrigir_minha_inscricao', {
+    p_id: equipante_id,
+    p_cpf: dono.cpf ?? null,
+    p_nome: dono.nome ?? null,
+    p_nascimento: dono.nascimento ?? null,
+    p_igreja: igreja ?? null,
+    p_igreja_outra: igrejaOutra ?? null,
+    p_whatsapp: whatsapp ?? null,
+  });
+  if (error) throw new Error('Não foi possível salvar agora. Tente de novo em instantes.');
+  if (!data?.ok) throw new Error(data?.erro || 'Não foi possível salvar a correção.');
+  return data.pendencias || [];
+};
+
+/**
+ * A(s) area(s) em que a pessoa foi escalada. So depois que a escala e
+ * lancada, e so sem pendencias na ficha (o servidor devolve as pendencias no
+ * lugar). Marca a primeira vez que a pessoa viu.
+ */
+export const revelarArea = async (equipante_id, dono = {}) => {
+  const { data, error } = await supabase.rpc('revelar_area', {
+    p_id: equipante_id,
+    p_cpf: dono.cpf ?? null,
+    p_nome: dono.nome ?? null,
+    p_nascimento: dono.nascimento ?? null,
+  });
+  if (error) throw new Error('Não foi possível buscar a sua área agora. Tente de novo em instantes.');
+  return data;
+};
+
 export const getEquipantesByWorkflowStage = async () => {
   try {
     const { data, error } = await supabase

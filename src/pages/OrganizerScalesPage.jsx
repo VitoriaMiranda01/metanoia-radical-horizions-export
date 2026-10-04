@@ -75,6 +75,7 @@ const AREAS_NO_CORPO = WORK_AREAS.filter(area => !NOMES_ESPECIAIS.includes(area)
 const OrganizerScalesPage = () => {
   const [loading, setLoading] = useState(false);
   const [allocations, setAllocations] = useState([]);
+  const [mostrarNaoViram, setMostrarNaoViram] = useState(false);
   const [limitsMap, setLimitsMap] = useState({});
   const [loadingLimits, setLoadingLimits] = useState(true);
   const [dbVerification, setDbVerification] = useState({
@@ -199,6 +200,14 @@ const OrganizerScalesPage = () => {
   // Contagem de PESSOAS, nao de participacoes: quem esta em duas areas tem
   // duas linhas em `allocations`, mas e uma pessoa so.
   const pessoasEscaladas = new Set(allocations.map(a => a.id)).size;
+
+  // Depois do lancamento: quem ja abriu "Ver qual área fui escalado" no
+  // acompanhamento (area_vista_em, gravado pelo servidor na revelacao).
+  // Uma entrada por PESSOA -- quem esta em duas areas conta uma vez.
+  const escaladosReais = [...new Map(allocations
+    .filter(a => a.allocatedArea !== 'Não será escalado')
+    .map(a => [a.id, a])).values()];
+  const naoViramArea = escaladosReais.filter(a => !a.area_vista_em);
 
   // Quantos estao nos tres papeis especiais -- o numero no botao que abre o
   // modulo. E por PARTICIPACAO, mas como ninguem pode ter dois dos tres, da
@@ -926,7 +935,7 @@ const OrganizerScalesPage = () => {
             {escala && (
               <p className={cn('text-xs mt-2', escala.lancada_em ? 'text-green-400' : 'text-amber-400/90')}>
                 {escala.lancada_em
-                  ? `Escala lançada em ${new Date(escala.lancada_em).toLocaleString('pt-BR')} — os escalados já podem pagar.`
+                  ? `Escala lançada em ${new Date(escala.lancada_em).toLocaleString('pt-BR')} — os escalados já podem pagar. ${escaladosReais.length - naoViramArea.length} de ${escaladosReais.length} já viram a área no site.`
                   : escala.faltam > 0
                     ? `Escala ainda não lançada. ${escala.faltam === 1
                         ? 'Falta 1 equipante sem destino'
@@ -937,6 +946,31 @@ const OrganizerScalesPage = () => {
                 {escala.nao_serao_escalados > 0 && ` · ${escala.nao_serao_escalados === 1
                   ? '1 não será escalado' : `${escala.nao_serao_escalados} não serão escalados`}.`}
               </p>
+            )}
+
+            {escala?.lancada_em && naoViramArea.length > 0 && (
+              <div className="mt-1">
+                <button
+                  type="button"
+                  onClick={() => setMostrarNaoViram(v => !v)}
+                  className="text-xs text-gray-400 underline underline-offset-2 hover:text-white"
+                >
+                  {mostrarNaoViram ? 'esconder' : `ver quem ainda não viu (${naoViramArea.length})`}
+                </button>
+                {mostrarNaoViram && (
+                  <ul className="mt-2 max-h-48 overflow-y-auto text-xs text-gray-300 space-y-0.5">
+                    {naoViramArea
+                      .slice()
+                      .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'))
+                      .map(a => (
+                        <li key={a.id}>
+                          {a.nome}
+                          <span className="text-gray-500">{a.whatsapp ? ` · ${a.whatsapp}` : ''} · {a.allocatedArea}</span>
+                        </li>
+                      ))}
+                  </ul>
+                )}
+              </div>
             )}
           </div>
           <div className="flex flex-col items-stretch sm:items-end gap-2.5 w-full md:w-auto">

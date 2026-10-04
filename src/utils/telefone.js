@@ -46,6 +46,11 @@ export const problemaTelefone = (valor, { aceitaFixo = false, estrangeiro = fals
       : 'Telefone incompleto. Use o formato internacional, ex.: +351 912 345 678.';
   }
 
+  // Dois numeros no mesmo campo ("2499... / 2498..."): o campo e de um so.
+  if (/[/;]|\bou\b/i.test(bruto) || bruto.replace(/\D/g, '').length >= 20) {
+    return 'Informe só um número de WhatsApp.';
+  }
+
   const d = digitosTelefone(bruto);
   if (d.length < 10) {
     return d.length >= 8 ? `Faltou o DDD. ${EXEMPLO}` : `Número incompleto. ${EXEMPLO}`;

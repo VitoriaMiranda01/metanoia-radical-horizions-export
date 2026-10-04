@@ -158,6 +158,10 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     naoSeraEscalado: !!workflowData?.nao_sera_escalado,
     escalaLancada: !!workflowData?.escala_lancada,
     pago: !!workflowData?.pago,
+    // Problemas na ficha que a propria pessoa corrige (igreja que faltou,
+    // WhatsApp fora do padrao) e se ela ja viu a area revelada.
+    pendencias: workflowData?.pendencias || [],
+    areaVista: !!workflowData?.area_vista,
     aprovacao: workflowData?.aprovacao ?? null,
     workflowStages: getWorkflowStages(),
     entregueEmMaos: !!workflowData?.autorizacao_entregue_maos,

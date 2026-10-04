@@ -269,3 +269,82 @@ export const exportDisponibilidadesExtra = (itens, areas) => {
 
   return { total: itens.length };
 };
+
+/**
+ * Todas as igrejas cadastradas (pedido do Patrick, 04/10/2026): as 145 da
+ * lista original + as adicionadas pela organizacao, com quem responde por
+ * ela no sistema e quantos inscritos tem. Segunda aba: o que ainda foi
+ * escrito em OUTRA.
+ *
+ * lista: IGREJAS_PARCEIRAS ("NN - NOME"); relatorio: relatorio_igrejas();
+ * contas: listar_contas_parceiros() (pode vir vazio).
+ */
+export const exportListaIgrejas = (lista, relatorio, contas = []) => {
+  const porCodigo = Object.fromEntries((contas || []).map((c) => [String(c.codigo), c]));
+  const eq = relatorio?.equipantes || {};
+  const ac = relatorio?.acampantes || {};
+
+  const acesso = (c) => {
+    if (!c) return '';
+    if (c.senha_definida) return 'Senha própria';
+    if (c.acesso_liberado) return 'Liberado, sem senha própria';
+    return 'Aguardando liberação';
+  };
+
+  const linha = (codigo, nome, chave, tipo, conta) => ({
+    'Código': codigo,
+    'Igreja': nome,
+    'Tipo': tipo,
+    'Responsável no sistema': conta?.responsavel_nome || '',
+    'Acesso do parceiro': acesso(conta),
+    'Equipantes inscritos': eq[chave]?.inscritos || 0,
+    'Equipantes aprovados': eq[chave]?.aprovados || 0,
+    'Acampantes': ac[chave] || 0,
+  });
+
+  const parceiras = lista.map((completo) => {
+    const m = String(completo).match(/^(\d+)\s*-\s*(.*)$/);
+    const codigo = m ? m[1] : '';
+    return linha(codigo, m ? m[2] : completo, completo, 'Parceira', porCodigo[codigo]);
+  });
+  const adicionadas = (relatorio?.extras || []).map((x) =>
+    linha('', x.nome, x.nome, `Adicionada${x.criada_por ? ` por ${x.criada_por}` : ''}`, null));
+
+  // Inscricoes cuja "igreja" nao esta na lista (OUTRA, NAO CONGREGA, nomes
+  // antigos): entram no fim, senao o total nao bateria com os inscritos.
+  const naLista = new Set([...lista, ...(relatorio?.extras || []).map((x) => x.nome)]);
+  const fora = [...new Set([...Object.keys(eq), ...Object.keys(ac)])]
+    .filter((k) => !naLista.has(k))
+    .sort((x, y) => x.localeCompare(y, 'pt-BR'))
+    .map((k) => linha('', k === 'OUTRA' ? 'OUTRA (o nome escrito está na outra aba)' : k, k, 'Fora da lista', null));
+
+  const linhas = [...parceiras, ...adicionadas, ...fora];
+  const soma = (campo) => linhas.reduce((t, l) => t + (Number(l[campo]) || 0), 0);
+  linhas.push({
+    'Código': '', 'Igreja': `TOTAL (${parceiras.length + adicionadas.length} igrejas na lista)`, 'Tipo': '', 'Responsável no sistema': '',
+    'Acesso do parceiro': '',
+    'Equipantes inscritos': soma('Equipantes inscritos'),
+    'Equipantes aprovados': soma('Equipantes aprovados'),
+    'Acampantes': soma('Acampantes'),
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(linhas);
+  ws['!cols'] = [{ wch: 8 }, { wch: 55 }, { wch: 26 }, { wch: 30 }, { wch: 26 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+  ws['!autofilter'] = { ref: `A1:H${linhas.length}` };
+  XLSX.utils.book_append_sheet(wb, ws, 'Igrejas');
+
+  const outra = (relatorio?.outra || []).map((o) => ({
+    'O que escreveram em OUTRA': o.escrito || '(em branco)',
+    'Equipantes': o.quantos,
+  }));
+  if (outra.length > 0) {
+    const ws2 = XLSX.utils.json_to_sheet(outra);
+    ws2['!cols'] = [{ wch: 55 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Escreveram OUTRA');
+  }
+
+  const hoje = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Igrejas_Metanoia_Radical_${hoje}.xlsx`);
+  return { igrejas: parceiras.length + adicionadas.length };
+};

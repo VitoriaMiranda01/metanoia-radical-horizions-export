@@ -49,3 +49,19 @@ export const removerIgrejaExtra = async (id) => {
   if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível remover' };
   return { success: true };
 };
+
+/**
+ * Dados para a planilha "todas as igrejas cadastradas" (Configuracoes): as
+ * igrejas adicionadas, quantos inscritos cada igreja tem e o que foi escrito
+ * em OUTRA. So organizador recebe (relatorio_igrejas); a lista das 145 vem
+ * da constante IGREJAS_PARCEIRAS, a mesma do formulario.
+ */
+export const fetchRelatorioIgrejas = async () => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('relatorio_igrejas'),
+    { rotulo: 'relatório de igrejas' }
+  );
+  if (error) throw new Error(error.message || 'Erro ao carregar as igrejas');
+  if (!data) throw new Error('Só organizador pode exportar a lista de igrejas.');
+  return data;
+};

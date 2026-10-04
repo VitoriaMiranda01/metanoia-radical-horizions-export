@@ -159,3 +159,15 @@ export const salvarObservacaoAcampante = async (acampanteId, observacao) => {
 // Apagar todos os acampantes virou parte do reset de edicao, que agora
 // acontece inteiro no servidor (resetar_para_nova_edicao). Ver o comentario
 // em organizerConfigService.resetarParaNovaEdicao.
+
+/**
+ * Acampantes com telefone fora do padrao (emergencia e/ou WhatsApp), para o
+ * aviso de Gerenciar Inscricoes. O servidor so devolve para a Raquel (quem
+ * liga e corrige) e para a conta Desenvolvedores; para os outros, null.
+ * Formato: { perfil: 'raquel' | 'desenvolvedores', itens: [...] }.
+ */
+export const fetchTelefonesAcampantesPendentes = async () => {
+  const { data, error } = await supabase.rpc('telefones_acampantes_pendentes');
+  if (error) throw error;
+  return data || null;
+};

@@ -461,3 +461,23 @@ export const conferirAutorizacaoMenor = async (equipanteId, conferida) => {
     por: data.por || null
   };
 };
+
+/**
+ * Inscricao manual (Raquel, Eduardo e Desenvolvedores): quem nao se
+ * inscreveu pelo link -- ex.: as cartas de menores que chegaram em maos.
+ * So o nome e obrigatorio. Quem decide se o login pode e o servidor
+ * (inscricao_manual_equipante); a ficha ja entra aprovada, vai para a escala
+ * e fica com pagamento manual pendente (aparece em Pagamentos).
+ */
+export const podeInscreverManual = async () => {
+  const { data, error } = await supabase.rpc('pode_inscrever_manual');
+  if (error) return false;
+  return data === true;
+};
+
+export const inscricaoManualEquipante = async (dados) => {
+  const { data, error } = await supabase.rpc('inscricao_manual_equipante', { p_dados: dados });
+  if (error) return { success: false, error: 'Não foi possível salvar agora. Tente de novo em instantes.' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar a inscrição.' };
+  return { success: true, id: data.id, reaproveitou: !!data.reaproveitou };
+};

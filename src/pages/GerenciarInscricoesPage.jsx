@@ -13,7 +13,7 @@ import { AlertDialog,
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, UserPlus } from 'lucide-react';
 import Layout from '@/components/Layout';
 import InscricoesStatsCards from '@/components/gerenciar/InscricoesStatsCards';
 import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
@@ -24,8 +24,10 @@ import GruposTrailhaModal from '@/components/gerenciar/GruposTrailhaModal';
 import AcampantesStatsCards from '@/components/gerenciar/AcampantesStatsCards';
 import AcampantesDetailModal from '@/components/gerenciar/AcampantesDetailModal';
 import EditarInscricaoModal from '@/components/gerenciar/EditarInscricaoModal';
+import AvisoTelefonesAcampantes from '@/components/gerenciar/AvisoTelefonesAcampantes';
+import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import { deleteAcampante, getAcampantes, countAcampantes, realocarGrupoTrailha, salvarObservacaoAcampante, updateAcampante } from '@/services/acampantesService';
-import { fetchEquipantesInscritos, countEquipantesInscritos, updateEquipante } from '@/services/equipantesService';
+import { fetchEquipantesInscritos, countEquipantesInscritos, updateEquipante, podeInscreverManual } from '@/services/equipantesService';
 import { groupAcampantesByTrilha } from '@/utils/gruposTrailha';
 
 const GerenciarInscricoesPage = () => {
@@ -55,10 +57,18 @@ const GerenciarInscricoesPage = () => {
   
   const [refreshReports, setRefreshReports] = useState(0);
 
+  // Inscricao manual: o botao so aparece para quem o servidor libera
+  // (Raquel, Eduardo e Desenvolvedores).
+  const [podeManual, setPodeManual] = useState(false);
+  const [manualAberta, setManualAberta] = useState(false);
+  // Avisa o quadro de telefones que uma ficha de acampante foi salva.
+  const [acampanteSalvoEm, setAcampanteSalvoEm] = useState(0);
+
   useEffect(() => {
     carregarEquipantes();
     fetchAcampantesSupabase();
     buscarTotais();
+    podeInscreverManual().then(setPodeManual);
   }, []);
 
   const carregarEquipantes = async () => {
@@ -288,6 +298,7 @@ const GerenciarInscricoesPage = () => {
         await carregarEquipantes();
       } else {
         await fetchAcampantesSupabase();
+        setAcampanteSalvoEm(Date.now());
       }
     }
 
@@ -311,7 +322,24 @@ const GerenciarInscricoesPage = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Gerenciar Inscrições</h1>
+            {podeManual && (
+              <Button
+                onClick={() => setManualAberta(true)}
+                className="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <UserPlus className="w-4 h-4 mr-2" /> Inscrição manual de equipante
+              </Button>
+            )}
           </div>
+
+          <AvisoTelefonesAcampantes
+            atualizarEm={acampanteSalvoEm}
+            onCorrigido={fetchAcampantesSupabase}
+            onAbrirFicha={(id) => {
+              const acampante = acampantesList.find((a) => a.id === id);
+              if (acampante) setInscricaoParaEditar(acampante);
+            }}
+          />
           
           <InscricoesStatsCards
             equipantes={totalEquipantes}
@@ -389,6 +417,13 @@ const GerenciarInscricoesPage = () => {
               inscricao={inscricaoParaEditar}
               onClose={() => setInscricaoParaEditar(null)}
               onSave={handleSalvarEdicaoInscricao}
+            />
+          )}
+
+          {manualAberta && (
+            <InscricaoManualDialog
+              onClose={() => setManualAberta(false)}
+              onCriado={() => { carregarEquipantes(); buscarTotais(); }}
             />
           )}
 

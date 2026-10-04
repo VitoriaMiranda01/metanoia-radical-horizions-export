@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  Check, ExternalLink, FileText, Hand, Loader2, RotateCcw, Search, ShieldCheck, X
+  Check, ExternalLink, FileText, Hand, Link2, Loader2, RotateCcw, Search, ShieldCheck, UserPlus, X
 } from 'lucide-react';
-import { fetchMenoresParaConferencia, conferirAutorizacaoMenor } from '@/services/equipantesService';
+import { fetchMenoresParaConferencia, conferirAutorizacaoMenor, podeInscreverManual } from '@/services/equipantesService';
+import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { formatCPF } from '@/utils/formatters';
@@ -23,6 +24,12 @@ import { cn } from '@/lib/utils';
  * arquivo), ele derruba a declaração e o pagamento do menor volta a travar,
  * com a etapa pendente de novo na tela dele. Onde existe arquivo anexado, o
  * arquivo continua valendo por si só e "Não recebi" apenas tira o visto.
+ *
+ * "Vincular carta" (04/10/2026): quem tem a carta em papel nas mãos e o
+ * menor nunca anexou nem declarou registra a carta direto na ficha -- fica
+ * como entregue e conferida, e o pagamento do menor destrava. Carta de quem
+ * nem tem cadastro: "Inscrição manual" (Raquel, Eduardo e Desenvolvedores),
+ * já marcando que a carta está com ela.
  *
  * Parceiro vê só os menores da própria igreja. Organizador vê todos — o que
  * inclui quem escolheu a igreja OUTRA ou não congrega, e portanto não tem
@@ -47,6 +54,10 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
   const [erro, setErro] = useState('');
   const [busca, setBusca] = useState('');
   const [salvando, setSalvando] = useState({});
+  const [podeManual, setPodeManual] = useState(false);
+  const [manualAberta, setManualAberta] = useState(false);
+
+  useEffect(() => { podeInscreverManual().then(setPodeManual); }, []);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -65,10 +76,10 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
   useEffect(() => { carregar(); }, [carregar]);
 
   useEffect(() => {
-    const aoTeclar = (e) => { if (e.key === 'Escape') onClose(); };
+    const aoTeclar = (e) => { if (e.key === 'Escape' && !manualAberta) onClose(); };
     window.addEventListener('keydown', aoTeclar);
     return () => window.removeEventListener('keydown', aoTeclar);
-  }, [onClose]);
+  }, [onClose, manualAberta]);
 
   const termo = semAcento(busca.trim());
   const filtrados = useMemo(() => {
@@ -85,7 +96,7 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
     && (i.parental_auth_file_url || i.autorizacao_entregue_em)).length;
   const semNada = itens.filter((i) => !i.parental_auth_file_url && !i.autorizacao_entregue_em).length;
 
-  const conferir = async (item, conferida) => {
+  const conferir = async (item, conferida, vinculando = false) => {
     setSalvando((s) => ({ ...s, [item.id]: true }));
     const r = await conferirAutorizacaoMenor(item.id, conferida);
     setSalvando((s) => { const c = { ...s }; delete c[item.id]; return c; });
@@ -95,8 +106,10 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
       return;
     }
     toast({
-      title: conferida ? 'Autorização conferida' : 'Conferência desfeita',
-      description: r.declaracaoRemovida
+      title: vinculando ? 'Carta vinculada à inscrição' : conferida ? 'Autorização conferida' : 'Conferência desfeita',
+      description: vinculando
+        ? `A carta de ${item.nome} ficou registrada como entregue e conferida.`
+        : r.declaracaoRemovida
         ? `${item.nome} volta a ficar pendente e não consegue pagar até resolver.`
         : conferida
           ? `${item.nome} está com a autorização em dia.`
@@ -167,6 +180,16 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
 
         <div className="flex items-center gap-2 shrink-0">
           {emVoo && <Loader2 className="h-4 w-4 animate-spin text-gray-400" />}
+          {semAutorizacao && (
+            <Button
+              size="sm" disabled={emVoo}
+              onClick={() => conferir(item, true, true)}
+              title="A carta assinada está com você: fica registrada nesta inscrição como entregue e conferida."
+              className="h-8 bg-emerald-700 hover:bg-emerald-600 text-white"
+            >
+              <Link2 className="h-4 w-4 mr-1" /> Vincular carta
+            </Button>
+          )}
           {!semAutorizacao && (
             conferida ? (
               <Button
@@ -225,7 +248,8 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
               Autorizações dos menores
             </h3>
             <p className="text-sm text-gray-400 mt-1">
-              Confirme que a carta assinada dos responsáveis está com você.
+              Confirme que a carta assinada dos responsáveis está com você. Se a carta chegou
+              em mãos e o menor não anexou nada, use “Vincular carta”.
               {papel === 'organizador'
                 ? ' Você vê todos os menores inscritos.'
                 : ' Você vê os menores da sua igreja.'}
@@ -279,12 +303,30 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
           {!loading && !erro && filtrados.map(renderMenor)}
         </div>
 
-        <div className="p-4 border-t border-white/10 bg-zinc-900 flex justify-end">
+        <div className="p-4 border-t border-white/10 bg-zinc-900 flex flex-col-reverse sm:flex-row sm:justify-between gap-2">
+          {podeManual ? (
+            <Button
+              variant="outline" onClick={() => setManualAberta(true)}
+              className="border-emerald-500/40 bg-transparent text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200"
+            >
+              <UserPlus className="h-4 w-4 mr-2" /> Carta sem cadastro? Inscrição manual
+            </Button>
+          ) : <span />}
           <Button onClick={onClose} variant="outline" className="border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white">
             Fechar
           </Button>
         </div>
       </div>
+
+      {manualAberta && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <InscricaoManualDialog
+            nomeInicial={busca.trim()}
+            onClose={() => setManualAberta(false)}
+            onCriado={() => carregar()}
+          />
+        </div>
+      )}
     </motion.div>
   );
 };

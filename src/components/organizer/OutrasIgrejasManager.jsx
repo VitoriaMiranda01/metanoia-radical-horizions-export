@@ -191,7 +191,7 @@ const OutrasIgrejasManager = () => {
       <div>
         <h3 className="text-lg font-medium text-white mb-1">Igrejas acrescentadas à lista</h3>
         <p className="text-xs text-gray-500 mb-3">
-          Aparecem no formulário de equipante junto com as 145 originais. Não têm
+          Aparecem no formulário de equipante junto com as igrejas parceiras. Não têm
           código nem login de parceiro: quem aprova essas inscrições é a organização.
         </p>
 

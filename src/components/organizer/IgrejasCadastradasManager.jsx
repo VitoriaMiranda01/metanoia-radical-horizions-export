@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * Quadro "Todas as igrejas cadastradas" (Configuracoes, pedido do Patrick em
- * 04/10/2026): as 145 parceiras + as adicionadas pela organizacao, com o
+ * 04/10/2026): as parceiras + as adicionadas pela organizacao, com o
  * responsavel de cada uma e quantos inscritos tem. Lista com busca e barra
  * de rolagem; o botao baixa a mesma lista em planilha.
  */

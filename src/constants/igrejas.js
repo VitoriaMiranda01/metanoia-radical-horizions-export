@@ -22,7 +22,7 @@
 // 129 passa a ser "BATISTA JERUEL TRES RIOS" (que antes estava no codigo
 // 146); o codigo 146 foi removido (vago, ja que a igreja que estava la se
 // mudou pro 129). Lista final: 145 igrejas, codigos 1 a 145, sem buraco e
-// sem nome duplicado.
+// sem nome duplicado. (Em 04/10/2026 entraram mais 16, codigos 147 a 162.)
 //
 // IMPORTANTE -- pendencia conhecida (decisao da usuaria em 2026-09-10):
 // esses mesmos numeros de prefixo tambem sao usados, em outro lugar do
@@ -202,6 +202,25 @@ export const IGREJAS_PARCEIRAS = [
   "143 - IGREJA NOVOS COMEÇOS",
   "144 - IGREJA METODISTA CAMPUS ALBUQUERQUE",
   "145 - PARQUE FLUMINENSE BELFORD ROXO",
+  // 04/10/2026: as 16 igrejas que a Raquel tinha acrescentado pela tela de
+  // Configuracoes (igrejas_extras) viraram parceiras de verdade, com codigo e
+  // login (pedido do Patrick). O 146 continua vago (ver o historico acima).
+  "147 - 1° IGREJA BATISTA QUINTA LEBRÃO",
+  "148 - ASSEMBLEIA DE DEUS FONTE SANTA",
+  "149 - ASSEMBLEIA DE DEUS MISSÃO DO REINO",
+  "150 - BATISTA MONTE HERMON",
+  "151 - CARA DE LEÃO JARDIM LEAL",
+  "152 - CASA DA BENÇA RENOVO DE DAVI",
+  "153 - IGREJA BATISTA ATITUDE",
+  "154 - IGREJA BATISTA ATITUDE | OCEANICA",
+  "155 - IGREJA BATISTA NA TIJUCA",
+  "156 - IGREJA PENTECOSTAL JESUS ESTÁ VOLTANDO",
+  "157 - MISSÃO SOCORRISTA EVANGELICA",
+  "158 - NOVA VIDA CAXIAS",
+  "159 - PRIMEIRA IGREJA BATISTA EM SANTO ALEIXO (PIBSA)",
+  "160 - PROJETO SEMEAR BREJAL",
+  "161 - REFÚGIO DE LUZ",
+  "162 - UNIVERSAL DO REINO DE DEUS",
 ];
 
 // ---------------------------------------------------------------------------

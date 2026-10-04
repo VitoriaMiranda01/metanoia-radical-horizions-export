@@ -10,6 +10,8 @@ import AvisoBackup from '@/components/organizer/AvisoBackup';
 
 // Selo vermelho de "tem coisa te esperando aqui". Some sozinho quando o
 // numero e zero -- selo permanente vira paisagem e para de ser aviso.
+// Mostra o numero real ate 999 (pedido do Patrick, 04/10/2026: o "99+"
+// escondia quantas aprovacoes faltavam); o selo alarga sozinho.
 const SeloContador = ({ quantidade }) => {
   if (!quantidade) return null;
   return (
@@ -17,7 +19,7 @@ const SeloContador = ({ quantidade }) => {
       className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold leading-none flex items-center justify-center border border-black/70 shadow-lg shadow-red-900/40"
       aria-label={`${quantidade} ${quantidade === 1 ? 'item aguardando' : 'itens aguardando'}`}
     >
-      {quantidade > 99 ? '99+' : quantidade}
+      {quantidade > 999 ? '999+' : quantidade}
     </span>
   );
 };

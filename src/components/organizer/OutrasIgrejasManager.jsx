@@ -2,16 +2,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Check, Download, Loader2, Plus, RotateCcw, Trash2, AlertTriangle } from 'lucide-react';
+import { Check, Loader2, Plus, RotateCcw, Trash2, AlertTriangle } from 'lucide-react';
 import { IGREJAS_PARCEIRAS } from '@/constants/igrejas';
 import {
   fetchOutrasIgrejas,
   adicionarIgrejaExtra,
-  removerIgrejaExtra,
-  fetchRelatorioIgrejas
+  removerIgrejaExtra
 } from '@/services/igrejasExtrasService';
-import { listarContasParceiros } from '@/services/senhasParceirosService';
-import { exportListaIgrejas } from '@/utils/excelExport';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
@@ -114,42 +111,8 @@ const OutrasIgrejasManager = () => {
     carregar();
   };
 
-  // Planilha com todas as igrejas (lista original + adicionadas), quem
-  // responde por cada uma no sistema e quantos inscritos tem.
-  const [exportando, setExportando] = useState(false);
-  const exportar = async () => {
-    setExportando(true);
-    try {
-      const [relatorio, contas] = await Promise.all([
-        fetchRelatorioIgrejas(),
-        listarContasParceiros().catch(() => []),
-      ]);
-      const r = exportListaIgrejas(IGREJAS_PARCEIRAS, relatorio, Array.isArray(contas) ? contas : []);
-      toast({ title: 'Planilha gerada', description: `${r.igrejas} igrejas na lista.` });
-    } catch (e) {
-      toast({ title: 'Não deu para exportar', description: e.message, variant: 'destructive' });
-    } finally {
-      setExportando(false);
-    }
-  };
-
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-md border border-white/10 bg-white/5 p-3">
-        <p className="text-sm text-gray-300">
-          Planilha com todas as igrejas cadastradas: as da lista original e as adicionadas aqui,
-          com o responsável de cada uma e quantos inscritos tem.
-        </p>
-        <Button
-          variant="outline" size="sm" onClick={exportar} disabled={exportando}
-          data-dica="Baixar a planilha com todas as igrejas cadastradas e quantos inscritos cada uma tem."
-          className="border-emerald-500/40 bg-transparent text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200 shrink-0"
-        >
-          {exportando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
-          Exportar lista de igrejas
-        </Button>
-      </div>
-
+    <div className="space-y-6">
       {/* ------------------------------------------------ o que foi digitado */}
       <div>
         <div className="flex items-center justify-between gap-3 mb-3">
@@ -182,7 +145,8 @@ const OutrasIgrejasManager = () => {
               : 'Todos os nomes digitados já estão na lista.'}
           </p>
         ) : (
-          <div className="space-y-2">
+          // Altura fixa com barra de rolagem: a lista cresce a cada inscricao.
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
             {pendentes.map((d) => {
               const chave = `p:${d.nome}`;
               const jaExiste = pareceOficial(d.nome);
@@ -254,7 +218,7 @@ const OutrasIgrejasManager = () => {
             Nenhuma igreja acrescentada ainda.
           </p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
             {extras.map((x) => (
               <div
                 key={x.id}

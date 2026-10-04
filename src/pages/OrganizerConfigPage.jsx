@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
 import LimiteIgrejasManager from '@/components/organizer/LimiteIgrejasManager';
 import OutrasIgrejasManager from '@/components/organizer/OutrasIgrejasManager';
+import IgrejasCadastradasManager from '@/components/organizer/IgrejasCadastradasManager';
 import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizadoresManager';
 import BackupStatusCard from '@/components/organizer/BackupStatusCard';
 import { Button } from '@/components/ui/button';
@@ -588,6 +589,26 @@ const OrganizerConfigPage = () => {
               pedido -- so faz sentido perto de quem aplica ("Aplicar CPFs
               cadastrados", dentro do dialogo Areas Especiais). Ver
               CpfsAreaEspecialManager.jsx e OrganizerScalesPage.jsx. */}
+
+          {/* Todas as igrejas cadastradas (lista do formulario), com busca,
+              barra de rolagem e a planilha. */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.21 }}>
+            <Card className="glass-effect border-white/10 bg-black/40">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-white">
+                  <Church className="w-5 h-5 text-blue-400" />
+                  <span>Todas as igrejas cadastradas</span>
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  As igrejas que aparecem no formulário: as parceiras e as adicionadas pela organização,
+                  com o responsável de cada uma e quantos inscritos tem.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <IgrejasCadastradasManager />
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* A relacao das igrejas "OUTRA": nomes que os equipantes digitaram
               porque a igreja deles nao esta nas 145 da lista. Daqui o

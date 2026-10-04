@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { formatCPF } from '@/utils/formatters';
 import { nomeDaIgreja } from '@/constants/igrejas';
+import { montarLinhasIgrejas } from '@/utils/igrejasCadastradas';
 
 // Helper to set column widths and styling
 const configureWorksheet = (ws) => {
@@ -273,55 +274,25 @@ export const exportDisponibilidadesExtra = (itens, areas) => {
 /**
  * Todas as igrejas cadastradas (pedido do Patrick, 04/10/2026): as 145 da
  * lista original + as adicionadas pela organizacao, com quem responde por
- * ela no sistema e quantos inscritos tem. Segunda aba: o que ainda foi
- * escrito em OUTRA.
- *
- * lista: IGREJAS_PARCEIRAS ("NN - NOME"); relatorio: relatorio_igrejas();
- * contas: listar_contas_parceiros() (pode vir vazio).
+ * ela no sistema e quantos inscritos tem -- as mesmas linhas do quadro em
+ * Configuracoes (montarLinhasIgrejas). Segunda aba: o que foi escrito em
+ * OUTRA.
  */
 export const exportListaIgrejas = (lista, relatorio, contas = []) => {
-  const porCodigo = Object.fromEntries((contas || []).map((c) => [String(c.codigo), c]));
-  const eq = relatorio?.equipantes || {};
-  const ac = relatorio?.acampantes || {};
-
-  const acesso = (c) => {
-    if (!c) return '';
-    if (c.senha_definida) return 'Senha própria';
-    if (c.acesso_liberado) return 'Liberado, sem senha própria';
-    return 'Aguardando liberação';
-  };
-
-  const linha = (codigo, nome, chave, tipo, conta) => ({
-    'Código': codigo,
-    'Igreja': nome,
-    'Tipo': tipo,
-    'Responsável no sistema': conta?.responsavel_nome || '',
-    'Acesso do parceiro': acesso(conta),
-    'Equipantes inscritos': eq[chave]?.inscritos || 0,
-    'Equipantes aprovados': eq[chave]?.aprovados || 0,
-    'Acampantes': ac[chave] || 0,
-  });
-
-  const parceiras = lista.map((completo) => {
-    const m = String(completo).match(/^(\d+)\s*-\s*(.*)$/);
-    const codigo = m ? m[1] : '';
-    return linha(codigo, m ? m[2] : completo, completo, 'Parceira', porCodigo[codigo]);
-  });
-  const adicionadas = (relatorio?.extras || []).map((x) =>
-    linha('', x.nome, x.nome, `Adicionada${x.criada_por ? ` por ${x.criada_por}` : ''}`, null));
-
-  // Inscricoes cuja "igreja" nao esta na lista (OUTRA, NAO CONGREGA, nomes
-  // antigos): entram no fim, senao o total nao bateria com os inscritos.
-  const naLista = new Set([...lista, ...(relatorio?.extras || []).map((x) => x.nome)]);
-  const fora = [...new Set([...Object.keys(eq), ...Object.keys(ac)])]
-    .filter((k) => !naLista.has(k))
-    .sort((x, y) => x.localeCompare(y, 'pt-BR'))
-    .map((k) => linha('', k === 'OUTRA' ? 'OUTRA (o nome escrito está na outra aba)' : k, k, 'Fora da lista', null));
-
-  const linhas = [...parceiras, ...adicionadas, ...fora];
+  const base = montarLinhasIgrejas(lista, relatorio, contas);
+  const linhas = base.map((l) => ({
+    'Código': l.codigo,
+    'Igreja': l.nome,
+    'Tipo': l.tipo,
+    'Responsável no sistema': l.responsavel,
+    'Acesso do parceiro': l.acesso,
+    'Equipantes inscritos': l.equipantesInscritos,
+    'Equipantes aprovados': l.equipantesAprovados,
+    'Acampantes': l.acampantes,
+  }));
   const soma = (campo) => linhas.reduce((t, l) => t + (Number(l[campo]) || 0), 0);
   linhas.push({
-    'Código': '', 'Igreja': `TOTAL (${parceiras.length + adicionadas.length} igrejas na lista)`, 'Tipo': '', 'Responsável no sistema': '',
+    'Código': '', 'Igreja': `TOTAL (${base.length} igrejas)`, 'Tipo': '', 'Responsável no sistema': '',
     'Acesso do parceiro': '',
     'Equipantes inscritos': soma('Equipantes inscritos'),
     'Equipantes aprovados': soma('Equipantes aprovados'),
@@ -346,5 +317,5 @@ export const exportListaIgrejas = (lista, relatorio, contas = []) => {
 
   const hoje = new Date().toISOString().split('T')[0];
   XLSX.writeFile(wb, `Igrejas_Metanoia_Radical_${hoje}.xlsx`);
-  return { igrejas: parceiras.length + adicionadas.length };
+  return { igrejas: base.length };
 };

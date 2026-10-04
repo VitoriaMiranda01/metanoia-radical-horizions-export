@@ -406,6 +406,12 @@ const EquipantePage = () => {
     // organizador nao tem como saber quem e essa pessoa na lista.
     if (formData.semCpf && !formData.nacionalidade) faltando.push('Nacionalidade');
     if (!formData.estaAfastado) faltando.push('Congrega em alguma igreja?');
+    // Quem congrega precisa dizer onde: sem igreja a ficha nao aparece para
+    // nenhum parceiro aprovar (43 fichas chegaram assim ate 03/10/2026). O
+    // seletor de igreja nao e um campo nativo, entao o navegador nao barra.
+    if (formData.estaAfastado === 'SIM' && !(formData.igreja || '').trim()) {
+      faltando.push('Igreja que frequenta');
+    }
     // Escolher OUTRA sem dizer qual e nao ajuda ninguem: a ficha chegaria ao
     // organizador com "OUTRA" e mais nada.
     if (formData.estaAfastado === 'SIM' && igrejaEhOutra(formData.igreja)

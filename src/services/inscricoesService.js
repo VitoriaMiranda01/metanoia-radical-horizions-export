@@ -265,6 +265,9 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     if (error?.message?.includes('NOME_OBRIGATORIO')) {
       return { success: false, error: 'Informe o nome completo para concluir a inscrição.' };
     }
+    if (error?.message?.includes('IGREJA_OBRIGATORIA')) {
+      return { success: false, error: 'Escolha a igreja que você frequenta (ou "OUTRA" e escreva o nome).' };
+    }
 
     // CPF ja cadastrado. A tela pergunta o CPF antes do formulario justamente
     // para isso, mas duas pessoas enviando ao mesmo tempo ainda chegam aqui --

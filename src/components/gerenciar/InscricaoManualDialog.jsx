@@ -27,6 +27,11 @@ import { formatCPF } from '@/utils/formatters';
  *
  * Quem pode e o servidor que decide (inscricao_manual_equipante); a tela so
  * mostra o botao para quem ele libera.
+ *
+ * Mesmo nome ja inscrito: o servidor nao grava e devolve quem e. A tela mostra
+ * a ficha existente e so reenvia (confirmar_mesmo_nome) se for outra pessoa --
+ * todo inscrito pelo link tem CPF, entao sem isso uma carta de quem ja se
+ * inscreveu viraria cadastro duplicado.
  */
 
 const SEM_VALOR = '__nenhum__';
@@ -60,6 +65,7 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
   const [form, setForm] = useState({ ...VAZIO, nome: nomeInicial });
   const [extras, setExtras] = useState([]);
   const [salvando, setSalvando] = useState(false);
+  const [mesmoNome, setMesmoNome] = useState(null);
 
   useEffect(() => {
     let vivo = true;
@@ -74,11 +80,14 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
   }, [onClose, salvando]);
 
   const igrejas = useMemo(() => [...IGREJAS_PARCEIRAS, ...extras, OUTRA_IGREJA, NAO_CONGREGA], [extras]);
-  const set = (campo) => (valor) => setForm((f) => ({ ...f, [campo]: valor }));
+  const set = (campo) => (valor) => {
+    setForm((f) => ({ ...f, [campo]: valor }));
+    if (campo === 'nome') setMesmoNome(null);
+  };
   const idade = idadeHoje(form.data_nascimento);
   const podeSerMenor = idade === null || idade < 18;
 
-  const salvar = async () => {
+  const salvar = async (confirmarMesmoNome = false) => {
     if (form.nome.trim().length < 3) {
       toast({ title: 'Escreva o nome da pessoa', variant: 'destructive' });
       return;
@@ -102,9 +111,14 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
       cpf,
       igreja_outra: igrejaEhOutra(form.igreja) ? form.igreja_outra : '',
       carta_recebida: podeSerMenor && form.carta_recebida,
+      confirmar_mesmo_nome: confirmarMesmoNome,
     });
     setSalvando(false);
 
+    if (!r.success && r.mesmoNome) {
+      setMesmoNome(r.mesmoNome);
+      return;
+    }
     if (!r.success) {
       toast({ title: 'Não deu para salvar', description: r.error, variant: 'destructive' });
       return;
@@ -237,6 +251,28 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
           {selectArea('area_trabalho_opcao2', 'Área de preferência 2')}
           {selectArea('area_trabalho_opcao3', 'Área de preferência 3')}
 
+          {mesmoNome && (
+            <div className="md:col-span-2 rounded-md border border-red-500/40 bg-red-500/10 p-3 space-y-2">
+              <p className="text-sm text-red-100">
+                <strong className="text-white">Já existe uma inscrição com esse nome:</strong>{' '}
+                {mesmoNome.nome}
+                {mesmoNome.igreja ? ` · ${mesmoNome.igreja}` : ''}
+                {mesmoNome.nascimento ? ` · nascimento ${mesmoNome.nascimento.split('-').reverse().join('/')}` : ''}
+              </p>
+              <p className="text-xs text-red-200/80">
+                Se for a mesma pessoa, não precisa inscrever de novo: cancele e procure por ela
+                (no módulo das autorizações, use “Vincular carta”). Se for outra pessoa com o mesmo nome,
+                confirme abaixo.
+              </p>
+              <Button
+                size="sm" variant="outline" disabled={salvando} onClick={() => salvar(true)}
+                className="border-red-400/50 bg-transparent text-red-100 hover:bg-red-500/20 hover:text-white"
+              >
+                É outra pessoa — inscrever mesmo assim
+              </Button>
+            </div>
+          )}
+
           {podeSerMenor && (
             <label className="md:col-span-2 flex items-start gap-3 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 cursor-pointer">
               <input
@@ -261,7 +297,7 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
             className="border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white">
             Cancelar
           </Button>
-          <Button onClick={salvar} disabled={salvando} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button onClick={() => salvar(false)} disabled={salvando || !!mesmoNome} className="bg-emerald-600 hover:bg-emerald-700 text-white">
             {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Fazer inscrição'}
           </Button>
         </div>

@@ -140,17 +140,21 @@ const ItemAcampante = ({ item, onSalvo, onAbrirFicha }) => {
 const AvisoTelefonesAcampantes = ({ atualizarEm, onCorrigido, onAbrirFicha }) => {
   const [dados, setDados] = useState(null);
 
+  // null = o servidor nao mostra este aviso para este login: para de perguntar.
+  const [semAcesso, setSemAcesso] = useState(false);
+
   const carregar = useCallback(() => {
     fetchTelefonesAcampantesPendentes()
-      .then(setDados)
+      .then((d) => { setDados(d); if (d === null) setSemAcesso(true); })
       .catch(() => { /* proximo ciclo tenta de novo */ });
   }, []);
 
   useEffect(() => {
     carregar();
+    if (semAcesso) return undefined;
     const id = setInterval(carregar, INTERVALO);
     return () => clearInterval(id);
-  }, [carregar]);
+  }, [carregar, semAcesso]);
 
   // A pagina avisa quando uma ficha foi salva por outro caminho (modal).
   useEffect(() => { if (atualizarEm) carregar(); }, [atualizarEm, carregar]);

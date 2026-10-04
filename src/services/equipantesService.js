@@ -478,6 +478,8 @@ export const podeInscreverManual = async () => {
 export const inscricaoManualEquipante = async (dados) => {
   const { data, error } = await supabase.rpc('inscricao_manual_equipante', { p_dados: dados });
   if (error) return { success: false, error: 'Não foi possível salvar agora. Tente de novo em instantes.' };
-  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar a inscrição.' };
+  if (!data?.ok) {
+    return { success: false, error: data?.erro || 'Não foi possível salvar a inscrição.', mesmoNome: data?.mesmo_nome || null };
+  }
   return { success: true, id: data.id, reaproveitou: !!data.reaproveitou };
 };

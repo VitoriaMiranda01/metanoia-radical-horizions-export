@@ -1,40 +1,39 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  AlertTriangle, Check, CheckCircle2, Copy, KeyRound, Loader2, MessageCircle, RefreshCw,
-  Search, Send, UserPlus, Users, X
+  AlertTriangle, Check, CheckCircle2, ChevronDown, ChevronUp, Copy, Loader2, MessageCircle,
+  RefreshCw, Send, Users, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { formatarTelefone } from '@/utils/telefone';
-import { formatCPF } from '@/utils/formatters';
 import { cn } from '@/lib/utils';
 import {
-  fetchRelacaoLider, marcarPresenca, buscarPorCpfLider, adicionarPorCpfLider,
-  salvarGrupoLider, marcarConviteLider, linkWhatsApp
+  fetchRelacaoLider, marcarPresenca, salvarGrupoLider, marcarConviteLider, linkWhatsApp
 } from '@/services/liderService';
 
 /**
  * "Minha equipe" -- a relacao do lider, no acompanhamento da inscricao.
  *
  * Pedido do Patrick (05/10/2026): depois que a escala PROVISORIA sai, cada
- * lider recebe a relacao da sua area (nome completo, igreja e telefone) e
- * faz a CHAMADA na reuniao de escala, como chamada de escola. Quem tem
- * pendencia no cadastro (fora a taxa) aparece com aviso: a pessoa corrige no
- * acompanhamento dela e o lider toca em Atualizar.
+ * lider ve quem esta escalado na sua area (nome completo, igreja e
+ * telefone), quantas pessoas sao, e faz a CHAMADA na reuniao de escala,
+ * como chamada de escola. Quem tem pendencia no cadastro (fora a taxa)
+ * aparece com aviso: a pessoa corrige no acompanhamento dela e a relacao
+ * acompanha.
  *
- * No fim da relacao o lider inclui, pelo CPF, quem a organizacao direcionou
- * para ele -- so quem ja esta inscrito, aprovado e SEM area. Trocar alguem
- * de area e so com os organizadores.
+ * O lider NAO inclui ninguem: quem manda gente para a area sao os
+ * organizadores, na Geracao de Escalas. Toda nova alocacao aparece aqui
+ * sozinha -- a relacao se atualiza a cada 15 segundos.
+ *
+ * Sem codigo de lider (decisao do Patrick): vale a mesma prova de dono do
+ * acompanhamento.
  *
  * Grupo de WhatsApp: o site nao consegue criar o grupo sozinho (o WhatsApp
  * nao deixa). O lider cria o grupo, cola aqui o link de convite, e o site
  * monta a mensagem pronta para cada pessoa PRESENTE e sem pendencia -- esse
  * e o "gatilho" combinado.
- *
- * Entra com o codigo de 6 digitos que a organizacao entrega. O codigo fica
- * guardado so nesta aba (sessionStorage).
  */
 
 const CORES = { Amarelo: '#facc15', Azul: '#3b82f6', Roxo: '#a855f7', Verde: '#22c55e', Vermelho: '#ef4444' };
@@ -45,17 +44,7 @@ const TEXTO_PENDENCIA = {
   autorizacao: 'falta a autorização dos pais (menor de idade)'
 };
 
-const ATUALIZAR_A_CADA_MS = 30000;
-
-const lerCodigo = (chave) => {
-  try { return sessionStorage.getItem(chave) || ''; } catch { return ''; }
-};
-const gravarCodigo = (chave, valor) => {
-  try {
-    if (valor) sessionStorage.setItem(chave, valor);
-    else sessionStorage.removeItem(chave);
-  } catch { /* aba sem armazenamento: so pede o codigo de novo */ }
-};
+const ATUALIZAR_A_CADA_MS = 15000;
 
 const Cor = ({ cor }) => cor ? (
   <span className="inline-flex items-center gap-1 text-xs text-gray-300">
@@ -68,65 +57,32 @@ const tituloEquipe = (e) => `${e.area}${e.cor ? ` · ${e.cor}` : ''}`;
 
 const RelacaoLider = ({ equipanteId, dono, liderDe = [] }) => {
   const { toast } = useToast();
-  const chave = `metanoia_codigo_lider_${equipanteId}`;
-  const [codigo, setCodigo] = useState(() => lerCodigo(chave));
-  const [digitado, setDigitado] = useState('');
-  const [aberta, setAberta] = useState(false);
+  const [aberta, setAberta] = useState(true);
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [ocupado, setOcupado] = useState({});
 
-  const carregar = useCallback(async (cod, silencioso = false) => {
-    if (!cod) return;
+  const carregar = useCallback(async (silencioso = false) => {
     if (!silencioso) setCarregando(true);
-    const r = await fetchRelacaoLider(equipanteId, dono, cod);
+    const r = await fetchRelacaoLider(equipanteId, dono);
     if (!silencioso) setCarregando(false);
     if (r.ok) {
       setDados(r);
       setErro('');
-      gravarCodigo(chave, cod);
-      return;
+    } else if (!silencioso || !dados) {
+      setErro(r.erro || 'Não foi possível abrir a relação.');
     }
-    // Codigo errado ou travado: volta para a tela do codigo.
-    if (r.codigo_errado || r.bloqueado) {
-      gravarCodigo(chave, '');
-      setCodigo('');
-      setDados(null);
-    }
-    if (!silencioso || r.codigo_errado || r.bloqueado) setErro(r.erro || 'Não foi possível abrir a relação.');
-  }, [equipanteId, dono?.cpf, dono?.nome, dono?.nascimento, chave]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [equipanteId, dono?.cpf, dono?.nome, dono?.nascimento]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (aberta && codigo) carregar(codigo);
-  }, [aberta, codigo, carregar]);
+  useEffect(() => { carregar(); }, [carregar]);
 
-  // Enquanto a relacao esta aberta, atualiza sozinha de tempos em tempos --
-  // quem corrigiu a ficha sai do aviso sem o lider precisar lembrar.
+  // Atualiza sozinha: quem os organizadores alocarem aparece aqui, e quem
+  // corrigiu a ficha sai do aviso, sem o lider precisar tocar em nada.
   useEffect(() => {
-    if (!aberta || !dados || !codigo) return undefined;
-    const t = setInterval(() => carregar(codigo, true), ATUALIZAR_A_CADA_MS);
+    const t = setInterval(() => carregar(true), ATUALIZAR_A_CADA_MS);
     return () => clearInterval(t);
-  }, [aberta, dados, codigo, carregar]);
-
-  const entrar = (e) => {
-    e?.preventDefault();
-    const cod = digitado.replace(/\D/g, '');
-    if (cod.length !== 6) {
-      setErro('O código tem 6 números.');
-      return;
-    }
-    setErro('');
-    setDigitado('');
-    setCodigo(cod);
-  };
-
-  const sair = () => {
-    gravarCodigo(chave, '');
-    setCodigo('');
-    setDados(null);
-    setAberta(false);
-  };
+  }, [carregar]);
 
   // Executa uma acao e recarrega a relacao. `id` marca o botao como ocupado.
   const agir = async (id, acao, sucesso) => {
@@ -135,14 +91,15 @@ const RelacaoLider = ({ equipanteId, dono, liderDe = [] }) => {
     setOcupado((o) => ({ ...o, [id]: false }));
     if (!r.ok) {
       toast({ title: 'Não deu certo', description: r.erro, variant: 'destructive' });
-      if (r.codigo_errado || r.bloqueado) { gravarCodigo(chave, ''); setCodigo(''); setDados(null); }
       return r;
     }
     if (sucesso) toast({ title: sucesso(r), className: 'bg-green-600 text-white' });
-    await carregar(codigo, true);
+    await carregar(true);
     return r;
   };
 
+  const equipes = dados?.equipes || [];
+  const total = equipes.reduce((n, e) => n + (e.membros || []).length, 0);
   const resumoLider = liderDe.map(tituloEquipe).join(', ');
 
   return (
@@ -153,51 +110,26 @@ const RelacaoLider = ({ equipanteId, dono, liderDe = [] }) => {
           <div>
             <h3 className="text-white font-semibold text-lg">Você é líder: {resumoLider}</h3>
             <p className="text-gray-400 text-sm">
-              Aqui fica a relação da sua equipe para a chamada da reunião de escala.
+              {dados
+                ? <>Sua equipe tem <strong className="text-white">{total} {total === 1 ? 'pessoa' : 'pessoas'}</strong>. A lista se atualiza sozinha.</>
+                : 'A relação da sua equipe, para a chamada da reunião de escala.'}
             </p>
           </div>
         </div>
-        {!aberta ? (
-          <Button onClick={() => setAberta(true)} className="bg-amber-600 hover:bg-amber-700 text-white shrink-0">
-            <Users className="w-4 h-4 mr-2" /> Abrir minha equipe
+        <div className="flex gap-2 shrink-0">
+          <Button variant="outline" onClick={() => carregar()} disabled={carregando}
+            className="border-white/20 bg-transparent text-gray-200 hover:bg-white/10 hover:text-white">
+            {carregando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+            Atualizar
           </Button>
-        ) : (
-          <div className="flex gap-2 shrink-0">
-            {dados && (
-              <Button variant="outline" onClick={() => carregar(codigo)} disabled={carregando}
-                className="border-white/20 bg-transparent text-gray-200 hover:bg-white/10 hover:text-white">
-                {carregando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-                Atualizar
-              </Button>
-            )}
-            <Button variant="ghost" onClick={dados ? sair : () => setAberta(false)}
-              className="text-gray-400 hover:text-white hover:bg-white/10">
-              {dados ? 'Sair' : 'Fechar'}
-            </Button>
-          </div>
-        )}
+          <Button variant="ghost" onClick={() => setAberta((v) => !v)}
+            className="text-gray-400 hover:text-white hover:bg-white/10">
+            {aberta ? <><ChevronUp className="w-4 h-4 mr-1" /> Esconder</> : <><ChevronDown className="w-4 h-4 mr-1" /> Mostrar</>}
+          </Button>
+        </div>
       </div>
 
-      {aberta && !codigo && (
-        <form onSubmit={entrar} className="mt-5 bg-white/5 border border-white/10 rounded-lg p-4 space-y-3">
-          <p className="text-sm text-gray-300 flex items-start gap-2">
-            <KeyRound className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-            Digite o código de líder de 6 números que a organização te passou.
-          </p>
-          <div className="flex gap-2">
-            <Input
-              value={digitado}
-              onChange={(e) => setDigitado(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              inputMode="numeric" autoComplete="one-time-code" placeholder="000000"
-              className="bg-black/40 border-white/20 text-white text-lg tracking-[0.4em] w-40 text-center"
-            />
-            <Button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white">Entrar</Button>
-          </div>
-          {erro && <p className="text-sm text-red-400">{erro}</p>}
-        </form>
-      )}
-
-      {aberta && codigo && !dados && (
+      {aberta && !dados && (
         <div className="mt-5 text-center text-gray-400 py-6">
           {carregando ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (erro || 'Carregando...')}
         </div>
@@ -205,28 +137,18 @@ const RelacaoLider = ({ equipanteId, dono, liderDe = [] }) => {
 
       {aberta && dados && (
         <div className="mt-5 space-y-8">
-          {!dados.escala_oficial && (
-            <p className="text-xs text-amber-200/80 bg-amber-500/10 border border-amber-500/20 rounded-md p-3">
-              Esta é a <strong>escala provisória</strong>. Depois da chamada, a organização lança a escala
-              oficial — e só então o pagamento da taxa abre para a equipe.
-            </p>
-          )}
-          {(dados.equipes || []).map((equipe) => (
+          {equipes.map((equipe) => (
             <Equipe
               key={equipe.escala_id}
               equipe={equipe}
               ocupado={ocupado}
               onPresenca={(m, presente) => agir(`p-${m.escala_id}`,
-                () => marcarPresenca(equipanteId, dono, codigo, m.escala_id, presente))}
+                () => marcarPresenca(equipanteId, dono, m.escala_id, presente))}
               onConvite={(m) => agir(`c-${m.escala_id}`,
-                () => marcarConviteLider(equipanteId, dono, codigo, m.escala_id))}
+                () => marcarConviteLider(equipanteId, dono, m.escala_id))}
               onSalvarGrupo={(link) => agir(`g-${equipe.escala_id}`,
-                () => salvarGrupoLider(equipanteId, dono, codigo, equipe.escala_id, link),
+                () => salvarGrupoLider(equipanteId, dono, equipe.escala_id, link),
                 (r) => (r.link ? 'Link do grupo salvo' : 'Link do grupo apagado'))}
-              onBuscarCpf={(cpf) => buscarPorCpfLider(equipanteId, dono, codigo, cpf)}
-              onAdicionar={(cpf) => agir(`a-${equipe.escala_id}`,
-                () => adicionarPorCpfLider(equipanteId, dono, codigo, equipe.escala_id, cpf),
-                (r) => `${r.nome} entrou na equipe`)}
             />
           ))}
         </div>
@@ -235,7 +157,14 @@ const RelacaoLider = ({ equipanteId, dono, liderDe = [] }) => {
   );
 };
 
-const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onSalvarGrupo, onBuscarCpf, onAdicionar }) => {
+const Numero = ({ valor, rotulo, cor }) => (
+  <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-center">
+    <p className={cn('text-2xl font-bold leading-none', cor)}>{valor}</p>
+    <p className="text-[11px] text-gray-400 mt-1">{rotulo}</p>
+  </div>
+);
+
+const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onSalvarGrupo }) => {
   const membros = equipe.membros || [];
   const presentes = membros.filter((m) => m.presente === true).length;
   const ausentes = membros.filter((m) => m.presente === false).length;
@@ -246,17 +175,21 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onSalvarGrupo, onBusca
 
   return (
     <section className="space-y-4">
-      <div className="border-b border-white/10 pb-3">
+      <div className="border-b border-white/10 pb-3 space-y-3">
         <h4 className="text-xl font-bold text-white flex items-center gap-2 flex-wrap">
           {equipe.area} <Cor cor={equipe.cor} />
         </h4>
-        <p className="text-sm text-gray-400 mt-1">
-          {membros.length} {membros.length === 1 ? 'pessoa' : 'pessoas'} ·{' '}
-          <span className="text-green-400">{presentes} presentes</span> ·{' '}
-          <span className="text-red-400">{ausentes} ausentes</span> ·{' '}
-          <span className="text-gray-300">{semChamada} sem chamada</span>
-          {comPendencia > 0 && <> · <span className="text-amber-300">{comPendencia} com pendência</span></>}
-        </p>
+        <div className="grid grid-cols-4 gap-2">
+          <Numero valor={membros.length} rotulo={membros.length === 1 ? 'pessoa' : 'pessoas'} cor="text-white" />
+          <Numero valor={presentes} rotulo="presentes" cor="text-green-400" />
+          <Numero valor={ausentes} rotulo="ausentes" cor="text-red-400" />
+          <Numero valor={semChamada} rotulo="sem chamada" cor="text-gray-300" />
+        </div>
+        {comPendencia > 0 && (
+          <p className="text-xs text-amber-300">
+            {comPendencia} {comPendencia === 1 ? 'pessoa está' : 'pessoas estão'} com pendência no cadastro.
+          </p>
+        )}
       </div>
 
       <ul className="space-y-2">
@@ -269,9 +202,6 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onSalvarGrupo, onBusca
 
       <GrupoWhatsApp equipe={equipe} prontos={prontosConvite} ocupado={ocupado[`g-${equipe.escala_id}`]}
         onSalvar={onSalvarGrupo} />
-
-      <IncluirPorCpf equipe={equipe} ocupado={ocupado[`a-${equipe.escala_id}`]}
-        onBuscar={onBuscarCpf} onAdicionar={onAdicionar} />
     </section>
   );
 };
@@ -446,66 +376,6 @@ const GrupoWhatsApp = ({ equipe, prontos, ocupado, onSalvar }) => {
             </Button>
           </div>
         </>
-      )}
-    </div>
-  );
-};
-
-const IncluirPorCpf = ({ equipe, ocupado, onBuscar, onAdicionar }) => {
-  const [cpf, setCpf] = useState('');
-  const [buscando, setBuscando] = useState(false);
-  const [achado, setAchado] = useState(null);
-  const [erro, setErro] = useState('');
-
-  const buscar = async (e) => {
-    e?.preventDefault();
-    setErro('');
-    setAchado(null);
-    setBuscando(true);
-    const r = await onBuscar(cpf);
-    setBuscando(false);
-    if (r.ok) setAchado(r);
-    else setErro(r.erro || 'Não encontrado.');
-  };
-
-  const adicionar = async () => {
-    const r = await onAdicionar(cpf);
-    if (r?.ok) {
-      setCpf('');
-      setAchado(null);
-    } else if (r?.erro) {
-      setErro(r.erro);
-    }
-  };
-
-  return (
-    <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4 space-y-3">
-      <p className="text-white font-medium flex items-center gap-2">
-        <UserPlus className="w-4 h-4 text-blue-400" /> Incluir pessoa direcionada pela organização
-      </p>
-      <p className="text-xs text-gray-400">
-        Só entra quem já está inscrito, aprovado e ainda sem área. Quem já está em outra área só muda com a organização.
-      </p>
-      <form onSubmit={buscar} className="flex gap-2">
-        <Input value={formatCPF(cpf)} onChange={(e) => { setCpf(e.target.value.replace(/\D/g, '').slice(0, 11)); setAchado(null); setErro(''); }}
-          inputMode="numeric" placeholder="CPF da pessoa"
-          className="bg-black/40 border-white/20 text-white w-48" />
-        <Button type="submit" disabled={buscando || cpf.length !== 11} variant="outline"
-          className="border-blue-500/50 bg-transparent text-blue-200 hover:bg-blue-500/20 hover:text-white">
-          {buscando ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Search className="w-4 h-4 mr-1.5" /> Buscar</>}
-        </Button>
-      </form>
-      {erro && <p className="text-sm text-red-400">{erro}</p>}
-      {achado && (
-        <div className="bg-black/30 border border-white/10 rounded-md p-3 flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-white font-medium">{achado.nome}</p>
-            <p className="text-xs text-gray-400 truncate">{nomeDaIgreja(achado) || 'Igreja não informada'}</p>
-          </div>
-          <Button onClick={adicionar} disabled={ocupado} className="bg-blue-600 hover:bg-blue-700 text-white">
-            {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : `Adicionar em ${tituloEquipe(equipe)}`}
-          </Button>
-        </div>
       )}
     </div>
   );

@@ -27,7 +27,9 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
   const { toast } = useToast();
   const [busca, setBusca] = useState('');
   const [escolhido, setEscolhido] = useState(inicial);
-  const [destino, setDestino] = useState('');
+  // Quem foi separado por ausencia ja vem com a area de onde saiu sugerida.
+  const sugestao = (a) => (a?.separadoDe && WORK_AREAS.includes(a.separadoDe) ? a.separadoDe : '');
+  const [destino, setDestino] = useState(() => sugestao(inicial));
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
@@ -93,7 +95,7 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
                   <p className="text-sm text-gray-500 text-center py-4">Ninguém escalado corresponde a “{busca}”.</p>
                 )}
                 {encontrados.map((a) => (
-                  <button key={a.escalaId} type="button" onClick={() => { setEscolhido(a); setDestino(''); }}
+                  <button key={a.escalaId} type="button" onClick={() => { setEscolhido(a); setDestino(sugestao(a)); }}
                     className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 rounded-md p-3 flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">{a.nome}</p>
@@ -135,8 +137,10 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
                 </div>
               </div>
               <p className="text-xs text-gray-500">
-                A pessoa sai da relação do líder de {escolhido.allocatedArea} e entra na do líder da nova área.
-                A atuação volta para a padrão da área nova.
+                {escolhido.allocatedArea === 'Não será escalado'
+                  ? <>A pessoa volta para a escala e entra na relação do líder da nova área.{escolhido.separadoDe ? ` Ela saiu de ${escolhido.separadoDe} por ausência na chamada.` : ''}</>
+                  : `A pessoa sai da relação do líder de ${escolhido.allocatedArea} e entra na do líder da nova área.`}
+                {' '}A atuação volta para a padrão da área nova.
               </p>
               <div className="flex justify-end gap-2">
                 <Button variant="ghost" onClick={() => setEscolhido(null)} className="text-gray-400 hover:text-white hover:bg-white/10">

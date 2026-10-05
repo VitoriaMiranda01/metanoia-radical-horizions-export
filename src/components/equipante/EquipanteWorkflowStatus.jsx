@@ -144,12 +144,12 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
     if (aprovacao !== 'aprovado') return 'Sua igreja ainda precisa aprovar a sua inscrição. Assim que isso acontecer, esta tela avisa.';
     if (isMinor && !hasUploadedAuth) return 'Falta a autorização dos seus responsáveis: anexe o arquivo aqui embaixo, ou marque que você já entregou a carta na sua igreja.';
     if (!escalado) return 'Tudo certo até aqui. Agora é aguardar a escala: as áreas são divulgadas na reunião de equipe. Quando você for escalado, o pagamento da taxa de alimentação abre nesta tela.';
-    // Escala PROVISORIA: a area ja aparece, mas falta a chamada da reuniao
-    // de escala e o lancamento da oficial para o pagamento abrir.
+    // Escala PROVISORIA: a area ja aparece e o pagamento ja abre (decisao
+    // do Patrick, 05/10/2026); falta a chamada da reuniao de escala.
     if (!escalaOficial) {
       if (presenca === 'ausente') return 'Você ficou como ausente na chamada da reunião de escala. Procure o líder da sua área ou a organização.';
-      if (presenca === 'presente') return 'Sua presença na reunião de escala foi confirmada. O pagamento da taxa de alimentação abre quando a escala oficial for lançada.';
-      return 'Esta é a escala provisória. Na reunião de escala, confirme sua presença com o líder da sua área. O pagamento da taxa de alimentação abre quando a escala oficial for lançada.';
+      if (presenca === 'presente') return null;
+      return 'Esta é a escala provisória. Na reunião de escala, confirme sua presença com o líder da sua área.';
     }
     return null;
   };

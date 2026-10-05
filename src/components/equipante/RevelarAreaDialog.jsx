@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Loader2, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Crown, Loader2, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { revelarArea } from '@/services/equipantesService';
 
@@ -130,12 +130,24 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, o
                     <span className="text-4xl sm:text-5xl font-extrabold uppercase text-white drop-shadow-[0_0_24px_rgba(220,38,38,0.55)]">
                       {a.area}
                     </span>
-                    {(a.atuacao || a.cor) && (
+                    {/* Quem e lider ve isso em destaque, logo abaixo da area. */}
+                    {a.eh_lider && (
+                      <motion.span
+                        initial={{ opacity: 0, y: 10, scale: 0.6 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 260, damping: 12, delay: 0.75 + i * 0.25 }}
+                        className="mt-3 inline-flex items-center gap-2 rounded-full border border-yellow-400/60 bg-yellow-400/15 px-4 py-1.5 text-base font-bold uppercase tracking-widest text-yellow-300 shadow-[0_0_24px_rgba(250,204,21,0.35)]"
+                      >
+                        <Crown className="w-5 h-5" /> Você é o líder
+                      </motion.span>
+                    )}
+                    {/* "Líder" puro ja esta no selo acima; "Carcereiro / Líder" continua aparecendo. */}
+                    {((a.atuacao && !(a.eh_lider && a.atuacao === 'Líder')) || a.cor) && (
                       <span className="mt-2 flex items-center gap-2 text-gray-300">
-                        {a.atuacao}
+                        {a.eh_lider && a.atuacao === 'Líder' ? null : a.atuacao}
                         {a.cor && (
                           <span className="inline-flex items-center gap-1.5 text-sm">
-                            {a.atuacao ? '·' : ''}
+                            {a.atuacao && !(a.eh_lider && a.atuacao === 'Líder') ? '·' : ''}
                             <span className="h-3 w-3 rounded-full" style={{ background: CORES_GRUPO[a.cor] || '#999' }} />
                             {a.cor}
                           </span>
@@ -169,7 +181,7 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, o
             {etapa === 'revelado' && provisoria && (
               <p className="text-center text-sm text-amber-200/90 pb-1">
                 Esta é a escala provisória. Confirme sua presença com o líder da sua área na
-                reunião de escala — o pagamento abre quando a escala oficial for lançada.
+                reunião de escala.
               </p>
             )}
             {etapa === 'revelado' && podePagar && (

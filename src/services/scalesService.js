@@ -104,7 +104,7 @@ export const saveScales = async (allocations) => {
 
 export const fetchAllAllocations = async () => {
   const linhas = await lerTudoPaginado(
-    () => supabase.from('escalas').select(`id, equipante_id, area_alocada, atuacao, cor, equipantes!inner (${COLUNAS_EQUIPANTE})`),
+    () => supabase.from('escalas').select(`id, equipante_id, area_alocada, atuacao, cor, separado_de, equipantes!inner (${COLUNAS_EQUIPANTE})`),
     'alocações'
   );
 
@@ -121,6 +121,8 @@ export const fetchAllAllocations = async () => {
     allocatedArea: item.area_alocada,
     atuacao: item.atuacao || null,
     cor: item.cor || null,
+    // Area de onde saiu por ausencia na chamada (agora em "Não será escalado").
+    separadoDe: item.separado_de || null,
     statusAllocation: 'Alocado'
   }));
 };
@@ -276,9 +278,10 @@ export const desfazerLancamentoEscala = async () => {
 // Escala provisoria x oficial, lideres, chamada e troca de area (05/10/2026)
 //
 // lancar_escala (acima) passou a ser o lancamento da PROVISORIA: mostra a
-// area a cada um e abre a relacao dos lideres, mas o pagamento so abre com
-// a OFICIAL. Lancar, trocar de area e ver os codigos dos lideres e so para
-// Desenvolvedores, Raquel e Dudu -- o banco confere (_gere_escala).
+// area a cada um, abre o pagamento e a relacao dos lideres para a chamada.
+// A OFICIAL e a escala final, refeita pelo Dudu depois da chamada. Lancar,
+// trocar de area e decidir os ausentes e so para Desenvolvedores, Raquel e
+// Dudu -- o banco confere (_gere_escala).
 // ---------------------------------------------------------------------------
 
 const rpcOrganizador = async (funcao, params, rotulo) => {
@@ -291,9 +294,11 @@ const rpcOrganizador = async (funcao, params, rotulo) => {
 export const lancarEscalaOficial = () => rpcOrganizador('lancar_escala_oficial', {}, 'lançar a escala oficial');
 export const desfazerEscalaOficial = () => rpcOrganizador('desfazer_escala_oficial', {}, 'desfazer a escala oficial');
 export const fetchChamadaDaEscala = () => rpcOrganizador('chamada_da_escala', {}, 'chamada da escala');
-export const fetchCodigosLideres = () => rpcOrganizador('codigos_lideres', {}, 'códigos dos líderes');
-export const gerarNovoCodigoLider = (equipanteId) =>
-  rpcOrganizador('gerar_novo_codigo_lider', { p_equipante_id: equipanteId }, 'gerar novo código');
+// Ausente na chamada: 'manter' (fica na area) | 'separar' (vai para "Não
+// será escalado", guardando de onde saiu; volta por "Trocar de área").
+export const decidirAusente = (escalaId, acao) =>
+  rpcOrganizador('decidir_ausente', { p_escala_id: escalaId, p_acao: acao }, 'decidir o ausente');
+export const separarTodosAusentes = () => rpcOrganizador('separar_ausentes', {}, 'separar os ausentes');
 export const trocarAreaEscala = (escalaId, novaArea) =>
   rpcOrganizador('trocar_area_escala', { p_escala_id: escalaId, p_nova_area: novaArea }, 'trocar de área');
 

@@ -6,22 +6,20 @@ import { comReenvio } from '@/services/serviceHelpers';
  *
  * Depois que a escala PROVISORIA e lancada, quem esta como lider na escala
  * abre, no proprio acompanhamento, a relacao da sua area (ou da sua cor):
- * nome, igreja e telefone de cada um, a chamada da reuniao de escala, a
- * inclusao por CPF de quem ainda esta sem area e o convite do grupo de
- * WhatsApp.
+ * nome, igreja e telefone de cada um, a chamada da reuniao de escala e o
+ * convite do grupo de WhatsApp.
  *
- * Toda chamada leva a prova de dono (CPF, ou nome + nascimento) MAIS o
- * codigo de 6 digitos que a organizacao entrega ao lider -- quem decide
- * tudo e o servidor (relacao_lider e companhia). Cinco codigos errados
- * seguidos travam por 15 minutos.
+ * Toda chamada leva a prova de dono do acompanhamento (CPF, ou nome +
+ * nascimento) -- quem decide tudo e o servidor (relacao_lider e companhia).
+ * Sem codigo de lider e sem puxar ninguem pelo CPF: decisao do Patrick,
+ * 05/10/2026. Quem manda gente para a area sao os organizadores.
  */
 
-const credenciais = (equipanteId, dono = {}, codigo) => ({
+const credenciais = (equipanteId, dono = {}) => ({
   p_id: equipanteId,
   p_cpf: dono.cpf ?? null,
   p_nome: dono.nome ?? null,
-  p_nascimento: dono.nascimento ?? null,
-  p_codigo: codigo ?? null
+  p_nascimento: dono.nascimento ?? null
 });
 
 const chamar = async (funcao, params, rotulo) => {
@@ -30,40 +28,27 @@ const chamar = async (funcao, params, rotulo) => {
   return data || { ok: false, erro: 'Resposta vazia do servidor.' };
 };
 
-export const fetchRelacaoLider = (equipanteId, dono, codigo) =>
-  chamar('relacao_lider', credenciais(equipanteId, dono, codigo), 'relação do líder');
+export const fetchRelacaoLider = (equipanteId, dono) =>
+  chamar('relacao_lider', credenciais(equipanteId, dono), 'relação do líder');
 
 // presente: true | false | null (desmarca)
-export const marcarPresenca = (equipanteId, dono, codigo, escalaId, presente) =>
+export const marcarPresenca = (equipanteId, dono, escalaId, presente) =>
   chamar('lider_marcar_presenca', {
-    ...credenciais(equipanteId, dono, codigo),
+    ...credenciais(equipanteId, dono),
     p_escala_id: escalaId,
     p_presente: presente
   }, 'chamada');
 
-export const buscarPorCpfLider = (equipanteId, dono, codigo, cpf) =>
-  chamar('lider_buscar_cpf', {
-    ...credenciais(equipanteId, dono, codigo),
-    p_cpf_busca: cpf
-  }, 'busca por CPF');
-
-export const adicionarPorCpfLider = (equipanteId, dono, codigo, escalaLider, cpf) =>
-  chamar('lider_adicionar_por_cpf', {
-    ...credenciais(equipanteId, dono, codigo),
-    p_escala_lider: escalaLider,
-    p_cpf_busca: cpf
-  }, 'inclusão na equipe');
-
-export const salvarGrupoLider = (equipanteId, dono, codigo, escalaLider, link) =>
+export const salvarGrupoLider = (equipanteId, dono, escalaLider, link) =>
   chamar('lider_salvar_grupo', {
-    ...credenciais(equipanteId, dono, codigo),
+    ...credenciais(equipanteId, dono),
     p_escala_lider: escalaLider,
     p_link: link
   }, 'link do grupo');
 
-export const marcarConviteLider = (equipanteId, dono, codigo, escalaId) =>
+export const marcarConviteLider = (equipanteId, dono, escalaId) =>
   chamar('lider_marcar_convite', {
-    ...credenciais(equipanteId, dono, codigo),
+    ...credenciais(equipanteId, dono),
     p_escala_id: escalaId
   }, 'convite do grupo');
 

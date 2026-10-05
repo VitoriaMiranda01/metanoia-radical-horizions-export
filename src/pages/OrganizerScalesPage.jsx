@@ -15,7 +15,7 @@ import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
 import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf } from '@/services/equipanteAllocationService';
 import { fetchConfiguracoes, updateCpfsAreaEspecial } from '@/services/organizerConfigService';
 import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
-import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, KeyRound, BadgeCheck } from 'lucide-react';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,7 +25,6 @@ import AreasExtraDialog from '@/components/scales/AreasExtraDialog';
 import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
 import PreEscalaDialog from '@/components/scales/PreEscalaDialog';
 import TrocarAreaDialog from '@/components/scales/TrocarAreaDialog';
-import LideresCodigosDialog from '@/components/scales/LideresCodigosDialog';
 import ChamadaQuadro from '@/components/scales/ChamadaQuadro';
 import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import { nomeDaIgreja } from '@/constants/igrejas';
@@ -141,14 +140,14 @@ const OrganizerScalesPage = () => {
   const [lancando, setLancando] = useState(false);
 
   // Escala OFICIAL (05/10/2026): a de cima (lancar_escala) virou a
-  // PROVISORIA -- mostra a area e abre a relacao dos lideres para a chamada
-  // da reuniao de escala. O pagamento so abre com a oficial. Lancar, trocar
-  // de area e ver os codigos dos lideres e so para Desenvolvedores, Raquel e
-  // Dudu (escala.pode_gerir, conferido de novo no banco).
+  // PROVISORIA -- mostra a area, abre o pagamento e a relacao dos lideres
+  // para a chamada da reuniao de escala. A oficial e a escala final, que o
+  // Dudu refaz depois da chamada. Lancar, trocar de area e decidir os
+  // ausentes e so para Desenvolvedores, Raquel e Dudu (escala.pode_gerir,
+  // conferido de novo no banco).
   const [confirmandoOficial, setConfirmandoOficial] = useState(false);
   const [confirmandoDesfazerOficial, setConfirmandoDesfazerOficial] = useState(false);
   const [trocaAberta, setTrocaAberta] = useState(null); // null | { inicial }
-  const [verLideres, setVerLideres] = useState(false);
 
   // Areas de Trabalho Extra: painel a parte, so de leitura + resposta.
   // Nao mexe em escalas nem no lancamento -- ver AreasExtraDialog.jsx.
@@ -787,7 +786,7 @@ const OrganizerScalesPage = () => {
     if (r.success) {
       toast({
         title: "Escala oficial lançada",
-        description: "Os equipantes escalados já podem pagar a taxa de alimentação.",
+        description: "A escala final está publicada.",
         className: "bg-green-600 text-white"
       });
       fetchBackgroundData(false);
@@ -802,7 +801,7 @@ const OrganizerScalesPage = () => {
     setLancando(false);
     setConfirmandoDesfazerOficial(false);
     if (r.success) {
-      toast({ title: "Escala oficial desfeita", description: "Volta a valer a provisória: o pagamento fecha para quem ainda não pagou." });
+      toast({ title: "Escala oficial desfeita", description: "Volta a valer a escala provisória." });
       fetchBackgroundData(false);
     } else {
       toast({ title: "Não foi possível desfazer", description: r.error, variant: "destructive" });
@@ -984,9 +983,9 @@ const OrganizerScalesPage = () => {
             {escala && (
               <p className={cn('text-xs mt-2', escala.lancada_em ? 'text-green-400' : 'text-amber-400/90')}>
                 {escala.oficial_em
-                  ? `Escala oficial lançada em ${new Date(escala.oficial_em).toLocaleString('pt-BR')} — os escalados já podem pagar. ${escaladosReais.length - naoViramArea.length} de ${escaladosReais.length} já viram a área no site.`
+                  ? `Escala oficial lançada em ${new Date(escala.oficial_em).toLocaleString('pt-BR')} . ${escaladosReais.length - naoViramArea.length} de ${escaladosReais.length} já viram a área no site.`
                   : escala.lancada_em
-                  ? `Escala provisória lançada em ${new Date(escala.lancada_em).toLocaleString('pt-BR')} — cada um já vê a área e os líderes fazem a chamada. O pagamento abre com a escala oficial. ${escaladosReais.length - naoViramArea.length} de ${escaladosReais.length} já viram a área no site.`
+                  ? `Escala provisória lançada em ${new Date(escala.lancada_em).toLocaleString('pt-BR')} — cada um já vê a área e pode pagar, e os líderes fazem a chamada. ${escaladosReais.length - naoViramArea.length} de ${escaladosReais.length} já viram a área no site.`
                   : escala.faltam > 0
                     ? `Escala ainda não lançada. ${escala.faltam === 1
                         ? 'Falta 1 equipante sem destino'
@@ -1052,15 +1051,6 @@ const OrganizerScalesPage = () => {
                   mas e uma lista a parte: nao entra na escala, nao conta para
                   "faltam N" e nao interfere no lancamento. */}
               {escala?.pode_gerir && (
-                <Button onClick={() => setVerLideres(true)} variant="outline"
-                  data-dica="Os códigos com que cada líder abre a relação da equipe no site, para copiar ou mandar pelo WhatsApp."
-                  className="bg-amber-600/15 text-amber-300 border-amber-600/40 hover:bg-amber-600/30 hover:text-amber-200">
-                  <KeyRound className="mr-2 h-4 w-4" /> Líderes e códigos{escala.lideres ? ` (${escala.lideres})` : ''}
-                  <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
-                </Button>
-              )}
-
-              {escala?.pode_gerir && (
                 <Button onClick={() => abrirTroca()} variant="outline" disabled={!escala.lancada_em}
                   data-dica={escala.lancada_em
                     ? 'Mudar alguém da área X para a área Y. Entra na relação do novo líder na hora.'
@@ -1106,14 +1096,14 @@ const OrganizerScalesPage = () => {
                       ? 'Distribua todos os equipantes antes de lançar a escala.'
                       : escala && !escala.escalados
                         ? 'Não há ninguém escalado. Coloque pelo menos um equipante em uma área.'
-                        : 'Publicar a escala provisória: cada equipante vê a área no site e os líderes fazem a chamada. O pagamento ainda não abre. Pede confirmação.'}
+                        : 'Publicar a escala provisória: cada equipante vê a área no site e pode pagar, e os líderes fazem a chamada. Pede confirmação.'}
                   className="bg-amber-600 hover:bg-amber-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
                   <Send className="mr-2 h-4 w-4" />
                   Lançar escala provisória{escala?.faltam > 0 ? ` (faltam ${escala.faltam})` : ''}
                 </Button>
               ) : !escala.oficial_em ? (
                 <>
-                  <Button data-dica="Esconder a escala provisória do site de novo: os equipantes deixam de ver a área e os líderes perdem a relação. Pede confirmação."
+                  <Button data-dica="Esconder a escala provisória do site de novo: os equipantes deixam de ver a área e de poder pagar, e os líderes perdem a relação. Pede confirmação."
                     onClick={() => setConfirmandoDesfazer(true)} variant="outline" disabled={!escala.pode_gerir}
                     className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
                     <Undo2 className="mr-2 h-4 w-4" /> Desfazer provisória
@@ -1124,14 +1114,14 @@ const OrganizerScalesPage = () => {
                       ? 'Só Desenvolvedores, Raquel e Dudu lançam a escala.'
                       : escala.faltam > 0
                         ? 'Há gente na fila "A escalar" (inscrição manual, por exemplo). Distribua antes de lançar a oficial.'
-                        : 'Lançar a escala oficial, depois da chamada: o pagamento da taxa abre para os escalados. Pede confirmação.'}
+                        : 'Lançar a escala oficial (final), depois de refazer a escala com a chamada. Pede confirmação.'}
                     className="bg-green-600 hover:bg-green-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
                     <BadgeCheck className="mr-2 h-4 w-4" />
                     Lançar escala oficial{escala.faltam > 0 ? ` (faltam ${escala.faltam})` : ''}
                   </Button>
                 </>
               ) : (
-                <Button data-dica="Voltar para a escala provisória: o pagamento fecha de novo para quem ainda não pagou. Pede confirmação."
+                <Button data-dica="Voltar para a escala provisória. Não mexe em pagamento nenhum. Pede confirmação."
                   onClick={() => setConfirmandoDesfazerOficial(true)} variant="outline" disabled={!escala.pode_gerir}
                   className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
                   <Undo2 className="mr-2 h-4 w-4" /> Desfazer oficial
@@ -1150,14 +1140,15 @@ const OrganizerScalesPage = () => {
              <p className="text-red-200 text-sm">Atenção: A estrutura do banco de dados parece estar incompleta.</p>
           </div>}
 
-        {/* Chamada da reuniao de escala: so entre a provisoria e a oficial
-            (depois da oficial ja nao ha o que decidir sobre ausentes). */}
-        {escala?.lancada_em && !escala.oficial_em && escala.pode_gerir && (
+        {/* Chamada da reuniao de escala e os ausentes a definir. Continua
+            depois da oficial: os separados podem voltar a qualquer hora. */}
+        {escala?.lancada_em && escala.pode_gerir && (
           <ChamadaQuadro
             resumo={escala}
             // So os numeros da escala: recarregar as ~900 alocacoes a cada
             // 30s so por causa da chamada seria peso a toa.
             recarregarTela={async () => { const s = await fetchSituacaoEscala(); if (s) setEscala(s); }}
+            recarregarTudo={() => fetchBackgroundData(false)}
             onTrocar={abrirTroca}
           />
         )}
@@ -1361,7 +1352,6 @@ const OrganizerScalesPage = () => {
         <AnimatePresence>
           {verPreEscala && <PreEscalaDialog onClose={() => setVerPreEscala(false)} />}
           {verAreasExtra && <AreasExtraDialog onClose={() => setVerAreasExtra(false)} />}
-          {verLideres && <LideresCodigosDialog key="lideres" onClose={() => setVerLideres(false)} />}
           {trocaAberta && (
             <TrocarAreaDialog
               key="troca"
@@ -1440,11 +1430,10 @@ const OrganizerScalesPage = () => {
                     mas NAO vai poder pagar. */}
                 A partir de agora, <strong className="text-white">
                   {escala?.escalados === 1
-                    ? '1 equipante escalado vai ver a sua área'
-                    : `os ${escala?.escalados ?? 0} equipantes escalados vão ver a sua área`}
-                </strong> no site, e cada líder passa a ver a relação da sua equipe para a chamada da
-                reunião de escala. <strong className="text-white">O pagamento ainda não abre</strong> — só
-                com a escala oficial.
+                    ? '1 equipante escalado vai ver a sua área e poder pagar'
+                    : `os ${escala?.escalados ?? 0} equipantes escalados vão ver a sua área e poder pagar`}
+                </strong> a taxa de alimentação, e cada líder passa a ver a relação da sua equipe para a
+                chamada da reunião de escala.
                 {escala?.nao_serao_escalados > 0 && (
                   <>
                     <br /><br />
@@ -1474,8 +1463,9 @@ const OrganizerScalesPage = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Desfazer a escala provisória?</AlertDialogTitle>
               <AlertDialogDescription className="text-gray-400">
-                Os equipantes voltam a ver “aguardando a escala”, e os líderes deixam de ver a relação
-                da equipe. A chamada que já foi feita fica guardada.
+                Os equipantes voltam a ver “aguardando a escala” e quem ainda não pagou perde o acesso
+                ao pagamento. Os líderes deixam de ver a relação da equipe. A chamada que já foi feita
+                fica guardada, e <strong className="text-white">quem já pagou continua pago</strong>.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -1492,22 +1482,10 @@ const OrganizerScalesPage = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Lançar a escala oficial?</AlertDialogTitle>
               <AlertDialogDescription className="text-gray-400">
+                A escala fica definitiva para{' '}
                 <strong className="text-white">
-                  {escala?.escalados === 1
-                    ? '1 equipante escalado vai poder pagar'
-                    : `Os ${escala?.escalados ?? 0} equipantes escalados vão poder pagar`}
-                </strong> a taxa de alimentação, e a etapa “Escala de trabalho” fica concluída.
-                {(escala?.ausentes > 0 || escala?.sem_chamada > 0) && (
-                  <>
-                    <br /><br />
-                    <span className="text-amber-300">
-                      Atenção: {escala.ausentes > 0 && `${escala.ausentes} ${escala.ausentes === 1 ? 'ausente continua' : 'ausentes continuam'} na escala`}
-                      {escala.ausentes > 0 && escala.sem_chamada > 0 && ' e '}
-                      {escala.sem_chamada > 0 && `${escala.sem_chamada} ainda sem chamada`}.
-                    </span>{' '}
-                    Ausente não sai sozinho: se for o caso, use “Trocar de área” antes de lançar.
-                  </>
-                )}
+                  {escala?.escalados === 1 ? '1 equipante escalado' : `os ${escala?.escalados ?? 0} equipantes escalados`}
+                </strong>, e a etapa “Escala de trabalho” fica concluída no site de cada um.
                 <br /><br />
                 Dá para desfazer depois.
               </AlertDialogDescription>
@@ -1526,10 +1504,7 @@ const OrganizerScalesPage = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Desfazer a escala oficial?</AlertDialogTitle>
               <AlertDialogDescription className="text-gray-400">
-                Volta a valer a escala provisória: quem ainda não pagou perde o acesso ao pagamento.
-                <br /><br />
-                <strong className="text-white">Quem já pagou continua pago</strong> — nada é desfeito no
-                pagamento.
+                Volta a valer a escala provisória. Nada muda no pagamento.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

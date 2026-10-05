@@ -7,6 +7,7 @@ import ParentalAuthUpload from './ParentalAuthUpload';
 import { Button } from '@/components/ui/button';
 import CorrecaoCadastroDialog from './CorrecaoCadastroDialog';
 import RevelarAreaDialog from './RevelarAreaDialog';
+import RelacaoLider from './RelacaoLider';
 
 const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment }) => {
   const {
@@ -26,6 +27,9 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
     declararEntrega,
     pendencias,
     areaVista,
+    escalaOficial,
+    liderDe,
+    presenca,
     error,
     refresh
   } = useEquipanteWorkflow(equipanteId, age, dono);
@@ -140,6 +144,13 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
     if (aprovacao !== 'aprovado') return 'Sua igreja ainda precisa aprovar a sua inscrição. Assim que isso acontecer, esta tela avisa.';
     if (isMinor && !hasUploadedAuth) return 'Falta a autorização dos seus responsáveis: anexe o arquivo aqui embaixo, ou marque que você já entregou a carta na sua igreja.';
     if (!escalado) return 'Tudo certo até aqui. Agora é aguardar a escala: as áreas são divulgadas na reunião de equipe. Quando você for escalado, o pagamento da taxa de alimentação abre nesta tela.';
+    // Escala PROVISORIA: a area ja aparece, mas falta a chamada da reuniao
+    // de escala e o lancamento da oficial para o pagamento abrir.
+    if (!escalaOficial) {
+      if (presenca === 'ausente') return 'Você ficou como ausente na chamada da reunião de escala. Procure o líder da sua área ou a organização.';
+      if (presenca === 'presente') return 'Sua presença na reunião de escala foi confirmada. O pagamento da taxa de alimentação abre quando a escala oficial for lançada.';
+      return 'Esta é a escala provisória. Na reunião de escala, confirme sua presença com o líder da sua área. O pagamento da taxa de alimentação abre quando a escala oficial for lançada.';
+    }
     return null;
   };
   const falta = oQueFalta();
@@ -300,7 +311,9 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
           <div className="mt-8 pt-6 border-t border-white/10 space-y-3">
             {!areaVista && !revelouAgora && (
               <p className="text-center text-gray-300 text-sm">
-                A escala foi divulgada e você está nela!
+                {escalaOficial
+                  ? 'A escala foi divulgada e você está nela!'
+                  : 'A escala provisória saiu e você está nela!'}
               </p>
             )}
             <Button
@@ -327,6 +340,12 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
         )}
       </div>
 
+      {/* Relacao da equipe, para quem esta como lider. So o proprio (que
+          provou ser dono) -- o organizador abrindo a ficha nao precisa. */}
+      {ehOProprio && liderDe.length > 0 && (
+        <RelacaoLider equipanteId={equipanteId} dono={dono} liderDe={liderDe} />
+      )}
+
       <AnimatePresence>
         {correcao && (
           <CorrecaoCadastroDialog
@@ -345,6 +364,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
             equipanteId={equipanteId}
             dono={dono}
             podePagar={canProceedToPayment}
+            provisoria={!escalaOficial}
             onPagar={() => { setRevelando(false); onProceedToPayment?.({ nome: workflowData?.nome }); }}
             // As pendencias que o servidor acabou de devolver valem mais que as
             // da ultima leitura do acompanhamento.

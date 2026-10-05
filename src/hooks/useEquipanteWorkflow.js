@@ -129,13 +129,19 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     });
 
     // So conta como concluida DEPOIS que o organizador lanca a escala --
-    // ter area nao basta, porque quem anuncia a escala e a reuniao.
+    // ter area nao basta, porque quem anuncia a escala e a reuniao. Na
+    // escala PROVISORIA a etapa fica "em processo": falta a chamada da
+    // reuniao de escala e o lancamento da oficial (05/10/2026).
     stages.push({
       id: 'scale',
-      label: 'Escala de trabalho',
+      label: workflowData.escalado && !workflowData.escala_oficial
+        ? 'Escala de trabalho (provisória)'
+        : 'Escala de trabalho',
       status: workflowData.nao_sera_escalado
         ? 'rejeitado'
-        : workflowData.escalado ? 'ok' : 'pendente',
+        : workflowData.escalado
+          ? (workflowData.escala_oficial ? 'ok' : 'em_processo')
+          : 'pendente',
     });
 
     stages.push({
@@ -157,6 +163,11 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     escalado: !!workflowData?.escalado,
     naoSeraEscalado: !!workflowData?.nao_sera_escalado,
     escalaLancada: !!workflowData?.escala_lancada,
+    escalaOficial: !!workflowData?.escala_oficial,
+    // Areas em que a pessoa e lider (so depois da provisoria) e como ficou
+    // a chamada dela na reuniao de escala: 'presente' | 'ausente' | null.
+    liderDe: workflowData?.lider_de || [],
+    presenca: workflowData?.presenca ?? null,
     pago: !!workflowData?.pago,
     // Problemas na ficha que a propria pessoa corrige (igreja que faltou,
     // WhatsApp fora do padrao) e se ela ja viu a area revelada.

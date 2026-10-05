@@ -273,6 +273,31 @@ export const desfazerLancamentoEscala = async () => {
 };
 
 // ---------------------------------------------------------------------------
+// Escala provisoria x oficial, lideres, chamada e troca de area (05/10/2026)
+//
+// lancar_escala (acima) passou a ser o lancamento da PROVISORIA: mostra a
+// area a cada um e abre a relacao dos lideres, mas o pagamento so abre com
+// a OFICIAL. Lancar, trocar de area e ver os codigos dos lideres e so para
+// Desenvolvedores, Raquel e Dudu -- o banco confere (_gere_escala).
+// ---------------------------------------------------------------------------
+
+const rpcOrganizador = async (funcao, params, rotulo) => {
+  const { data, error } = await comReenvio(() => supabase.rpc(funcao, params), { rotulo });
+  if (error) return { success: false, error: error.message || `Erro: ${rotulo}` };
+  if (!data?.ok) return { success: false, error: data?.erro || `Não foi possível: ${rotulo}`, data };
+  return { success: true, data };
+};
+
+export const lancarEscalaOficial = () => rpcOrganizador('lancar_escala_oficial', {}, 'lançar a escala oficial');
+export const desfazerEscalaOficial = () => rpcOrganizador('desfazer_escala_oficial', {}, 'desfazer a escala oficial');
+export const fetchChamadaDaEscala = () => rpcOrganizador('chamada_da_escala', {}, 'chamada da escala');
+export const fetchCodigosLideres = () => rpcOrganizador('codigos_lideres', {}, 'códigos dos líderes');
+export const gerarNovoCodigoLider = (equipanteId) =>
+  rpcOrganizador('gerar_novo_codigo_lider', { p_equipante_id: equipanteId }, 'gerar novo código');
+export const trocarAreaEscala = (escalaId, novaArea) =>
+  rpcOrganizador('trocar_area_escala', { p_escala_id: escalaId, p_nova_area: novaArea }, 'trocar de área');
+
+// ---------------------------------------------------------------------------
 // Areas de Trabalho Extra
 //
 // As 3 disponibilidades opcionais do fim do formulario (caminhao na quinta,

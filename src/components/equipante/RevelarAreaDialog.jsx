@@ -40,7 +40,7 @@ const Brilhos = () => (
   </div>
 );
 
-const RevelarAreaDialog = ({ equipanteId, dono, podePagar, onPagar, onPendencias, onClose }) => {
+const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, onPagar, onPendencias, onClose }) => {
   const [etapa, setEtapa] = useState('buscando'); // buscando | suspense | revelado | fora | erro
   const [areas, setAreas] = useState([]);
   const [erro, setErro] = useState('');
@@ -166,6 +166,12 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, onPagar, onPendencias
         {(etapa === 'revelado' || etapa === 'fora' || etapa === 'erro') && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: etapa === 'revelado' ? 0.9 : 0 }}
             className="p-5 border-t border-white/10 flex flex-col gap-2">
+            {etapa === 'revelado' && provisoria && (
+              <p className="text-center text-sm text-amber-200/90 pb-1">
+                Esta é a escala provisória. Confirme sua presença com o líder da sua área na
+                reunião de escala — o pagamento abre quando a escala oficial for lançada.
+              </p>
+            )}
             {etapa === 'revelado' && podePagar && (
               <Button onClick={onPagar} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-base">
                 Seguir para o pagamento da taxa de alimentação <ArrowRight className="ml-2 w-5 h-5" />

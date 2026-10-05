@@ -1153,7 +1153,13 @@ const OrganizerScalesPage = () => {
         {/* Chamada da reuniao de escala: so entre a provisoria e a oficial
             (depois da oficial ja nao ha o que decidir sobre ausentes). */}
         {escala?.lancada_em && !escala.oficial_em && escala.pode_gerir && (
-          <ChamadaQuadro resumo={escala} recarregarTela={() => fetchBackgroundData(false)} onTrocar={abrirTroca} />
+          <ChamadaQuadro
+            resumo={escala}
+            // So os numeros da escala: recarregar as ~900 alocacoes a cada
+            // 30s so por causa da chamada seria peso a toa.
+            recarregarTela={async () => { const s = await fetchSituacaoEscala(); if (s) setEscala(s); }}
+            onTrocar={abrirTroca}
+          />
         )}
 
         {/* A fila de trabalho do organizador: aprovados que ainda nao estao

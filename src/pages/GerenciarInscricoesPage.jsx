@@ -57,6 +57,8 @@ const GerenciarInscricoesPage = () => {
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [statsModalTitle, setStatsModalTitle] = useState('');
   const [statsModalData, setStatsModalData] = useState([]);
+  // Ficha aberta a partir da lista de uma metrica: ao fechar, a lista volta.
+  const [voltarParaMetrica, setVoltarParaMetrica] = useState(false);
   
   const [refreshReports, setRefreshReports] = useState(0);
 
@@ -436,7 +438,13 @@ const GerenciarInscricoesPage = () => {
           </Tabs>
 
           {selectedInscricao && (
-            <InscricaoDetalhesModal inscricao={selectedInscricao} onClose={() => setSelectedInscricao(null)} />
+            <InscricaoDetalhesModal
+              inscricao={selectedInscricao}
+              onClose={() => {
+                setSelectedInscricao(null);
+                if (voltarParaMetrica) { setVoltarParaMetrica(false); setIsStatsModalOpen(true); }
+              }}
+            />
           )}
 
           {inscricaoParaEditar && (
@@ -470,6 +478,13 @@ const GerenciarInscricoesPage = () => {
             onClose={() => setIsStatsModalOpen(false)}
             title={statsModalTitle}
             acampantes={statsModalData}
+            onVerFicha={(acampante) => {
+              // As duas janelas nao ficam abertas juntas: fecha a lista,
+              // abre a ficha, e a lista volta quando a ficha fechar.
+              setIsStatsModalOpen(false);
+              setVoltarParaMetrica(true);
+              handleViewDetails(acampante);
+            }}
           />
 
           <AlertDialog

@@ -7,9 +7,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, Phone, Ruler, HeartPulse, Activity } from 'lucide-react';
+import { User, Phone, Ruler, Activity, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-const AcampantesDetailModal = ({ isOpen, onClose, title, acampantes = [] }) => {
+// onVerFicha (06/10/2026): abre a ficha completa do acampante a partir da
+// lista -- a pagina fecha esta janela e a reabre quando a ficha fechar.
+const AcampantesDetailModal = ({ isOpen, onClose, title, acampantes = [], onVerFicha }) => {
   // Normalize title to check which card is being viewed
   const normalizedTitle = title ? title.toUpperCase().trim() : '';
   const isProblemasSaudeCard = normalizedTitle === 'PROBLEMAS DE SAÚDE' || normalizedTitle.includes('SAÚDE');
@@ -67,12 +70,23 @@ const AcampantesDetailModal = ({ isOpen, onClose, title, acampantes = [] }) => {
                             </div>
                           </div>
                         </div>
-                        {acampante.tamanho_camiseta && (
-                          <div className="flex items-center gap-1 text-xs font-mono bg-white/10 px-2 py-1 rounded text-purple-300 whitespace-nowrap shrink-0">
-                            <Ruler className="w-3 h-3" />
-                            {acampante.tamanho_camiseta}
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {acampante.tamanho_camisa && (
+                            <div className="flex items-center gap-1 text-xs font-mono bg-white/10 px-2 py-1 rounded text-purple-300 whitespace-nowrap">
+                              <Ruler className="w-3 h-3" />
+                              {acampante.tamanho_camisa}
+                            </div>
+                          )}
+                          {onVerFicha && (
+                            <Button
+                              size="sm" variant="outline" onClick={() => onVerFicha(acampante)}
+                              data-dica="Abrir a ficha completa deste acampante."
+                              className="h-8 border-white/20 bg-transparent text-gray-200 hover:bg-white/10 hover:text-white"
+                            >
+                              <FileText className="w-3.5 h-3.5 mr-1" /> Ver ficha
+                            </Button>
+                          )}
+                        </div>
                       </div>
 
                       {/* Conditionally rendered Health Information Section */}

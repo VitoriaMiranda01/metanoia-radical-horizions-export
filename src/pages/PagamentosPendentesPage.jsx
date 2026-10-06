@@ -426,12 +426,12 @@ const PagamentosPendentesPage = () => {
   };
 
   return (
-    <Layout>
+    <Layout largo>
       <Helmet>
         <title>Pagamentos - Metanoia Radical</title>
       </Helmet>
 
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="py-8">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Banknote className="w-8 h-8 text-blue-500" />
@@ -583,7 +583,7 @@ const PagamentosPendentesPage = () => {
               <Table>
                 <TableHeader className="bg-white/5">
                   <TableRow className="border-white/10 hover:bg-transparent">
-                    <TableHead>{cabecalho('Nome', 'nome')}</TableHead>
+                    <TableHead className="min-w-[17rem]">{cabecalho('Nome', 'nome')}</TableHead>
                     <TableHead>{cabecalho('CPF', 'cpf')}</TableHead>
                     <TableHead>{cabecalho('Tipo', 'tipo')}</TableHead>
                     <TableHead>{cabecalho('WhatsApp', 'whatsapp')}</TableHead>
@@ -633,7 +633,7 @@ const PagamentosPendentesPage = () => {
                             </p>
                           )}
                         </TableCell>
-                        <TableCell className="text-gray-400">{item.cpf}</TableCell>
+                        <TableCell className="text-gray-400 whitespace-nowrap">{item.cpf}</TableCell>
                         <TableCell>
                           <Badge
                             variant="outline"

@@ -24,7 +24,8 @@ const SeloContador = ({ quantidade }) => {
   );
 };
 
-const Layout = ({ children }) => {
+// largo: telas de tabela larga (Pagamentos) usam a largura do monitor.
+const Layout = ({ children, largo = false }) => {
   const { user, logout } = useAuth();
   const { isOrganizer, isParceiro, isAprovador } = useOrganizerAuth();
   const navigate = useNavigate();
@@ -240,7 +241,7 @@ const Layout = ({ children }) => {
       {/* So a conta Desenvolvedores chega a ver: o banco devolve nada para os outros. */}
       {isOrganizer && <AvisoBackup />}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className={`${largo ? 'max-w-[1600px]' : 'max-w-7xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8`}>
         {children}
       </main>
     </div>

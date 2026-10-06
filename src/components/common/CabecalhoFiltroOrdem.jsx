@@ -48,7 +48,7 @@ const CabecalhoFiltroOrdem = ({ titulo, chave, dados, valorDe, filtros, onFiltra
             data-dica={`Filtrar a lista por ${titulo}.`}
             variant="ghost" size="sm"
             className={cn(
-              'h-6 w-6 md:h-8 md:w-8 p-0 ml-1 md:ml-2 relative transition-colors',
+              'h-6 w-6 md:h-7 md:w-7 p-0 ml-1 relative transition-colors',
               ativo ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-white/10'
             )}
           >

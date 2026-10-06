@@ -1,8 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuthToken } from '@/services/authToken';
+import { emTeste, PROJETO_TESTE } from '@/services/ambiente';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// No ambiente de teste (link ?ambiente=teste) o site inteiro fala com o banco
+// de teste -- tabelas, funcoes, login, PIX e arquivos. Ver services/ambiente.js.
+const supabaseUrl = emTeste() ? PROJETO_TESTE.url : import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = emTeste() ? PROJETO_TESTE.anonKey : import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Validacao critica: sem essas variaveis o app nao tem como falar com o
 // banco. Nao lanca excecao aqui de proposito (ver createMockClient logo

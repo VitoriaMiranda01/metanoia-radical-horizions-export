@@ -39,6 +39,7 @@ export const ROTULO_TABELA = {
   igrejas_extras: 'Outra igreja',
   organizadores_auth: 'Organizador',
   solicitacoes_senha: 'Pedido de senha',
+  cobrancas_acampantes: 'Cobrança',
 };
 
 /** "rpc/trocar_area_escala" -> "trocar area escala"; tabela direta -> "edição direta". */

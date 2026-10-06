@@ -330,3 +330,46 @@ export const isentarInscricao = async (tipo, id) => {
     })
     .eq('id', id);
 };
+
+/**
+ * Cobranca dos acampantes que nao pagaram (migration 20261006h, pedido da
+ * Raquel em 06/10/2026). Sem registro = "Nao pagaram"; 'em_cobranca' =
+ * "Cobranca em andamento"; 'agendado' = "Pagamento agendado" (com data).
+ * Quando a pessoa paga, o banco tira a cobranca sozinho.
+ *
+ * Formato: { [acampante_id]: { status, agendado_para, observacao, marcado_por, marcado_em } }
+ */
+export const fetchCobrancas = async () => {
+  const { data, error } = await supabase.rpc('cobrancas_listar');
+  if (error) throw error;
+  return data || {};
+};
+
+const ERROS_COBRANCA = {
+  DATA_OBRIGATORIA: 'Escolha a data combinada para o pagamento.',
+  OBSERVACAO_LONGA: 'A observação passa de 200 caracteres.',
+  JA_PAGO: 'Essa pessoa já pagou. Atualize a lista.',
+  ACAMPANTE_NAO_ENCONTRADO: 'Inscrição não encontrada. Atualize a lista.',
+  SEM_PERMISSAO: 'Sua sessão não tem permissão. Saia e entre de novo.',
+};
+
+const erroDeCobranca = (error) => {
+  const codigo = Object.keys(ERROS_COBRANCA).find((c) => String(error?.message || '').includes(c));
+  return new Error(codigo ? ERROS_COBRANCA[codigo] : 'Não foi possível salvar a cobrança.');
+};
+
+export const definirCobranca = async (acampanteId, status, agendadoPara, observacao) => {
+  const { error } = await supabase.rpc('cobranca_definir', {
+    p_acampante_id: acampanteId,
+    p_status: status,
+    p_agendado_para: status === 'agendado' ? agendadoPara : null,
+    p_observacao: observacao || null,
+  });
+  if (error) throw erroDeCobranca(error);
+};
+
+/** Volta a pessoa para "Nao pagaram". */
+export const removerCobranca = async (acampanteId) => {
+  const { error } = await supabase.rpc('cobranca_remover', { p_acampante_id: acampanteId });
+  if (error) throw erroDeCobranca(error);
+};

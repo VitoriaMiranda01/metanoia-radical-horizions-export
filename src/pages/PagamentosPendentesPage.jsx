@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift, Download, MessageCircle, Copy, X } from 'lucide-react';
+import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift, Download, MessageCircle, Copy, X, PhoneCall, CalendarClock, StickyNote, Pencil } from 'lucide-react';
 import Layout from '@/components/Layout';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { exportRelacaoPagamentos } from '@/utils/excelExport';
 import {
   fetchRelacaoDePagamentos,
-  fetchInscricoesNaoQuitadas,
   fetchPixTravados,
   confirmarPagamentoManual,
-  isentarInscricao
+  isentarInscricao,
+  fetchCobrancas,
+  definirCobranca,
+  removerCobranca
 } from '@/services/paymentService';
+import CobrancaDialog from '@/components/pagamentos/CobrancaDialog';
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -30,6 +33,36 @@ const formatarValor = (valor) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
 };
 
+// Quem ainda deve: o que a pessoa fez na hora de pagar.
+const FORMA_DE_QUEM_DEVE = { pix: 'PIX não concluído', manual: 'Manual', isento: 'Isento' };
+
+// "2026-10-10" -> "10/10/2026"
+const dataBR = (iso) => (iso ? String(iso).slice(0, 10).split('-').reverse().join('/') : '');
+
+// Dias de hoje ate a data combinada (negativo = ja passou).
+const diasAte = (iso) => {
+  const [a, m, d] = String(iso).slice(0, 10).split('-').map(Number);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  return Math.round((new Date(a, m - 1, d) - hoje) / 86400000);
+};
+
+// Data combinada com a cor do prazo: vermelho venceu, amarelo hoje.
+const DataCombinada = ({ iso }) => {
+  if (!iso) return <span className="text-gray-500">—</span>;
+  const dias = diasAte(iso);
+  const [texto, classe] = dias < 0
+    ? [`venceu há ${-dias} ${dias === -1 ? 'dia' : 'dias'}`, 'bg-red-500/15 text-red-300 border-red-500/30']
+    : dias === 0
+      ? ['hoje', 'bg-amber-500/15 text-amber-300 border-amber-500/30']
+      : [`em ${dias} ${dias === 1 ? 'dia' : 'dias'}`, 'bg-white/5 text-gray-300 border-white/10'];
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs whitespace-nowrap ${classe}`}>
+      {dataBR(iso)} · {texto}
+    </span>
+  );
+};
+
 // Texto de cada coluna, o mesmo da tela: e por ele que o funil filtra e a
 // seta ordena (pedido do Patrick, 06/10/2026).
 const valorDaColuna = (item, chave) => {
@@ -39,10 +72,13 @@ const valorDaColuna = (item, chave) => {
       if (!item.whatsapp) return '';
       return item.nacionalidade ? String(item.whatsapp) : formatarTelefone(item.whatsapp);
     case 'forma': {
+      if (!item.quitado) return FORMA_DE_QUEM_DEVE[item.metodo_pagamento] || 'Não escolheu';
       const m = item.metodo_pagamento || 'não informado';
       return m.charAt(0).toUpperCase() + m.slice(1);
     }
     case 'motivo': return item.motivo || '';
+    case 'desde': return item.cobranca?.marcado_em ? new Date(item.cobranca.marcado_em).toLocaleDateString('pt-BR') : '';
+    case 'agendado_para': return dataBR(item.cobranca?.agendado_para);
     default: return String(item[chave] || '');
   }
 };
@@ -82,16 +118,19 @@ const CelulaWhatsApp = ({ item, onCopiar }) => {
 };
 
 const PagamentosPendentesPage = () => {
-  const [pendentes, setPendentes] = useState([]);
   // Todo mundo, pago ou nao -- e daqui que saem a aba "Pagos" e a
   // planilha do portao. A tela so mostrava pendentes, entao quem pagava
   // sumia e nao existia lista nenhuma de quem ja tinha pago.
   const [relacao, setRelacao] = useState([]);
   const [travados, setTravados] = useState([]);
+  // Cobranca dos acampantes que nao pagaram: { acampante_id: {...} }.
+  const [cobrancas, setCobrancas] = useState({});
+  // Janela de cobranca aberta: { item, status } ou null.
+  const [dialogo, setDialogo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterText, setFilterText] = useState('');
-  const [aba, setAba] = useState('pendentes');
+  const [aba, setAba] = useState('nao');
   const [tipoFiltro, setTipoFiltro] = useState('all');
   // Funil e seta de cada coluna. Cada aba tem colunas e valores diferentes,
   // entao trocar de aba comeca sem filtro e sem ordem.
@@ -109,14 +148,14 @@ const PagamentosPendentesPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const [naoQuitadas, pixTravados, todos] = await Promise.all([
-        fetchInscricoesNaoQuitadas(),
+      const [pixTravados, todos, cobr] = await Promise.all([
         fetchPixTravados(),
-        fetchRelacaoDePagamentos()
+        fetchRelacaoDePagamentos(),
+        fetchCobrancas()
       ]);
-      setPendentes(naoQuitadas);
       setTravados(pixTravados);
       setRelacao(todos);
+      setCobrancas(cobr);
     } catch (err) {
       console.error('[Pagamentos] Erro ao carregar:', err);
       setError('Falha ao carregar os pagamentos. Verifique sua conexão.');
@@ -144,10 +183,10 @@ const PagamentosPendentesPage = () => {
       if (err) throw err;
 
       toast({
-        title: acao === 'isentar' ? 'Isenção registrada' : 'Pagamento liberado',
+        title: acao === 'isentar' ? 'Isenção registrada' : 'Pagamento confirmado',
         description: acao === 'isentar'
           ? 'A inscrição foi marcada como isenta da taxa.'
-          : 'A inscrição foi liberada com sucesso.',
+          : 'A pessoa foi para a aba Pagos.',
         className: 'bg-emerald-600 text-white border-none'
       });
 
@@ -166,7 +205,41 @@ const PagamentosPendentesPage = () => {
     }
   };
 
-  const pagos = useMemo(() => relacao.filter((i) => i.quitado), [relacao]);
+  // Todo mundo com a cobranca junto (so acampante tem cobranca).
+  const comCobranca = useMemo(() => relacao.map((i) => (
+    i.tipo === 'acampante' && cobrancas[i.id] ? { ...i, cobranca: cobrancas[i.id] } : i
+  )), [relacao, cobrancas]);
+
+  const pagos = useMemo(() => comCobranca.filter((i) => i.quitado), [comCobranca]);
+
+  // Quem ainda deve (opcao B, aprovada em 06/10/2026: a antiga aba
+  // "Pagamentos manuais" entrou aqui -- o funil da coluna Forma separa os
+  // manuais). Acampante: todos. Equipante: so quem escolheu pagar em maos
+  // (cobranca de equipante fica para depois).
+  const devendo = useMemo(() => comCobranca.filter((i) => !i.quitado
+    && (i.tipo === 'acampante' || ['manual', 'isento'].includes(i.metodo_pagamento))), [comCobranca]);
+  const naoPagaram = useMemo(() => devendo.filter((i) => !i.cobranca), [devendo]);
+  const emCobranca = useMemo(() => devendo.filter((i) => i.cobranca?.status === 'em_cobranca'), [devendo]);
+  const agendados = useMemo(() => devendo.filter((i) => i.cobranca?.status === 'agendado'), [devendo]);
+  const vencidos = useMemo(() => agendados.filter((i) => diasAte(i.cobranca.agendado_para) < 0).length, [agendados]);
+
+  const salvarCobranca = async (item, status, data, obs) => {
+    await definirCobranca(item.id, status, data, obs);
+    setCobrancas(await fetchCobrancas());
+    setDialogo(null);
+    toast({
+      title: status === 'agendado' ? 'Pagamento agendado' : 'Cobrança em andamento',
+      description: item.nome,
+      className: 'bg-emerald-600 text-white border-none'
+    });
+  };
+
+  const tirarDaCobranca = async (item) => {
+    await removerCobranca(item.id);
+    setCobrancas(await fetchCobrancas());
+    setDialogo(null);
+    toast({ title: 'Voltou para Não pagaram', description: item.nome, className: 'bg-emerald-600 text-white border-none' });
+  };
 
   const copiarNumero = async (numero) => {
     try {
@@ -179,7 +252,7 @@ const PagamentosPendentesPage = () => {
 
   const exportarRelacao = () => {
     try {
-      const r = exportRelacaoPagamentos(relacao);
+      const r = exportRelacaoPagamentos(comCobranca);
       toast({
         title: 'Planilha gerada',
         description: `${r.pagaram} de ${r.total} já pagaram. A aba "Ainda não pagaram" traz o resto.`,
@@ -194,9 +267,13 @@ const PagamentosPendentesPage = () => {
     }
   };
 
-  const baseDaAba = aba === 'travados' ? travados
-    : aba === 'pagos' ? pagos
-      : pendentes;
+  const baseDaAba = {
+    nao: naoPagaram,
+    cobranca: emCobranca,
+    agendado: agendados,
+    pagos,
+    travados,
+  }[aba] || naoPagaram;
 
   const filtrarColuna = (chave, valores) => setFiltrosColuna((f) => ({ ...f, [chave]: valores }));
   const temFiltroColuna = Object.values(filtrosColuna).some((v) => v && v.length > 0);
@@ -222,8 +299,10 @@ const PagamentosPendentesPage = () => {
         !valores || valores.length === 0 || valores.includes(valorDaColuna(item, chave)));
       return casaBusca && casaTipo && casaColunas;
     });
-    return ordenarLista(filtradas, ordem, valorDaColuna);
-  }, [baseDaAba, filterText, tipoFiltro, filtrosColuna, ordem]);
+    // Agendados: sem seta escolhida, a data mais proxima vem primeiro.
+    const ordemFinal = ordem || (aba === 'agendado' ? { chave: 'agendado_para', direcao: 'asc' } : null);
+    return ordenarLista(filtradas, ordemFinal, valorDaColuna);
+  }, [baseDaAba, filterText, tipoFiltro, filtrosColuna, ordem, aba]);
 
   // Pagina a lista já filtrada. No dia do evento essa tela pode ter centenas
   // de pendentes — desenhar tudo de uma vez trava celular mais simples.
@@ -242,7 +321,7 @@ const PagamentosPendentesPage = () => {
       return (
         <div className="flex items-center justify-end gap-2">
           <span className="text-sm text-gray-400 mr-1 font-medium">
-            {acaoPendente.acao === 'isentar' ? 'Isentar da taxa?' : 'Liberar?'}
+            {acaoPendente.acao === 'isentar' ? 'Isentar da taxa?' : 'Confirmar pagamento?'}
           </span>
           <Button
             size="sm"
@@ -265,29 +344,75 @@ const PagamentosPendentesPage = () => {
       );
     }
 
+    // Quem ja pagou nao tem o que fazer aqui -- so a data, para conferencia.
+    if (aba === 'pagos') {
+      return (
+        <span className="text-xs text-gray-500 whitespace-nowrap">
+          {item.data_pagamento ? `Pago em ${new Date(item.data_pagamento).toLocaleDateString('pt-BR')}` : 'Pago'}
+        </span>
+      );
+    }
+
+    const botaoCobranca = 'h-8 px-2.5 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10';
+    const cobravel = item.tipo === 'acampante' && aba !== 'travados';
+
     return (
-      <div className="flex items-center justify-end gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setAcaoPendente({ id: item.id, tipo: item.tipo, acao: 'isentar' })}
-          data-dica="Dispensar esta pessoa da taxa (fica como quitado sem pagar). Pede confirmação."
-          className="h-8 px-3 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10"
-        >
-          <Gift className="w-4 h-4 mr-1.5" />
-          Isentar
-        </Button>
-        <Button
-          size="sm"
-          onClick={() => setAcaoPendente({ id: item.id, tipo: item.tipo, acao: 'liberar' })}
-          data-dica={aba === 'travados'
-            ? 'O PIX foi pago mas não confirmou sozinho: marca como pago. Pede confirmação.'
-            : 'Confirmar que o pagamento foi recebido (dinheiro, depósito...). Pede confirmação.'}
-          className="bg-blue-600 hover:bg-blue-700 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all"
-        >
-          <CheckCircle className="w-4 h-4 mr-1.5" />
-          Liberar
-        </Button>
+      <div className="flex flex-col items-end gap-1.5">
+        {cobravel && (
+          <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+            {aba === 'nao' && (
+              <Button
+                size="sm" variant="outline" className={botaoCobranca}
+                onClick={() => setDialogo({ item, status: 'em_cobranca' })}
+                data-dica="Marcar que você já entrou em contato e está cobrando."
+              >
+                <PhoneCall className="w-4 h-4 mr-1.5" />
+                Em cobrança
+              </Button>
+            )}
+            {aba === 'cobranca' && (
+              <Button
+                size="sm" variant="outline" className={botaoCobranca}
+                onClick={() => setDialogo({ item, status: 'em_cobranca' })}
+                data-dica="Editar a observação ou voltar para Não pagaram."
+              >
+                <Pencil className="w-4 h-4 mr-1.5" />
+                Editar
+              </Button>
+            )}
+            <Button
+              size="sm" variant="outline" className={botaoCobranca}
+              onClick={() => setDialogo({ item, status: 'agendado' })}
+              data-dica={aba === 'agendado' ? 'Mudar a data combinada ou a observação.' : 'A pessoa combinou uma data para pagar.'}
+            >
+              <CalendarClock className="w-4 h-4 mr-1.5" />
+              {aba === 'agendado' ? 'Remarcar' : 'Agendar'}
+            </Button>
+          </div>
+        )}
+        <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setAcaoPendente({ id: item.id, tipo: item.tipo, acao: 'isentar' })}
+            data-dica="Dispensar esta pessoa da taxa (fica como quitado sem pagar). Pede confirmação."
+            className="h-8 px-3 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10"
+          >
+            <Gift className="w-4 h-4 mr-1.5" />
+            Isentar
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => setAcaoPendente({ id: item.id, tipo: item.tipo, acao: 'liberar' })}
+            data-dica={aba === 'travados'
+              ? 'O PIX foi pago mas não confirmou sozinho: marca como pago. Pede confirmação.'
+              : 'Confirmar que o pagamento foi recebido (dinheiro, depósito...). Pede confirmação.'}
+            className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all"
+          >
+            <CheckCircle className="w-4 h-4 mr-1.5" />
+            Confirmar pagamento
+          </Button>
+        </div>
       </div>
     );
   };
@@ -305,7 +430,7 @@ const PagamentosPendentesPage = () => {
             <h1 className="text-3xl font-bold text-white">Pagamentos</h1>
           </div>
           <p className="text-gray-400">
-            Libere quem pagou e registre isenções. Ninguém deve ficar pendente.
+            Confirme pagamentos, acompanhe a cobrança de quem não pagou e registre isenções.
           </p>
         </motion.div>
 
@@ -346,13 +471,32 @@ const PagamentosPendentesPage = () => {
           >
             <div className="p-4 md:p-6 border-b border-white/10 flex flex-col gap-4">
               <Tabs value={aba} onValueChange={setAba}>
-                <TabsList className="bg-white/5 border border-white/10 w-full md:w-auto flex">
+                <TabsList className="bg-white/5 border border-white/10 w-full md:w-auto h-auto flex flex-wrap">
                   <TabsTrigger
-                    value="pendentes"
-                    data-dica="Quem escolheu pagar em mãos (ou foi isentado) e ainda não teve o pagamento confirmado."
+                    value="nao"
+                    data-dica="Quem ainda não pagou e ninguém está cobrando ainda. Inclui quem escolheu pagar em mãos."
                     className="flex-1 md:flex-none data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400"
                   >
-                    Pagamentos manuais ({pendentes.length})
+                    Não pagaram ({naoPagaram.length})
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="cobranca"
+                    data-dica="Quem já foi procurado e está sendo cobrado."
+                    className="flex-1 md:flex-none data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-300 text-gray-400"
+                  >
+                    Cobrança em andamento ({emCobranca.length})
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="agendado"
+                    data-dica="Quem combinou uma data para pagar. Data vencida fica em vermelho."
+                    className="flex-1 md:flex-none data-[state=active]:bg-violet-500/20 data-[state=active]:text-violet-300 text-gray-400"
+                  >
+                    Pagamento agendado ({agendados.length})
+                    {vencidos > 0 && (
+                      <span className="ml-1.5 rounded-full bg-red-500/20 text-red-300 px-1.5 text-[11px]">
+                        {vencidos} {vencidos === 1 ? 'venceu' : 'venceram'}
+                      </span>
+                    )}
                   </TabsTrigger>
                   <TabsTrigger
                     value="pagos"
@@ -363,7 +507,7 @@ const PagamentosPendentesPage = () => {
                   </TabsTrigger>
                   <TabsTrigger
                     value="travados"
-                    data-dica="PIX que pode ter sido pago mas não confirmou sozinho. Confira e libere."
+                    data-dica="PIX que pode ter sido pago mas não confirmou sozinho. Confira e confirme o pagamento."
                     className="flex-1 md:flex-none data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300 text-gray-400"
                   >
                     Precisam de atenção ({travados.length})
@@ -438,7 +582,11 @@ const PagamentosPendentesPage = () => {
                     <TableHead>
                       {aba === 'travados'
                         ? cabecalho('Motivo', 'motivo')
-                        : cabecalho('Forma de pagamento', 'forma')}
+                        : aba === 'cobranca'
+                          ? cabecalho('Em cobrança desde', 'desde')
+                          : aba === 'agendado'
+                            ? cabecalho('Data combinada', 'agendado_para')
+                            : cabecalho('Forma', 'forma')}
                     </TableHead>
                     <TableHead className="text-right text-gray-300">Ações</TableHead>
                   </TableRow>
@@ -458,7 +606,11 @@ const PagamentosPendentesPage = () => {
                           ? 'Nenhuma cobrança travada. Tudo certo por aqui.'
                           : aba === 'pagos'
                             ? 'Ninguém pagou ainda para os filtros atuais.'
-                            : 'Nenhuma inscrição pendente para os filtros atuais.'}
+                            : aba === 'cobranca'
+                              ? 'Ninguém em cobrança. Use "Em cobrança" na aba Não pagaram.'
+                              : aba === 'agendado'
+                                ? 'Nenhum pagamento agendado. Use "Agendar" na aba Não pagaram.'
+                                : 'Ninguém devendo para os filtros atuais.'}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -466,6 +618,12 @@ const PagamentosPendentesPage = () => {
                       <TableRow key={item.id} className="border-white/10 hover:bg-white/5 transition-colors">
                         <TableCell className="font-medium text-white">
                           <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} />
+                          {item.cobranca?.observacao && aba !== 'nao' && (
+                            <p className="mt-1 flex items-start gap-1 text-xs font-normal text-gray-400 max-w-xs">
+                              <StickyNote className="w-3.5 h-3.5 mt-px shrink-0" />
+                              <span className="break-words">{item.cobranca.observacao}</span>
+                            </p>
+                          )}
                         </TableCell>
                         <TableCell className="text-gray-400">{item.cpf}</TableCell>
                         <TableCell>
@@ -489,10 +647,15 @@ const PagamentosPendentesPage = () => {
                                 Cobrado: {formatarValor(item.valor)}
                               </span>
                             </div>
-                          ) : (
-                            <span className="capitalize text-gray-400">
-                              {item.metodo_pagamento || 'não informado'}
+                          ) : aba === 'cobranca' ? (
+                            <span className="text-gray-400 whitespace-nowrap">
+                              {valorDaColuna(item, 'desde')}
+                              <span className="text-gray-500"> · {item.cobranca?.marcado_por}</span>
                             </span>
+                          ) : aba === 'agendado' ? (
+                            <DataCombinada iso={item.cobranca?.agendado_para} />
+                          ) : (
+                            <span className="text-gray-400">{valorDaColuna(item, 'forma')}</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
@@ -508,6 +671,14 @@ const PagamentosPendentesPage = () => {
             <Paginacao {...paginacao} />
           </motion.div>
         )}
+
+        <CobrancaDialog
+          item={dialogo?.item || null}
+          statusInicial={dialogo?.status}
+          onSalvar={salvarCobranca}
+          onRemover={tirarDaCobranca}
+          onFechar={() => setDialogo(null)}
+        />
       </div>
     </Layout>
   );

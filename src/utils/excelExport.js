@@ -176,6 +176,12 @@ export const exportRelacaoPagamentos = (linhas) => {
           hour: '2-digit', minute: '2-digit',
         })
       : '-',
+    // Cobranca de quem nao pagou (aba Cobranca em andamento / Pagamento agendado).
+    'Cobrança': item.quitado || !item.cobranca ? '-'
+      : item.cobranca.status === 'agendado'
+        ? `Agendado para ${String(item.cobranca.agendado_para).slice(0, 10).split('-').reverse().join('/')}`
+        : 'Em andamento',
+    'Observação da cobrança': (!item.quitado && item.cobranca?.observacao) || '-',
   });
 
   const larguras = [
@@ -187,6 +193,8 @@ export const exportRelacaoPagamentos = (linhas) => {
     { wch: 38 }, // Igreja
     { wch: 20 }, // Forma
     { wch: 18 }, // Data
+    { wch: 24 }, // Cobrança
+    { wch: 40 }, // Observação
   ];
 
   const wb = XLSX.utils.book_new();

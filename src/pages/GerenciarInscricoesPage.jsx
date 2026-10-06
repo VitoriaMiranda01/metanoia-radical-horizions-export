@@ -25,6 +25,10 @@ import AcampantesStatsCards from '@/components/gerenciar/AcampantesStatsCards';
 import AcampantesDetailModal from '@/components/gerenciar/AcampantesDetailModal';
 import EditarInscricaoModal from '@/components/gerenciar/EditarInscricaoModal';
 import AvisoTelefonesAcampantes from '@/components/gerenciar/AvisoTelefonesAcampantes';
+import AvisoContatoEmergencia from '@/components/gerenciar/AvisoContatoEmergencia';
+import CentralNotificacoes from '@/components/gerenciar/CentralNotificacoes';
+import ResumoAvisosDev from '@/components/gerenciar/ResumoAvisosDev';
+import { useAvisosInscricoes } from '@/hooks/useAvisosInscricoes';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import { deleteAcampante, getAcampantes, countAcampantes, realocarGrupoTrailha, salvarObservacaoAcampante, updateAcampante } from '@/services/acampantesService';
 import { fetchEquipantesInscritos, countEquipantesInscritos, updateEquipante, podeInscreverManual } from '@/services/equipantesService';
@@ -63,6 +67,10 @@ const GerenciarInscricoesPage = () => {
   const [manualAberta, setManualAberta] = useState(false);
   // Avisa o quadro de telefones que uma ficha de acampante foi salva.
   const [acampanteSalvoEm, setAcampanteSalvoEm] = useState(0);
+  // Avisos de fichas com problema (Raquel e Desenvolvedores) + o sino.
+  const avisosInscricoes = useAvisosInscricoes(acampanteSalvoEm);
+  // Desenvolvedores so ve que os avisos estao no perfil da Raquel.
+  const ehPerfilDev = avisosInscricoes.perfil === 'desenvolvedores';
 
   useEffect(() => {
     carregarEquipantes();
@@ -315,7 +323,19 @@ const GerenciarInscricoesPage = () => {
 
       <Layout>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <div className="text-center mb-8">
+          <div className="relative text-center mb-8">
+            {/* Central de notificacoes: so para quem ve os avisos. */}
+            {avisosInscricoes.temAcesso && (
+              <div className="absolute right-0 top-0">
+                <CentralNotificacoes
+                  avisos={avisosInscricoes.avisos}
+                  total={avisosInscricoes.total}
+                  onMostrar={avisosInscricoes.mostrar}
+                  onMostrarFicha={avisosInscricoes.mostrarFicha}
+                  somenteLeitura={ehPerfilDev}
+                />
+              </div>
+            )}
             <h1 className="text-3xl font-bold text-white mb-2">Gerenciar Inscrições</h1>
             {podeManual && (
               <Button
@@ -328,14 +348,35 @@ const GerenciarInscricoesPage = () => {
             )}
           </div>
 
-          <AvisoTelefonesAcampantes
-            atualizarEm={acampanteSalvoEm}
-            onCorrigido={fetchAcampantesSupabase}
-            onAbrirFicha={(id) => {
-              const acampante = acampantesList.find((a) => a.id === id);
-              if (acampante) setInscricaoParaEditar(acampante);
-            }}
-          />
+          {ehPerfilDev ? (
+            <ResumoAvisosDev avisos={avisosInscricoes.avisos} />
+          ) : (
+            <>
+              <AvisoTelefonesAcampantes
+                aviso={avisosInscricoes.avisos.find((a) => a.chave === 'telefones')}
+                onRecarregar={avisosInscricoes.recarregar}
+                onOcultar={() => avisosInscricoes.ocultar('telefones')}
+                onOcultarFicha={(id) => avisosInscricoes.ocultarFicha('telefones', id)}
+                onCorrigido={fetchAcampantesSupabase}
+                onAbrirFicha={(id) => {
+                  const acampante = acampantesList.find((a) => a.id === id);
+                  if (acampante) setInscricaoParaEditar(acampante);
+                }}
+              />
+
+              <AvisoContatoEmergencia
+                aviso={avisosInscricoes.avisos.find((a) => a.chave === 'contatos')}
+                onRecarregar={avisosInscricoes.recarregar}
+                onOcultar={() => avisosInscricoes.ocultar('contatos')}
+                onOcultarFicha={(id) => avisosInscricoes.ocultarFicha('contatos', id)}
+                onCorrigido={fetchAcampantesSupabase}
+                onAbrirFicha={(id) => {
+                  const acampante = acampantesList.find((a) => a.id === id);
+                  if (acampante) setInscricaoParaEditar(acampante);
+                }}
+              />
+            </>
+          )}
           
           <InscricoesStatsCards
             equipantes={totalEquipantes}

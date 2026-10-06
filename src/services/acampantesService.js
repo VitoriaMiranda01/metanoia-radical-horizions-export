@@ -166,6 +166,29 @@ export const salvarObservacaoAcampante = async (acampanteId, observacao) => {
  * liga e corrige) e para a conta Desenvolvedores; para os outros, null.
  * Formato: { perfil: 'raquel' | 'desenvolvedores', itens: [...] }.
  */
+// Acampantes com o contato de emergencia errado (numero no nome, ou o
+// proprio WhatsApp como emergencia). null = este login nao ve o aviso.
+export const fetchContatosEmergenciaPendentes = async () => {
+  const { data, error } = await supabase.rpc('contatos_emergencia_pendentes');
+  if (error) throw error;
+  return data || null;
+};
+
+// O que este organizador ocultou nos avisos (quadro inteiro ou uma ficha).
+// Fica na conta, vale em qualquer aparelho. Chaves 'quadro:x' e 'ficha:x:id'.
+export const fetchMeusAvisosOcultos = async () => {
+  const { data, error } = await supabase.rpc('meus_avisos_ocultos');
+  if (error) throw error;
+  return Array.isArray(data) ? data : [];
+};
+
+export const ocultarAviso = async (chave, oculto) => {
+  const { data, error } = await supabase.rpc('ocultar_aviso', { p_chave: chave, p_oculto: oculto });
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.erro || 'Não foi possível ocultar.');
+  return true;
+};
+
 export const fetchTelefonesAcampantesPendentes = async () => {
   const { data, error } = await supabase.rpc('telefones_acampantes_pendentes');
   if (error) throw error;

@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Loader2, MessageCircle, PhoneOff, Pencil } from 'lucide-react';
+import React, { useState } from 'react';
+import { Loader2, MessageCircle, PhoneOff, Pencil, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import TelefoneInput from '@/components/inscricao/TelefoneInput';
-import { fetchTelefonesAcampantesPendentes, updateAcampante } from '@/services/acampantesService';
+import { updateAcampante } from '@/services/acampantesService';
+import QuadroAviso from './QuadroAviso';
 import { problemaTelefone, formatarTelefone, digitosTelefone } from '@/utils/telefone';
 
 /**
@@ -15,11 +16,10 @@ import { problemaTelefone, formatarTelefone, digitosTelefone } from '@/utils/tel
  * quem esta cuidando. Para os outros logins o servidor devolve null.
  *
  * Quem decide o que esta errado e o banco (mesma regra do cadastro). Corrigiu,
- * a ficha sai do quadro na hora; sem nenhuma, o quadro some. Tambem recarrega
- * sozinho a cada 20s, para refletir correcoes feitas por outra pessoa.
+ * a ficha sai do quadro na hora; sem nenhuma, o quadro some. Os dados vem do
+ * useAvisosInscricoes (a pagina), que recarrega a cada 20s e cuida do
+ * "Ocultar" -- o aviso oculto continua no sino de notificacoes.
  */
-
-const INTERVALO = 20 * 1000;
 
 const ROTULO = {
   contato_emergencia_telefone: 'Telefone de emergência',
@@ -31,7 +31,7 @@ const linkWhats = (valor) => {
   return d.length >= 10 && d.length <= 11 ? `https://wa.me/55${d}` : null;
 };
 
-const ItemAcampante = ({ item, onSalvo, onAbrirFicha }) => {
+const ItemAcampante = ({ item, onSalvo, onAbrirFicha, onOcultar }) => {
   const { toast } = useToast();
   const [valores, setValores] = useState({});
   const [salvando, setSalvando] = useState(false);
@@ -100,6 +100,15 @@ const ItemAcampante = ({ item, onSalvo, onAbrirFicha }) => {
           >
             <Pencil className="w-3.5 h-3.5 mr-1" /> Abrir ficha
           </Button>
+          {onOcultar && (
+            <Button
+              size="sm" variant="ghost" onClick={onOcultar}
+              data-dica="Ocultar só esta ficha. Ela continua no sino de notificações, de onde dá para trazer de volta."
+              className="h-8 px-2 text-gray-500 hover:text-white hover:bg-white/10"
+            >
+              <EyeOff className="w-3.5 h-3.5 mr-1" /> Ocultar
+            </Button>
+          )}
         </div>
       </div>
 
@@ -138,61 +147,33 @@ const ItemAcampante = ({ item, onSalvo, onAbrirFicha }) => {
   );
 };
 
-const AvisoTelefonesAcampantes = ({ atualizarEm, onCorrigido, onAbrirFicha }) => {
-  const [dados, setDados] = useState(null);
-
-  // null = o servidor nao mostra este aviso para este login: para de perguntar.
-  const [semAcesso, setSemAcesso] = useState(false);
-
-  const carregar = useCallback(() => {
-    fetchTelefonesAcampantesPendentes()
-      .then((d) => { setDados(d); if (d === null) setSemAcesso(true); })
-      .catch(() => { /* proximo ciclo tenta de novo */ });
-  }, []);
-
-  useEffect(() => {
-    carregar();
-    if (semAcesso) return undefined;
-    const id = setInterval(carregar, INTERVALO);
-    return () => clearInterval(id);
-  }, [carregar, semAcesso]);
-
-  // A pagina avisa quando uma ficha foi salva por outro caminho (modal).
-  useEffect(() => { if (atualizarEm) carregar(); }, [atualizarEm, carregar]);
-
-  const itens = dados?.itens || [];
-  if (!dados || itens.length === 0) return null;
-
-  const ehDev = dados.perfil === 'desenvolvedores';
+const AvisoTelefonesAcampantes = ({ aviso, onRecarregar, onOcultar, onOcultarFicha, onCorrigido, onAbrirFicha }) => {
+  // So as fichas que nao foram ocultadas uma a uma.
+  const itens = aviso?.visiveis || [];
+  if (itens.length === 0 || aviso.oculto) return null;
 
   return (
-    <div role="alert" className="mb-6 rounded-lg border border-amber-500/40 bg-amber-950/40 p-4 space-y-3">
-      <div className="flex items-start gap-3">
-        <PhoneOff className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-        <div>
-          <p className="text-white font-semibold">
-            {itens.length === 1
-              ? '1 acampante está com telefone fora do padrão'
-              : `${itens.length} acampantes estão com telefone fora do padrão`}
-          </p>
-          <p className="text-sm text-amber-100/80">
-            {ehDev
-              ? 'Este aviso está no perfil da Raquel para ela verificar: ela entra em contato com cada acampante e corrige. Aqui aparece igual, para acompanhar.'
-              : 'Entre em contato com cada um e corrija aqui mesmo. Assim que salvar, a ficha sai deste quadro.'}
-          </p>
-        </div>
-      </div>
-      <div className="space-y-2">
-        {itens.map((item) => (
-          <ItemAcampante
-            key={item.id}
-            item={item}
-            onAbrirFicha={onAbrirFicha}
-            onSalvo={() => { carregar(); onCorrigido?.(); }}
-          />
-        ))}
-      </div>
-    </div>
+    <QuadroAviso
+      id="aviso-telefones"
+      cor="amber"
+      Icone={PhoneOff}
+      titulo={itens.length === 1
+        ? '1 acampante está com telefone fora do padrão'
+        : `${itens.length} acampantes estão com telefone fora do padrão`}
+      explicacao={'Entre em contato com cada um e corrija aqui mesmo. Assim que salvar, a ficha sai deste quadro.'}
+      onOcultar={onOcultar}
+      ocultas={aviso.fichasOcultas?.length || 0}
+    >
+      {itens.map((item) => (
+        <ItemAcampante
+          key={item.id}
+          item={item}
+          onAbrirFicha={onAbrirFicha}
+          onOcultar={onOcultarFicha ? () => onOcultarFicha(item.id) : undefined}
+          onSalvo={() => { onRecarregar?.(); onCorrigido?.(); }}
+        />
+      ))}
+    </QuadroAviso>
   );
 };
 

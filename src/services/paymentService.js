@@ -373,3 +373,25 @@ export const removerCobranca = async (acampanteId) => {
   const { error } = await supabase.rpc('cobranca_remover', { p_acampante_id: acampanteId });
   if (error) throw erroDeCobranca(error);
 };
+
+/**
+ * Equipantes que ja podem pagar: a escala saiu (provisoria ou oficial) e a
+ * pessoa esta numa area de verdade -- a mesma regra do banco
+ * (_equipante_pode_pagar). Antes disso, equipante nao aparece em "Nao
+ * pagaram": nao tem como cobrar de quem ainda nem pode pagar.
+ *
+ * Devolve um Set com os ids (vazio enquanto a escala nao sai).
+ */
+export const fetchEquipantesComPagamentoAberto = async () => {
+  const { data: config, error: errConfig } = await supabase
+    .from('configuracoes').select('escala_lancada_em').limit(1).maybeSingle();
+  if (errConfig) throw errConfig;
+  if (!config?.escala_lancada_em) return new Set();
+
+  const { data, error } = await comReenvio(
+    () => supabase.from('escalas').select('equipante_id, area_alocada').neq('area_alocada', 'Não será escalado'),
+    { rotulo: 'escala' }
+  );
+  if (error) throw error;
+  return new Set((data || []).map((e) => e.equipante_id));
+};

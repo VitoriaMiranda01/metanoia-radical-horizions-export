@@ -11,6 +11,7 @@ import {
   confirmarPagamentoManual,
   isentarInscricao,
   fetchCobrancas,
+  fetchEquipantesComPagamentoAberto,
   definirCobranca,
   removerCobranca
 } from '@/services/paymentService';
@@ -125,6 +126,8 @@ const PagamentosPendentesPage = () => {
   const [travados, setTravados] = useState([]);
   // Cobranca dos acampantes que nao pagaram: { acampante_id: {...} }.
   const [cobrancas, setCobrancas] = useState({});
+  // Equipantes que ja podem pagar (estao na escala lancada).
+  const [equipantesLiberados, setEquipantesLiberados] = useState(new Set());
   // Janela de cobranca aberta: { item, status } ou null.
   const [dialogo, setDialogo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -148,11 +151,13 @@ const PagamentosPendentesPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const [pixTravados, todos, cobr] = await Promise.all([
+      const [pixTravados, todos, cobr, liberados] = await Promise.all([
         fetchPixTravados(),
         fetchRelacaoDePagamentos(),
-        fetchCobrancas()
+        fetchCobrancas(),
+        fetchEquipantesComPagamentoAberto()
       ]);
+      setEquipantesLiberados(liberados);
       setTravados(pixTravados);
       setRelacao(todos);
       setCobrancas(cobr);
@@ -214,10 +219,13 @@ const PagamentosPendentesPage = () => {
 
   // Quem ainda deve (opcao B, aprovada em 06/10/2026: a antiga aba
   // "Pagamentos manuais" entrou aqui -- o funil da coluna Forma separa os
-  // manuais). Acampante: todos. Equipante: so quem escolheu pagar em maos
-  // (cobranca de equipante fica para depois).
+  // manuais). Acampante: todos. Equipante: so quem ja pode pagar (esta na
+  // escala lancada) e escolheu pagar em maos -- antes da escala o pagamento
+  // nem abriu para ele. A cobranca de equipante fica para depois.
   const devendo = useMemo(() => comCobranca.filter((i) => !i.quitado
-    && (i.tipo === 'acampante' || ['manual', 'isento'].includes(i.metodo_pagamento))), [comCobranca]);
+    && (i.tipo === 'acampante'
+      || (equipantesLiberados.has(i.id) && ['manual', 'isento'].includes(i.metodo_pagamento)))),
+  [comCobranca, equipantesLiberados]);
   const naoPagaram = useMemo(() => devendo.filter((i) => !i.cobranca), [devendo]);
   const emCobranca = useMemo(() => devendo.filter((i) => i.cobranca?.status === 'em_cobranca'), [devendo]);
   const agendados = useMemo(() => devendo.filter((i) => i.cobranca?.status === 'agendado'), [devendo]);

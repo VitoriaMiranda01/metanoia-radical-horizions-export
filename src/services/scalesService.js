@@ -207,10 +207,21 @@ export const definirAtuacao = async (escalaId, atuacao) => {
 //
 // Quem distribui e o banco (alocar_fila_automaticamente), em passadas: todo
 // mundo na 1a opcao, depois quem sobrou na 2a, depois na 3a. Assim ninguem
-// perde a 1a opcao para a 3a de outra pessoa. Quem marcou "Disponível para
-// qualquer área" fica para o fim, para nao ocupar vaga que alguem pediu pelo
-// nome.
+// perde a 1a opcao para a 3a de outra pessoa. Dentro de cada passada, quem
+// escolhe primeiro depende de configuracoes.escala_ordem: 'aprovacao' (quem
+// foi aprovado antes -- regra da edicao atual) ou 'cadastro' (quem se
+// inscreveu antes -- vale a partir da proxima edicao; a virada de edicao
+// liga sozinha). Quem marcou "Disponível para qualquer área" fica para o
+// fim, para nao ocupar vaga que alguem pediu pelo nome.
 // ---------------------------------------------------------------------------
+
+// Qual regra de ordem esta valendo (so para a tela explicar). Se a coluna
+// ainda nao existe no banco, vale a regra antiga.
+export const fetchEscalaOrdem = async () => {
+  const { data } = await supabase
+    .from('configuracoes').select('escala_ordem').limit(1).maybeSingle();
+  return data?.escala_ordem === 'cadastro' ? 'cadastro' : 'aprovacao';
+};
 
 export const alocarFilaAutomaticamente = async () => {
   const { data, error } = await comReenvio(

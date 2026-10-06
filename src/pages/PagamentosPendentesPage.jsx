@@ -327,7 +327,7 @@ const PagamentosPendentesPage = () => {
 
     if (emConfirmacao) {
       return (
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center gap-2">
           <span className="text-sm text-gray-400 mr-1 font-medium">
             {acaoPendente.acao === 'isentar' ? 'Isentar da taxa?' : 'Confirmar pagamento?'}
           </span>
@@ -365,9 +365,9 @@ const PagamentosPendentesPage = () => {
     const cobravel = item.tipo === 'acampante' && aba !== 'travados';
 
     return (
-      <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1.5">
+      <div className="flex flex-wrap 2xl:flex-nowrap items-center gap-x-2 gap-y-1.5">
         {cobravel && (
-          <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+          <div className="flex items-center gap-2 whitespace-nowrap">
             {aba === 'nao' && (
               <Button
                 size="sm" variant="outline" className={botaoCobranca}
@@ -398,7 +398,7 @@ const PagamentosPendentesPage = () => {
             </Button>
           </div>
         )}
-        <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+        <div className="flex items-center gap-2 whitespace-nowrap">
           <Button
             size="sm"
             variant="outline"
@@ -596,7 +596,7 @@ const PagamentosPendentesPage = () => {
                             ? cabecalho('Data combinada', 'agendado_para')
                             : cabecalho('Forma de pagamento', 'forma')}
                     </TableHead>
-                    <TableHead className="text-right text-gray-300">Ações</TableHead>
+                    <TableHead className="w-px text-gray-300">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -666,7 +666,7 @@ const PagamentosPendentesPage = () => {
                             <span className="text-gray-400">{valorDaColuna(item, 'forma')}</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell>
                           <Acoes item={item} />
                         </TableCell>
                       </TableRow>

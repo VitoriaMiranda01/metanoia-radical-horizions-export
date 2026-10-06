@@ -269,13 +269,13 @@ const AcampantePage = () => {
 
         {/* Bem visivel de proposito: ninguem pode confundir a sessao de teste
             com as inscricoes abertas de verdade. */}
-        {sessaoDeTeste && (
+        {sessaoDeTeste && !acampantesAbertos && (
           <div className="mb-6 bg-fuchsia-500/10 border border-fuchsia-500/40 p-4 rounded-lg flex items-start gap-3">
             <FlaskConical className="w-5 h-5 text-fuchsia-300 shrink-0 mt-0.5" />
             <p className="text-fuchsia-100 text-sm">
-              <strong>Ficha de teste.</strong> Este link é do painel "Ambiente de teste".
-              A ficha feita aqui segue o fluxo de verdade (inclusive o PIX), mas fica separada:
-              não aparece nas listas, nas contagens nem nas vagas da igreja.
+              <strong>Sessão de teste.</strong> As inscrições de acampante continuam
+              encerradas para o público — este formulário abriu só para quem tem a chave.
+              O que for cadastrado aqui entra na base de verdade: apague depois do teste.
             </p>
           </div>
         )}

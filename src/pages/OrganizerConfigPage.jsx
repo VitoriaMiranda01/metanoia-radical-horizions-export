@@ -24,7 +24,6 @@ import IgrejasCadastradasManager from '@/components/organizer/IgrejasCadastradas
 import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizadoresManager';
 import BackupStatusCard from '@/components/organizer/BackupStatusCard';
 import AuditoriaCard from '@/components/organizer/AuditoriaCard';
-import AmbienteTesteCard from '@/components/organizer/AmbienteTesteCard';
 import { Button } from '@/components/ui/button';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
 
@@ -758,11 +757,6 @@ const OrganizerConfigPage = () => {
               permissao maxima, geracao de senha para os outros. */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
             <SenhasOrganizadoresManager />
-          </motion.div>
-
-          {/* Ambiente de teste: so Raquel e Desenvolvedores (o quadro some para os outros). */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.47 }}>
-            <AmbienteTesteCard />
           </motion.div>
 
           {/* Backups: o quadro some sozinho para quem nao e a conta Desenvolvedores. */}

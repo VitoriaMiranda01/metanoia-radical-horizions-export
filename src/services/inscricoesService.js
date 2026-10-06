@@ -271,6 +271,9 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
       const rotulo = ROTULO_CAMPO_TELEFONE[campo] || 'telefone';
       return { success: false, error: `Confira o ${rotulo}: precisa ter DDD e o número completo, ex.: (21) 99999-9999.` };
     }
+    if (error?.message?.includes('CAMISA_OBRIGATORIA')) {
+      return { success: false, error: 'Escolha o tamanho da camisa para concluir a inscrição.' };
+    }
     if (error?.message?.includes('IGREJA_OBRIGATORIA')) {
       return { success: false, error: 'Escolha a igreja que você frequenta (ou "OUTRA" e escreva o nome).' };
     }

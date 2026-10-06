@@ -176,6 +176,15 @@ const AcampantePage = () => {
       return;
     }
 
+    // Tamanho da camisa e obrigatorio (Patrick, 06/10/2026): duas inscricoes
+    // chegaram sem e a soma das camisas deixou de bater com o total. O
+    // servidor confere de novo (criar_inscricao -> CAMISA_OBRIGATORIA).
+    if (!formData.tamanho_camisa) {
+      toast({ title: "Escolha o tamanho da camisa", description: "O tamanho da camisa é obrigatório.", variant: "destructive" });
+      document.getElementById('tamanho_camisa')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     // Telefones conferidos antes de enviar (a mascara ja evita quase tudo).
     // Emergencia e quem indicou aceitam fixo; quem e estrangeiro, formato livre.
     const telefones = [

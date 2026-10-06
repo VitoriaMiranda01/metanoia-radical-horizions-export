@@ -211,8 +211,8 @@ const DadosPessoais = ({
         {!isEquipante && (
           <div className="space-y-2">
             <Label htmlFor="tamanho_camisa" className="text-white">Tamanho da Camisa</Label>
-            <Select value={formData.tamanho_camisa || ''} onValueChange={(value) => handleSelectChange('tamanho_camisa', value)}>
-              <SelectTrigger className="bg-white/10 border-white/20 text-white">
+            <Select required value={formData.tamanho_camisa || ''} onValueChange={(value) => handleSelectChange('tamanho_camisa', value)}>
+              <SelectTrigger id="tamanho_camisa" className="bg-white/10 border-white/20 text-white">
                 <SelectValue placeholder="Selecione..." />
               </SelectTrigger>
               <SelectContent>

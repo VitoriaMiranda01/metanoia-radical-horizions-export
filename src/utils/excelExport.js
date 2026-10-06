@@ -163,6 +163,7 @@ export const exportRelacaoPagamentos = (linhas) => {
     'Nome': item.nome || '-',
     'CPF': item.cpf ? formatCPF(item.cpf) : '(sem CPF)',
     'Tipo': item.tipo === 'acampante' ? 'Acampante' : 'Equipante',
+    'WhatsApp': item.whatsapp || '-',
     'Igreja': item.igreja || '-',
     'Forma de pagamento': ({
       pix: 'PIX',
@@ -182,6 +183,7 @@ export const exportRelacaoPagamentos = (linhas) => {
     { wch: 40 }, // Nome
     { wch: 18 }, // CPF
     { wch: 12 }, // Tipo
+    { wch: 18 }, // WhatsApp
     { wch: 38 }, // Igreja
     { wch: 20 }, // Forma
     { wch: 18 }, // Data

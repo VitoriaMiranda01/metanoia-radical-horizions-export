@@ -185,7 +185,7 @@ const estaQuitada = (status) =>
  * já existe para pegar, sem misturar com esta.
  */
 export const fetchInscricoesNaoQuitadas = async () => {
-  const colunas = 'id, nome, cpf, nacionalidade, status_pagamento, metodo_pagamento, data_pagamento';
+  const colunas = 'id, nome, cpf, whatsapp, nacionalidade, status_pagamento, metodo_pagamento, data_pagamento';
 
   const [acampantes, equipantes] = await Promise.all([
     comReenvio(() => supabase.from('acampantes').select(colunas).in('metodo_pagamento', ['manual', 'isento']), { rotulo: 'acampantes pendentes' }),
@@ -220,7 +220,7 @@ export const fetchInscricoesNaoQuitadas = async () => {
  */
 export const fetchRelacaoDePagamentos = async () => {
   const colunasComuns =
-    'id, nome, cpf, nacionalidade, status_pagamento, metodo_pagamento, data_pagamento';
+    'id, nome, cpf, whatsapp, nacionalidade, status_pagamento, metodo_pagamento, data_pagamento';
 
   const [acampantes, equipantes] = await Promise.all([
     comReenvio(() => supabase.from('acampantes').select(`${colunasComuns}, igreja, admin_responsavel`),
@@ -278,7 +278,7 @@ export const fetchPixTravados = async () => {
     if (lista.length === 0) return [];
     const { data, error: err } = await supabase
       .from(tabela)
-      .select('id, nome, cpf, status_pagamento')
+      .select('id, nome, cpf, whatsapp, nacionalidade, status_pagamento')
       .in('id', lista);
     if (err) throw err;
     return data || [];
@@ -301,6 +301,8 @@ export const fetchPixTravados = async () => {
         tipo: p.inscricao_tipo === 'equipante' ? 'equipante' : 'acampante',
         nome: inscricao?.nome || 'Inscrição não encontrada',
         cpf: inscricao?.cpf || '—',
+        whatsapp: inscricao?.whatsapp || null,
+        nacionalidade: inscricao?.nacionalidade || null,
         status_inscricao: inscricao?.status_pagamento || null,
         motivo: p.status === 'divergente'
           ? 'Valor pago diferente do cobrado'

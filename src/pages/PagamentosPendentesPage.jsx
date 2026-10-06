@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift, Download } from 'lucide-react';
+import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift, Download, MessageCircle, Copy } from 'lucide-react';
 import Layout from '@/components/Layout';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { exportRelacaoPagamentos } from '@/utils/excelExport';
@@ -19,11 +19,47 @@ import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
+import { formatarTelefone } from '@/utils/telefone';
+import { linkWhatsApp } from '@/services/liderService';
 
 const formatarValor = (valor) => {
   const numero = Number(valor);
   if (!Number.isFinite(numero)) return '—';
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
+};
+
+// WhatsApp da pessoa (pedido da Raquel, 06/10/2026): para mandar o link do
+// grupo sem ter que voltar em outra tela. O numero abre a conversa no
+// WhatsApp; o botao ao lado copia.
+const CelulaWhatsApp = ({ item, onCopiar }) => {
+  if (!item.whatsapp) return <span className="text-gray-600">—</span>;
+  const estrangeiro = !!item.nacionalidade;
+  const texto = estrangeiro ? item.whatsapp : formatarTelefone(item.whatsapp);
+  const link = linkWhatsApp(item.whatsapp, estrangeiro);
+  return (
+    <div className="flex items-center gap-1 whitespace-nowrap">
+      {link ? (
+        <a
+          href={link} target="_blank" rel="noopener noreferrer"
+          data-dica="Abrir a conversa no WhatsApp"
+          className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 hover:underline"
+        >
+          <MessageCircle className="w-4 h-4" />
+          {texto}
+        </a>
+      ) : (
+        <span className="text-gray-300">{texto}</span>
+      )}
+      <Button
+        type="button" variant="ghost" size="sm"
+        onClick={() => onCopiar(texto)}
+        data-dica="Copiar o número" aria-label="Copiar o número"
+        className="h-7 w-7 p-0 text-gray-500 hover:text-white hover:bg-white/10"
+      >
+        <Copy className="w-3.5 h-3.5" />
+      </Button>
+    </div>
+  );
 };
 
 const PagamentosPendentesPage = () => {
@@ -105,6 +141,15 @@ const PagamentosPendentesPage = () => {
 
   const pagos = useMemo(() => relacao.filter((i) => i.quitado), [relacao]);
 
+  const copiarNumero = async (numero) => {
+    try {
+      await navigator.clipboard.writeText(numero);
+      toast({ title: 'Número copiado', description: numero, className: 'bg-emerald-600 text-white border-none' });
+    } catch (_) {
+      toast({ title: 'Não deu para copiar', description: numero, variant: 'destructive' });
+    }
+  };
+
   const exportarRelacao = () => {
     try {
       const r = exportRelacaoPagamentos(relacao);
@@ -131,7 +176,10 @@ const PagamentosPendentesPage = () => {
     return base.filter((item) => {
       const nome = String(item.nome || '').toLowerCase();
       const cpf = String(item.cpf || '');
-      const casaBusca = !busca || nome.includes(busca) || cpf.includes(busca);
+      const digitos = busca.replace(/\D/g, '');
+      const whats = String(item.whatsapp || '').replace(/\D/g, '');
+      const casaBusca = !busca || nome.includes(busca) || cpf.includes(busca)
+        || (digitos.length >= 4 && whats.includes(digitos));
       const casaTipo = tipoFiltro === 'all' || item.tipo === tipoFiltro;
       return casaBusca && casaTipo;
     });
@@ -296,7 +344,7 @@ const PagamentosPendentesPage = () => {
                   <div className="relative w-full md:w-72">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
-                      placeholder="Buscar por CPF, Nome..."
+                      placeholder="Buscar por nome, CPF ou WhatsApp..."
                       value={filterText}
                       onChange={(e) => setFilterText(e.target.value)}
                       className="pl-9 h-11 bg-white/5 border-white/10 text-white w-full placeholder:text-gray-500 focus-visible:ring-blue-500"
@@ -335,6 +383,7 @@ const PagamentosPendentesPage = () => {
                     <TableHead className="text-gray-300">Nome</TableHead>
                     <TableHead className="text-gray-300">CPF</TableHead>
                     <TableHead className="text-gray-300">Tipo</TableHead>
+                    <TableHead className="text-gray-300">WhatsApp</TableHead>
                     <TableHead className="text-gray-300">
                       {aba === 'travados' ? 'Motivo' : 'Forma de pagamento'}
                     </TableHead>
@@ -344,14 +393,14 @@ const PagamentosPendentesPage = () => {
                 <TableBody>
                   {loading ? (
                     <TableRow className="border-white/10 hover:bg-transparent">
-                      <TableCell colSpan={5} className="h-32 text-center text-gray-400">
+                      <TableCell colSpan={6} className="h-32 text-center text-gray-400">
                         <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-500" />
                         Buscando pagamentos...
                       </TableCell>
                     </TableRow>
                   ) : linhas.length === 0 ? (
                     <TableRow className="border-white/10 hover:bg-transparent">
-                      <TableCell colSpan={5} className="h-32 text-center text-gray-400">
+                      <TableCell colSpan={6} className="h-32 text-center text-gray-400">
                         {aba === 'travados'
                           ? 'Nenhuma cobrança travada. Tudo certo por aqui.'
                           : aba === 'pagos'
@@ -373,6 +422,9 @@ const PagamentosPendentesPage = () => {
                           >
                             {item.tipo}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          <CelulaWhatsApp item={item} onCopiar={copiarNumero} />
                         </TableCell>
                         <TableCell className="text-gray-300 text-sm">
                           {aba === 'travados' ? (

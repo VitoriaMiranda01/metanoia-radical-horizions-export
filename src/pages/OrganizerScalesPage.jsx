@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { WORK_AREAS, AREAS_ESPECIAIS, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor } from '@/constants/workAreas';
 import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges, fetchAtuacoesPorArea, definirAtuacao,
   definirCor, contarAguardandoAprovacao, fetchSituacaoEscala, lancarEscala, desfazerLancamentoEscala,
-  alocarFilaAutomaticamente, lancarEscalaOficial, desfazerEscalaOficial } from '@/services/scalesService';
+  alocarFilaAutomaticamente, fetchEscalaOrdem, lancarEscalaOficial, desfazerEscalaOficial } from '@/services/scalesService';
 import { fetchLimitesAreas, saveLimiteAreaComGenero, getLimiteAreaComGenero } from '@/services/limiteAreasService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { exportEquipantesByArea, exportAllEquipantes } from '@/utils/excelExport';
@@ -166,6 +166,7 @@ const OrganizerScalesPage = () => {
   // em scalesService.alocarFilaAutomaticamente.
   const [confirmandoAuto, setConfirmandoAuto] = useState(false);
   const [alocandoAuto, setAlocandoAuto] = useState(false);
+  const [escalaOrdem, setEscalaOrdem] = useState('aprovacao');
 
   // Aplicacao das listas de CPF pre-cadastradas -- ver handleAlocarPorCpf,
   // abaixo.
@@ -364,6 +365,11 @@ const OrganizerScalesPage = () => {
       setSalvandoCor(prev => ({ ...prev, [escalaId]: false }));
     }
   };
+
+  // Regra de ordem da alocacao automatica (so para o aviso do dialogo).
+  useEffect(() => {
+    if (confirmandoAuto) fetchEscalaOrdem().then(setEscalaOrdem).catch(() => {});
+  }, [confirmandoAuto]);
 
   useEffect(() => {
     loadInitialData();
@@ -1424,7 +1430,9 @@ const OrganizerScalesPage = () => {
                 <br /><br />
                 <strong className="text-white">Primeiro todo mundo na 1ª opção</strong>, depois
                 quem sobrou na 2ª, depois na 3ª — assim ninguém perde a 1ª opção para a 3ª de
-                outra pessoa. Quem marcou “Disponível para qualquer área” fica para o fim.
+                outra pessoa. Dentro de cada opção, escolhe primeiro quem{' '}
+                {escalaOrdem === 'cadastro' ? 'se cadastrou' : 'foi aprovado'} antes.
+                Quem marcou “Disponível para qualquer área” fica para o fim.
                 <br /><br />
                 Guia, Inimigo, Espírito Santo e as demais áreas que só a diretoria preenche
                 <strong className="text-white"> não recebem ninguém</strong> por aqui. Quem já

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, CheckCircle2, Eye, PhoneOff, ShieldAlert } from 'lucide-react';
+import { Bell, CheckCircle2, Eye, PhoneOff, ShieldAlert, Shirt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -14,8 +14,9 @@ import { cn } from '@/lib/utils';
  * que os avisos estao no perfil da Raquel.
  */
 
-const ICONES = { telefones: PhoneOff, contatos: ShieldAlert };
-const ALVOS = { telefones: 'aviso-telefones', contatos: 'aviso-contatos' };
+const ICONES = { telefones: PhoneOff, contatos: ShieldAlert, camisas: Shirt };
+const ALVOS = { telefones: 'aviso-telefones', contatos: 'aviso-contatos', camisas: 'aviso-camisas' };
+const COR_ICONE = { telefones: 'text-amber-400', contatos: 'text-orange-400', camisas: 'text-purple-400' };
 
 const CentralNotificacoes = ({ avisos, total, onMostrar, onMostrarFicha, somenteLeitura = false }) => {
   const [aberto, setAberto] = useState(false);
@@ -71,7 +72,7 @@ const CentralNotificacoes = ({ avisos, total, onMostrar, onMostrarFicha, somente
               const Icone = ICONES[a.chave] || Bell;
               return (
                 <li key={a.chave} className="px-4 py-3 flex items-start gap-3">
-                  <Icone className={cn('h-5 w-5 shrink-0 mt-0.5', a.chave === 'contatos' ? 'text-orange-400' : 'text-amber-400')} />
+                  <Icone className={cn('h-5 w-5 shrink-0 mt-0.5', COR_ICONE[a.chave] || 'text-amber-400')} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white">{a.titulo}</p>
                     {!somenteLeitura && (

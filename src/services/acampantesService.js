@@ -189,6 +189,14 @@ export const ocultarAviso = async (chave, oculto) => {
   return true;
 };
 
+// Acampantes sem tamanho de camisa (fichas antigas). null = este login nao
+// ve o aviso.
+export const fetchCamisasPendentes = async () => {
+  const { data, error } = await supabase.rpc('camisas_pendentes');
+  if (error) throw error;
+  return data || null;
+};
+
 export const fetchTelefonesAcampantesPendentes = async () => {
   const { data, error } = await supabase.rpc('telefones_acampantes_pendentes');
   if (error) throw error;

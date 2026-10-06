@@ -35,6 +35,7 @@ const useAlturaDeDuas = (ref) => {
 const CORES = {
   amber: { borda: 'border-amber-500/40', fundo: 'bg-amber-950/40', icone: 'text-amber-400', texto: 'text-amber-100/80' },
   orange: { borda: 'border-orange-500/40', fundo: 'bg-orange-950/40', icone: 'text-orange-400', texto: 'text-orange-100/80' },
+  purple: { borda: 'border-purple-500/40', fundo: 'bg-purple-950/40', icone: 'text-purple-400', texto: 'text-purple-100/80' },
 };
 
 const QuadroAviso = ({ id, cor = 'amber', Icone, titulo, explicacao, onOcultar, ocultas = 0, children }) => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift, Download, MessageCircle, Copy, X, PhoneCall, CalendarClock, StickyNote, Pencil } from 'lucide-react';
+import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift, Download, MessageCircle, Copy, X, PhoneCall, CalendarClock, StickyNote, Pencil, Check, Undo2 } from 'lucide-react';
 import Layout from '@/components/Layout';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { exportRelacaoPagamentos } from '@/utils/excelExport';
@@ -11,6 +11,9 @@ import {
   confirmarPagamentoManual,
   isentarInscricao,
   fetchCobrancas,
+  fetchGruposEnviados,
+  marcarGrupoEnviado,
+  desmarcarGrupoEnviado,
   fetchEquipantesComPagamentoAberto,
   definirCobranca,
   removerCobranca
@@ -80,6 +83,7 @@ const valorDaColuna = (item, chave) => {
     case 'motivo': return item.motivo || '';
     case 'desde': return item.cobranca?.marcado_em ? new Date(item.cobranca.marcado_em).toLocaleDateString('pt-BR') : '';
     case 'agendado_para': return dataBR(item.cobranca?.agendado_para);
+    case 'grupo': return item.grupo?.em ? `${new Date(item.grupo.em).toLocaleDateString('pt-BR')} · ${item.grupo.por}` : '';
     default: return String(item[chave] || '');
   }
 };
@@ -87,7 +91,7 @@ const valorDaColuna = (item, chave) => {
 // WhatsApp da pessoa (pedido da Raquel, 06/10/2026): para mandar o link do
 // grupo sem ter que voltar em outra tela. O numero abre a conversa no
 // WhatsApp; o botao ao lado copia.
-const CelulaWhatsApp = ({ item, onCopiar }) => {
+const CelulaWhatsApp = ({ item, onCopiar, onAbrir }) => {
   if (!item.whatsapp) return <span className="text-gray-600">—</span>;
   const estrangeiro = !!item.nacionalidade;
   const texto = estrangeiro ? item.whatsapp : formatarTelefone(item.whatsapp);
@@ -97,7 +101,8 @@ const CelulaWhatsApp = ({ item, onCopiar }) => {
       {link ? (
         <a
           href={link} target="_blank" rel="noopener noreferrer"
-          data-dica="Abrir a conversa no WhatsApp"
+          onClick={onAbrir}
+          data-dica={onAbrir ? 'Abrir a conversa no WhatsApp (fica registrado que o convite do grupo foi enviado).' : 'Abrir a conversa no WhatsApp'}
           className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 hover:underline"
         >
           <MessageCircle className="w-4 h-4" />
@@ -118,6 +123,47 @@ const CelulaWhatsApp = ({ item, onCopiar }) => {
   );
 };
 
+// "Grupo do WhatsApp" (Raquel, 06/10/2026): quem ja recebeu o convite, o dia e
+// quem mandou -- para nao ter que rolar a lista procurando ate onde foi.
+const CelulaGrupo = ({ item, onMarcar, onDesmarcar, ocupado }) => {
+  if (item.grupo?.em) {
+    const quando = new Date(item.grupo.em).toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+    });
+    return (
+      <div className="flex items-center gap-1.5 whitespace-nowrap">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs text-emerald-300">
+          <Check className="w-3.5 h-3.5" /> Enviado {quando} · {item.grupo.por}
+        </span>
+        <Button
+          type="button" variant="ghost" size="sm" disabled={ocupado}
+          onClick={() => onDesmarcar(item)}
+          data-dica="Tirar a marca de enviado (marcou sem querer, ou vai mandar de novo)."
+          aria-label="Desfazer envio"
+          className="h-7 w-7 p-0 text-gray-500 hover:text-white hover:bg-white/10"
+        >
+          <Undo2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1.5 whitespace-nowrap">
+      <span className="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs text-amber-300">
+        Falta enviar
+      </span>
+      <Button
+        type="button" variant="ghost" size="sm" disabled={ocupado}
+        onClick={() => onMarcar(item)}
+        data-dica="Marcar como enviado sem abrir o WhatsApp (por exemplo, se você mandou por outro lugar)."
+        className="h-7 px-2 text-xs text-gray-400 hover:text-white hover:bg-white/10"
+      >
+        Marcar enviado
+      </Button>
+    </div>
+  );
+};
+
 const PagamentosPendentesPage = () => {
   // Todo mundo, pago ou nao -- e daqui que saem a aba "Pagos" e a
   // planilha do portao. A tela so mostrava pendentes, entao quem pagava
@@ -126,6 +172,11 @@ const PagamentosPendentesPage = () => {
   const [travados, setTravados] = useState([]);
   // Cobranca dos acampantes que nao pagaram: { acampante_id: {...} }.
   const [cobrancas, setCobrancas] = useState({});
+  // Convite do grupo de WhatsApp ja enviado: { id da ficha: { em, por } }.
+  const [gruposEnviados, setGruposEnviados] = useState({});
+  const [filtroGrupo, setFiltroGrupo] = useState('todos'); // 'todos' | 'faltam'
+  const [confirmandoLote, setConfirmandoLote] = useState(false);
+  const [gravandoGrupo, setGravandoGrupo] = useState(false);
   // Equipantes que ja podem pagar (estao na escala lancada).
   const [equipantesLiberados, setEquipantesLiberados] = useState(new Set());
   // Janela de cobranca aberta: { item, status } ou null.
@@ -151,12 +202,14 @@ const PagamentosPendentesPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const [pixTravados, todos, cobr, liberados] = await Promise.all([
+      const [pixTravados, todos, cobr, liberados, grupos] = await Promise.all([
         fetchPixTravados(),
         fetchRelacaoDePagamentos(),
         fetchCobrancas(),
-        fetchEquipantesComPagamentoAberto()
+        fetchEquipantesComPagamentoAberto(),
+        fetchGruposEnviados()
       ]);
+      setGruposEnviados(grupos);
       setEquipantesLiberados(liberados);
       setTravados(pixTravados);
       setRelacao(todos);
@@ -211,11 +264,41 @@ const PagamentosPendentesPage = () => {
   };
 
   // Todo mundo com a cobranca junto (so acampante tem cobranca).
-  const comCobranca = useMemo(() => relacao.map((i) => (
-    i.tipo === 'acampante' && cobrancas[i.id] ? { ...i, cobranca: cobrancas[i.id] } : i
-  )), [relacao, cobrancas]);
+  const comCobranca = useMemo(() => relacao.map((i) => ({
+    ...i,
+    ...(i.tipo === 'acampante' && cobrancas[i.id] ? { cobranca: cobrancas[i.id] } : {}),
+    ...(gruposEnviados[i.id] ? { grupo: gruposEnviados[i.id] } : {}),
+  })), [relacao, cobrancas, gruposEnviados]);
 
   const pagos = useMemo(() => comCobranca.filter((i) => i.quitado), [comCobranca]);
+  // Pagou e ainda nao recebeu o convite do grupo.
+  const semGrupo = useMemo(() => pagos.filter((i) => !i.grupo).length, [pagos]);
+
+  const recarregarGrupos = async () => setGruposEnviados(await fetchGruposEnviados());
+
+  // Clicou no WhatsApp de quem pagou: registra o envio (a conversa abre
+  // normalmente; o registro corre ao lado e nao atrapalha).
+  const registrarEnvio = async (item) => {
+    if (item.grupo) return;
+    try {
+      await marcarGrupoEnviado(item.tipo, [item.id]);
+      await recarregarGrupos();
+    } catch (err) {
+      toast({ title: 'Não deu para registrar o envio', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const desmarcarEnvio = async (item) => {
+    setGravandoGrupo(true);
+    try {
+      await desmarcarGrupoEnviado(item.tipo, item.id);
+      await recarregarGrupos();
+    } catch (err) {
+      toast({ title: 'Não deu para desfazer', description: err.message, variant: 'destructive' });
+    } finally {
+      setGravandoGrupo(false);
+    }
+  };
 
   // Quem ainda deve (opcao B, aprovada em 06/10/2026: a antiga aba
   // "Pagamentos manuais" entrou aqui -- o funil da coluna Forma separa os
@@ -303,18 +386,43 @@ const PagamentosPendentesPage = () => {
       const casaBusca = !busca || nome.includes(busca) || cpf.includes(busca)
         || (digitos.length >= 4 && whats.includes(digitos));
       const casaTipo = tipoFiltro === 'all' || item.tipo === tipoFiltro;
+      const casaGrupo = aba !== 'pagos' || filtroGrupo === 'todos' || !item.grupo;
       const casaColunas = Object.entries(filtrosColuna).every(([chave, valores]) =>
         !valores || valores.length === 0 || valores.includes(valorDaColuna(item, chave)));
-      return casaBusca && casaTipo && casaColunas;
+      return casaBusca && casaTipo && casaGrupo && casaColunas;
     });
     // Agendados: sem seta escolhida, a data mais proxima vem primeiro.
     const ordemFinal = ordem || (aba === 'agendado' ? { chave: 'agendado_para', direcao: 'asc' } : null);
     return ordenarLista(filtradas, ordemFinal, valorDaColuna);
-  }, [baseDaAba, filterText, tipoFiltro, filtrosColuna, ordem, aba]);
+  }, [baseDaAba, filterText, tipoFiltro, filtrosColuna, ordem, aba, filtroGrupo]);
 
   // Pagina a lista já filtrada. No dia do evento essa tela pode ter centenas
   // de pendentes — desenhar tudo de uma vez trava celular mais simples.
   const paginacao = usePaginacao(linhas);
+
+  const colunas = aba === 'pagos' ? 7 : 6;
+  const faltamNaLista = aba === 'pagos' ? linhas.filter((i) => !i.grupo) : [];
+
+  const marcarLote = async () => {
+    setGravandoGrupo(true);
+    try {
+      for (const tipo of ['acampante', 'equipante']) {
+        const ids = faltamNaLista.filter((i) => i.tipo === tipo).map((i) => i.id);
+        if (ids.length) await marcarGrupoEnviado(tipo, ids);
+      }
+      await recarregarGrupos();
+      toast({
+        title: 'Marcados como enviados',
+        description: `${faltamNaLista.length} ${faltamNaLista.length === 1 ? 'pessoa' : 'pessoas'}.`,
+        className: 'bg-emerald-600 text-white border-none'
+      });
+    } catch (err) {
+      toast({ title: 'Não deu para marcar', description: err.message, variant: 'destructive' });
+    } finally {
+      setGravandoGrupo(false);
+      setConfirmandoLote(false);
+    }
+  };
 
   const Acoes = ({ item }) => {
     const emConfirmacao = acaoPendente?.id === item.id;
@@ -512,6 +620,11 @@ const PagamentosPendentesPage = () => {
                     className="flex-1 md:flex-none data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300 text-gray-400"
                   >
                     Pagos ({pagos.length})
+                    {semGrupo > 0 && (
+                      <span className="ml-1.5 rounded-full bg-amber-500/20 text-amber-300 px-1.5 text-[11px]">
+                        {semGrupo} sem grupo
+                      </span>
+                    )}
                   </TabsTrigger>
                   <TabsTrigger
                     value="travados"
@@ -523,7 +636,8 @@ const PagamentosPendentesPage = () => {
                 </TabsList>
               </Tabs>
 
-              <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+              <div className="flex flex-col md:flex-row md:flex-wrap gap-4 justify-between items-start md:items-center">
+                <div className="flex flex-col md:flex-row md:flex-wrap md:items-center gap-3 w-full md:w-auto">
                 <Tabs value={tipoFiltro} onValueChange={setTipoFiltro} className="w-full md:w-auto">
                   <TabsList className="bg-white/5 border border-white/10 w-full md:w-auto flex">
                     <TabsTrigger value="all" className="flex-1 md:flex-none data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">Todos</TabsTrigger>
@@ -531,6 +645,38 @@ const PagamentosPendentesPage = () => {
                     <TabsTrigger value="equipante" className="flex-1 md:flex-none data-[state=active]:bg-red-600/20 data-[state=active]:text-red-400 text-gray-400">Equipantes</TabsTrigger>
                   </TabsList>
                 </Tabs>
+
+                {/* Convite do grupo de WhatsApp (so na aba Pagos). */}
+                {aba === 'pagos' && (
+                  <>
+                    <Tabs value={filtroGrupo} onValueChange={setFiltroGrupo} className="w-full md:w-auto">
+                      <TabsList className="bg-white/5 border border-white/10 w-full md:w-auto flex">
+                        <TabsTrigger value="todos" className="flex-1 md:flex-none data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400">Todos os pagos</TabsTrigger>
+                        <TabsTrigger value="faltam" className="flex-1 md:flex-none data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300 text-gray-400">
+                          Falta enviar o grupo ({semGrupo})
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                    {faltamNaLista.length > 0 && (
+                      confirmandoLote ? (
+                        <span className="inline-flex items-center gap-2 text-sm text-gray-300">
+                          Marcar {faltamNaLista.length} como enviados?
+                          <Button size="sm" disabled={gravandoGrupo} onClick={marcarLote} className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white">Sim</Button>
+                          <Button size="sm" variant="ghost" disabled={gravandoGrupo} onClick={() => setConfirmandoLote(false)} className="h-8 text-gray-300 hover:bg-white/10">Não</Button>
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm" variant="outline" onClick={() => setConfirmandoLote(true)}
+                          data-dica="Marca de uma vez todos os que estão na lista como 'convite do grupo enviado' (por exemplo, quem você já avisou antes deste registro existir)."
+                          className="h-9 whitespace-nowrap shrink-0 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10"
+                        >
+                          <Check className="w-4 h-4 mr-1.5" /> Marcar {faltamNaLista.length} como enviados
+                        </Button>
+                      )
+                    )}
+                  </>
+                )}
+                </div>
 
                 <div className="flex gap-2 w-full md:w-auto">
                   {temFiltroColuna && (
@@ -596,20 +742,21 @@ const PagamentosPendentesPage = () => {
                             ? cabecalho('Data combinada', 'agendado_para')
                             : cabecalho('Forma de pagamento', 'forma')}
                     </TableHead>
+                    {aba === 'pagos' && <TableHead>{cabecalho('Grupo do WhatsApp', 'grupo')}</TableHead>}
                     <TableHead className="w-px text-gray-300">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow className="border-white/10 hover:bg-transparent">
-                      <TableCell colSpan={6} className="h-32 text-center text-gray-400">
+                      <TableCell colSpan={colunas} className="h-32 text-center text-gray-400">
                         <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-500" />
                         Buscando pagamentos...
                       </TableCell>
                     </TableRow>
                   ) : linhas.length === 0 ? (
                     <TableRow className="border-white/10 hover:bg-transparent">
-                      <TableCell colSpan={6} className="h-32 text-center text-gray-400">
+                      <TableCell colSpan={colunas} className="h-32 text-center text-gray-400">
                         {aba === 'travados'
                           ? 'Nenhuma cobrança travada. Tudo certo por aqui.'
                           : aba === 'pagos'
@@ -643,7 +790,10 @@ const PagamentosPendentesPage = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">
-                          <CelulaWhatsApp item={item} onCopiar={copiarNumero} />
+                          <CelulaWhatsApp
+                            item={item} onCopiar={copiarNumero}
+                            onAbrir={aba === 'pagos' ? () => registrarEnvio(item) : undefined}
+                          />
                         </TableCell>
                         <TableCell className="text-gray-300 text-sm">
                           {aba === 'travados' ? (
@@ -666,6 +816,11 @@ const PagamentosPendentesPage = () => {
                             <span className="text-gray-400">{valorDaColuna(item, 'forma')}</span>
                           )}
                         </TableCell>
+                        {aba === 'pagos' && (
+                          <TableCell className="text-sm">
+                            <CelulaGrupo item={item} onMarcar={registrarEnvio} onDesmarcar={desmarcarEnvio} ocupado={gravandoGrupo} />
+                          </TableCell>
+                        )}
                         <TableCell>
                           <Acoes item={item} />
                         </TableCell>

@@ -182,6 +182,11 @@ export const exportRelacaoPagamentos = (linhas) => {
         ? `Agendado para ${String(item.cobranca.agendado_para).slice(0, 10).split('-').reverse().join('/')}`
         : 'Em andamento',
     'Observação da cobrança': (!item.quitado && item.cobranca?.observacao) || '-',
+    // Convite do grupo de WhatsApp (so de quem ja pagou).
+    'Grupo do WhatsApp': !item.quitado ? '-'
+      : item.grupo?.em
+        ? `Enviado ${new Date(item.grupo.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} · ${item.grupo.por}`
+        : 'Falta enviar',
   });
 
   const larguras = [
@@ -195,6 +200,7 @@ export const exportRelacaoPagamentos = (linhas) => {
     { wch: 18 }, // Data
     { wch: 24 }, // Cobrança
     { wch: 40 }, // Observação
+    { wch: 38 }, // Grupo do WhatsApp
   ];
 
   const wb = XLSX.utils.book_new();

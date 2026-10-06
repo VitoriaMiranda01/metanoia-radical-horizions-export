@@ -395,3 +395,27 @@ export const fetchEquipantesComPagamentoAberto = async () => {
   if (error) throw error;
   return new Set((data || []).map((e) => e.equipante_id));
 };
+
+/**
+ * Convite do grupo de WhatsApp ja enviado (migration 20261006k, pedido da
+ * Raquel em 06/10/2026). Formato: { [id da ficha]: { em, por } }.
+ */
+export const fetchGruposEnviados = async () => {
+  const { data, error } = await supabase.rpc('grupo_enviado_listar');
+  if (error) throw error;
+  return data || {};
+};
+
+const erroDeGrupo = () => new Error('Não foi possível registrar. Tente de novo.');
+
+/** Marca como enviado (quem ja estava marcado fica como estava). */
+export const marcarGrupoEnviado = async (tipo, ids) => {
+  const { data, error } = await supabase.rpc('grupo_enviado_marcar', { p_tipo: tipo, p_ids: ids });
+  if (error) throw erroDeGrupo();
+  return data;
+};
+
+export const desmarcarGrupoEnviado = async (tipo, id) => {
+  const { error } = await supabase.rpc('grupo_enviado_desmarcar', { p_tipo: tipo, p_id: id });
+  if (error) throw erroDeGrupo();
+};

@@ -594,7 +594,7 @@ const PagamentosPendentesPage = () => {
                           ? cabecalho('Em cobrança desde', 'desde')
                           : aba === 'agendado'
                             ? cabecalho('Data combinada', 'agendado_para')
-                            : cabecalho('Forma', 'forma')}
+                            : cabecalho('Forma de pagamento', 'forma')}
                     </TableHead>
                     <TableHead className="text-right text-gray-300">Ações</TableHead>
                   </TableRow>

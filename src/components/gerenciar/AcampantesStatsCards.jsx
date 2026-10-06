@@ -47,6 +47,34 @@ const ShirtCard = ({ size, count, onClick, loading }) => (
   </motion.div>
 );
 
+// Total de camisas (pedido do Patrick, 06/10/2026): a soma dos tamanhos,
+// no fim da fileira. Se alguem ficou sem tamanho (inscricao antiga), avisa
+// embaixo -- e por isso que a soma pode nao bater com o total de acampantes.
+const TotalCamisasCard = ({ total, semTamanho, onClick, loading }) => (
+  <motion.div whileHover={!loading ? { scale: 1.05 } : {}} whileTap={!loading ? { scale: 0.95 } : {}}>
+    <div
+      className={`cursor-pointer bg-purple-500/10 border border-purple-500/40 rounded-lg p-3 text-center hover:bg-purple-500/20 transition-colors h-full flex flex-col justify-center items-center ${loading ? 'opacity-70 pointer-events-none' : ''}`}
+      onClick={!loading ? onClick : undefined}
+      data-dica="Total de camisas pedidas, somando todos os tamanhos. Clique para ver a lista."
+    >
+      <div className="flex justify-center mb-1 text-purple-300">
+        <Shirt className="w-4 h-4" />
+      </div>
+      <div className="text-lg font-bold text-white">Total</div>
+      {loading ? (
+        <div className="h-4 w-8 bg-white/10 animate-pulse rounded mt-1 mx-auto" />
+      ) : (
+        <>
+          <div className="text-sm font-semibold text-purple-200">{total}</div>
+          {semTamanho > 0 && (
+            <div className="text-[10px] text-amber-300 mt-0.5">+ {semTamanho} sem tamanho</div>
+          )}
+        </>
+      )}
+    </div>
+  </motion.div>
+);
+
 const AcampantesStatsCards = ({ acampantes = [], onCardClick, loading = false }) => {
   const stats = useMemo(() => {
     // Helper to normalize strings for comparison
@@ -68,7 +96,10 @@ const AcampantesStatsCards = ({ acampantes = [], onCardClick, loading = false })
       list: acampantes.filter(a => normalize(a.tamanho_camisa) === normalize(size))
     }));
 
-    return { homens, mulheres, problemasSaude, medicamentos, shirts };
+    const comCamisa = shirts.flatMap(({ list }) => list);
+    const semTamanho = acampantes.filter(a => !sizes.some(size => normalize(a.tamanho_camisa) === normalize(size)));
+
+    return { homens, mulheres, problemasSaude, medicamentos, shirts, comCamisa, semTamanho };
   }, [acampantes]);
 
   return (
@@ -114,7 +145,7 @@ const AcampantesStatsCards = ({ acampantes = [], onCardClick, loading = false })
         />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3">
         {stats.shirts.map(({ size, list }) => (
           <ShirtCard 
             key={size} 
@@ -124,6 +155,12 @@ const AcampantesStatsCards = ({ acampantes = [], onCardClick, loading = false })
             onClick={() => onCardClick(`Camiseta ${size}`, list)}
           />
         ))}
+        <TotalCamisasCard
+          total={stats.comCamisa.length}
+          semTamanho={stats.semTamanho.length}
+          loading={loading}
+          onClick={() => onCardClick('Camisetas (todos os tamanhos)', stats.comCamisa)}
+        />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift, Download, MessageCircle, Copy } from 'lucide-react';
+import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift, Download, MessageCircle, Copy, X } from 'lucide-react';
 import Layout from '@/components/Layout';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { exportRelacaoPagamentos } from '@/utils/excelExport';
@@ -21,11 +21,30 @@ import { Badge } from '@/components/ui/badge';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { formatarTelefone } from '@/utils/telefone';
 import { linkWhatsApp } from '@/services/liderService';
+import CabecalhoFiltroOrdem from '@/components/common/CabecalhoFiltroOrdem';
+import { ordenarLista } from '@/utils/ordenacao';
 
 const formatarValor = (valor) => {
   const numero = Number(valor);
   if (!Number.isFinite(numero)) return '—';
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
+};
+
+// Texto de cada coluna, o mesmo da tela: e por ele que o funil filtra e a
+// seta ordena (pedido do Patrick, 06/10/2026).
+const valorDaColuna = (item, chave) => {
+  switch (chave) {
+    case 'tipo': return item.tipo === 'acampante' ? 'Acampante' : 'Equipante';
+    case 'whatsapp':
+      if (!item.whatsapp) return '';
+      return item.nacionalidade ? String(item.whatsapp) : formatarTelefone(item.whatsapp);
+    case 'forma': {
+      const m = item.metodo_pagamento || 'não informado';
+      return m.charAt(0).toUpperCase() + m.slice(1);
+    }
+    case 'motivo': return item.motivo || '';
+    default: return String(item[chave] || '');
+  }
 };
 
 // WhatsApp da pessoa (pedido da Raquel, 06/10/2026): para mandar o link do
@@ -74,6 +93,14 @@ const PagamentosPendentesPage = () => {
   const [filterText, setFilterText] = useState('');
   const [aba, setAba] = useState('pendentes');
   const [tipoFiltro, setTipoFiltro] = useState('all');
+  // Funil e seta de cada coluna. Cada aba tem colunas e valores diferentes,
+  // entao trocar de aba comeca sem filtro e sem ordem.
+  const [filtrosColuna, setFiltrosColuna] = useState({});
+  const [ordem, setOrdem] = useState(null);
+  useEffect(() => {
+    setFiltrosColuna({});
+    setOrdem(null);
+  }, [aba]);
   const [processingId, setProcessingId] = useState(null);
   const [acaoPendente, setAcaoPendente] = useState(null); // { id, tipo, acao }
   const { toast } = useToast();
@@ -167,13 +194,23 @@ const PagamentosPendentesPage = () => {
     }
   };
 
+  const baseDaAba = aba === 'travados' ? travados
+    : aba === 'pagos' ? pagos
+      : pendentes;
+
+  const filtrarColuna = (chave, valores) => setFiltrosColuna((f) => ({ ...f, [chave]: valores }));
+  const temFiltroColuna = Object.values(filtrosColuna).some((v) => v && v.length > 0);
+  const cabecalho = (titulo, chave) => (
+    <CabecalhoFiltroOrdem
+      titulo={titulo} chave={chave} dados={baseDaAba} valorDe={valorDaColuna}
+      filtros={filtrosColuna} onFiltrar={filtrarColuna} ordem={ordem} onOrdenar={setOrdem}
+    />
+  );
+
   const linhas = useMemo(() => {
-    const base = aba === 'travados' ? travados
-      : aba === 'pagos' ? pagos
-        : pendentes;
     const busca = filterText.trim().toLowerCase();
 
-    return base.filter((item) => {
+    const filtradas = baseDaAba.filter((item) => {
       const nome = String(item.nome || '').toLowerCase();
       const cpf = String(item.cpf || '');
       const digitos = busca.replace(/\D/g, '');
@@ -181,9 +218,12 @@ const PagamentosPendentesPage = () => {
       const casaBusca = !busca || nome.includes(busca) || cpf.includes(busca)
         || (digitos.length >= 4 && whats.includes(digitos));
       const casaTipo = tipoFiltro === 'all' || item.tipo === tipoFiltro;
-      return casaBusca && casaTipo;
+      const casaColunas = Object.entries(filtrosColuna).every(([chave, valores]) =>
+        !valores || valores.length === 0 || valores.includes(valorDaColuna(item, chave)));
+      return casaBusca && casaTipo && casaColunas;
     });
-  }, [aba, travados, pendentes, pagos, filterText, tipoFiltro]);
+    return ordenarLista(filtradas, ordem, valorDaColuna);
+  }, [baseDaAba, filterText, tipoFiltro, filtrosColuna, ordem]);
 
   // Pagina a lista já filtrada. No dia do evento essa tela pode ter centenas
   // de pendentes — desenhar tudo de uma vez trava celular mais simples.
@@ -341,6 +381,17 @@ const PagamentosPendentesPage = () => {
                 </Tabs>
 
                 <div className="flex gap-2 w-full md:w-auto">
+                  {temFiltroColuna && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => setFiltrosColuna({})}
+                      data-dica="Tira os filtros das colunas e volta a mostrar a lista inteira."
+                      className="h-11 text-red-400 hover:text-red-300 hover:bg-black/10 border border-red-500/20 shrink-0"
+                    >
+                      <X className="w-4 h-4 md:mr-2" />
+                      <span className="hidden md:inline">Limpar filtros</span>
+                    </Button>
+                  )}
                   <div className="relative w-full md:w-72">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
@@ -380,12 +431,14 @@ const PagamentosPendentesPage = () => {
               <Table>
                 <TableHeader className="bg-white/5">
                   <TableRow className="border-white/10 hover:bg-transparent">
-                    <TableHead className="text-gray-300">Nome</TableHead>
-                    <TableHead className="text-gray-300">CPF</TableHead>
-                    <TableHead className="text-gray-300">Tipo</TableHead>
-                    <TableHead className="text-gray-300">WhatsApp</TableHead>
-                    <TableHead className="text-gray-300">
-                      {aba === 'travados' ? 'Motivo' : 'Forma de pagamento'}
+                    <TableHead>{cabecalho('Nome', 'nome')}</TableHead>
+                    <TableHead>{cabecalho('CPF', 'cpf')}</TableHead>
+                    <TableHead>{cabecalho('Tipo', 'tipo')}</TableHead>
+                    <TableHead>{cabecalho('WhatsApp', 'whatsapp')}</TableHead>
+                    <TableHead>
+                      {aba === 'travados'
+                        ? cabecalho('Motivo', 'motivo')
+                        : cabecalho('Forma de pagamento', 'forma')}
                     </TableHead>
                     <TableHead className="text-right text-gray-300">Ações</TableHead>
                   </TableRow>

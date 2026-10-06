@@ -160,6 +160,30 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // --- 1b. Equipante: so paga quando o acompanhamento libera ---------
+    // (06/10/2026) Antes so a tela escondia o botao; chamando esta funcao
+    // direto dava para pagar antes de ser aprovado e escalado. Aprovado,
+    // escala lancada, numa area de verdade e, se menor, com a autorizacao
+    // dos pais -- a regra mora no banco (_equipante_pode_pagar), a mesma do
+    // "pode_pagar" do acompanhamento.
+    if (tipo === "equipante") {
+      const { data: liberado, error: liberadoError } = await db.rpc(
+        "_equipante_pode_pagar",
+        { p_id: inscricaoId },
+      );
+      if (liberadoError) {
+        console.error("[pix] erro conferindo se o equipante pode pagar:", liberadoError.message);
+        return json({ success: false, error: "Serviço de pagamento indisponível." }, 500);
+      }
+      if (!liberado?.ok) {
+        console.warn("[pix] equipante ainda sem liberação para pagar -- recusado");
+        return json(
+          { success: false, error: liberado?.erro || "O pagamento ainda não está liberado." },
+          403,
+        );
+      }
+    }
+
     // --- 2. Preco do lote vigente ---------------------------------------
     const { data: config, error: configError } = await db
       .from("configuracoes")

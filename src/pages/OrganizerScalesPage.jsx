@@ -15,7 +15,7 @@ import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
 import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf } from '@/services/equipanteAllocationService';
 import { fetchConfiguracoes, updateCpfsAreaEspecial } from '@/services/organizerConfigService';
 import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
-import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck } from 'lucide-react';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,6 +26,7 @@ import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
 import PreEscalaDialog from '@/components/scales/PreEscalaDialog';
 import TrocarAreaDialog from '@/components/scales/TrocarAreaDialog';
 import ChamadaQuadro from '@/components/scales/ChamadaQuadro';
+import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -148,6 +149,9 @@ const OrganizerScalesPage = () => {
   const [confirmandoOficial, setConfirmandoOficial] = useState(false);
   const [confirmandoDesfazerOficial, setConfirmandoDesfazerOficial] = useState(false);
   const [trocaAberta, setTrocaAberta] = useState(null); // null | { inicial }
+  // Quem chega na reuniao de escala sem ter se inscrito: o Dudu cadastra
+  // aqui mesmo e a pessoa cai na fila "A escalar" para ser alocada na hora.
+  const [manualAberta, setManualAberta] = useState(false);
 
   // Areas de Trabalho Extra: painel a parte, so de leitura + resposta.
   // Nao mexe em escalas nem no lancamento -- ver AreasExtraDialog.jsx.
@@ -808,6 +812,10 @@ const OrganizerScalesPage = () => {
     }
   };
 
+  // Mover / tirar alguem de uma area e so para Desenvolvedores, Raquel e
+  // Dudu (decisao do Patrick, 06/10/2026). O banco confere de novo.
+  const podeGerir = !!escala?.pode_gerir;
+
   // Abre a troca de area ja com a pessoa (vindo do quadro de ausentes).
   const abrirTroca = (escalaId = null) => {
     const inicial = escalaId ? allocations.find(a => a.escalaId === escalaId) || null : null;
@@ -915,7 +923,7 @@ const OrganizerScalesPage = () => {
           </div>
 
           <div className="p-4 max-h-[400px] overflow-y-auto">
-            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={areaEquipantes} areaName={area} onExport={handleExportArea} onRealocar={handleRealocar} onAdicionarArea={handleAdicionarArea} onRemover={handleRemover} areasPorEquipante={areasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={(id, val) => setManualAreaChoice(prev => ({ ...prev, [id]: val }))} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={handleDefinirAtuacao} salvandoAtuacao={salvandoAtuacao} mostrarCor={temCor} onDefinirCor={handleDefinirCor} salvandoCor={salvandoCor} />}
+            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={areaEquipantes} areaName={area} onExport={handleExportArea} onRealocar={podeGerir ? handleRealocar : undefined} onAdicionarArea={podeGerir ? handleAdicionarArea : undefined} onRemover={podeGerir ? handleRemover : undefined} areasPorEquipante={areasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={(id, val) => setManualAreaChoice(prev => ({ ...prev, [id]: val }))} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={handleDefinirAtuacao} salvandoAtuacao={salvandoAtuacao} mostrarCor={temCor} onDefinirCor={handleDefinirCor} salvandoCor={salvandoCor} />}
           </div>
         </div>;
   };
@@ -1050,6 +1058,14 @@ const OrganizerScalesPage = () => {
                   aqui porque e o organizador de escalas quem organiza isso --
                   mas e uma lista a parte: nao entra na escala, nao conta para
                   "faltam N" e nao interfere no lancamento. */}
+              {escala?.pode_gerir && (
+                <Button onClick={() => setManualAberta(true)} variant="outline"
+                  data-dica="Cadastrar na hora quem chegou sem inscrição. A pessoa cai na fila A escalar para ser alocada."
+                  className="bg-emerald-600/15 text-emerald-300 border-emerald-600/40 hover:bg-emerald-600/30 hover:text-emerald-200">
+                  <UserPlus className="mr-2 h-4 w-4" /> Inscrição manual
+                </Button>
+              )}
+
               {escala?.pode_gerir && (
                 <Button onClick={() => abrirTroca()} variant="outline" disabled={!escala.lancada_em}
                   data-dica={escala.lancada_em
@@ -1352,6 +1368,13 @@ const OrganizerScalesPage = () => {
         <AnimatePresence>
           {verPreEscala && <PreEscalaDialog onClose={() => setVerPreEscala(false)} />}
           {verAreasExtra && <AreasExtraDialog onClose={() => setVerAreasExtra(false)} />}
+          {manualAberta && (
+            <InscricaoManualDialog
+              key="manual"
+              onClose={() => setManualAberta(false)}
+              onCriado={() => fetchBackgroundData(false)}
+            />
+          )}
           {trocaAberta && (
             <TrocarAreaDialog
               key="troca"

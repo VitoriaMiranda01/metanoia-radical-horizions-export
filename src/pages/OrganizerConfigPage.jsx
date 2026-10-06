@@ -23,6 +23,7 @@ import OutrasIgrejasManager from '@/components/organizer/OutrasIgrejasManager';
 import IgrejasCadastradasManager from '@/components/organizer/IgrejasCadastradasManager';
 import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizadoresManager';
 import BackupStatusCard from '@/components/organizer/BackupStatusCard';
+import AuditoriaCard from '@/components/organizer/AuditoriaCard';
 import { Button } from '@/components/ui/button';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
 
@@ -761,6 +762,11 @@ const OrganizerConfigPage = () => {
           {/* Backups: o quadro some sozinho para quem nao e a conta Desenvolvedores. */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48 }}>
             <BackupStatusCard />
+          </motion.div>
+
+          {/* Auditoria: tambem so a conta Desenvolvedores ve. */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
+            <AuditoriaCard />
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>

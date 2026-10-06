@@ -365,7 +365,7 @@ const PagamentosPendentesPage = () => {
     const cobravel = item.tipo === 'acampante' && aba !== 'travados';
 
     return (
-      <div className="flex flex-col items-end gap-1.5">
+      <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1.5">
         {cobravel && (
           <div className="flex items-center justify-end gap-2 whitespace-nowrap">
             {aba === 'nao' && (
@@ -583,7 +583,7 @@ const PagamentosPendentesPage = () => {
               <Table>
                 <TableHeader className="bg-white/5">
                   <TableRow className="border-white/10 hover:bg-transparent">
-                    <TableHead className="min-w-[17rem]">{cabecalho('Nome', 'nome')}</TableHead>
+                    <TableHead className="min-w-[13rem]">{cabecalho('Nome', 'nome')}</TableHead>
                     <TableHead>{cabecalho('CPF', 'cpf')}</TableHead>
                     <TableHead>{cabecalho('Tipo', 'tipo')}</TableHead>
                     <TableHead>{cabecalho('WhatsApp', 'whatsapp')}</TableHead>

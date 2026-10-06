@@ -260,6 +260,9 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     // criar_inscricao_valida_abertura_e_dados). O servidor passou a conferir
     // a janela de inscricao e os dados minimos -- antes isso so existia no
     // navegador, entao uma chamada direta a API furava as duas coisas.
+    if (error?.message?.includes('TESTE_CPF_EXISTENTE')) {
+      return { success: false, error: 'Esse CPF já é de uma ficha de verdade. Para a ficha de teste, use outro CPF.' };
+    }
     if (error?.message?.includes('INSCRICOES_FECHADAS')) {
       return { success: false, error: 'As inscrições não estão abertas no momento.' };
     }

@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import BotaoOrdenar from '@/components/common/BotaoOrdenar';
+import { ordenarLista } from '@/utils/ordenacao';
 import { Badge } from '@/components/ui/badge';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { Button } from '@/components/ui/button';
@@ -57,7 +59,7 @@ const getColumnValue = (item, key) => {
   return String(item[key] || '');
 };
 
-const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data }) => {
+const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data, ordem, onOrdenar }) => {
   const selectedValues = filters[filterKey] || [];
   const isActive = selectedValues.length > 0;
 
@@ -146,6 +148,7 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data }) =
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      <BotaoOrdenar titulo={title} chave={filterKey} ordem={ordem} onOrdenar={onOrdenar} />
     </div>
   );
 };
@@ -164,6 +167,8 @@ const AprovacoesTable = ({
   onSearchChange
 }) => {
   const [filters, setFilters] = useState({});
+  // Ordenacao pela seta do cabecalho (utils/ordenacao.js).
+  const [ordem, setOrdem] = useState(null);
   const [visibleColumns, setVisibleColumns] = useState([]);
   
   const tableType = 'equipantes'; 
@@ -189,7 +194,7 @@ const AprovacoesTable = ({
 
   const hasActiveFilters = Object.values(filters).some(vals => vals && vals.length > 0);
 
-  const filteredData = useMemo(() => {
+  const filtrados = useMemo(() => {
     let data = dados;
     
     // Nome, CPF, e-mail, telefone e igreja (inclusive o nome escrito em
@@ -208,6 +213,9 @@ const AprovacoesTable = ({
       });
     });
   }, [dados, filters, searchTerm]);
+
+  // A lista filtrada, na ordem escolhida na seta do cabecalho.
+  const filteredData = useMemo(() => ordenarLista(filtrados, ordem, getColumnValue), [filtrados, ordem]);
 
   // Pagina a lista JA filtrada -- busca e filtros seguem valendo sobre tudo.
   const paginacao = usePaginacao(filteredData);
@@ -307,7 +315,7 @@ const AprovacoesTable = ({
                 <TableHeader className="bg-slate-900/90 backdrop-blur supports-[backdrop-filter]:bg-slate-900/50 sticky top-0 z-20">
                   <TableRow className="hover:bg-transparent border-white/10">
                     <TableHead className="min-w-[200px] h-12 sticky left-0 z-20 bg-neutral-900">
-                       <ColumnHeader 
+                       <ColumnHeader ordem={ordem} onOrdenar={setOrdem}
                         title="Nome" 
                         filterKey="nome" 
                         filters={filters} 
@@ -321,7 +329,7 @@ const AprovacoesTable = ({
                       const def = getColDef(colKey);
                       return (
                         <TableHead key={colKey} className="min-w-[150px] h-12 bg-zinc-900">
-                          <ColumnHeader 
+                          <ColumnHeader ordem={ordem} onOrdenar={setOrdem}
                               title={def ? def.label : colKey} 
                               filterKey={colKey} 
                               filters={filters} 

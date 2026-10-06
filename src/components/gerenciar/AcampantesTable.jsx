@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import BotaoOrdenar from '@/components/common/BotaoOrdenar';
+import { ordenarLista } from '@/utils/ordenacao';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, Pencil, Trash2, Search, RefreshCw, UserCheck, Download, Filter, X } from 'lucide-react';
@@ -42,7 +44,7 @@ const getColumnValue = (item, filterKey) => {
   return String(item[filterKey] || '');
 };
 
-const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data }) => {
+const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data, ordem, onOrdenar }) => {
   const selectedValues = filters[filterKey] || [];
   const isActive = selectedValues.length > 0;
 
@@ -131,6 +133,7 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data }) =
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      <BotaoOrdenar titulo={title} chave={filterKey} ordem={ordem} onOrdenar={onOrdenar} />
     </div>
   );
 };
@@ -146,6 +149,8 @@ const AcampantesTable = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [visibleColumns, setVisibleColumns] = useState([]);
   const [filters, setFilters] = useState({});
+  // Ordenacao pela seta do cabecalho (utils/ordenacao.js).
+  const [ordem, setOrdem] = useState(null);
 
   useEffect(() => {
     // Coluna "status" removida das opcoes de acampantes em 2026-09-01 (ver
@@ -171,7 +176,7 @@ const AcampantesTable = ({
 
   const hasActiveFilters = Object.values(filters).some(vals => vals && vals.length > 0);
 
-  const filteredData = useMemo(() => {
+  const filtrados = useMemo(() => {
     return data.filter(item => {
       // 1. Global Search
       const searchLower = searchTerm.toLowerCase();
@@ -198,6 +203,9 @@ const AcampantesTable = ({
       });
     });
   }, [data, searchTerm, filters]);
+
+  // A lista filtrada, na ordem escolhida na seta do cabecalho.
+  const filteredData = useMemo(() => ordenarLista(filtrados, ordem, getColumnValue), [filtrados, ordem]);
 
   // Pagina a lista JA filtrada. A busca e os filtros continuam valendo sobre
   // tudo; a paginacao so decide quanto se desenha na tela de uma vez.
@@ -390,7 +398,7 @@ const AcampantesTable = ({
                 <TableHeader className="bg-white/5">
                   <TableRow className="hover:bg-transparent border-white/10">
                         <TableHead className="text-white md:sticky md:left-0 md:z-20 min-w-[140px] md:min-w-[200px] md:bg-neutral-900 p-2 md:p-4">
-                      <ColumnHeader 
+                      <ColumnHeader ordem={ordem} onOrdenar={setOrdem}
                         title="Nome" 
                         filterKey="nome" 
                         filters={filters} 
@@ -404,7 +412,7 @@ const AcampantesTable = ({
                       const def = getColDef(colKey);
                       return (
                         <TableHead key={colKey} className="text-white whitespace-nowrap min-w-[120px] md:min-w-[150px] p-2 md:p-4">
-                          <ColumnHeader 
+                          <ColumnHeader ordem={ordem} onOrdenar={setOrdem}
                             title={def ? def.label : colKey} 
                             filterKey={colKey} 
                             filters={filters} 

@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import BotaoOrdenar from '@/components/common/BotaoOrdenar';
+import { ordenarLista } from '@/utils/ordenacao';
 import { Badge } from '@/components/ui/badge';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { nomeDaIgreja } from '@/constants/igrejas';
@@ -88,7 +90,7 @@ const getColumnValue = (item, filterKey) => {
   return String(item[filterKey] || '');
 };
 
-const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data }) => {
+const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data, ordem, onOrdenar }) => {
   const selectedValues = filters[filterKey] || [];
   const isActive = selectedValues.length > 0;
 
@@ -177,6 +179,7 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data }) =
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      <BotaoOrdenar titulo={title} chave={filterKey} ordem={ordem} onOrdenar={onOrdenar} />
     </div>
   );
 };
@@ -184,6 +187,8 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data }) =
 const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchTerm, onSearchChange }) => {
   const { toast } = useToast();
   const [filters, setFilters] = useState({});
+  // Ordenacao pela seta do cabecalho (utils/ordenacao.js).
+  const [ordem, setOrdem] = useState(null);
   const [visibleColumns, setVisibleColumns] = useState([]);
   
   const safeTipo = tipo === 'acampantes' ? 'acampantes' : 'equipantes';
@@ -208,7 +213,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
 
   const hasActiveFilters = Object.values(filters).some(vals => vals && vals.length > 0);
 
-  const filteredData = useMemo(() => {
+  const filtrados = useMemo(() => {
     return dados.filter(item => {
       // Busca: sem diferenca de acento, CPF com ou sem pontos (utils/busca.js).
       const matchesSearch = casaBusca(searchTerm, [
@@ -236,6 +241,9 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
       });
     });
   }, [dados, filters, searchTerm]);
+
+  // A lista filtrada, na ordem escolhida na seta do cabecalho.
+  const filteredData = useMemo(() => ordenarLista(filtrados, ordem, getColumnValue), [filtrados, ordem]);
 
   // Pagina a lista JA filtrada -- busca e filtros seguem valendo sobre tudo.
   const paginacao = usePaginacao(filteredData);
@@ -408,7 +416,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                   <TableRow className="hover:bg-transparent border-white/10">
                     {/* Fixed Name Column */}
                     <TableHead className="min-w-[200px] h-12 sticky left-0 z-20 bg-neutral-900">
-                      <ColumnHeader 
+                      <ColumnHeader ordem={ordem} onOrdenar={setOrdem}
                         title="Nome" 
                         filterKey="nome" 
                         filters={filters} 
@@ -423,7 +431,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                       const def = getColDef(colKey);
                       return (
                         <TableHead key={colKey} className="min-w-[150px] h-12">
-                            <ColumnHeader 
+                            <ColumnHeader ordem={ordem} onOrdenar={setOrdem}
                               title={def ? def.label : colKey} 
                               filterKey={colKey} 
                               filters={filters} 

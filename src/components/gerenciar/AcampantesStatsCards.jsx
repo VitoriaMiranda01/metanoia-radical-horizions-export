@@ -35,13 +35,13 @@ const ShirtCard = ({ size, count, onClick, loading }) => (
       data-dica="Clique para ver quem pediu camisa deste tamanho."
     >
       <div className="flex justify-center mb-1 text-purple-400 opacity-80">
-        <Shirt className="w-4 h-4" />
+        <Shirt className="w-6 h-6" />
       </div>
-      <div className="text-lg font-bold text-white">{size}</div>
+      <div className="text-2xl font-bold text-white">{size}</div>
       {loading ? (
-         <div className="h-4 w-8 bg-white/10 animate-pulse rounded mt-1 mx-auto" />
+         <div className="h-6 w-10 bg-white/10 animate-pulse rounded mt-1 mx-auto" />
       ) : (
-         <div className="text-xs text-gray-400">{count}</div>
+         <div className="text-lg font-semibold text-gray-300">{count}</div>
       )}
     </div>
   </motion.div>
@@ -58,16 +58,16 @@ const TotalCamisasCard = ({ total, semTamanho, onClick, loading }) => (
       data-dica="Total de camisas pedidas, somando todos os tamanhos. Clique para ver a lista."
     >
       <div className="flex justify-center mb-1 text-purple-300">
-        <Shirt className="w-4 h-4" />
+        <Shirt className="w-6 h-6" />
       </div>
-      <div className="text-lg font-bold text-white">Total</div>
+      <div className="text-2xl font-bold text-white">Total</div>
       {loading ? (
-        <div className="h-4 w-8 bg-white/10 animate-pulse rounded mt-1 mx-auto" />
+        <div className="h-6 w-10 bg-white/10 animate-pulse rounded mt-1 mx-auto" />
       ) : (
         <>
-          <div className="text-sm font-semibold text-purple-200">{total}</div>
+          <div className="text-lg font-semibold text-purple-200">{total}</div>
           {semTamanho > 0 && (
-            <div className="text-[10px] text-amber-300 mt-0.5">+ {semTamanho} sem tamanho</div>
+            <div className="text-xs text-amber-300 mt-0.5">+ {semTamanho} sem tamanho</div>
           )}
         </>
       )}

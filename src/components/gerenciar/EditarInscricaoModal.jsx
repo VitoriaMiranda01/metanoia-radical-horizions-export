@@ -12,6 +12,7 @@ import { IGREJAS_PARCEIRAS, IGREJAS_RESPONSAVEL_ACAMPANTE, OUTRA_IGREJA, igrejaE
 import { listarIgrejasExtras } from '@/services/publicDataService';
 import { toBoolean } from '@/utils/formatters';
 import { mascararTelefone, problemaTelefone, ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
+import { limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE } from '@/utils/contatoEmergencia';
 
 /**
  * Edicao dos dados cadastrais de uma inscricao (acampante ou equipante),
@@ -198,6 +199,20 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
       }
     }
 
+    // Contato de emergencia (06/10/2026): so confere quando a organizacao
+    // mexe nele -- ficha antiga errada nao impede salvar o resto.
+    if ('contato_emergencia_nome' in alterados || 'contato_emergencia_telefone' in alterados) {
+      const problemaNome = problemaNomeContato(form.contato_emergencia_nome);
+      if (problemaNome) {
+        toast({ title: 'Confira o nome do contato de emergência', description: problemaNome, variant: 'destructive' });
+        return;
+      }
+      if (mesmoTelefone(form.contato_emergencia_telefone, form.whatsapp)) {
+        toast({ title: 'Confira o telefone de emergência', description: 'Precisa ser de outra pessoa — diferente do WhatsApp da inscrição.', variant: 'destructive' });
+        return;
+      }
+    }
+
     setSalvando(true);
     const resultado = await onSave(inscricao.id, alterados);
     setSalvando(false);
@@ -380,7 +395,8 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
           )}
 
           <Secao titulo="Contato de Emergência">
-            <CampoTexto label="Nome do Contato" valor={form.contato_emergencia_nome} onChange={set('contato_emergencia_nome')} />
+            <CampoTexto label="Nome do Contato" valor={form.contato_emergencia_nome}
+              onChange={(v) => set('contato_emergencia_nome')(limparNomeContato(v))} placeholder="Só letras" />
             <CampoTelefone label="Telefone do Contato" campo="contato_emergencia_telefone" form={form} onChange={set('contato_emergencia_telefone')} />
           </Secao>
         </div>

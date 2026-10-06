@@ -25,6 +25,7 @@ import Endereco from '@/components/inscricao/Endereco';
 import InfoEclesiasticas from '@/components/inscricao/InfoEclesiasticas';
 import InfoSaude from '@/components/inscricao/InfoSaude';
 import ContatoEmergencia from '@/components/inscricao/ContatoEmergencia';
+import { problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE } from '@/utils/contatoEmergencia';
 import QuemIndicou from '@/components/inscricao/QuemIndicou';
 import TermosResponsabilidade from '@/components/inscricao/TermosResponsabilidade';
 import WelcomeScreen from '@/components/inscricao/WelcomeScreen';
@@ -198,6 +199,20 @@ const AcampantePage = () => {
         toast({ title: `Confira o ${rotulo}`, description: problema, variant: 'destructive' });
         return;
       }
+    }
+
+    // Contato de emergencia (06/10/2026): nome so com letras e telefone de
+    // outra pessoa. O servidor confere de novo.
+    const problemaNome = problemaNomeContato(formData.contatoEmergencia);
+    if (problemaNome) {
+      toast({ title: 'Confira o nome do contato de emergência', description: problemaNome, variant: 'destructive' });
+      document.getElementById('contatoEmergencia')?.focus();
+      return;
+    }
+    if (mesmoTelefone(formData.telefoneEmergencia, formData.whatsapp)) {
+      toast({ title: 'Confira o telefone de emergência', description: AVISO_MESMO_TELEFONE, variant: 'destructive' });
+      document.getElementById('telefoneEmergencia')?.focus();
+      return;
     }
     setShowConfirmDialog(true);
   };

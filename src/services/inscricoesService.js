@@ -271,6 +271,12 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
       const rotulo = ROTULO_CAMPO_TELEFONE[campo] || 'telefone';
       return { success: false, error: `Confira o ${rotulo}: precisa ter DDD e o número completo, ex.: (21) 99999-9999.` };
     }
+    if (error?.message?.includes('CONTATO_NOME_INVALIDO')) {
+      return { success: false, error: 'Confira o nome do contato de emergência: use só letras (sem números).' };
+    }
+    if (error?.message?.includes('CONTATO_MESMO_TELEFONE')) {
+      return { success: false, error: 'O telefone de emergência precisa ser de outra pessoa — diferente do seu WhatsApp.' };
+    }
     if (error?.message?.includes('CAMISA_OBRIGATORIA')) {
       return { success: false, error: 'Escolha o tamanho da camisa para concluir a inscrição.' };
     }

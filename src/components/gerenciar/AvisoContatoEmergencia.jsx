@@ -18,8 +18,8 @@ import {
  *
  * Mesmo jeito do aviso de telefones (AvisoTelefonesAcampantes): a Raquel liga
  * para o acampante, preenche o nome e o telefone certos e salva ali mesmo; a
- * ficha sai do quadro, e sem nenhuma o quadro some. Desenvolvedores nao ve o
- * quadro, so o resumo (ResumoAvisosDev). Para os outros logins o servidor
+ * ficha sai do quadro, e sem nenhuma o quadro some. Desenvolvedores ve igual,
+ * com o recado de que o aviso e da Raquel. Para os outros logins o servidor
  * devolve null. Os dados vem do useAvisosInscricoes (a pagina), que
  * recarrega a cada 20s e cuida do "Ocultar" (o aviso continua no sino).
  */
@@ -166,7 +166,9 @@ const AvisoContatoEmergencia = ({ aviso, onRecarregar, onOcultar, onOcultarFicha
       titulo={itens.length === 1
         ? '1 acampante está com o contato de emergência errado'
         : `${itens.length} acampantes estão com o contato de emergência errado`}
-      explicacao={'Número no lugar do nome, ou o próprio telefone do acampante como emergência. Peça o nome e o telefone de outra pessoa e corrija aqui mesmo — ao salvar, a ficha sai deste quadro.'}
+      explicacao={aviso.perfil === 'desenvolvedores'
+        ? 'Este aviso está no perfil da Raquel para ela verificar. Se ela não conseguir, dá para corrigir por aqui também.'
+        : 'Número no lugar do nome, ou o próprio telefone do acampante como emergência. Peça o nome e o telefone de outra pessoa e corrija aqui mesmo — ao salvar, a ficha sai deste quadro.'}
       onOcultar={onOcultar}
       ocultas={aviso.fichasOcultas?.length || 0}
     >

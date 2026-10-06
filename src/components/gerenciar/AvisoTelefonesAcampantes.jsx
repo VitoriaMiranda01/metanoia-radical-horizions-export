@@ -160,7 +160,9 @@ const AvisoTelefonesAcampantes = ({ aviso, onRecarregar, onOcultar, onOcultarFic
       titulo={itens.length === 1
         ? '1 acampante está com telefone fora do padrão'
         : `${itens.length} acampantes estão com telefone fora do padrão`}
-      explicacao={'Entre em contato com cada um e corrija aqui mesmo. Assim que salvar, a ficha sai deste quadro.'}
+      explicacao={aviso.perfil === 'desenvolvedores'
+        ? 'Este aviso está no perfil da Raquel para ela verificar. Se ela não conseguir, dá para corrigir por aqui também.'
+        : 'Entre em contato com cada um e corrija aqui mesmo. Assim que salvar, a ficha sai deste quadro.'}
       onOcultar={onOcultar}
       ocultas={aviso.fichasOcultas?.length || 0}
     >

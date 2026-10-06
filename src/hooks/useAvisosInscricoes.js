@@ -13,8 +13,8 @@ import {
  * qualquer hora. Fica guardado na CONTA (avisos_ocultos), entao vale no
  * computador e no celular.
  *
- * Desenvolvedores nao ve os quadros: so um resumo dizendo que os avisos
- * estao no perfil da Raquel (pedido do Patrick, 06/10/2026).
+ * Desenvolvedores ve os mesmos quadros, com o recado de que o aviso e da
+ * Raquel -- se ela nao conseguir, o Patrick corrige por la (06/10/2026).
  */
 
 const INTERVALO = 20 * 1000;

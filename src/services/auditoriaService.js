@@ -40,6 +40,7 @@ export const ROTULO_TABELA = {
   organizadores_auth: 'Organizador',
   solicitacoes_senha: 'Pedido de senha',
   cobrancas_acampantes: 'Cobrança',
+  grupo_whatsapp_enviado: 'Grupo do WhatsApp',
 };
 
 /** "rpc/trocar_area_escala" -> "trocar area escala"; tabela direta -> "edição direta". */

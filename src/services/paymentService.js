@@ -1,5 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
-import { comReenvio } from '@/services/serviceHelpers';
+import { comReenvio, lerTodasAsLinhas } from '@/services/serviceHelpers';
 import { finalizarInscricaoGratuita } from '@/services/publicDataService';
 import { nomeDaIgreja } from '@/constants/igrejas';
 
@@ -223,9 +223,11 @@ export const fetchRelacaoDePagamentos = async () => {
     'id, nome, cpf, whatsapp, nacionalidade, status_pagamento, metodo_pagamento, data_pagamento';
 
   const [acampantes, equipantes] = await Promise.all([
-    comReenvio(() => supabase.from('acampantes').select(`${colunasComuns}, igreja, admin_responsavel`),
+    // Todas as linhas: os equipantes ja passam de 900 e o corte de 1000
+    // linhas do Supabase deixaria gente fora da lista sem avisar.
+    lerTodasAsLinhas(() => supabase.from('acampantes').select(`${colunasComuns}, igreja, admin_responsavel`).order('id'),
       { rotulo: 'acampantes' }),
-    comReenvio(() => supabase.from('equipantes').select(`${colunasComuns}, igreja, igreja_outra, status`),
+    lerTodasAsLinhas(() => supabase.from('equipantes').select(`${colunasComuns}, igreja, igreja_outra, status`).order('id'),
       { rotulo: 'equipantes' }),
   ]);
 
@@ -388,8 +390,8 @@ export const fetchEquipantesComPagamentoAberto = async () => {
   if (errConfig) throw errConfig;
   if (!config?.escala_lancada_em) return new Set();
 
-  const { data, error } = await comReenvio(
-    () => supabase.from('escalas').select('equipante_id, area_alocada').neq('area_alocada', 'Não será escalado'),
+  const { data, error } = await lerTodasAsLinhas(
+    () => supabase.from('escalas').select('id, equipante_id, area_alocada').neq('area_alocada', 'Não será escalado').order('id'),
     { rotulo: 'escala' }
   );
   if (error) throw error;

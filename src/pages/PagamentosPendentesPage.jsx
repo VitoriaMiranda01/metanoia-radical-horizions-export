@@ -30,6 +30,7 @@ import { formatarTelefone } from '@/utils/telefone';
 import { linkWhatsApp } from '@/services/liderService';
 import CabecalhoFiltroOrdem from '@/components/common/CabecalhoFiltroOrdem';
 import { ordenarLista } from '@/utils/ordenacao';
+import { normalizarBusca } from '@/utils/busca';
 
 const formatarValor = (valor) => {
   const numero = Number(valor);
@@ -376,14 +377,15 @@ const PagamentosPendentesPage = () => {
   );
 
   const linhas = useMemo(() => {
-    const busca = filterText.trim().toLowerCase();
+    // Sem diferenca de maiuscula nem de acento ("joao" acha "João").
+    const busca = normalizarBusca(filterText);
+    const digitos = busca.replace(/\D/g, '');
 
     const filtradas = baseDaAba.filter((item) => {
-      const nome = String(item.nome || '').toLowerCase();
       const cpf = String(item.cpf || '');
-      const digitos = busca.replace(/\D/g, '');
       const whats = String(item.whatsapp || '').replace(/\D/g, '');
-      const casaBusca = !busca || nome.includes(busca) || cpf.includes(busca)
+      const casaBusca = !busca || normalizarBusca(item.nome).includes(busca) || cpf.includes(busca)
+        || (digitos.length >= 3 && cpf.replace(/\D/g, '').includes(digitos))
         || (digitos.length >= 4 && whats.includes(digitos));
       const casaTipo = tipoFiltro === 'all' || item.tipo === tipoFiltro;
       const casaGrupo = aba !== 'pagos' || filtroGrupo === 'todos' || !item.grupo;

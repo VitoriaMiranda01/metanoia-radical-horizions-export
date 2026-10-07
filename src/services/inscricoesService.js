@@ -271,6 +271,12 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     if (error?.message?.includes('NOME_OBRIGATORIO')) {
       return { success: false, error: 'Informe o nome completo para concluir a inscrição.' };
     }
+    if (error?.message?.includes('NOME_INVALIDO')) {
+      return { success: false, error: 'Confira o seu nome: use só letras (sem números ou símbolos), com nome e sobrenome.' };
+    }
+    if (error?.message?.includes('CPF_INVALIDO')) {
+      return { success: false, error: 'CPF inválido: confira os números do CPF.' };
+    }
     if (error?.message?.includes('TELEFONE_INVALIDO')) {
       const campo = (error.message.match(/TELEFONE_INVALIDO:(\w+)/) || [])[1];
       const rotulo = ROTULO_CAMPO_TELEFONE[campo] || 'telefone';

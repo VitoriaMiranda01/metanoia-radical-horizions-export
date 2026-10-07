@@ -26,6 +26,8 @@ import InfoEclesiasticas from '@/components/inscricao/InfoEclesiasticas';
 import InfoSaude from '@/components/inscricao/InfoSaude';
 import ContatoEmergencia from '@/components/inscricao/ContatoEmergencia';
 import { problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE } from '@/utils/contatoEmergencia';
+import { problemaNomePessoa } from '@/utils/nomePessoa';
+import { validateCPF } from '@/utils/validation';
 import QuemIndicou from '@/components/inscricao/QuemIndicou';
 import TermosResponsabilidade from '@/components/inscricao/TermosResponsabilidade';
 import WelcomeScreen from '@/components/inscricao/WelcomeScreen';
@@ -174,6 +176,19 @@ const AcampantePage = () => {
     e.preventDefault();
     if (!formData.termoAceito) {
       toast({ title: "Atenção", description: "Aceite os termos para continuar.", variant: "destructive" });
+      return;
+    }
+
+    // Dados validos (Patrick, 06/10/2026): nome so com letras, CPF de verdade.
+    const problemaNomeDaPessoa = problemaNomePessoa(formData.nome);
+    if (problemaNomeDaPessoa) {
+      toast({ title: 'Confira o seu nome', description: problemaNomeDaPessoa, variant: 'destructive' });
+      document.getElementById('nome')?.focus();
+      return;
+    }
+    if (!formData.semCpf && !validateCPF(formData.cpf)) {
+      toast({ title: 'CPF inválido', description: 'Confira os números do CPF.', variant: 'destructive' });
+      document.getElementById('cpf')?.focus();
       return;
     }
 

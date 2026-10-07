@@ -13,6 +13,8 @@ import { listarIgrejasExtras } from '@/services/publicDataService';
 import { toBoolean } from '@/utils/formatters';
 import { mascararTelefone, problemaTelefone, ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
 import { limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE } from '@/utils/contatoEmergencia';
+import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
+import { validateCPF } from '@/utils/validation';
 
 /**
  * Edicao dos dados cadastrais de uma inscricao (acampante ou equipante),
@@ -189,6 +191,20 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
       return;
     }
 
+    // Nome e CPF alterados precisam ser validos (06/10/2026); o que nao mudou
+    // passa como esta -- ficha antiga com nome estranho nao trava o resto.
+    if ('nome' in alterados) {
+      const problemaNome = problemaNomePessoa(form.nome);
+      if (problemaNome) {
+        toast({ title: 'Confira o nome', description: problemaNome, variant: 'destructive' });
+        return;
+      }
+    }
+    if ('cpf' in alterados && String(form.cpf || '').replace(/\D/g, '') && !validateCPF(form.cpf)) {
+      toast({ title: 'CPF inválido', description: 'Confira os números do CPF.', variant: 'destructive' });
+      return;
+    }
+
     // Telefone alterado precisa sair certo; os que nao mudaram passam como estao.
     for (const campo of Object.keys(CAMPOS_TELEFONE)) {
       if (!(campo in alterados) || !alterados[campo]) continue;
@@ -270,7 +286,7 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
           )}
 
           <Secao titulo="Dados Pessoais">
-            <CampoTexto label="Nome" valor={form.nome} onChange={set('nome')} />
+            <CampoTexto label="Nome" valor={form.nome} onChange={(v) => set('nome')(limparNomePessoa(v))} placeholder="Só letras" />
             <CampoTexto label="CPF" valor={form.cpf} onChange={set('cpf')} />
             <CampoTexto label="Nacionalidade (código ISO, só quem se inscreveu sem CPF)" valor={form.nacionalidade} onChange={set('nacionalidade')} placeholder="Ex: PT, US..." />
             <CampoSelect label="Sexo" valor={form.sexo} onChange={set('sexo')} opcoes={SEXO_OPCOES} />

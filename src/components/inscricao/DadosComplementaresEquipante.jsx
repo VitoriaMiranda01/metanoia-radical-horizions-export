@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
+import { limparNomePessoa } from '@/utils/nomePessoa';
 
 const DadosComplementaresEquipante = ({
   formData,
@@ -53,7 +54,7 @@ const DadosComplementaresEquipante = ({
         {formData.parentesco && formData.parentesco !== 'NÃO TENHO' && (
           <div className="space-y-2">
             <Label htmlFor="familiarNome" className="text-white">Descrever conhecido / familiar</Label>
-            <Input id="familiarNome" name="familiarNome" value={formData.familiarNome} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Nome do conhecido/familiar" />
+            <Input id="familiarNome" name="familiarNome" value={formData.familiarNome} onChange={(e) => handleChange({ target: { name: 'familiarNome', value: limparNomePessoa(e.target.value) } })} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Nome do conhecido/familiar" />
           </div>
         )}
 

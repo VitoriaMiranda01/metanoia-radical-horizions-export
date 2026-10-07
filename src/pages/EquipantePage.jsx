@@ -29,6 +29,8 @@ import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao, buscarFichaAnterior } from '@/services/inscricoesService';
 import { problemaTelefone } from '@/utils/telefone';
+import { problemaNomePessoa } from '@/utils/nomePessoa';
+import { validateCPF } from '@/utils/validation';
 import { calcularIdade } from '@/utils/formatters';
 import { getEquipanteWorkflow, reivindicarCadastroManual } from '@/services/equipantesService';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
@@ -345,13 +347,18 @@ const EquipantePage = () => {
   // passa a servir de prova de dono daqui para frente.
   const aoAtualizarDono = (salvo) => {
     const cpf = salvo.cpf ? (formData.cpf || salvo.cpf) : (inscricaoData?.cpf || null);
+    // Corrigiu o nome: ele tambem e prova de dono para quem entrou sem CPF.
+    if (salvo.nome) {
+      setInscricaoData(prev => ({ ...prev, nome: salvo.nome }));
+      setFormData(prev => ({ ...prev, nome: salvo.nome }));
+    }
     if (salvo.nascimento) {
       setNascimentoConfirmado(salvo.nascimento);
       setFormData(prev => ({ ...prev, dataNascimento: salvo.nascimento }));
     }
     guardarSessao({
       id: inscricaoData.id,
-      nome: inscricaoData.nome || formData.nome,
+      nome: salvo.nome || inscricaoData.nome || formData.nome,
       cpf,
       nascimento: salvo.nascimento || nascimentoConfirmado || null,
     });
@@ -457,6 +464,24 @@ const EquipantePage = () => {
     // fazem falta de verdade depois: o SEXO sustenta os limites de homens e
     // mulheres por area na escala, e "congrega em alguma igreja?" muda o que
     // a Direcao precisa olhar na aprovacao.
+    // Dados validos (Patrick, 06/10/2026): nome so com letras, CPF de verdade.
+    const problemaNome = problemaNomePessoa(formData.nome);
+    if (problemaNome) {
+      toast({ title: 'Confira o seu nome', description: problemaNome, variant: 'destructive' });
+      document.getElementById('nome')?.focus();
+      return;
+    }
+    if (!formData.semCpf && !validateCPF(formData.cpf)) {
+      toast({ title: 'CPF inválido', description: 'Confira os números do CPF.', variant: 'destructive' });
+      document.getElementById('cpf')?.focus();
+      return;
+    }
+    if (formData.parentesco && formData.parentesco !== 'NÃO TENHO' && problemaNomePessoa(formData.familiarNome)) {
+      toast({ title: 'Confira o nome do conhecido / familiar', description: 'Use só letras, sem números ou símbolos.', variant: 'destructive' });
+      document.getElementById('familiarNome')?.focus();
+      return;
+    }
+
     const faltando = [];
     if (!formData.sexo) faltando.push('Sexo');
     if (!formData.dataNascimento) faltando.push('Data de Nascimento');

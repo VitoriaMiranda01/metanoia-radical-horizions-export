@@ -240,6 +240,53 @@ export const corrigirMinhaInscricao = async (equipante_id, dono = {}, { igreja, 
 };
 
 /**
+ * A propria pessoa completa TUDO o que falta na ficha (igreja, CPF,
+ * nascimento, sexo, WhatsApp, familiar, areas de trabalho). Quem decide o que
+ * pode ser gravado e o servidor (completar_minha_inscricao, migration
+ * 20261006l): so o que esta pendente, validando tudo antes de gravar.
+ * `dados`: igreja, igrejaOutra, cpf, semCpf, nacionalidade, nascimento,
+ * sexo, whatsapp, parentesco, familiarNome, area1, area2, area3.
+ * Devolve { pendencias, salvo: { cpf, nascimento } }.
+ */
+export const completarMinhaInscricao = async (equipante_id, dono = {}, dados = {}) => {
+  const { data, error } = await supabase.rpc('completar_minha_inscricao', {
+    p_id: equipante_id,
+    p_cpf: dono.cpf ?? null,
+    p_nome: dono.nome ?? null,
+    p_nascimento: dono.nascimento ?? null,
+    p_dados: {
+      igreja: dados.igreja ?? undefined,
+      igreja_outra: dados.igrejaOutra ?? undefined,
+      cpf: dados.cpf ?? undefined,
+      sem_cpf: dados.semCpf ?? undefined,
+      nacionalidade: dados.nacionalidade ?? undefined,
+      data_nascimento: dados.nascimento ?? undefined,
+      sexo: dados.sexo ?? undefined,
+      whatsapp: dados.whatsapp ?? undefined,
+      parentesco: dados.parentesco ?? undefined,
+      familiar_nome: dados.familiarNome ?? undefined,
+      area1: dados.area1 ?? undefined,
+      area2: dados.area2 ?? undefined,
+      area3: dados.area3 ?? undefined,
+    },
+  });
+  if (error) throw new Error('Não foi possível salvar agora. Tente de novo em instantes.');
+  if (!data?.ok) throw new Error(data?.erro || 'Não foi possível salvar.');
+  return { pendencias: data.pendencias || [], salvo: data.salvo || {} };
+};
+
+/**
+ * Quem foi inscrito pela organizacao (inscricao manual) entra com o CPF e nao
+ * acha ficha: acha a ficha manual pelo nome completo. Devolve { id, nome }.
+ */
+export const reivindicarCadastroManual = async (cpf, nome) => {
+  const { data, error } = await supabase.rpc('reivindicar_cadastro_manual', { p_cpf: cpf, p_nome: nome });
+  if (error) throw new Error('Não foi possível buscar agora. Tente de novo em instantes.');
+  if (!data?.ok) throw new Error(data?.erro || 'Não encontramos a sua inscrição.');
+  return { id: data.id, nome: data.nome };
+};
+
+/**
  * A(s) area(s) em que a pessoa foi escalada. So depois que a escala e
  * lancada, e so sem pendencias na ficha (o servidor devolve as pendencias no
  * lugar). Marca a primeira vez que a pessoa viu.

@@ -135,7 +135,9 @@ const mapEquipanteToDb = (formData) => ({
  */
 const montarResultadoVerificacao = (resultado, cpfDigitado) => {
   if (!resultado?.existe) {
-    return { existe: false, found: false };
+    // haManuais: ha inscricoes feitas pela organizacao ainda sem CPF -- quem
+    // entrou com um CPF que nao existe pode ser uma delas (EquipantePage).
+    return { existe: false, found: false, haManuais: !!resultado?.ha_manuais };
   }
 
   // "dados" agora e o minimo necessario para seguir ao pagamento, nao mais a
@@ -151,6 +153,9 @@ const montarResultadoVerificacao = (resultado, cpfDigitado) => {
     data: dados,
     inscrito: !!resultado.inscrito,
     pagou: !!resultado.pago,
+    // Ficha manual ainda sem CPF e sem nascimento: nao ha data para confirmar;
+    // a pessoa entra pelo nome e completa o cadastro (migration 20261006l).
+    completarManual: !!resultado.completar_manual,
     status_pagamento: resultado.pago ? 'confirmado' : 'pendente'
   };
 };

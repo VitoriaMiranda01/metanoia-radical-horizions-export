@@ -1,39 +1,81 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Church, Loader2, Phone, X } from 'lucide-react';
+import { AlertTriangle, CalendarDays, Church, Fingerprint, Loader2, Phone, Users, Briefcase, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
 import TelefoneInput from '@/components/inscricao/TelefoneInput';
-import { IGREJAS_PARCEIRAS, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
+import CampoDataNascimento from '@/components/inscricao/CampoDataNascimento';
+import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
+import { IGREJAS_PARCEIRAS, NAO_CONGREGA, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
+import { NACIONALIDADES, bandeiraDoPais } from '@/constants/nacionalidades';
 import { listarIgrejasExtras } from '@/services/publicDataService';
-import { corrigirMinhaInscricao } from '@/services/equipantesService';
+import { completarMinhaInscricao } from '@/services/equipantesService';
 import { problemaTelefone } from '@/utils/telefone';
+import { calcularIdade, formatCPF } from '@/utils/formatters';
+import { validateCPF } from '@/utils/validation';
 
 /**
- * Janela de "Atencao" do acompanhamento: a propria pessoa corrige o que esta
- * pendente na ficha (ideia do Patrick, 04/10/2026). Abre ao entrar no
- * acompanhamento e de novo antes de revelar a area; some de vez quando o
- * servidor responde que nao sobrou pendencia.
+ * Janela de "Complete o seu cadastro" do acompanhamento (ideia do Patrick,
+ * 04/10/2026; ampliada em 06/10/2026): a propria pessoa completa o que falta
+ * na ficha. Abre ao entrar no acompanhamento e NAO fecha enquanto sobrar
+ * pendencia -- a ficha so segue quando estiver completa. Quem tem de completar
+ * nao precisa ser procurado pela organizacao.
  *
  * As pendencias vem do servidor (_pendencias_equipante):
- *   { tipo: 'igreja' }                         disse que congrega e nao disse onde
- *   { tipo: 'telefone', valor, estrangeiro }   WhatsApp fora do padrao
+ *   { tipo: 'igreja' }        igreja em branco (ou "OUTRA" sem o nome)
+ *   { tipo: 'cpf' }           sem CPF e sem nacionalidade
+ *   { tipo: 'nascimento' }    data de nascimento em branco
+ *   { tipo: 'sexo' }
+ *   { tipo: 'telefone', valor, estrangeiro }   WhatsApp vazio ou fora do padrao
+ *   { tipo: 'parentesco' }    conhecido / familiar que vai como acampante
+ *   { tipo: 'areas' }         as 3 opcoes de area (so de quem nao foi escalado)
  *
- * A igreja usa a MESMA lista do formulario de inscricao (parceiras + extras
- * + OUTRA com o nome escrito). O telefone usa o mesmo campo com mascara.
+ * Cada pergunta usa o MESMO componente e as mesmas opcoes do formulario de
+ * inscricao. O servidor so grava o que esta pendente.
  */
-const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar = false, onClose, onCorrigido }) => {
+
+const PARENTESCOS = ['NÃO TENHO', 'CÔNJUGE', 'PAI', 'MÃE', 'FILHO', 'TIO / TIA', 'CUNHADO / CUNHADA', 'IRMÃO / IRMÃ', 'OUTRO FAMILIAR (DESCREVA)'];
+
+const Secao = ({ Icone, texto, children }) => (
+  <div className="space-y-3">
+    <p className="text-sm text-gray-200 flex items-start gap-2">
+      <Icone className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+      <span>{texto}</span>
+    </p>
+    {children}
+  </div>
+);
+
+const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar = false, onSair, onCorrigido }) => {
   const { toast } = useToast();
-  const temIgreja = pendencias.some((p) => p.tipo === 'igreja');
+  const tem = (tipo) => pendencias.some((p) => p.tipo === tipo);
+  const temIgreja = tem('igreja');
+  const temCpf = tem('cpf');
+  const temNascimento = tem('nascimento');
+  const temSexo = tem('sexo');
   const pTelefone = pendencias.find((p) => p.tipo === 'telefone');
+  const temParentesco = tem('parentesco');
+  const temAreas = tem('areas');
+
+  const cpfDoDono = (dono?.cpf || '').replace(/\D/g, '');
 
   const [extras, setExtras] = useState([]);
   const [igreja, setIgreja] = useState('');
   const [igrejaOutra, setIgrejaOutra] = useState('');
+  const [cpf, setCpf] = useState(cpfDoDono ? formatCPF(cpfDoDono) : '');
+  const [semCpf, setSemCpf] = useState(false);
+  const [nacionalidade, setNacionalidade] = useState('');
+  const [nascimento, setNascimento] = useState('');
+  const [sexo, setSexo] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
+  const [parentesco, setParentesco] = useState('');
+  const [familiarNome, setFamiliarNome] = useState('');
+  const [areas, setAreas] = useState({ areaTrabalhoOpcao1: '', areaTrabalhoOpcao2: '', areaTrabalhoOpcao3: '', areasTrabalhoExtra: [] });
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
@@ -43,39 +85,77 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
     return () => { vivo = false; };
   }, [temIgreja]);
 
-  const opcoesDeIgreja = useMemo(() => [...IGREJAS_PARCEIRAS, ...extras, OUTRA_IGREJA], [extras]);
-  const problemaAtual = pTelefone ? problemaTelefone(pTelefone.valor, { estrangeiro: pTelefone.estrangeiro }) : null;
+  const opcoesDeIgreja = useMemo(() => [...IGREJAS_PARCEIRAS, ...extras, OUTRA_IGREJA, NAO_CONGREGA], [extras]);
 
-  const salvar = async () => {
+  // Estrangeiro: o servidor ja sabe (nacionalidade gravada) ou a pessoa acabou
+  // de escolher "sou estrangeiro" aqui.
+  const estrangeiro = !!pTelefone?.estrangeiro || (temCpf && semCpf);
+  const problemaAtual = pTelefone && pTelefone.valor
+    ? problemaTelefone(pTelefone.valor, { estrangeiro: !!pTelefone.estrangeiro })
+    : null;
+
+  const erro = (title, description) => {
+    toast({ title, description, variant: 'destructive' });
+    return false;
+  };
+
+  // Confere tudo o que esta pendente antes de enviar. O servidor confere de
+  // novo -- aqui e so para a pessoa nao esperar a resposta para saber.
+  const conferir = () => {
     if (temIgreja) {
-      if (!igreja) {
-        toast({ title: 'Escolha a sua igreja', description: 'Selecione na lista, ou escolha "OUTRA" e escreva o nome.', variant: 'destructive' });
-        return;
-      }
-      if (igrejaEhOutra(igreja) && igrejaOutra.trim().length < 3) {
-        toast({ title: 'Qual é a sua igreja?', description: 'Escreva o nome da sua igreja.', variant: 'destructive' });
-        return;
+      if (!igreja) return erro('Escolha a sua igreja', 'Selecione na lista. Se não congrega em nenhuma, escolha "Não se aplica (não congrega)".');
+      if (igrejaEhOutra(igreja) && igrejaOutra.trim().length < 3) return erro('Qual é a sua igreja?', 'Escreva o nome da sua igreja.');
+    }
+    if (temCpf) {
+      if (semCpf) {
+        if (!nacionalidade) return erro('Escolha a sua nacionalidade', 'Quem não tem CPF informa o país de origem.');
+      } else if (!validateCPF(cpf)) {
+        return erro('CPF inválido', 'Confira os números do CPF.');
       }
     }
+    if (temNascimento) {
+      const idade = calcularIdade(nascimento);
+      if (!nascimento) return erro('Informe a data de nascimento', 'Digite no formato dd/mm/aaaa.');
+      if (idade === null || idade < 10 || idade > 100) return erro('Confira a data de nascimento', 'A idade que essa data dá não parece certa.');
+    }
+    if (temSexo && !sexo) return erro('Escolha o sexo', 'Selecione uma das opções.');
     if (pTelefone) {
       const problema = whatsapp.trim()
-        ? problemaTelefone(whatsapp, { estrangeiro: pTelefone.estrangeiro })
+        ? problemaTelefone(whatsapp, { estrangeiro })
         : 'Digite o seu WhatsApp.';
-      if (problema) {
-        toast({ title: 'Confira o seu WhatsApp', description: problema, variant: 'destructive' });
-        return;
-      }
+      if (problema) return erro('Confira o seu WhatsApp', problema);
     }
+    if (temParentesco) {
+      if (!parentesco) return erro('Responda a pergunta do familiar', 'Escolha uma opção (pode ser "Não tenho").');
+      if (parentesco !== 'NÃO TENHO' && familiarNome.trim().length < 2) return erro('Escreva o nome', 'Diga o nome do conhecido / familiar.');
+    }
+    if (temAreas) {
+      const { areaTrabalhoOpcao1: a1, areaTrabalhoOpcao2: a2, areaTrabalhoOpcao3: a3 } = areas;
+      if (!a1 || !a2 || !a3) return erro('Áreas de trabalho', 'Escolha as 3 opções (1ª, 2ª e 3ª).');
+    }
+    return true;
+  };
+
+  const salvar = async () => {
+    if (!conferir()) return;
 
     setSalvando(true);
     try {
-      const sobraram = await corrigirMinhaInscricao(equipanteId, dono, {
-        igreja: temIgreja ? igreja : null,
-        igrejaOutra: temIgreja && igrejaEhOutra(igreja) ? igrejaOutra : null,
-        whatsapp: pTelefone ? whatsapp : null,
+      const { pendencias: sobraram, salvo } = await completarMinhaInscricao(equipanteId, dono, {
+        ...(temIgreja ? { igreja, igrejaOutra: igrejaEhOutra(igreja) ? igrejaOutra : null } : {}),
+        ...(temCpf ? (semCpf ? { semCpf: true, nacionalidade } : { cpf }) : {}),
+        ...(temNascimento ? { nascimento } : {}),
+        ...(temSexo ? { sexo } : {}),
+        ...(pTelefone ? { whatsapp } : {}),
+        ...(temParentesco ? { parentesco, familiarNome: parentesco === 'NÃO TENHO' ? '' : familiarNome } : {}),
+        ...(temAreas ? { area1: areas.areaTrabalhoOpcao1, area2: areas.areaTrabalhoOpcao2, area3: areas.areaTrabalhoOpcao3 } : {}),
       });
-      toast({ title: 'Inscrição atualizada', description: 'Obrigado por corrigir!', className: 'bg-green-600 text-white' });
-      onCorrigido?.(sobraram);
+      toast({
+        title: sobraram.length === 0 ? 'Cadastro completo' : 'Quase lá',
+        description: sobraram.length === 0 ? 'Obrigado por completar!' : 'Ainda falta uma informação.',
+        className: 'bg-green-600 text-white',
+      });
+      onCorrigido?.(sobraram, salvo);
     } catch (err) {
       toast({ title: 'Não deu certo', description: err.message, variant: 'destructive' });
     } finally {
@@ -83,42 +163,36 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
     }
   };
 
+  const campo = 'bg-white/10 border-white/20 text-white placeholder:text-white/50';
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
     >
       <motion.div
         initial={{ scale: 0.95, y: 10 }}
         animate={{ scale: 1, y: 0 }}
-        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl border border-amber-500/40 bg-neutral-950 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-xl border border-amber-500/40 bg-neutral-950 shadow-2xl"
       >
-        <div className="flex items-start justify-between gap-3 p-5 border-b border-white/10 bg-amber-500/10">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <h3 className="text-xl font-bold text-white">Atenção</h3>
-              <p className="text-sm text-amber-100/90 mt-1">
-                {antesDeRevelar
-                  ? 'Antes de revelarmos qual foi a sua área, detectamos um problema na sua inscrição.'
-                  : 'Detectamos um problema na sua inscrição. Corrija abaixo, leva menos de um minuto.'}
-              </p>
-            </div>
+        <div className="flex items-start gap-3 p-5 border-b border-white/10 bg-amber-500/10 sticky top-0 z-10 backdrop-blur">
+          <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-xl font-bold text-white">Complete o seu cadastro</h3>
+            <p className="text-sm text-amber-100/90 mt-1">
+              {antesDeRevelar
+                ? 'Antes de revelarmos qual foi a sua área, precisamos de algumas informações que estão faltando na sua inscrição.'
+                : 'Faltam algumas informações na sua inscrição. Complete abaixo para continuar — leva poucos minutos.'}
+            </p>
           </div>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-white shrink-0" aria-label="Fechar">
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
-        <div className="p-5 space-y-6">
+        <div className="p-5 space-y-7">
           {temIgreja && (
-            <div className="space-y-3">
-              <p className="text-sm text-gray-200 flex items-start gap-2">
-                <Church className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
-                Você colocou que congrega em uma igreja, mas não nos informou qual. Por favor,
-                informe a igreja que você congrega.
-              </p>
+            <Secao Icone={Church} texto="Em qual igreja você congrega? Se não congrega em nenhuma, escolha “Não se aplica”.">
               <div className="space-y-2">
                 <Label className="text-white">Igreja que frequenta</Label>
                 <IgrejaSelect
@@ -136,44 +210,166 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
                       value={igrejaOutra}
                       onChange={(e) => setIgrejaOutra(e.target.value.toUpperCase())}
                       placeholder="Nome da sua igreja"
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                      className={campo}
                     />
                   </div>
                 )}
               </div>
-            </div>
+            </Secao>
+          )}
+
+          {temCpf && (
+            <Secao Icone={Fingerprint} texto={cpfDoDono ? 'Confirme o seu CPF.' : 'Informe o seu CPF. Quem é estrangeiro e não tem CPF informa a nacionalidade.'}>
+              <div className="space-y-3">
+                {!semCpf && (
+                  <div className="space-y-2">
+                    <Label htmlFor="correcao-cpf" className="text-white">CPF</Label>
+                    <Input
+                      id="correcao-cpf"
+                      value={cpf}
+                      onChange={(e) => setCpf(formatCPF(e.target.value))}
+                      placeholder="000.000.000-00"
+                      maxLength={14}
+                      inputMode="numeric"
+                      // Quem entrou com um CPF fica com ele: e o que prova quem e.
+                      readOnly={!!cpfDoDono}
+                      className={`${campo} ${cpfDoDono ? 'opacity-70' : ''}`}
+                    />
+                  </div>
+                )}
+                {!cpfDoDono && (
+                  <div className="flex items-center gap-2">
+                    <Switch id="correcao-sem-cpf" checked={semCpf} onCheckedChange={setSemCpf} />
+                    <Label htmlFor="correcao-sem-cpf" className="text-white cursor-pointer select-none">
+                      Sou estrangeiro (não tenho CPF)
+                    </Label>
+                  </div>
+                )}
+                {semCpf && (
+                  <div className="space-y-2">
+                    <Label className="text-white">Nacionalidade</Label>
+                    <Select value={nacionalidade} onValueChange={setNacionalidade}>
+                      <SelectTrigger className={campo}>
+                        <SelectValue placeholder="Selecione o seu país..." />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {NACIONALIDADES.map((pais) => (
+                          <SelectItem key={pais.iso} value={pais.iso}>
+                            <span className="flex items-center gap-2">
+                              <span aria-hidden="true">{bandeiraDoPais(pais.iso)}</span>
+                              {pais.nome}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </Secao>
+          )}
+
+          {(temNascimento || temSexo) && (
+            <Secao Icone={temNascimento ? CalendarDays : User} texto="Seus dados pessoais.">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {temNascimento && (
+                  <div className="space-y-2">
+                    <Label htmlFor="correcao-nascimento" className="text-white">Data de nascimento</Label>
+                    <CampoDataNascimento
+                      id="correcao-nascimento"
+                      max={new Date().toISOString().slice(0, 10)}
+                      value={nascimento}
+                      onChange={(e) => setNascimento(e.target.value)}
+                      className={`${campo} [color-scheme:dark]`}
+                    />
+                  </div>
+                )}
+                {temSexo && (
+                  <div className="space-y-2">
+                    <Label className="text-white">Sexo</Label>
+                    <Select value={sexo} onValueChange={setSexo}>
+                      <SelectTrigger className={campo}>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Masculino">Masculino</SelectItem>
+                        <SelectItem value="Feminino">Feminino</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </Secao>
           )}
 
           {pTelefone && (
-            <div className="space-y-3">
-              <p className="text-sm text-gray-200 flex items-start gap-2">
-                <Phone className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
-                <span>
-                  O WhatsApp que você informou foi <strong className="text-white">{pTelefone.valor || '(vazio)'}</strong>
-                  {problemaAtual ? <> — {problemaAtual.replace(/\s*Ex\.:.*$/, '')}</> : null}
-                </span>
-              </p>
+            <Secao
+              Icone={Phone}
+              texto={pTelefone.valor
+                ? <>O WhatsApp que você informou foi <strong className="text-white">{pTelefone.valor}</strong>{problemaAtual ? <> — {problemaAtual.replace(/\s*Ex\.:.*$/, '')}</> : null}</>
+                : 'Informe o seu WhatsApp: é por ele que a organização fala com você.'}
+            >
               <div className="space-y-2">
-                <Label htmlFor="correcao-whatsapp" className="text-white">WhatsApp correto</Label>
+                <Label htmlFor="correcao-whatsapp" className="text-white">WhatsApp</Label>
                 <TelefoneInput
                   id="correcao-whatsapp"
                   name="whatsapp"
                   value={whatsapp}
                   onChange={(e) => setWhatsapp(e.target.value)}
-                  estrangeiro={!!pTelefone.estrangeiro}
+                  estrangeiro={estrangeiro}
                 />
               </div>
-            </div>
+            </Secao>
+          )}
+
+          {temParentesco && (
+            <Secao Icone={Users} texto="Tem algum conhecido / familiar que vai participar como ACAMPANTE no projeto?">
+              <div className="space-y-3">
+                <Select value={parentesco} onValueChange={setParentesco}>
+                  <SelectTrigger className={campo}>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PARENTESCOS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {parentesco && parentesco !== 'NÃO TENHO' && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="correcao-familiar" className="text-white">Nome do conhecido / familiar</Label>
+                    <Input
+                      id="correcao-familiar"
+                      value={familiarNome}
+                      onChange={(e) => setFamiliarNome(e.target.value)}
+                      placeholder="Nome do conhecido/familiar"
+                      className={campo}
+                    />
+                  </div>
+                )}
+              </div>
+            </Secao>
+          )}
+
+          {temAreas && (
+            <Secao Icone={Briefcase} texto="Escolha as suas 3 opções de área de trabalho, da que você mais quer para a que menos quer.">
+              <AreasDeTrabalho
+                semExtras
+                formData={areas}
+                handleChange={(e) => setAreas((a) => ({ ...a, [e.target.name]: e.target.value }))}
+                handleSelectChange={(nome, valor) => setAreas((a) => ({ ...a, [nome]: valor }))}
+              />
+            </Secao>
           )}
         </div>
 
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 p-5 border-t border-white/10">
-          <Button variant="outline" onClick={onClose} disabled={salvando}
-            className="border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white">
-            Agora não
-          </Button>
-          <Button onClick={salvar} disabled={salvando} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 p-5 border-t border-white/10 sticky bottom-0 bg-neutral-950">
+          {onSair ? (
+            <Button variant="ghost" onClick={onSair} disabled={salvando}
+              className="text-gray-400 hover:text-white hover:bg-white/10">
+              Não sou eu — sair
+            </Button>
+          ) : <span />}
+          <Button onClick={salvar} disabled={salvando} className="bg-emerald-600 hover:bg-emerald-700 text-white sm:min-w-40">
+            {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar e continuar'}
           </Button>
         </div>
       </motion.div>

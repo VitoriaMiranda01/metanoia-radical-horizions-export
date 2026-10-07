@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Eye, CheckCircle, XCircle, Clock, Search, Filter, X, AlertTriangle } from 'lucide-react';
+import { Users, Eye, CheckCircle, XCircle, Clock, Search, Filter, X, AlertTriangle, Download } from 'lucide-react';
+import ExportarAprovacoesDialog from '@/components/aprovacoes/ExportarAprovacoesDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -163,10 +164,12 @@ const AprovacoesTable = ({
   onCancelar, 
   showCancelAction = false, 
   showApproveOnly = false, 
-  searchTerm, 
-  onSearchChange
+  searchTerm,
+  onSearchChange,
+  situacao = 'pendente'
 }) => {
   const [filters, setFilters] = useState({});
+  const [exportando, setExportando] = useState(false);
   // Ordenacao pela seta do cabecalho (utils/ordenacao.js).
   const [ordem, setOrdem] = useState(null);
   const [visibleColumns, setVisibleColumns] = useState([]);
@@ -256,6 +259,19 @@ const AprovacoesTable = ({
                     onApply={handleSaveColumns}
                   />
                 </div>
+                {/* Vem depois de "Colunas" (a direita dele). Baixa a lista da
+                    aba aberta so da igreja escolhida na janela. */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setExportando(true)}
+                  disabled={dados.length === 0}
+                  data-dica="Baixar a lista desta aba de uma igreja só, em planilha, para enviar a ela."
+                  className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar
+                </Button>
             </div>
           </div>
           {/* Global Search Input controlled by parent */}
@@ -426,6 +442,12 @@ const AprovacoesTable = ({
           </>
         )}
       </CardContent>
+      <ExportarAprovacoesDialog
+        aberto={exportando}
+        onFechar={() => setExportando(false)}
+        dados={dados}
+        situacao={situacao}
+      />
     </Card>
   );
 };

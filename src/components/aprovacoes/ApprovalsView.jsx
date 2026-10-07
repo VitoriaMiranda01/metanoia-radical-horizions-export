@@ -338,6 +338,7 @@ const ApprovalsView = ({
             onAprovar={aprovarInscricao} 
             onRejeitar={rejeitarInscricao} 
             showActions={true}
+            situacao="pendente"
             searchTerm={searchTermPendentes}
             onSearchChange={setSearchTermPendentes}
           />
@@ -352,6 +353,7 @@ const ApprovalsView = ({
             showActions={false}
             showCancelAction={true}
             onCancelar={solicitarCancelamento}
+            situacao="aprovado"
             searchTerm={searchTermAprovadas}
             onSearchChange={setSearchTermAprovadas}
           />
@@ -365,6 +367,7 @@ const ApprovalsView = ({
             onRejeitar={rejeitarInscricao} 
             showActions={false}
             showApproveOnly={true}
+            situacao="rejeitado"
             searchTerm={searchTermRejeitadas}
             onSearchChange={setSearchTermRejeitadas}
           />

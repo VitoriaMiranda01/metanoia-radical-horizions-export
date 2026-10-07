@@ -7,8 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Eye, CheckCircle, XCircle, Clock, Search, Filter, X, AlertTriangle, Download } from 'lucide-react';
+import { Users, Eye, CheckCircle, XCircle, Clock, Search, Filter, X, AlertTriangle, Download, CheckCheck } from 'lucide-react';
 import ExportarAprovacoesDialog from '@/components/aprovacoes/ExportarAprovacoesDialog';
+import AprovacaoEmLoteDialog from '@/components/aprovacoes/AprovacaoEmLoteDialog';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -166,10 +168,15 @@ const AprovacoesTable = ({
   showApproveOnly = false, 
   searchTerm,
   onSearchChange,
-  situacao = 'pendente'
+  situacao = 'pendente',
+  // So organizador, so na aba de pendentes (ApprovalsView decide).
+  podeAprovarEmLote = false,
+  onLoteConcluido
 }) => {
+  const { isParceiro } = useAuth();
   const [filters, setFilters] = useState({});
   const [exportando, setExportando] = useState(false);
+  const [aprovandoEmLote, setAprovandoEmLote] = useState(false);
   // Ordenacao pela seta do cabecalho (utils/ordenacao.js).
   const [ordem, setOrdem] = useState(null);
   const [visibleColumns, setVisibleColumns] = useState([]);
@@ -259,19 +266,34 @@ const AprovacoesTable = ({
                     onApply={handleSaveColumns}
                   />
                 </div>
-                {/* Vem depois de "Colunas" (a direita dele). Baixa a lista da
-                    aba aberta so da igreja escolhida na janela. */}
+                {/* Vem depois de "Colunas" (a direita dele). Organizador escolhe
+                    uma ou varias igrejas (ou todas); parceiro so tem a dele. */}
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setExportando(true)}
                   disabled={dados.length === 0}
-                  data-dica="Baixar a lista desta aba de uma igreja só, em planilha, para enviar a ela."
+                  data-dica={isParceiro
+                    ? 'Baixar em planilha as inscrições desta aba da sua igreja.'
+                    : 'Baixar em planilha as inscrições desta aba. Você escolhe uma, várias ou todas as igrejas.'}
                   className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Exportar
                 </Button>
+                {/* Depois de "Exportar": aprovacao em lote (so organizador, so em Pendentes). */}
+                {podeAprovarEmLote && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAprovandoEmLote(true)}
+                    data-dica="Aprovar de uma vez as pendentes de uma, várias ou todas as igrejas. Pede a sua senha e dá para desfazer depois."
+                    className="bg-amber-600/20 text-amber-300 border-amber-600/50 hover:bg-amber-600/40 hover:text-amber-200"
+                  >
+                    <CheckCheck className="w-4 h-4 mr-2" />
+                    Aprovar em lote
+                  </Button>
+                )}
             </div>
           </div>
           {/* Global Search Input controlled by parent */}
@@ -448,6 +470,14 @@ const AprovacoesTable = ({
         dados={dados}
         situacao={situacao}
       />
+      {podeAprovarEmLote && (
+        <AprovacaoEmLoteDialog
+          aberto={aprovandoEmLote}
+          onFechar={() => setAprovandoEmLote(false)}
+          dados={dados}
+          onConcluido={onLoteConcluido}
+        />
+      )}
     </Card>
   );
 };

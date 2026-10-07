@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { FORMATOS, exportarAprovacoes, igrejasComInscritos } from '@/utils/exportAprovacoes';
 import SeletorIgrejas from './SeletorIgrejas';
 
@@ -22,22 +23,26 @@ const PLURAL_DA_SITUACAO = { pendente: 'pendentes', aprovado: 'aprovadas', rejei
  */
 const ExportarAprovacoesDialog = ({ aberto, onFechar, dados, situacao = 'pendente' }) => {
   const { toast } = useToast();
+  const { isParceiro } = useAuth();
   const [escolhidas, setEscolhidas] = useState([]);
   const [formato, setFormato] = useState('excel');
   const [gerando, setGerando] = useState(false);
 
   const plural = PLURAL_DA_SITUACAO[situacao] || PLURAL_DA_SITUACAO.pendente;
   const igrejas = useMemo(() => igrejasComInscritos(dados), [dados]);
-  const todas = igrejas.length > 0 && escolhidas.length === igrejas.length;
+  // O parceiro so tem a propria igreja: ja vai escolhida, sem seletor.
+  const selecao = isParceiro ? igrejas.map((i) => i.igreja) : escolhidas;
+  const todas = !isParceiro && igrejas.length > 0 && igrejas.every((i) => escolhidas.includes(i.igreja));
 
-  // Cada vez que a janela abre, comeca sem nada marcado.
+  // Cada vez que a janela abre, comeca sem nada marcado. (So quando abre: a
+  // lista da tela se atualiza sozinha a cada 30 s e nao pode zerar a escolha.)
   useEffect(() => { if (aberto) setEscolhidas([]); }, [aberto]);
 
   const exportar = () => {
-    if (escolhidas.length === 0) return;
+    if (selecao.length === 0) return;
     setGerando(true);
     try {
-      const r = exportarAprovacoes({ dados, igrejas: escolhidas, todas, formato, situacao });
+      const r = exportarAprovacoes({ dados, igrejas: selecao, todas, formato, situacao });
       toast({
         title: 'Planilha gerada',
         description: `${r.linhas} ${r.linhas === 1 ? 'inscrição' : 'inscrições'} de ${r.igrejas} ${r.igrejas === 1 ? 'igreja' : 'igrejas'}.`,
@@ -54,26 +59,45 @@ const ExportarAprovacoesDialog = ({ aberto, onFechar, dados, situacao = 'pendent
     <Dialog open={aberto} onOpenChange={(abrir) => { if (!abrir) onFechar(); }}>
       <DialogContent className="bg-zinc-900 border border-white/10 text-white sm:max-w-md max-h-[92vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
-          <DialogTitle>Exportar inscrições</DialogTitle>
+          <DialogTitle>{isParceiro ? 'Exportar inscrições da sua igreja' : 'Exportar inscrições'}</DialogTitle>
           <DialogDescription className="text-gray-400">
-            Baixa as inscrições {plural} das igrejas escolhidas, para enviar a elas.
+            {isParceiro
+              ? `Baixa a planilha das inscrições ${plural} da sua igreja.`
+              : `Baixa as inscrições ${plural} das igrejas escolhidas, para enviar a elas.`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="min-w-0 space-y-4 py-2">
-          <div className="min-w-0 space-y-2">
-            <Label className="text-gray-200">Igrejas</Label>
-            <SeletorIgrejas
-              opcoes={igrejas}
-              selecionadas={escolhidas}
-              onChange={setEscolhidas}
-              rotuloQuantidade={`inscrições ${plural}`}
-            />
-            <p className="text-xs text-gray-500">
-              Digite para buscar e marque quantas quiser. O número ao lado de cada igreja é quantas inscrições {plural} ela tem.
-              Com mais de uma igreja, o arquivo vem com uma aba para cada uma.
-            </p>
-          </div>
+          {isParceiro ? (
+            <div className="min-w-0 space-y-2">
+              <Label className="text-gray-200">Igreja</Label>
+              <div className="rounded-md border border-white/20 bg-white/5 px-3 py-2 text-sm">
+                {igrejas.length === 0
+                  ? <span className="text-white/50">Nenhuma inscrição nesta aba.</span>
+                  : igrejas.map((i) => (
+                    <div key={i.igreja} className="flex items-center justify-between gap-3">
+                      <span className="min-w-0 truncate">{i.igreja}</span>
+                      <span className="shrink-0 tabular-nums text-white/60">{i.quantidade}</span>
+                    </div>
+                  ))}
+              </div>
+              <p className="text-xs text-gray-500">O número é quantas inscrições {plural} a sua igreja tem.</p>
+            </div>
+          ) : (
+            <div className="min-w-0 space-y-2">
+              <Label className="text-gray-200">Igrejas</Label>
+              <SeletorIgrejas
+                opcoes={igrejas}
+                selecionadas={escolhidas}
+                onChange={setEscolhidas}
+                rotuloQuantidade={`inscrições ${plural}`}
+              />
+              <p className="text-xs text-gray-500">
+                Digite para buscar e marque quantas quiser. O número ao lado de cada igreja é quantas inscrições {plural} ela tem.
+                Com mais de uma igreja, o arquivo vem com uma aba para cada uma.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className="text-gray-200">Formato de saída</Label>
@@ -94,7 +118,7 @@ const ExportarAprovacoesDialog = ({ aberto, onFechar, dados, situacao = 'pendent
           <Button variant="outline" onClick={onFechar} className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
             Cancelar
           </Button>
-          <Button onClick={exportar} disabled={escolhidas.length === 0 || gerando} className="bg-green-600 hover:bg-green-700 text-white">
+          <Button onClick={exportar} disabled={selecao.length === 0 || gerando} className="bg-green-600 hover:bg-green-700 text-white">
             {gerando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
             Exportar
           </Button>

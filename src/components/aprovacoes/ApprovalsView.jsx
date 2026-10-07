@@ -19,7 +19,7 @@ const ApprovalsView = ({
   showStatistics = true 
 }) => {
   const { toast } = useToast();
-  const { isParceiro, igrejaUser } = useAuth();
+  const { isParceiro, isOrganizador, igrejaUser } = useAuth();
   const [inscricoes, setInscricoes] = useState([]);
   const [selectedInscricao, setSelectedInscricao] = useState(null);
   const [inscricaoParaCancelar, setInscricaoParaCancelar] = useState(null);
@@ -344,6 +344,8 @@ const ApprovalsView = ({
             onRejeitar={rejeitarInscricao} 
             showActions={true}
             situacao="pendente"
+            podeAprovarEmLote={isOrganizador && !isParceiro}
+            onLoteConcluido={() => carregarInscricoes(false)}
             searchTerm={searchTermPendentes}
             onSearchChange={setSearchTermPendentes}
           />

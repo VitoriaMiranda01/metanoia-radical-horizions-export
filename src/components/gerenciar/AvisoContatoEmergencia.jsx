@@ -8,7 +8,7 @@ import { updateAcampante } from '@/services/acampantesService';
 import QuadroAviso from './QuadroAviso';
 import { problemaTelefone, formatarTelefone, digitosTelefone } from '@/utils/telefone';
 import {
-  limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE
+  limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE, mesmoNome, AVISO_MESMO_NOME
 } from '@/utils/contatoEmergencia';
 
 /**
@@ -31,7 +31,7 @@ const linkWhats = (valor) => {
 
 const ItemContato = ({ item, onSalvo, onAbrirFicha, onOcultar }) => {
   const { toast } = useToast();
-  const nomeServe = !item.problemas.includes('nome');
+  const nomeServe = !item.problemas.includes('nome') && !item.problemas.includes('mesmo_nome');
   const telServe = !item.problemas.includes('mesmo_telefone')
     && !problemaTelefone(item.contato_emergencia_telefone, { aceitaFixo: true, estrangeiro: item.estrangeiro });
   // O que ja esta certo vem preenchido; o que esta errado vem vazio.
@@ -47,7 +47,7 @@ const ItemContato = ({ item, onSalvo, onAbrirFicha, onOcultar }) => {
       toast({ title: 'Preencha o nome do contato', variant: 'destructive' });
       return;
     }
-    const pNome = problemaNomeContato(n);
+    const pNome = problemaNomeContato(n) || (mesmoNome(n, item.nome) ? AVISO_MESMO_NOME.replace('você mesmo', 'o próprio acampante') : null);
     if (pNome) {
       toast({ title: 'Confira o nome do contato', description: pNome, variant: 'destructive' });
       return;
@@ -120,6 +120,7 @@ const ItemContato = ({ item, onSalvo, onAbrirFicha, onOcultar }) => {
           {' · '}telefone <strong className="text-white">{item.contato_emergencia_telefone ? formatarTelefone(digitosTelefone(item.contato_emergencia_telefone)) : '(vazio)'}</strong>
         </p>
         {item.problemas.includes('nome') && <p className="text-orange-300/90">— O nome do contato tem números (parece um telefone).</p>}
+        {item.problemas.includes('mesmo_nome') && <p className="text-orange-300/90">— O contato de emergência é o próprio acampante (mesmo nome).</p>}
         {item.problemas.includes('mesmo_telefone') && <p className="text-orange-300/90">— O telefone de emergência é o próprio WhatsApp do acampante.</p>}
       </div>
 

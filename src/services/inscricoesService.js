@@ -308,6 +308,9 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     if (error?.message?.includes('CONTATO_NOME_INVALIDO')) {
       return { success: false, error: 'Confira o nome do contato de emergência: use só letras (sem números).' };
     }
+    if (error?.message?.includes('CONTATO_MESMO_NOME')) {
+      return { success: false, error: 'O contato de emergência precisa ser outra pessoa — não pode ser você mesmo.' };
+    }
     if (error?.message?.includes('CONTATO_MESMO_TELEFONE')) {
       return { success: false, error: 'O telefone de emergência precisa ser de outra pessoa — diferente do seu WhatsApp.' };
     }

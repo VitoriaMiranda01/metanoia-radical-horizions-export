@@ -12,7 +12,7 @@ import { IGREJAS_PARCEIRAS, IGREJAS_RESPONSAVEL_ACAMPANTE, OUTRA_IGREJA, igrejaE
 import { listarIgrejasExtras } from '@/services/publicDataService';
 import { toBoolean } from '@/utils/formatters';
 import { mascararTelefone, problemaTelefone, ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
-import { limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE } from '@/utils/contatoEmergencia';
+import { limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE, mesmoNome, AVISO_MESMO_NOME } from '@/utils/contatoEmergencia';
 import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
 import {
   UFS, problemaEmail, problemaCep, problemaNascimento, problemaNomeSimples, problemaSemNumero
@@ -246,6 +246,10 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
       const problemaNome = problemaNomeContato(form.contato_emergencia_nome);
       if (problemaNome) {
         toast({ title: 'Confira o nome do contato de emergência', description: problemaNome, variant: 'destructive' });
+        return;
+      }
+      if (mesmoNome(form.contato_emergencia_nome, form.nome)) {
+        toast({ title: 'Confira o contato de emergência', description: 'Precisa ser outra pessoa — não pode ser o próprio inscrito.', variant: 'destructive' });
         return;
       }
       if (mesmoTelefone(form.contato_emergencia_telefone, form.whatsapp)) {

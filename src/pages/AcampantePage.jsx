@@ -25,7 +25,7 @@ import Endereco from '@/components/inscricao/Endereco';
 import InfoEclesiasticas from '@/components/inscricao/InfoEclesiasticas';
 import InfoSaude from '@/components/inscricao/InfoSaude';
 import ContatoEmergencia from '@/components/inscricao/ContatoEmergencia';
-import { problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE } from '@/utils/contatoEmergencia';
+import { problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE, mesmoNome, AVISO_MESMO_NOME } from '@/utils/contatoEmergencia';
 import { problemaNomePessoa } from '@/utils/nomePessoa';
 import { conferirInscricao } from '@/utils/validacoesInscricao';
 import { validateCPF } from '@/utils/validation';
@@ -230,6 +230,11 @@ const AcampantePage = () => {
     const problemaNome = problemaNomeContato(formData.contatoEmergencia);
     if (problemaNome) {
       toast({ title: 'Confira o nome do contato de emergência', description: problemaNome, variant: 'destructive' });
+      document.getElementById('contatoEmergencia')?.focus();
+      return;
+    }
+    if (mesmoNome(formData.contatoEmergencia, formData.nome)) {
+      toast({ title: 'Confira o contato de emergência', description: AVISO_MESMO_NOME, variant: 'destructive' });
       document.getElementById('contatoEmergencia')?.focus();
       return;
     }

@@ -374,6 +374,8 @@ const GerenciarInscricoesPage = () => {
 
           <AvisoCadastro
             aviso={avisosInscricoes.avisos.find((a) => a.chave === 'cadastro')}
+            onRecarregar={avisosInscricoes.recarregar}
+            onCorrigido={fetchAcampantesSupabase}
             onOcultar={() => avisosInscricoes.ocultar('cadastro')}
             onOcultarFicha={(id) => avisosInscricoes.ocultarFicha('cadastro', id)}
             onAbrirFicha={(id) => {

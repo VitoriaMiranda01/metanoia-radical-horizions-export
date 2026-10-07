@@ -1,4 +1,5 @@
 import { digitosTelefone } from './telefone';
+import { normalizarBusca } from './busca';
 
 /**
  * Regras do contato de emergencia (Patrick, 06/10/2026).
@@ -34,6 +35,15 @@ export const mesmoTelefone = (a, b) => {
   const y = digitosTelefone(b);
   return !!x && !!y && x === y;
 };
+
+/** O contato de emergencia tem o mesmo nome da propria pessoa (ela mesma). */
+export const mesmoNome = (contato, proprio) => {
+  const a = normalizarBusca(contato);
+  return !!a && a === normalizarBusca(proprio);
+};
+
+export const AVISO_MESMO_NOME =
+  'O contato de emergência precisa ser outra pessoa — não pode ser você mesmo.';
 
 export const AVISO_MESMO_TELEFONE =
   'O telefone de emergência precisa ser de outra pessoa — diferente do seu WhatsApp.';

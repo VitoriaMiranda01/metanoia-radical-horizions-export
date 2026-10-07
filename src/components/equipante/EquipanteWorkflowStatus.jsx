@@ -65,7 +65,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
 
   const aoCorrigir = async (sobraram, salvo) => {
     const revelarDepois = correcao?.antesDeRevelar;
-    if (salvo && (salvo.cpf || salvo.nascimento)) onDonoAtualizado?.(salvo);
+    if (salvo && (salvo.cpf || salvo.nascimento || salvo.nome)) onDonoAtualizado?.(salvo);
     if (sobraram.length > 0) {
       // O servidor deixou algo pendente: a janela continua, so com o que falta.
       setCorrecao({ antesDeRevelar: !!revelarDepois, pendencias: sobraram });

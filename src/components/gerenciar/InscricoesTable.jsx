@@ -160,6 +160,7 @@ const SITUACOES = [
   { valor: 'pendente', rotulo: 'Pendentes', ativo: 'bg-yellow-600 text-white border-yellow-500', dica: 'Inscrições esperando aprovação. Dá para ver e corrigir a ficha (ex.: igreja errada); aprovar é na tela de Aprovações.' },
   { valor: 'rejeitado', rotulo: 'Rejeitados', ativo: 'bg-red-600 text-white border-red-500', dica: 'Inscrições rejeitadas.' },
   { valor: 'todos', rotulo: 'Todos', ativo: 'bg-white/20 text-white border-white/40', dica: 'Todas as inscrições de equipante desta edição.' },
+  { valor: 'confirmados', rotulo: 'Presença confirmada', ativo: 'bg-amber-600 text-white border-amber-500', dica: 'Equipantes confirmados na chamada da reunião de escala (presentes, ou mantidos na área pela organização).' },
 ];
 
 const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchTerm, onSearchChange, situacao, onSituacaoChange, contagemSituacao }) => {

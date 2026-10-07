@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Check, Info, Link2, Loader2, Plus, RotateCcw, Trash2, AlertTriangle } from 'lucide-react';
+import { Check, Eye, Info, Link2, Loader2, Plus, RotateCcw, Trash2, AlertTriangle, Users } from 'lucide-react';
 import { IGREJAS_PARCEIRAS } from '@/constants/igrejas';
 import {
   fetchOutrasIgrejas,
+  fetchPessoasEmOutra,
   vincularOutraIgreja,
   criarIgrejaParceira,
   removerIgrejaExtra
@@ -13,6 +14,8 @@ import {
 import { limparOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import SeletorIgrejas from '@/components/aprovacoes/SeletorIgrejas';
 import { casaBusca } from '@/utils/busca';
+import { digitosTelefone, formatarTelefone } from '@/utils/telefone';
+import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
@@ -48,6 +51,15 @@ const nomeSemCodigo = (item) => {
 
 const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 
+// 10/11 digitos viram (24) 99999-9999; outro formato (estrangeiro) vai como esta.
+const telefoneLegivel = (valor) => {
+  if (!valor) return '';
+  const d = digitosTelefone(valor);
+  return d.length === 10 || d.length === 11 ? formatarTelefone(d) : String(valor);
+};
+
+const ROTULO_STATUS = { pendente: 'Pendente', aprovado: 'Aprovado', rejeitado: 'Rejeitado' };
+
 const OutrasIgrejasManager = () => {
   const { toast } = useToast();
   const [digitadas, setDigitadas] = useState([]);
@@ -61,9 +73,13 @@ const OutrasIgrejasManager = () => {
   const [paraRemover, setParaRemover] = useState(null);
 
   // Janelas: vincular (nome digitado) e criar (nome digitado ou em branco).
-  const [vincular, setVincular] = useState(null);   // { nome, quantas }
+  const [vincular, setVincular] = useState(null);   // { nome, quantas, ids|null }
   const [escolhida, setEscolhida] = useState([]);
-  const [criar, setCriar] = useState(null);         // { texto: string|null, quantas }
+  const [criar, setCriar] = useState(null);         // { texto: string|null, quantas, ids|null }
+
+  // "Quem escreveu": as fichas de quem digitou aquele nome em OUTRA.
+  const [pessoas, setPessoas] = useState(null);      // { nome, lista|null (carregando), marcadas: Set }
+  const [ficha, setFicha] = useState(null);
   const [nomeNovo, setNomeNovo] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -101,13 +117,39 @@ const OutrasIgrejasManager = () => {
 
   const aposMudar = () => { limparOpcoesDeIgreja(); carregar(); };
 
+  // --- quem escreveu --------------------------------------------------------
+  const abrirPessoas = async (d) => {
+    setPessoas({ nome: d.nome, lista: null, marcadas: new Set() });
+    const r = await fetchPessoasEmOutra(d.nome);
+    if (!r.success) {
+      toast({ title: 'Não deu para carregar', description: r.error, variant: 'destructive' });
+      setPessoas(null);
+      return;
+    }
+    setPessoas({ nome: d.nome, lista: r.pessoas, marcadas: new Set(r.pessoas.map((p) => p.id)) });
+  };
+
+  const alternarPessoa = (id) => setPessoas((p) => {
+    const marcadas = new Set(p.marcadas);
+    if (marcadas.has(id)) marcadas.delete(id); else marcadas.add(id);
+    return { ...p, marcadas };
+  });
+
+  const alternarTodas = () => setPessoas((p) => ({
+    ...p,
+    marcadas: p.marcadas.size === p.lista.length ? new Set() : new Set(p.lista.map((x) => x.id)),
+  }));
+
+  // Das fichas marcadas: so elas mudam de igreja. Todas marcadas = o nome inteiro.
+  const idsMarcados = () => (pessoas.marcadas.size === pessoas.lista.length ? null : [...pessoas.marcadas]);
+
   // --- vincular -----------------------------------------------------------
-  const abrirVincular = (d) => { setEscolhida([]); setVincular(d); };
+  const abrirVincular = (d) => { setEscolhida([]); setVincular({ ...d, ids: null }); };
 
   const confirmarVinculo = async () => {
     if (!vincular || escolhida.length === 0) return;
     setEnviando(true);
-    const r = await vincularOutraIgreja(vincular.nome, escolhida[0]);
+    const r = await vincularOutraIgreja(vincular.nome, escolhida[0], vincular.ids);
     setEnviando(false);
     if (!r.success) {
       toast({ title: 'Não deu para vincular', description: r.error, variant: 'destructive' });
@@ -119,19 +161,20 @@ const OutrasIgrejasManager = () => {
       className: 'bg-green-600 text-white'
     });
     setVincular(null);
+    setPessoas(null);
     aposMudar();
   };
 
   // --- criar --------------------------------------------------------------
   const abrirCriar = (d) => {
-    setCriar({ texto: d ? d.nome : null, quantas: d ? d.quantas : 0 });
+    setCriar({ texto: d ? d.nome : null, quantas: d ? d.quantas : 0, ids: null });
     setNomeNovo(d ? d.nome.toUpperCase() : '');
   };
 
   const confirmarCriacao = async () => {
     if (!criar || nomeNovo.trim().length < 3) return;
     setEnviando(true);
-    const r = await criarIgrejaParceira(nomeNovo.trim(), criar.texto);
+    const r = await criarIgrejaParceira(nomeNovo.trim(), criar.texto, criar.ids);
     setEnviando(false);
     if (!r.success) {
       toast({ title: 'Não deu para criar a igreja', description: r.error, variant: 'destructive' });
@@ -143,6 +186,7 @@ const OutrasIgrejasManager = () => {
       className: 'bg-green-600 text-white'
     });
     setCriar(null);
+    setPessoas(null);
     aposMudar();
   };
 
@@ -218,9 +262,15 @@ const OutrasIgrejasManager = () => {
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-medium truncate">{d.nome}</p>
                   <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                    <span className="text-xs text-gray-500">
+                    <button
+                      type="button"
+                      onClick={() => abrirPessoas(d)}
+                      data-dica="Ver quem escreveu este nome e abrir a ficha de cada um (pastor, função, contato)."
+                      className="inline-flex items-center gap-1 text-xs text-blue-300 underline decoration-dotted underline-offset-2 hover:text-blue-200"
+                    >
+                      <Users className="w-3 h-3" />
                       {d.quantas === 1 ? '1 pessoa escreveu' : `${d.quantas} pessoas escreveram`}
-                    </span>
+                    </button>
                     {jaExiste(d.nome) && (
                       <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-300">
                         <AlertTriangle className="w-3 h-3" />
@@ -319,6 +369,109 @@ const OutrasIgrejasManager = () => {
           </div>
         )}
       </div>
+
+      {/* ------------------------------------------------ janela: quem escreveu */}
+      {/* Some enquanto a ficha, o vincular ou o criar estao abertos (e volta ao fechar). */}
+      <Dialog
+        open={!!pessoas && !ficha && !vincular && !criar}
+        onOpenChange={(abrir) => { if (!abrir) setPessoas(null); }}
+      >
+        <DialogContent className="bg-zinc-900 border border-white/10 text-white sm:max-w-2xl max-h-[92vh] overflow-y-auto overflow-x-hidden">
+          <DialogHeader>
+            <DialogTitle>Quem escreveu “{pessoas?.nome}”</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Abra a ficha para ver o pastor e decidir a igreja. Marque só quem é da mesma igreja: o mesmo nome pode ser de igrejas diferentes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="min-w-0 py-1">
+            {!pessoas?.lista ? (
+              <div className="flex items-center justify-center gap-2 py-8 text-gray-400">
+                <Loader2 className="w-5 h-5 animate-spin" /> Carregando...
+              </div>
+            ) : pessoas.lista.length === 0 ? (
+              <p className="py-6 text-center text-sm text-gray-400">Ninguém mais com este nome em OUTRA (já foi vinculado).</p>
+            ) : (
+              <>
+                <label className="mb-2 flex cursor-pointer items-center gap-2 px-1 text-xs text-gray-400">
+                  <input
+                    type="checkbox"
+                    checked={pessoas.marcadas.size === pessoas.lista.length}
+                    onChange={alternarTodas}
+                    className="h-4 w-4 accent-emerald-500"
+                  />
+                  Marcar todas ({pessoas.marcadas.size} de {pessoas.lista.length})
+                </label>
+                <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
+                  {pessoas.lista.map((p) => (
+                    <div key={p.id} className="flex items-start gap-3 rounded-md border border-white/10 bg-white/5 p-3">
+                      <input
+                        type="checkbox"
+                        checked={pessoas.marcadas.has(p.id)}
+                        onChange={() => alternarPessoa(p.id)}
+                        aria-label={`Marcar ${p.nome}`}
+                        className="mt-1 h-4 w-4 shrink-0 accent-emerald-500"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-white">
+                          {p.nome}
+                          <span className="ml-2 rounded-full border border-white/20 px-2 py-0.5 text-[11px] font-normal text-gray-300">
+                            {ROTULO_STATUS[p.status] || p.status}
+                          </span>
+                        </p>
+                        <p className="mt-0.5 text-sm">
+                          {p.pastor_nome || p.pastor
+                            ? <><span className="text-gray-400">Pastor:</span> <span className="text-white">{p.pastor_nome || p.pastor}</span></>
+                            : <span className="text-amber-300">Pastor não informado</span>}
+                        </p>
+                        <p className="mt-0.5 text-xs text-gray-400">
+                          {[
+                            p.cargo_igreja ? `Função: ${p.cargo_igreja_outro || p.cargo_igreja}` : '',
+                            telefoneLegivel(p.whatsapp),
+                          ].filter(Boolean).join(' · ') || 'sem outros dados'}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm" variant="outline" onClick={() => setFicha(p)}
+                        data-dica="Abrir a ficha completa desta pessoa."
+                        className="shrink-0 border-white/20 bg-transparent text-gray-200 hover:bg-white/10 hover:text-white"
+                      >
+                        <Eye className="mr-1 h-4 w-4" /> Ver ficha
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:justify-between sm:space-x-0">
+            <Button variant="ghost" onClick={() => setPessoas(null)} className="text-gray-300 hover:bg-white/10 hover:text-white">
+              Fechar
+            </Button>
+            {pessoas?.lista?.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline" disabled={pessoas.marcadas.size === 0}
+                  onClick={() => { setEscolhida([]); setVincular({ nome: pessoas.nome, quantas: pessoas.marcadas.size, ids: idsMarcados() }); }}
+                  className="border-blue-500/50 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 hover:text-blue-200"
+                >
+                  <Link2 className="mr-1 h-4 w-4" /> Vincular ({pessoas.marcadas.size})
+                </Button>
+                <Button
+                  disabled={pessoas.marcadas.size === 0}
+                  onClick={() => { setCriar({ texto: pessoas.nome, quantas: pessoas.marcadas.size, ids: idsMarcados() }); setNomeNovo(pessoas.nome.toUpperCase()); }}
+                  className="bg-emerald-600 text-white hover:bg-emerald-700"
+                >
+                  <Plus className="mr-1 h-4 w-4" /> Nova igreja ({pessoas.marcadas.size})
+                </Button>
+              </div>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {ficha && <InscricaoDetalhesModal inscricao={ficha} onClose={() => setFicha(null)} />}
 
       {/* ------------------------------------------------ janela: vincular */}
       <Dialog open={!!vincular} onOpenChange={(abrir) => { if (!abrir && !enviando) setVincular(null); }}>

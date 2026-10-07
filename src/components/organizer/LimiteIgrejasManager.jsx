@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { normalizarBusca } from '@/utils/busca';
 import { Plus, Trash2, Edit2, Check, X, Loader2, Save, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
 import { IGREJAS_PARCEIRAS } from '@/constants/igrejas';
+import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { fetchLimitesIgrejas, saveLimiteIgreja, deleteLimiteIgreja } from '@/services/limitesIgrejasService';
 
 // Gerencia o limite de inscricoes de acampantes por igreja: um valor
@@ -50,8 +52,11 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
   const [excecaoToDelete, setExcecaoToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // As igrejas criadas pela organizacao (166...) ficam no fim, depois das do arquivo.
+  const { novas } = useOpcoesDeIgreja();
+  const todasAsIgrejas = [...IGREJAS_PARCEIRAS, ...novas];
   const ordenarExcecoes = (lista) =>
-    [...lista].sort((a, b) => IGREJAS_PARCEIRAS.indexOf(a.igreja) - IGREJAS_PARCEIRAS.indexOf(b.igreja));
+    [...lista].sort((a, b) => todasAsIgrejas.indexOf(a.igreja) - todasAsIgrejas.indexOf(b.igreja));
 
   useEffect(() => {
     const carregar = async () => {
@@ -168,10 +173,10 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
     }
   };
 
-  const igrejasDisponiveis = IGREJAS_PARCEIRAS.filter(ig => !excecoes.some(e => e.igreja === ig));
+  const igrejasDisponiveis = todasAsIgrejas.filter(ig => !excecoes.some(e => e.igreja === ig));
 
   const excecoesFiltradas = searchTerm.trim()
-    ? excecoes.filter(e => e.igreja.toLowerCase().includes(searchTerm.trim().toLowerCase()))
+    ? excecoes.filter(e => normalizarBusca(e.igreja).includes(normalizarBusca(searchTerm)))
     : excecoes;
 
   return (

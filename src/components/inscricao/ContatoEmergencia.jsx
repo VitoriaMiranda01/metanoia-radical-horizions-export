@@ -5,13 +5,14 @@ import FormSection from './FormSection';
 import TelefoneInput from './TelefoneInput';
 import { cn } from '@/lib/utils';
 import {
-  limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE
+  limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE, mesmoNome, AVISO_MESMO_NOME
 } from '@/utils/contatoEmergencia';
 
 // Regras (06/10/2026): nome so com letras; telefone valido e diferente do
 // WhatsApp da propria pessoa -- ver utils/contatoEmergencia.js.
 const ContatoEmergencia = ({ formData, handleChange }) => {
-  const problemaNome = problemaNomeContato(formData.contatoEmergencia);
+  const problemaNome = problemaNomeContato(formData.contatoEmergencia)
+    || (mesmoNome(formData.contatoEmergencia, formData.nome) ? AVISO_MESMO_NOME : null);
   const repetido = mesmoTelefone(formData.telefoneEmergencia, formData.whatsapp);
 
   return (

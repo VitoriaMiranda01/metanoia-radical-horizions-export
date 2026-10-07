@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
+import { mensagemDeErro } from '@/utils/errosDeDados';
 import { toast } from '@/components/ui/use-toast';
 import { comReenvio } from '@/services/serviceHelpers';
 
@@ -115,7 +116,7 @@ export const updateAcampante = async (acampanteId, dados) => {
     return { success: true };
   } catch (error) {
     console.error('acampantesApi - updateAcampante', error, { acampanteId, dados });
-    return { success: false, error: error.message || 'Erro ao tentar salvar as alterações.' };
+    return { success: false, error: mensagemDeErro(error.message) || error.message || 'Erro ao tentar salvar as alterações.' };
   }
 };
 
@@ -187,6 +188,14 @@ export const ocultarAviso = async (chave, oculto) => {
   if (error) throw error;
   if (!data?.ok) throw new Error(data?.erro || 'Não foi possível ocultar.');
   return true;
+};
+
+// Acampantes com dado fora do padrao (nome com numero, nascimento ou sexo em
+// branco, CEP/estado invalido, e-mail errado...). null = este login nao ve o aviso.
+export const fetchCadastroAcampantesPendentes = async () => {
+  const { data, error } = await supabase.rpc('cadastro_acampantes_pendentes');
+  if (error) throw error;
+  return data || null;
 };
 
 // Acampantes sem tamanho de camisa (fichas antigas). null = este login nao

@@ -30,7 +30,7 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     } finally {
       setIsLoading(false);
     }
-  }, [equipante_id, dono.cpf, dono.nome]);
+  }, [equipante_id, dono.cpf, dono.nome, dono.nascimento]);
 
   useEffect(() => {
     fetchWorkflow();

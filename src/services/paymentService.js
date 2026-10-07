@@ -1,5 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
-import { comReenvio } from '@/services/serviceHelpers';
+import { comReenvio, lerTodasAsLinhas } from '@/services/serviceHelpers';
 import { finalizarInscricaoGratuita } from '@/services/publicDataService';
 import { nomeDaIgreja } from '@/constants/igrejas';
 
@@ -223,9 +223,11 @@ export const fetchRelacaoDePagamentos = async () => {
     'id, nome, cpf, whatsapp, nacionalidade, status_pagamento, metodo_pagamento, data_pagamento';
 
   const [acampantes, equipantes] = await Promise.all([
-    comReenvio(() => supabase.from('acampantes').select(`${colunasComuns}, igreja, admin_responsavel`),
+    // Todas as linhas: os equipantes ja passam de 900 e o corte de 1000
+    // linhas do Supabase deixaria gente fora da lista sem avisar.
+    lerTodasAsLinhas(() => supabase.from('acampantes').select(`${colunasComuns}, igreja, admin_responsavel`).order('id'),
       { rotulo: 'acampantes' }),
-    comReenvio(() => supabase.from('equipantes').select(`${colunasComuns}, igreja, igreja_outra, status`),
+    lerTodasAsLinhas(() => supabase.from('equipantes').select(`${colunasComuns}, igreja, igreja_outra, status`).order('id'),
       { rotulo: 'equipantes' }),
   ]);
 
@@ -388,10 +390,34 @@ export const fetchEquipantesComPagamentoAberto = async () => {
   if (errConfig) throw errConfig;
   if (!config?.escala_lancada_em) return new Set();
 
-  const { data, error } = await comReenvio(
-    () => supabase.from('escalas').select('equipante_id, area_alocada').neq('area_alocada', 'Não será escalado'),
+  const { data, error } = await lerTodasAsLinhas(
+    () => supabase.from('escalas').select('id, equipante_id, area_alocada').neq('area_alocada', 'Não será escalado').order('id'),
     { rotulo: 'escala' }
   );
   if (error) throw error;
   return new Set((data || []).map((e) => e.equipante_id));
+};
+
+/**
+ * Convite do grupo de WhatsApp ja enviado (migration 20261006k, pedido da
+ * Raquel em 06/10/2026). Formato: { [id da ficha]: { em, por } }.
+ */
+export const fetchGruposEnviados = async () => {
+  const { data, error } = await supabase.rpc('grupo_enviado_listar');
+  if (error) throw error;
+  return data || {};
+};
+
+const erroDeGrupo = () => new Error('Não foi possível registrar. Tente de novo.');
+
+/** Marca como enviado (quem ja estava marcado fica como estava). */
+export const marcarGrupoEnviado = async (tipo, ids) => {
+  const { data, error } = await supabase.rpc('grupo_enviado_marcar', { p_tipo: tipo, p_ids: ids });
+  if (error) throw erroDeGrupo();
+  return data;
+};
+
+export const desmarcarGrupoEnviado = async (tipo, id) => {
+  const { error } = await supabase.rpc('grupo_enviado_desmarcar', { p_tipo: tipo, p_id: id });
+  if (error) throw erroDeGrupo();
 };

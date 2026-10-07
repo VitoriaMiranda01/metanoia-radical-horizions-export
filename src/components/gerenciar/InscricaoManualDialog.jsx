@@ -10,9 +10,11 @@ import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
 import TelefoneInput from '@/components/inscricao/TelefoneInput';
 import { IGREJAS_PARCEIRAS, NAO_CONGREGA, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
 import { AREAS_INSCRICAO } from '@/constants/workAreas';
-import { listarIgrejasExtras } from '@/services/publicDataService';
+import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { inscricaoManualEquipante } from '@/services/equipantesService';
 import { problemaTelefone } from '@/utils/telefone';
+import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
+import { validateCPF } from '@/utils/validation';
 import { formatCPF } from '@/utils/formatters';
 
 /**
@@ -63,15 +65,9 @@ const Campo = ({ label, children, className = '' }) => (
 const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
   const { toast } = useToast();
   const [form, setForm] = useState({ ...VAZIO, nome: nomeInicial });
-  const [extras, setExtras] = useState([]);
+  const { novas, extras, permiteOutra } = useOpcoesDeIgreja();
   const [salvando, setSalvando] = useState(false);
   const [mesmoNome, setMesmoNome] = useState(null);
-
-  useEffect(() => {
-    let vivo = true;
-    listarIgrejasExtras().then((l) => { if (vivo) setExtras(l || []); }).catch(() => {});
-    return () => { vivo = false; };
-  }, []);
 
   useEffect(() => {
     const aoTeclar = (e) => { if (e.key === 'Escape' && !salvando) onClose(); };
@@ -79,7 +75,10 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
     return () => window.removeEventListener('keydown', aoTeclar);
   }, [onClose, salvando]);
 
-  const igrejas = useMemo(() => [...IGREJAS_PARCEIRAS, ...extras, OUTRA_IGREJA, NAO_CONGREGA], [extras]);
+  const igrejas = useMemo(
+    () => [...IGREJAS_PARCEIRAS, ...novas, ...extras, ...(permiteOutra ? [OUTRA_IGREJA] : []), NAO_CONGREGA],
+    [novas, extras, permiteOutra]
+  );
   const set = (campo) => (valor) => {
     setForm((f) => ({ ...f, [campo]: valor }));
     if (campo === 'nome') setMesmoNome(null);
@@ -92,6 +91,11 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
       toast({ title: 'Escreva o nome da pessoa', variant: 'destructive' });
       return;
     }
+    const problemaNome = problemaNomePessoa(form.nome);
+    if (problemaNome) {
+      toast({ title: 'Confira o nome', description: problemaNome, variant: 'destructive' });
+      return;
+    }
     if (form.whatsapp.trim()) {
       const problema = problemaTelefone(form.whatsapp);
       if (problema) {
@@ -100,8 +104,8 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
       }
     }
     const cpf = form.cpf.replace(/\D/g, '');
-    if (cpf && cpf.length !== 11) {
-      toast({ title: 'Confira o CPF', description: 'O CPF tem 11 dígitos. Ou deixe em branco.', variant: 'destructive' });
+    if (cpf && !validateCPF(cpf)) {
+      toast({ title: 'Confira o CPF', description: 'CPF inválido: confira os números. Ou deixe em branco.', variant: 'destructive' });
       return;
     }
 
@@ -182,7 +186,8 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
             <Input
               autoFocus
               value={form.nome}
-              onChange={(e) => set('nome')(e.target.value)}
+              onChange={(e) => set('nome')(limparNomePessoa(e.target.value))}
+              placeholder="Só letras, com nome e sobrenome"
               className="bg-white/10 border-white/20 text-white"
             />
           </Campo>

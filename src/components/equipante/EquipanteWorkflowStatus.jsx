@@ -9,7 +9,10 @@ import CorrecaoCadastroDialog from './CorrecaoCadastroDialog';
 import RevelarAreaDialog from './RevelarAreaDialog';
 import RelacaoLider from './RelacaoLider';
 
-const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment }) => {
+// onSair: "Não sou eu" -- a janela de cadastro não fecha, então precisa ter saída.
+// onDonoAtualizado: o que a pessoa acabou de gravar (CPF, nascimento) e que
+// passa a servir de prova de dono nas próximas chamadas.
+const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, onSair, onDonoAtualizado }) => {
   const {
     isMinor,
     workflowStages,
@@ -38,18 +41,19 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
   // sozinha; o organizador abrindo a ficha pela tela dele, nao.
   const ehOProprio = !!(dono && (dono.cpf || dono.nome));
   const [correcao, setCorrecao] = useState(null);   // null | { antesDeRevelar, pendencias? }
-  const [fechouCorrecao, setFechouCorrecao] = useState(false);
+  const [completou, setCompletou] = useState(false);
   const [revelando, setRevelando] = useState(false);
   const [revelouAgora, setRevelouAgora] = useState(false);
 
-  // Ao entrar no acompanhamento: se ha pendencia, abre a correcao uma vez.
-  // Fechar ("Agora nao") vale ate a proxima visita -- e antes de revelar a
-  // area ela volta, porque sem corrigir o servidor nao revela.
+  // Ao entrar no acompanhamento: se ha pendencia, abre a janela de cadastro.
+  // Ela NAO fecha enquanto sobrar pendencia (a pessoa completa ou sai) -- e
+  // antes de revelar a area ela volta, porque sem corrigir o servidor nao
+  // revela.
   useEffect(() => {
-    if (ehOProprio && pendencias.length > 0 && !correcao && !fechouCorrecao) {
+    if (ehOProprio && pendencias.length > 0 && !correcao && !completou) {
       setCorrecao({ antesDeRevelar: false });
     }
-  }, [ehOProprio, pendencias.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ehOProprio, pendencias, correcao, completou]);
 
   const abrirRevelacao = () => {
     if (ehOProprio && pendencias.length > 0) {
@@ -59,11 +63,18 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
     setRevelando(true);
   };
 
-  const aoCorrigir = async (sobraram) => {
+  const aoCorrigir = async (sobraram, salvo) => {
     const revelarDepois = correcao?.antesDeRevelar;
+    if (salvo && (salvo.cpf || salvo.nascimento || salvo.nome)) onDonoAtualizado?.(salvo);
+    if (sobraram.length > 0) {
+      // O servidor deixou algo pendente: a janela continua, so com o que falta.
+      setCorrecao({ antesDeRevelar: !!revelarDepois, pendencias: sobraram });
+      return;
+    }
+    setCompletou(true);
     setCorrecao(null);
     await refresh();
-    if (revelarDepois && sobraram.length === 0) setRevelando(true);
+    if (revelarDepois) setRevelando(true);
   };
 
   if (isLoading) {
@@ -354,7 +365,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment })
             dono={dono}
             pendencias={correcao.pendencias || pendencias}
             antesDeRevelar={correcao.antesDeRevelar}
-            onClose={() => { setCorrecao(null); setFechouCorrecao(true); }}
+            onSair={onSair}
             onCorrigido={aoCorrigir}
           />
         )}

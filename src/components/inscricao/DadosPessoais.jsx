@@ -11,6 +11,9 @@ import { CheckCircle2, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toBoolean, calcularIdade } from '@/utils/formatters';
 import { NACIONALIDADES, bandeiraDoPais } from '@/constants/nacionalidades';
+import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
+import { validateCPF } from '@/utils/validation';
+import { limparSemNumero, problemaEmail } from '@/utils/validacoesInscricao';
 
 const DadosPessoais = ({
   formData,
@@ -21,6 +24,9 @@ const DadosPessoais = ({
   isEquipante = false,
   setFormData // Required for the hook
 }) => {
+
+  // O aviso do nome so aparece depois que a pessoa sai do campo.
+  const [nomeSaiu, setNomeSaiu] = React.useState(false);
 
   // Use the hook internally if setFormData is provided and it's an equipante
   const { lookupEquipanteByCPF, isLoading, showRecoveryMessage } = useEquipanteCPFLookup(setFormData || (() => { }));
@@ -107,6 +113,10 @@ const DadosPessoais = ({
             </p>
           )}
 
+          {!formData.semCpf && formData.cpf && formData.cpf.replace(/\D/g, '').length === 11 && !validateCPF(formData.cpf) && (
+            <p className="text-xs text-red-300 mt-auto pt-1">CPF inválido: confira os números.</p>
+          )}
+
           {!formData.semCpf && (
             <p className="text-[10px] text-blue-200/70 mt-auto pt-1">
               {isEquipante
@@ -126,14 +136,19 @@ const DadosPessoais = ({
               id="nome" 
               name="nome" 
               value={formData.nome || ''} 
-              onChange={handleChange} 
+              // Numeros e simbolos nem entram: o campo e so para o nome.
+              onChange={(e) => handleChange({ target: { name: 'nome', value: limparNomePessoa(e.target.value) } })}
+              onBlur={() => setNomeSaiu(true)}
               required 
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
-              placeholder="Seu nome completo" 
+              autoComplete="name"
+              className={`bg-white/10 border-white/20 text-white placeholder:text-white/50 ${nomeSaiu && problemaNomePessoa(formData.nome) ? 'border-red-500/70' : ''}`}
+              placeholder="Seu nome completo (só letras)" 
             />
           </div>
-          {/* Espaçador invisível para manter alinhamento vertical com o texto de ajuda do CPF */}
-          <div className="h-4 pointer-events-none mt-auto" aria-hidden="true" />
+          {/* Aviso do nome; sem aviso, o espaçador mantém o alinhamento vertical com o texto de ajuda do CPF */}
+          {nomeSaiu && problemaNomePessoa(formData.nome)
+            ? <p className="text-xs text-red-300 mt-auto">{problemaNomePessoa(formData.nome)}</p>
+            : <div className="h-4 pointer-events-none mt-auto" aria-hidden="true" />}
         </div>
 
         <div className="space-y-2">
@@ -233,14 +248,14 @@ const DadosPessoais = ({
         {!isEquipante && (
           <div className="space-y-2">
             <Label htmlFor="email" className="text-white">E-mail</Label>
-            <Input id="email" name="email" type="email" value={formData.email || ''} onChange={handleChange} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="seuemail@exemplo.com" />
+            <Input id="email" name="email" type="email" value={formData.email || ''} onChange={handleChange} className={`bg-white/10 border-white/20 text-white placeholder:text-white/50 ${problemaEmail(formData.email) && (formData.email || '').includes('@') ? 'border-red-500/70' : ''}`} placeholder="seuemail@exemplo.com" />
           </div>
         )}
 
         {!isEquipante && (
           <div className="space-y-2">
             <Label htmlFor="profissao" className="text-white">Profissão</Label>
-            <Input id="profissao" name="profissao" value={formData.profissao || ''} onChange={handleChange} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Sua profissão" />
+            <Input id="profissao" name="profissao" value={formData.profissao || ''} onChange={(e) => handleChange({ target: { name: 'profissao', value: limparSemNumero(e.target.value) } })} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Sua profissão" />
           </div>
         )}
 

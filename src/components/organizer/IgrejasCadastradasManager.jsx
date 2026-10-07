@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { IGREJAS_PARCEIRAS } from '@/constants/igrejas';
+import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { fetchRelatorioIgrejas } from '@/services/igrejasExtrasService';
 import { listarContasParceiros } from '@/services/senhasParceirosService';
 import { montarLinhasIgrejas } from '@/utils/igrejasCadastradas';
@@ -48,9 +49,11 @@ const IgrejasCadastradasManager = () => {
 
   useEffect(() => { carregar(); }, [carregar]);
 
+  const { novas } = useOpcoesDeIgreja();
+  const todasAsIgrejas = useMemo(() => [...IGREJAS_PARCEIRAS, ...novas], [novas]);
   const linhas = useMemo(
-    () => (relatorio ? montarLinhasIgrejas(IGREJAS_PARCEIRAS, relatorio, contas) : []),
-    [relatorio, contas]
+    () => (relatorio ? montarLinhasIgrejas(todasAsIgrejas, relatorio, contas) : []),
+    [relatorio, contas, todasAsIgrejas]
   );
 
   const termo = semAcento(busca.trim());
@@ -67,7 +70,7 @@ const IgrejasCadastradasManager = () => {
     if (!relatorio) return;
     setExportando(true);
     try {
-      const r = exportListaIgrejas(IGREJAS_PARCEIRAS, relatorio, contas);
+      const r = exportListaIgrejas(todasAsIgrejas, relatorio, contas);
       toast({ title: 'Planilha gerada', description: `${r.igrejas} igrejas na lista.` });
     } catch (e) {
       toast({ title: 'Não deu para exportar', description: e.message, variant: 'destructive' });

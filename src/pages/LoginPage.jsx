@@ -10,6 +10,7 @@ import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
 import { Eye, EyeOff, Heart, Shield, Users, AlertCircle, CheckCircle2, KeyRound, MailCheck, UserPlus } from 'lucide-react';
 import { buscarIgrejaPorCodigo, IGREJAS_PARA_PRIMEIRO_ACESSO } from '@/constants/igrejas';
+import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
 import {
   trocarSenhaIgreja,
@@ -46,6 +47,8 @@ const LoginPage = () => {
   const { toast } = useToast();
 
   const [selectedType, setSelectedType] = useState('organizador');
+  // Igrejas criadas pela organizacao (166...): o codigo delas tambem precisa ser reconhecido aqui.
+  const { novas: novasIgrejas } = useOpcoesDeIgreja();
   const [formData, setFormData] = useState({
     identifier: '',
     password: ''
@@ -117,7 +120,7 @@ const LoginPage = () => {
       setCodigoDesconhecido(false);
       return;
     }
-    const achada = buscarIgrejaPorCodigo(digitado);
+    const achada = buscarIgrejaPorCodigo(digitado, novasIgrejas);
     setIgrejaDoCodigo(achada);
     setCodigoDesconhecido(!achada);
     if (achada && achada.codigo !== digitado) {
@@ -488,7 +491,7 @@ const LoginPage = () => {
                       id="paIgreja"
                       value={paIgreja}
                       onChange={setPaIgreja}
-                      options={IGREJAS_PARA_PRIMEIRO_ACESSO}
+                      options={[...IGREJAS_PARA_PRIMEIRO_ACESSO, ...novasIgrejas]}
                       placeholder="Procure pelo nome ou pelo número..."
                     />
                   </div>

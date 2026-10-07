@@ -17,7 +17,7 @@ import {
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
-import { RefreshCw, Lock, CheckCircle, FlaskConical } from 'lucide-react';
+import { RefreshCw, Lock, CheckCircle, FlaskConical, Search } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import CampoDataNascimento from '@/components/inscricao/CampoDataNascimento';
@@ -29,10 +29,14 @@ import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao, buscarFichaAnterior } from '@/services/inscricoesService';
 import { problemaTelefone } from '@/utils/telefone';
+import { problemaNomePessoa } from '@/utils/nomePessoa';
+import { conferirInscricao } from '@/utils/validacoesInscricao';
+import { validateCPF } from '@/utils/validation';
 import { calcularIdade } from '@/utils/formatters';
-import { getEquipanteWorkflow } from '@/services/equipantesService';
+import { getEquipanteWorkflow, reivindicarCadastroManual } from '@/services/equipantesService';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
 import { igrejaEhOutra } from '@/constants/igrejas';
+import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { liberacaoDeTesteValida } from '@/services/publicDataService';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
@@ -126,6 +130,8 @@ const mapDbToFormData = (dbData) => {
 const EquipantePage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  // OUTRA so existe ate a virada de edicao.
+  const { permiteOutra } = useOpcoesDeIgreja();
   const navigate = useNavigate();
   const { equipantesAbertos, loading: loadingStatus } = useInscricoesStatus();
 
@@ -175,6 +181,12 @@ const EquipantePage = () => {
   const [erroNascimento, setErroNascimento] = useState('');
   const [buscandoFicha, setBuscandoFicha] = useState(false);
   const [erroFicha, setErroFicha] = useState('');
+
+  // Inscricao feita pela organizacao (manual): sem CPF na ficha, o CPF digitado
+  // nao acha ninguem. A pessoa acha a ficha pelo nome e completa o cadastro.
+  const [nomeManual, setNomeManual] = useState('');
+  const [erroManual, setErroManual] = useState('');
+  const [buscandoManual, setBuscandoManual] = useState(false);
 
   const [formData, setFormData] = useState({
     cpf: '', semCpf: false, nacionalidade: '', nome: '', dataNascimento: '', sexo: '',
@@ -262,6 +274,15 @@ const EquipantePage = () => {
     // processar inscricao" (o banco recusando o CPF repetido).
     // Entrou sem CPF e a ficha existe: antes de mostrar qualquer coisa,
     // confirma a data de nascimento. É ela que substitui o CPF como prova.
+    // Ficha feita pela organizacao, ainda sem CPF nem nascimento: nao ha data
+    // para confirmar. Entra pelo nome e completa o cadastro no acompanhamento.
+    if (isFound && result.semCpf && result.completarManual && loadedData?.id) {
+      setInscricaoData(loadedData);
+      guardarSessao({ id: loadedData.id, nome: loadedData.nome, cpf: null });
+      setCurrentStep('workflow');
+      return;
+    }
+
     if (isFound && result.semCpf && loadedData?.id) {
       setInscricaoData(loadedData);
       setVerificacao({ inscrito: isEnrolled });
@@ -295,9 +316,56 @@ const EquipantePage = () => {
           setCurrentStep('workflow');
         }
       }
+    } else if (!isFound && !result.semCpf && result.cpf && result.haManuais) {
+      // CPF sem ficha, mas ha inscricoes manuais a completar: pode ser uma delas.
+      setCurrentStep('cadastro-manual');
     } else {
       setCurrentStep(podeCadastrar ? 'formulario' : 'fechadas');
     }
+  };
+
+  // Acha a ficha manual pelo nome e leva ao acompanhamento, onde a janela de
+  // cadastro pede o que falta (inclusive este CPF).
+  const completarCadastroManual = async () => {
+    setErroManual('');
+    const nome = nomeManual.trim();
+    if (nome.length < 5 || !nome.includes(' ')) {
+      setErroManual('Escreva seu nome completo (nome e sobrenome).');
+      return;
+    }
+    setBuscandoManual(true);
+    try {
+      const r = await reivindicarCadastroManual(formData.cpf, nome);
+      setInscricaoData({ id: r.id, nome: r.nome, cpf: formData.cpf });
+      setFormData(prev => ({ ...prev, nome: r.nome }));
+      guardarSessao({ id: r.id, nome: r.nome, cpf: formData.cpf });
+      setCurrentStep('workflow');
+    } catch (err) {
+      setErroManual(err.message);
+    } finally {
+      setBuscandoManual(false);
+    }
+  };
+
+  // O que a pessoa acabou de gravar na janela de cadastro (CPF, nascimento)
+  // passa a servir de prova de dono daqui para frente.
+  const aoAtualizarDono = (salvo) => {
+    const cpf = salvo.cpf ? (formData.cpf || salvo.cpf) : (inscricaoData?.cpf || null);
+    // Corrigiu o nome: ele tambem e prova de dono para quem entrou sem CPF.
+    if (salvo.nome) {
+      setInscricaoData(prev => ({ ...prev, nome: salvo.nome }));
+      setFormData(prev => ({ ...prev, nome: salvo.nome }));
+    }
+    if (salvo.nascimento) {
+      setNascimentoConfirmado(salvo.nascimento);
+      setFormData(prev => ({ ...prev, dataNascimento: salvo.nascimento }));
+    }
+    guardarSessao({
+      id: inscricaoData.id,
+      nome: salvo.nome || inscricaoData.nome || formData.nome,
+      cpf,
+      nascimento: salvo.nascimento || nascimentoConfirmado || null,
+    });
   };
 
   // Traz a ficha da edicao passada. Se o nome nao bater, o servidor recusa
@@ -400,6 +468,31 @@ const EquipantePage = () => {
     // fazem falta de verdade depois: o SEXO sustenta os limites de homens e
     // mulheres por area na escala, e "congrega em alguma igreja?" muda o que
     // a Direcao precisa olhar na aprovacao.
+    // Dados validos (Patrick, 06/10/2026): nome so com letras, CPF de verdade.
+    const problemaNome = problemaNomePessoa(formData.nome);
+    if (problemaNome) {
+      toast({ title: 'Confira o seu nome', description: problemaNome, variant: 'destructive' });
+      document.getElementById('nome')?.focus();
+      return;
+    }
+    if (!formData.semCpf && !validateCPF(formData.cpf)) {
+      toast({ title: 'CPF inválido', description: 'Confira os números do CPF.', variant: 'destructive' });
+      document.getElementById('cpf')?.focus();
+      return;
+    }
+    // Ficha antiga que volta com OUTRA precisa escolher a igreja de verdade.
+    if (!permiteOutra && formData.estaAfastado === 'SIM' && igrejaEhOutra(formData.igreja)) {
+      toast({ title: 'Escolha a sua igreja', description: 'A opção "OUTRA" não existe mais nesta edição. Procure a sua igreja na lista.', variant: 'destructive' });
+      document.getElementById('igreja')?.focus();
+      return;
+    }
+    const problemaCampo = conferirInscricao(formData, 'equipante');
+    if (problemaCampo) {
+      toast({ title: problemaCampo.titulo, description: problemaCampo.descricao, variant: 'destructive' });
+      document.getElementById(problemaCampo.id)?.focus();
+      return;
+    }
+
     const faltando = [];
     if (!formData.sexo) faltando.push('Sexo');
     if (!formData.dataNascimento) faltando.push('Data de Nascimento');
@@ -625,6 +718,50 @@ const EquipantePage = () => {
           </Card>
         )}
 
+        {currentStep === 'cadastro-manual' && (
+          <Card className="glass-effect border-white/10 bg-black/40 max-w-xl mx-auto">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Search className="w-5 h-5 text-blue-400" />
+                Você foi inscrito pela organização?
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-300 text-sm">
+                Não encontramos inscrição com o CPF <strong className="text-white">{formData.cpf}</strong>.
+                Se a organização fez a sua inscrição (por exemplo, na reunião de escala), digite o seu
+                nome completo para completar o seu cadastro.
+              </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="nomeManual" className="text-white">Nome completo</Label>
+                <Input
+                  id="nomeManual"
+                  value={nomeManual}
+                  onChange={(e) => { setNomeManual(e.target.value); setErroManual(''); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') completarCadastroManual(); }}
+                  placeholder="Como a organização escreveu o seu nome"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                />
+                {erroManual && <p className="text-red-300 text-sm">{erroManual}</p>}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={completarCadastroManual} disabled={buscandoManual} className="flex-1">
+                  {buscandoManual ? 'Buscando...' : 'Completar meu cadastro'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep(podeCadastrar ? 'formulario' : 'fechadas')}
+                  className="flex-1 border-white/20 text-gray-300 hover:text-white"
+                >
+                  Não, fazer a minha inscrição
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {currentStep === 'reinscricao' && (
           <Card className="glass-effect border-white/10 bg-black/40 max-w-xl mx-auto">
             <CardHeader>
@@ -729,6 +866,8 @@ const EquipantePage = () => {
               nascimento: nascimentoConfirmado || null
             }}
             onProceedToPayment={proceedToPayment}
+            onSair={sairDaInscricao}
+            onDonoAtualizado={aoAtualizarDono}
           />
         )}
 

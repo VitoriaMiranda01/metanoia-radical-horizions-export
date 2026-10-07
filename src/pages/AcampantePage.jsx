@@ -25,7 +25,10 @@ import Endereco from '@/components/inscricao/Endereco';
 import InfoEclesiasticas from '@/components/inscricao/InfoEclesiasticas';
 import InfoSaude from '@/components/inscricao/InfoSaude';
 import ContatoEmergencia from '@/components/inscricao/ContatoEmergencia';
-import { problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE } from '@/utils/contatoEmergencia';
+import { problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE, mesmoNome, AVISO_MESMO_NOME } from '@/utils/contatoEmergencia';
+import { problemaNomePessoa } from '@/utils/nomePessoa';
+import { conferirInscricao } from '@/utils/validacoesInscricao';
+import { validateCPF } from '@/utils/validation';
 import QuemIndicou from '@/components/inscricao/QuemIndicou';
 import TermosResponsabilidade from '@/components/inscricao/TermosResponsabilidade';
 import WelcomeScreen from '@/components/inscricao/WelcomeScreen';
@@ -35,11 +38,14 @@ import { criarInscricao } from '@/services/inscricoesService';
 import { problemaTelefone } from '@/utils/telefone';
 import { fetchLimitesIgrejas, fetchOcupacaoIgrejasAcampantes } from '@/services/limitesIgrejasService';
 import { fetchLimiteAcampantesPorIgrejaPadrao } from '@/services/organizerConfigService';
-import { IGREJAS_RESPONSAVEL_ACAMPANTE } from '@/constants/igrejas';
+import { IGREJAS_RESPONSAVEL_ACAMPANTE, IGREJA_DIVERSOS } from '@/constants/igrejas';
+import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { liberacaoDeTesteValida } from '@/services/publicDataService';
 
 const AcampantePage = () => {
   const { user } = useAuth();
+  // Igrejas criadas pela organizacao (166...) e se "84 - DIVERSOS" ainda vale.
+  const { novas: novasIgrejas, permiteDiversos } = useOpcoesDeIgreja();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { acampantesAbertos, loading: loadingStatus } = useInscricoesStatus();
@@ -111,7 +117,7 @@ const AcampantePage = () => {
         ]);
 
         const esgotadas = new Set();
-        IGREJAS_RESPONSAVEL_ACAMPANTE.forEach(igreja => {
+        [...IGREJAS_RESPONSAVEL_ACAMPANTE, ...novasIgrejas].forEach(igreja => {
           const limite = excecoes[igreja] !== undefined ? excecoes[igreja] : limitePadrao;
           if (limite === null || limite === undefined) return;
           const ocupados = ocupacao[igreja] || 0;
@@ -123,7 +129,7 @@ const AcampantePage = () => {
       }
     };
     carregarLimitesIgrejas();
-  }, []);
+  }, [novasIgrejas]);
 
   const handleVerificationComplete = (result) => {
     if (result.cpf) setFormData(prev => ({ ...prev, cpf: result.cpf }));
@@ -177,6 +183,35 @@ const AcampantePage = () => {
       return;
     }
 
+    // Dados validos (Patrick, 06/10/2026): nome so com letras, CPF de verdade.
+    const problemaNomeDaPessoa = problemaNomePessoa(formData.nome);
+    if (problemaNomeDaPessoa) {
+      toast({ title: 'Confira o seu nome', description: problemaNomeDaPessoa, variant: 'destructive' });
+      document.getElementById('nome')?.focus();
+      return;
+    }
+    if (!formData.semCpf && !validateCPF(formData.cpf)) {
+      toast({ title: 'CPF inválido', description: 'Confira os números do CPF.', variant: 'destructive' });
+      document.getElementById('cpf')?.focus();
+      return;
+    }
+
+    // "84 - DIVERSOS" so existe ate a virada de edicao: ficha antiga que volta
+    // com ela precisa escolher a igreja de verdade.
+    if (!permiteDiversos && formData.adminResponsavel === IGREJA_DIVERSOS) {
+      toast({ title: 'Escolha a igreja responsável', description: 'A opção "DIVERSOS" não existe mais nesta edição. Escolha a igreja na lista.', variant: 'destructive' });
+      document.getElementById('adminResponsavel')?.focus();
+      return;
+    }
+
+    // Demais campos com formato (e-mail, CEP, cidade, estado, nascimento...).
+    const problemaCampo = conferirInscricao(formData, 'acampante');
+    if (problemaCampo) {
+      toast({ title: problemaCampo.titulo, description: problemaCampo.descricao, variant: 'destructive' });
+      document.getElementById(problemaCampo.id)?.focus();
+      return;
+    }
+
     // Tamanho da camisa e obrigatorio (Patrick, 06/10/2026): duas inscricoes
     // chegaram sem e a soma das camisas deixou de bater com o total. O
     // servidor confere de novo (criar_inscricao -> CAMISA_OBRIGATORIA).
@@ -206,6 +241,11 @@ const AcampantePage = () => {
     const problemaNome = problemaNomeContato(formData.contatoEmergencia);
     if (problemaNome) {
       toast({ title: 'Confira o nome do contato de emergência', description: problemaNome, variant: 'destructive' });
+      document.getElementById('contatoEmergencia')?.focus();
+      return;
+    }
+    if (mesmoNome(formData.contatoEmergencia, formData.nome)) {
+      toast({ title: 'Confira o contato de emergência', description: AVISO_MESMO_NOME, variant: 'destructive' });
       document.getElementById('contatoEmergencia')?.focus();
       return;
     }

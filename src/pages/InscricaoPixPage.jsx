@@ -18,6 +18,8 @@ import { useCouponValidation } from '@/hooks/useCouponValidation';
 import { finalizeZeroValuePayment } from '@/services/paymentService';
 import { updateEquipantePaymentStatus, updateAcampantePaymentStatus } from '@/services/inscricoesService';
 import { consultarStatusPix } from '@/services/publicDataService';
+import { emTeste } from '@/services/ambiente';
+import { supabase } from '@/services/supabaseClient';
 import { rotuloValor, rotuloValorEmFrase } from '@/utils/rotulosPagamento';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
 
@@ -608,6 +610,30 @@ const InscricaoPixPage = () => {
                     </Button>
                   </div>
                 </div>
+
+                {/* Ambiente de teste: o PIX e ficticio; este botao faz o que o
+                    aviso do Sicoob faz no oficial (services/ambiente.js). */}
+                {emTeste() && pixData?.txid && (
+                  <div className="max-w-md mx-auto rounded-lg border border-orange-500/50 bg-orange-500/10 p-4 space-y-2">
+                    <p className="text-sm text-orange-200">
+                      Ambiente de teste: este código não é um PIX de verdade. Use o botão para
+                      simular que o pagamento caiu — a tela confirma em alguns segundos.
+                    </p>
+                    <Button
+                      onClick={async () => {
+                        const { data, error } = await supabase.rpc('simular_pagamento_pix', { p_sicoob_id: pixData.txid });
+                        if (error || !data?.ok) {
+                          toast({ title: 'Não deu para simular', description: error?.message || data?.erro, variant: 'destructive' });
+                        } else {
+                          toast({ title: 'Pagamento simulado', description: 'Aguarde a confirmação na tela.' });
+                        }
+                      }}
+                      className="w-full bg-orange-500 hover:bg-orange-600 text-black font-semibold"
+                    >
+                      Simular pagamento (teste)
+                    </Button>
+                  </div>
+                )}
 
                 <div className="pt-6 border-t border-white/10">
                   <Button variant="ghost" onClick={resetForm} className="text-gray-400 hover:text-white hover:bg-white/5">

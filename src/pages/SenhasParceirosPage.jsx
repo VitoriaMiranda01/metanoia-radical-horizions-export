@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
+import { normalizarBusca } from '@/utils/busca';
 import { motion } from 'framer-motion';
 import {
   KeyRound, Search, RefreshCw, AlertCircle, AlertTriangle, CheckCircle,
@@ -118,10 +119,10 @@ const SenhasParceirosPage = () => {
   }), [contas]);
 
   const linhas = useMemo(() => {
-    const texto = busca.trim().toLowerCase();
+    const texto = normalizarBusca(busca);
     return contas.filter((c) => {
       const casaBusca = !texto
-        || String(c.nome || '').toLowerCase().includes(texto)
+        || normalizarBusca(c.nome).includes(texto)
         || String(c.codigo || '').includes(texto);
       if (!casaBusca) return false;
       if (aba === 'pedidos') return !!c.pedido_aberto_em;

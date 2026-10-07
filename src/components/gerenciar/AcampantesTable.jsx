@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { casaBusca } from '@/utils/busca';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import BotaoOrdenar from '@/components/common/BotaoOrdenar';
@@ -179,17 +180,13 @@ const AcampantesTable = ({
   const filtrados = useMemo(() => {
     return data.filter(item => {
       // 1. Global Search
-      const searchLower = searchTerm.toLowerCase();
-      
       const searchFields = [
         item.nome, item.cpf, item.email, item.whatsapp, 
         item.cidade, item.estado, item.igreja, 
         item.admin_responsavel, item.quem_indicou_nome
       ];
 
-      const matchesSearch = searchFields.some(field => 
-        (field || '').toLowerCase().includes(searchLower)
-      );
+      const matchesSearch = casaBusca(searchTerm, searchFields);
       
       if (!matchesSearch) return false;
 

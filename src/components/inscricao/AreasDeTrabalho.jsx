@@ -18,7 +18,9 @@ import { FRASES_AREAS_EXTRA } from '@/constants/areasExtra';
 // "Disponível para qualquer área" continua sendo a unica opcao que pode ser
 // escolhida em mais de uma das 3 preferencias (ver isAreaDisabled abaixo).
 
-const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
+// semExtras: so as 3 opcoes (usado ao completar o cadastro, onde as areas
+// extra nao fazem parte do que falta).
+const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange, semExtras = false }) => {
   const AREAS = AREAS_INSCRICAO;
 
   // As frases vivem em src/constants/areasExtra.js: a tela de Geracao de
@@ -109,7 +111,7 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
         {renderRadioGroup("Opção 2", "areaTrabalhoOpcao2", formData.areaTrabalhoOpcao2)}
         {renderRadioGroup("Opção 3", "areaTrabalhoOpcao3", formData.areaTrabalhoOpcao3)}
 
-        <div className="pt-6 border-t border-white/10 mt-6">
+        {!semExtras && <div className="pt-6 border-t border-white/10 mt-6">
            <Label className="text-white block mb-4 text-md font-medium">Áreas de Trabalho Extra (opcional)</Label>
             <div className="flex flex-col space-y-3">
               {EXTRA_OPTIONS.map((option) => {
@@ -129,7 +131,7 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange }) => {
                 );
               })}
             </div>
-        </div>
+        </div>}
       </div>
     </FormSection>
   );

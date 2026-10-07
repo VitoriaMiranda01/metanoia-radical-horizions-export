@@ -322,6 +322,10 @@ export const OUTRA_IGREJA = 'OUTRA';
 // ---------------------------------------------------------------------------
 export const IGREJA_RADICAL_36 = 'RADICAL 36';
 
+// "84 - DIVERSOS": opcao do acampante que deixa de existir na virada de edicao
+// (como a OUTRA do equipante) -- ver opcoes_de_igreja / migration 20261007c.
+export const IGREJA_DIVERSOS = '84 - DIVERSOS';
+
 // A lista do campo "Igreja Responsável pela Inscrição" (so acampante).
 export const IGREJAS_RESPONSAVEL_ACAMPANTE = [...IGREJAS_PARCEIRAS, IGREJA_RADICAL_36];
 
@@ -338,12 +342,14 @@ export const nomeDaIgreja = (inscricao) => {
 export const naoCongrega = (inscricao) =>
   (inscricao?.igreja || inscricao?.nome_igreja || '') === NAO_CONGREGA;
 
-export const buscarIgrejaPorCodigo = (codigo) => {
+// `novas`: as igrejas criadas pela organizacao em Configuracoes (166, 167...),
+// que nao estao neste arquivo -- vem do banco (opcoes_de_igreja).
+export const buscarIgrejaPorCodigo = (codigo, novas = []) => {
   const digitado = String(codigo ?? '').trim();
   if (!digitado || !/^\d+$/.test(digitado)) return null;
 
   const alvo = Number(digitado);
-  for (const item of IGREJAS_PARA_PRIMEIRO_ACESSO) {
+  for (const item of [...IGREJAS_PARA_PRIMEIRO_ACESSO, ...novas]) {
     const separador = item.indexOf(' - ');
     if (separador === -1) continue;
     const cod = item.slice(0, separador);

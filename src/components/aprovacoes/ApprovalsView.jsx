@@ -19,7 +19,7 @@ const ApprovalsView = ({
   showStatistics = true 
 }) => {
   const { toast } = useToast();
-  const { isParceiro, igrejaUser } = useAuth();
+  const { isParceiro, isOrganizador, igrejaUser } = useAuth();
   const [inscricoes, setInscricoes] = useState([]);
   const [selectedInscricao, setSelectedInscricao] = useState(null);
   const [inscricaoParaCancelar, setInscricaoParaCancelar] = useState(null);
@@ -90,9 +90,14 @@ const ApprovalsView = ({
       // alguma igreja?" respondida NÃO) nunca batem com nenhum código e por
       // isso nunca aparecem pra nenhum parceiro; só os organizadores (sem
       // esse filtro) continuam vendo essas.
-      if (isParceiro && igrejaUser?.codigo) {
-        const prefixoIgreja = `${igrejaUser.codigo} - `;
-        mappedEquipantes = mappedEquipantes.filter(e => e.igreja && e.igreja.startsWith(prefixoIgreja));
+      // Parceiro sem codigo de igreja nao ve nada (nunca "tudo"): quem ve
+      // todas as igrejas e so o organizador. O banco ja barra por RLS
+      // (policy "parceiro ve so a propria igreja"); isto e a segunda trava.
+      if (isParceiro) {
+        const prefixoIgreja = `${igrejaUser?.codigo} - `;
+        mappedEquipantes = igrejaUser?.codigo
+          ? mappedEquipantes.filter(e => e.igreja && e.igreja.startsWith(prefixoIgreja))
+          : [];
       }
 
       setInscricoes(mappedEquipantes);
@@ -338,6 +343,9 @@ const ApprovalsView = ({
             onAprovar={aprovarInscricao} 
             onRejeitar={rejeitarInscricao} 
             showActions={true}
+            situacao="pendente"
+            podeAprovarEmLote={isOrganizador && !isParceiro}
+            onLoteConcluido={() => carregarInscricoes(false)}
             searchTerm={searchTermPendentes}
             onSearchChange={setSearchTermPendentes}
           />
@@ -352,6 +360,7 @@ const ApprovalsView = ({
             showActions={false}
             showCancelAction={true}
             onCancelar={solicitarCancelamento}
+            situacao="aprovado"
             searchTerm={searchTermAprovadas}
             onSearchChange={setSearchTermAprovadas}
           />
@@ -365,6 +374,7 @@ const ApprovalsView = ({
             onRejeitar={rejeitarInscricao} 
             showActions={false}
             showApproveOnly={true}
+            situacao="rejeitado"
             searchTerm={searchTermRejeitadas}
             onSearchChange={setSearchTermRejeitadas}
           />

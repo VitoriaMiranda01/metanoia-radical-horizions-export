@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
+import { mensagemDeErro } from '@/utils/errosDeDados';
 import { ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
 import { OUTRA_IGREJA } from '@/constants/igrejas';
 import { mapFormDataToDb as mapAcampanteToDb } from '@/utils/acampanteForm';
@@ -135,7 +136,9 @@ const mapEquipanteToDb = (formData) => ({
  */
 const montarResultadoVerificacao = (resultado, cpfDigitado) => {
   if (!resultado?.existe) {
-    return { existe: false, found: false };
+    // haManuais: ha inscricoes feitas pela organizacao ainda sem CPF -- quem
+    // entrou com um CPF que nao existe pode ser uma delas (EquipantePage).
+    return { existe: false, found: false, haManuais: !!resultado?.ha_manuais };
   }
 
   // "dados" agora e o minimo necessario para seguir ao pagamento, nao mais a
@@ -151,6 +154,9 @@ const montarResultadoVerificacao = (resultado, cpfDigitado) => {
     data: dados,
     inscrito: !!resultado.inscrito,
     pagou: !!resultado.pago,
+    // Ficha manual ainda sem CPF e sem nascimento: nao ha data para confirmar;
+    // a pessoa entra pelo nome e completa o cadastro (migration 20261006l).
+    completarManual: !!resultado.completar_manual,
     status_pagamento: resultado.pago ? 'confirmado' : 'pendente'
   };
 };
@@ -260,11 +266,45 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     // criar_inscricao_valida_abertura_e_dados). O servidor passou a conferir
     // a janela de inscricao e os dados minimos -- antes isso so existia no
     // navegador, entao uma chamada direta a API furava as duas coisas.
+    // Dado fora do padrao: o banco devolve o codigo; aqui vira a frase.
+    const recusaDeDado = mensagemDeErro(error?.message);
+    if (recusaDeDado) {
+      return { success: false, error: recusaDeDado };
+    }
     if (error?.message?.includes('INSCRICOES_FECHADAS')) {
       return { success: false, error: 'As inscrições não estão abertas no momento.' };
     }
     if (error?.message?.includes('NOME_OBRIGATORIO')) {
       return { success: false, error: 'Informe o nome completo para concluir a inscrição.' };
+    }
+    if (error?.message?.includes('NOME_INVALIDO')) {
+      return { success: false, error: 'Confira o seu nome: use só letras (sem números ou símbolos), com nome e sobrenome.' };
+    }
+    if (error?.message?.includes('EMAIL_INVALIDO')) {
+      return { success: false, error: 'E-mail inválido: confira, por exemplo nome@exemplo.com.' };
+    }
+    if (error?.message?.includes('NASCIMENTO_INVALIDO')) {
+      return { success: false, error: 'Confira a data de nascimento: a idade que ela dá não parece certa.' };
+    }
+    if (error?.message?.includes('PROFISSAO_INVALIDA')) {
+      return { success: false, error: 'A profissão não leva números.' };
+    }
+    if (error?.message?.includes('NOME_TEXTO_INVALIDO')) {
+      const campo = (error.message.match(/NOME_TEXTO_INVALIDO:(\w+)/) || [])[1];
+      const rotulo = { pastor_nome: 'do pastor', quem_indicou_nome: 'de quem indicou', nome_familiar_conhecido: 'do familiar / conhecido', familiar_nome: 'do conhecido / familiar' }[campo] || '';
+      return { success: false, error: `Confira o nome ${rotulo}: use só letras, sem números ou símbolos.`.replace('nome :', 'nome:') };
+    }
+    if (error?.message?.includes('CEP_INVALIDO')) {
+      return { success: false, error: 'Confira o CEP: são 8 números.' };
+    }
+    if (error?.message?.includes('ESTADO_INVALIDO')) {
+      return { success: false, error: 'Escolha o estado na lista.' };
+    }
+    if (error?.message?.includes('CIDADE_INVALIDA')) {
+      return { success: false, error: 'Confira a cidade: não leva números.' };
+    }
+    if (error?.message?.includes('CPF_INVALIDO')) {
+      return { success: false, error: 'CPF inválido: confira os números do CPF.' };
     }
     if (error?.message?.includes('TELEFONE_INVALIDO')) {
       const campo = (error.message.match(/TELEFONE_INVALIDO:(\w+)/) || [])[1];
@@ -273,6 +313,9 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     }
     if (error?.message?.includes('CONTATO_NOME_INVALIDO')) {
       return { success: false, error: 'Confira o nome do contato de emergência: use só letras (sem números).' };
+    }
+    if (error?.message?.includes('CONTATO_MESMO_NOME')) {
+      return { success: false, error: 'O contato de emergência precisa ser outra pessoa — não pode ser você mesmo.' };
     }
     if (error?.message?.includes('CONTATO_MESMO_TELEFONE')) {
       return { success: false, error: 'O telefone de emergência precisa ser de outra pessoa — diferente do seu WhatsApp.' };

@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { limparNomeSimples } from '@/utils/validacoesInscricao';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
 import IgrejaSelect from './IgrejaSelect';
 import { IGREJAS_PARCEIRAS, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
-import { listarIgrejasExtras } from '@/services/publicDataService';
+import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 
 const InfoEclesiasticas = ({
   formData,
@@ -17,19 +18,15 @@ const InfoEclesiasticas = ({
   // OUTRA. Vem do banco; se a consulta falhar, a lista segue com as 145 do
   // arquivo mais a propria opcao OUTRA -- ninguem fica sem se inscrever por
   // causa disso.
-  const [extras, setExtras] = useState([]);
-
-  useEffect(() => {
-    let vivo = true;
-    listarIgrejasExtras().then((lista) => { if (vivo) setExtras(lista); });
-    return () => { vivo = false; };
-  }, []);
+  // `novas` sao as criadas pela organizacao ("166 - NOME"); OUTRA so existe ate
+  // a virada de edicao (permiteOutra).
+  const { novas, extras, permiteOutra } = useOpcoesDeIgreja();
 
   // OUTRA fica no FIM da lista, depois das extras: e a saida para quem nao
   // achou a igreja, nao a primeira coisa a considerar.
   const opcoesDeIgreja = useMemo(
-    () => [...IGREJAS_PARCEIRAS, ...extras, OUTRA_IGREJA],
-    [extras]
+    () => [...IGREJAS_PARCEIRAS, ...novas, ...extras, ...(permiteOutra ? [OUTRA_IGREJA] : [])],
+    [novas, extras, permiteOutra]
   );
 
   // --- EQUIPANTE LAYOUT (Conditional) ---
@@ -116,7 +113,7 @@ const InfoEclesiasticas = ({
                       id="pastor" 
                       name="pastor" 
                       value={formData.pastor} 
-                      onChange={handleChange} 
+                      onChange={(e) => handleChange({ target: { name: 'pastor', value: limparNomeSimples(e.target.value) } })} 
                       className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
                       placeholder="Nome do pastor" 
                     />
@@ -281,7 +278,7 @@ const InfoEclesiasticas = ({
                     id="pastor" 
                     name="pastor" 
                     value={formData.pastor} 
-                    onChange={handleChange} 
+                    onChange={(e) => handleChange({ target: { name: 'pastor', value: limparNomeSimples(e.target.value) } })} 
                     className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
                     placeholder="Nome do pastor" 
                   />

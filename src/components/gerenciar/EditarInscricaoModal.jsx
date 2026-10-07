@@ -8,11 +8,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
-import { IGREJAS_PARCEIRAS, IGREJAS_RESPONSAVEL_ACAMPANTE, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
-import { listarIgrejasExtras } from '@/services/publicDataService';
+import { IGREJAS_PARCEIRAS, IGREJA_DIVERSOS, IGREJA_RADICAL_36, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
+import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { toBoolean } from '@/utils/formatters';
 import { mascararTelefone, problemaTelefone, ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
-import { limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE } from '@/utils/contatoEmergencia';
+import { limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE, mesmoNome, AVISO_MESMO_NOME } from '@/utils/contatoEmergencia';
+import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
+import {
+  UFS, problemaEmail, problemaCep, problemaNascimento, problemaNomeSimples, problemaSemNumero
+} from '@/utils/validacoesInscricao';
+import { validateCPF } from '@/utils/validation';
 
 /**
  * Edicao dos dados cadastrais de uma inscricao (acampante ou equipante),
@@ -144,7 +149,7 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
   const isEquipante = inscricao?.tipo === 'equipante';
   const [salvando, setSalvando] = useState(false);
   const [form, setForm] = useState(inscricao || {});
-  const [extras, setExtras] = useState([]);
+  const { novas, extras, permiteOutra, permiteDiversos } = useOpcoesDeIgreja();
 
   useEffect(() => {
     setForm(inscricao || {});
@@ -152,21 +157,23 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
 
   // Mesma fonte de opcoes de igreja que os formularios publicos usam --
   // ver o comentario em InfoEclesiasticas.jsx / AdminResponsavel.jsx.
-  useEffect(() => {
-    let vivo = true;
-    listarIgrejasExtras().then((lista) => { if (vivo) setExtras(lista); });
-    return () => { vivo = false; };
-  }, []);
-
   // "Igreja que frequenta" (equipante) -- unico campo de igreja do
   // formulario de equipante, por isso usa lista fechada com busca. O
   // acampante NAO tem um select equivalente: "Igreja que frequenta" e
   // texto livre la (ver InfoEclesiasticas.jsx, layout ACAMPANTE) -- quem
   // usa lista fechada, pro acampante, e o campo abaixo,
   // "Igreja Responsável pela Ficha" (admin_responsavel).
+  // OUTRA e "84 - DIVERSOS" so ficam na lista enquanto valem na edicao -- ou
+  // se a ficha ja esta nelas (senao o valor atual sumiria do campo).
   const opcoesIgrejaQueFrequenta = useMemo(
-    () => [...IGREJAS_PARCEIRAS, ...extras, OUTRA_IGREJA],
-    [extras]
+    () => [...IGREJAS_PARCEIRAS, ...novas, ...extras,
+      ...(permiteOutra || igrejaEhOutra(form.igreja) ? [OUTRA_IGREJA] : [])],
+    [novas, extras, permiteOutra, form.igreja]
+  );
+  const opcoesResponsavelAcampante = useMemo(
+    () => [...IGREJAS_PARCEIRAS.filter((i) => i !== IGREJA_DIVERSOS || permiteDiversos || form.admin_responsavel === IGREJA_DIVERSOS),
+      ...novas, IGREJA_RADICAL_36],
+    [novas, permiteDiversos, form.admin_responsavel]
   );
 
   const set = (campo) => (valor) => setForm((prev) => ({ ...prev, [campo]: valor }));
@@ -189,6 +196,44 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
       return;
     }
 
+    // Nome e CPF alterados precisam ser validos (06/10/2026); o que nao mudou
+    // passa como esta -- ficha antiga com nome estranho nao trava o resto.
+    if ('nome' in alterados) {
+      const problemaNome = problemaNomePessoa(form.nome);
+      if (problemaNome) {
+        toast({ title: 'Confira o nome', description: problemaNome, variant: 'destructive' });
+        return;
+      }
+    }
+    if ('cpf' in alterados && String(form.cpf || '').replace(/\D/g, '') && !validateCPF(form.cpf)) {
+      toast({ title: 'CPF inválido', description: 'Confira os números do CPF.', variant: 'destructive' });
+      return;
+    }
+    // Demais campos com formato (so os que mudaram), como no formulario de inscricao.
+    // Estrangeiro (sem CPF) tem CEP e estado livres, como no formulario e no banco.
+    const estrangeiro = !String(form.cpf || '').replace(/\D/g, '');
+    const formatos = [
+      ['data_nascimento', 'Data de nascimento', () => problemaNascimento(form.data_nascimento)],
+      ['email', 'E-mail', () => problemaEmail(form.email)],
+      ['profissao', 'Profissão', () => problemaSemNumero(form.profissao, 'A profissão')],
+      ['cep', 'CEP', () => (estrangeiro ? null : problemaCep(form.cep))],
+      ['cidade', 'Cidade', () => problemaSemNumero(form.cidade, 'A cidade')],
+      ['estado', 'Estado', () => (estrangeiro || UFS.some(([uf]) => uf === String(form.estado || '').toUpperCase()) ? null : 'Escolha o estado na lista.')],
+      ['pastor_nome', 'Pastor', () => problemaNomeSimples(form.pastor_nome)],
+      ['pastor', 'Pastor', () => problemaNomeSimples(form.pastor)],
+      ['quem_indicou_nome', 'Nome de quem indicou', () => problemaNomeSimples(form.quem_indicou_nome)],
+      ['nome_familiar_conhecido', 'Nome do conhecido/familiar', () => problemaNomeSimples(form.nome_familiar_conhecido)],
+      ['familiar_nome', 'Nome do familiar', () => problemaNomeSimples(form.familiar_nome)],
+    ];
+    for (const [campo, rotulo, conferir] of formatos) {
+      if (!(campo in alterados)) continue;
+      const problema = conferir();
+      if (problema) {
+        toast({ title: `Confira: ${rotulo}`, description: problema, variant: 'destructive' });
+        return;
+      }
+    }
+
     // Telefone alterado precisa sair certo; os que nao mudaram passam como estao.
     for (const campo of Object.keys(CAMPOS_TELEFONE)) {
       if (!(campo in alterados) || !alterados[campo]) continue;
@@ -205,6 +250,10 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
       const problemaNome = problemaNomeContato(form.contato_emergencia_nome);
       if (problemaNome) {
         toast({ title: 'Confira o nome do contato de emergência', description: problemaNome, variant: 'destructive' });
+        return;
+      }
+      if (mesmoNome(form.contato_emergencia_nome, form.nome)) {
+        toast({ title: 'Confira o contato de emergência', description: 'Precisa ser outra pessoa — não pode ser o próprio inscrito.', variant: 'destructive' });
         return;
       }
       if (mesmoTelefone(form.contato_emergencia_telefone, form.whatsapp)) {
@@ -263,14 +312,14 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
                 <IgrejaSelect
                   value={form.admin_responsavel}
                   onChange={set('admin_responsavel')}
-                  options={IGREJAS_RESPONSAVEL_ACAMPANTE}
+                  options={opcoesResponsavelAcampante}
                 />
               </div>
             </Secao>
           )}
 
           <Secao titulo="Dados Pessoais">
-            <CampoTexto label="Nome" valor={form.nome} onChange={set('nome')} />
+            <CampoTexto label="Nome" valor={form.nome} onChange={(v) => set('nome')(limparNomePessoa(v))} placeholder="Só letras" />
             <CampoTexto label="CPF" valor={form.cpf} onChange={set('cpf')} />
             <CampoTexto label="Nacionalidade (código ISO, só quem se inscreveu sem CPF)" valor={form.nacionalidade} onChange={set('nacionalidade')} placeholder="Ex: PT, US..." />
             <CampoSelect label="Sexo" valor={form.sexo} onChange={set('sexo')} opcoes={SEXO_OPCOES} />
@@ -301,7 +350,7 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
               <CampoTexto label="Complemento" valor={form.complemento} onChange={set('complemento')} />
               <CampoTexto label="Bairro" valor={form.bairro} onChange={set('bairro')} />
               <CampoTexto label="Cidade" valor={form.cidade} onChange={set('cidade')} />
-              <CampoTexto label="Estado" valor={form.estado} onChange={set('estado')} />
+              <CampoSelect label="Estado" valor={form.estado} onChange={set('estado')} opcoes={UFS.map(([uf]) => uf)} />
             </Secao>
           )}
 

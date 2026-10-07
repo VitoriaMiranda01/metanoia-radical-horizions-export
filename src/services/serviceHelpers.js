@@ -69,6 +69,34 @@ export const comReenvio = async (operacao, { tentativas = 3, esperaBase = 600, r
 };
 
 /**
+ * Le TODAS as linhas de uma consulta, de 1000 em 1000.
+ *
+ * O PostgREST corta a resposta em 1000 linhas e NAO avisa: devolve as
+ * primeiras como se fossem todas. Os equipantes ja passam de 900 por edicao;
+ * sem isto, uma tela que le a tabela inteira deixaria gente de fora calada.
+ *
+ * montarConsulta() deve devolver uma consulta NOVA a cada chamada, com uma
+ * ordem estavel (ex.: .order('id')) -- sem ordem, paginas podem repetir ou
+ * pular linhas. Devolve { data, error }, como o supabase-js; no erro, para
+ * na hora (dado pela metade nao serve).
+ */
+const PAGINA = 1000;
+
+export const lerTodasAsLinhas = async (montarConsulta, { rotulo = '' } = {}) => {
+  const tudo = [];
+  for (let inicio = 0; ; inicio += PAGINA) {
+    const { data, error } = await comReenvio(
+      () => montarConsulta().range(inicio, inicio + PAGINA - 1),
+      { rotulo }
+    );
+    if (error) return { data: null, error };
+    const pagina = data || [];
+    tudo.push(...pagina);
+    if (pagina.length < PAGINA) return { data: tudo, error: null };
+  }
+};
+
+/**
  * Versao antiga, mantida para quem envolve uma funcao que LANCA excecao.
  * Para chamadas do Supabase use comReenvio, acima.
  */

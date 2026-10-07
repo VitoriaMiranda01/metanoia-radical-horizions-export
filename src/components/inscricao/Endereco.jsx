@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
+import { UFS, mascararCep, problemaCep, limparSemNumero } from '@/utils/validacoesInscricao';
 
 const Endereco = ({
   formData,
@@ -67,7 +68,8 @@ const Endereco = ({
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div className="space-y-2 md:col-span-1">
         <Label htmlFor="cep" className="text-white">CEP</Label>
-        <Input id="cep" name="cep" value={formData.cep} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="00000-000" />
+        <Input id="cep" name="cep" value={formData.cep} onChange={(e) => handleChange({ target: { name: 'cep', value: formData.semCpf ? e.target.value : mascararCep(e.target.value) } })} required inputMode={formData.semCpf ? 'text' : 'numeric'} maxLength={formData.semCpf ? 20 : 9} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="00000-000" />
+        {!formData.semCpf && formData.cep && formData.cep.replace(/\D/g, '').length < 8 && <p className="text-xs text-red-300 mt-1">{problemaCep(formData.cep)}</p>}
         {buscandoCep && <p className="text-xs text-white/70 mt-1">Buscando endereço...</p>}
         {cepNaoEncontrado && <p className="text-xs text-yellow-300 mt-1">CEP não encontrado, preencha o endereço manualmente.</p>}
       </div>
@@ -95,7 +97,7 @@ const Endereco = ({
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-2">
         <Label htmlFor="cidade" className="text-white">Cidade</Label>
-        <Input id="cidade" name="cidade" value={formData.cidade} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="São Paulo" />
+        <Input id="cidade" name="cidade" value={formData.cidade} onChange={(e) => handleChange({ target: { name: 'cidade', value: limparSemNumero(e.target.value) } })} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="São Paulo" />
       </div>
       <div className="space-y-2">
         <Label htmlFor="estado" className="text-white">Estado</Label>
@@ -104,20 +106,7 @@ const Endereco = ({
             <SelectValue placeholder="Selecione" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="SP">São Paulo</SelectItem>
-            <SelectItem value="RJ">Rio de Janeiro</SelectItem>
-            <SelectItem value="MG">Minas Gerais</SelectItem>
-            <SelectItem value="ES">Espírito Santo</SelectItem>
-            <SelectItem value="PR">Paraná</SelectItem>
-            <SelectItem value="SC">Santa Catarina</SelectItem>
-            <SelectItem value="RS">Rio Grande do Sul</SelectItem>
-            <SelectItem value="BA">Bahia</SelectItem>
-            <SelectItem value="DF">Distrito Federal</SelectItem>
-            <SelectItem value="GO">Goiás</SelectItem>
-            <SelectItem value="PE">Pernambuco</SelectItem>
-            <SelectItem value="CE">Ceará</SelectItem>
-            <SelectItem value="MT">Mato Grosso</SelectItem>
-            <SelectItem value="MS">Mato Grosso do Sul</SelectItem>
+            {UFS.map(([uf, nome]) => <SelectItem key={uf} value={uf}>{nome}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

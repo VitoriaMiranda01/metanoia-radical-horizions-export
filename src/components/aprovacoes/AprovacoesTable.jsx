@@ -137,6 +137,7 @@ const AprovacoesTable = ({
   showApproveOnly = false, 
   searchTerm,
   onSearchChange,
+  buscaRef,
   situacao = 'pendente',
   // So organizador, so na aba de pendentes (ApprovalsView decide).
   podeAprovarEmLote = false,
@@ -269,6 +270,7 @@ const AprovacoesTable = ({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/50" />
             <Input
+              ref={buscaRef}
               type="text"
               placeholder="Buscar por CPF, Nome, Igreja..."
               value={searchTerm}

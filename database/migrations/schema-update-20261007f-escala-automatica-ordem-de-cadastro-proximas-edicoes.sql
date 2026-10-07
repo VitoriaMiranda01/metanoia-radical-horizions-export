@@ -54,10 +54,14 @@ comment on column public.equipantes.inscrito_em is
 
 alter table public.configuracoes
   add column if not exists escala_ordem text not null default 'aprovacao';
-alter table public.configuracoes
-  drop constraint if exists configuracoes_escala_ordem_check;
-alter table public.configuracoes
-  add constraint configuracoes_escala_ordem_check check (escala_ordem in ('aprovacao', 'cadastro'));
+do $c$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'configuracoes_escala_ordem_check') then
+    alter table public.configuracoes
+      add constraint configuracoes_escala_ordem_check check (escala_ordem in ('aprovacao', 'cadastro'));
+  end if;
+end
+$c$;
 comment on column public.configuracoes.escala_ordem is
   'Quem escolhe primeiro na alocacao automatica: ''aprovacao'' (quem foi aprovado antes) ou ''cadastro'' (quem se inscreveu antes). Vira ''cadastro'' na virada de edicao.';
 

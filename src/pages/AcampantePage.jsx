@@ -38,11 +38,14 @@ import { criarInscricao } from '@/services/inscricoesService';
 import { problemaTelefone } from '@/utils/telefone';
 import { fetchLimitesIgrejas, fetchOcupacaoIgrejasAcampantes } from '@/services/limitesIgrejasService';
 import { fetchLimiteAcampantesPorIgrejaPadrao } from '@/services/organizerConfigService';
-import { IGREJAS_RESPONSAVEL_ACAMPANTE } from '@/constants/igrejas';
+import { IGREJAS_RESPONSAVEL_ACAMPANTE, IGREJA_DIVERSOS } from '@/constants/igrejas';
+import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { liberacaoDeTesteValida } from '@/services/publicDataService';
 
 const AcampantePage = () => {
   const { user } = useAuth();
+  // Igrejas criadas pela organizacao (166...) e se "84 - DIVERSOS" ainda vale.
+  const { novas: novasIgrejas, permiteDiversos } = useOpcoesDeIgreja();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { acampantesAbertos, loading: loadingStatus } = useInscricoesStatus();
@@ -114,7 +117,7 @@ const AcampantePage = () => {
         ]);
 
         const esgotadas = new Set();
-        IGREJAS_RESPONSAVEL_ACAMPANTE.forEach(igreja => {
+        [...IGREJAS_RESPONSAVEL_ACAMPANTE, ...novasIgrejas].forEach(igreja => {
           const limite = excecoes[igreja] !== undefined ? excecoes[igreja] : limitePadrao;
           if (limite === null || limite === undefined) return;
           const ocupados = ocupacao[igreja] || 0;
@@ -126,7 +129,7 @@ const AcampantePage = () => {
       }
     };
     carregarLimitesIgrejas();
-  }, []);
+  }, [novasIgrejas]);
 
   const handleVerificationComplete = (result) => {
     if (result.cpf) setFormData(prev => ({ ...prev, cpf: result.cpf }));
@@ -190,6 +193,14 @@ const AcampantePage = () => {
     if (!formData.semCpf && !validateCPF(formData.cpf)) {
       toast({ title: 'CPF inválido', description: 'Confira os números do CPF.', variant: 'destructive' });
       document.getElementById('cpf')?.focus();
+      return;
+    }
+
+    // "84 - DIVERSOS" so existe ate a virada de edicao: ficha antiga que volta
+    // com ela precisa escolher a igreja de verdade.
+    if (!permiteDiversos && formData.adminResponsavel === IGREJA_DIVERSOS) {
+      toast({ title: 'Escolha a igreja responsável', description: 'A opção "DIVERSOS" não existe mais nesta edição. Escolha a igreja na lista.', variant: 'destructive' });
+      document.getElementById('adminResponsavel')?.focus();
       return;
     }
 

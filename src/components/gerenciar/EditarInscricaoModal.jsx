@@ -8,8 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
-import { IGREJAS_PARCEIRAS, IGREJAS_RESPONSAVEL_ACAMPANTE, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
-import { listarIgrejasExtras } from '@/services/publicDataService';
+import { IGREJAS_PARCEIRAS, IGREJA_DIVERSOS, IGREJA_RADICAL_36, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
+import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { toBoolean } from '@/utils/formatters';
 import { mascararTelefone, problemaTelefone, ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
 import { limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE, mesmoNome, AVISO_MESMO_NOME } from '@/utils/contatoEmergencia';
@@ -149,7 +149,7 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
   const isEquipante = inscricao?.tipo === 'equipante';
   const [salvando, setSalvando] = useState(false);
   const [form, setForm] = useState(inscricao || {});
-  const [extras, setExtras] = useState([]);
+  const { novas, extras, permiteOutra, permiteDiversos } = useOpcoesDeIgreja();
 
   useEffect(() => {
     setForm(inscricao || {});
@@ -157,21 +157,23 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
 
   // Mesma fonte de opcoes de igreja que os formularios publicos usam --
   // ver o comentario em InfoEclesiasticas.jsx / AdminResponsavel.jsx.
-  useEffect(() => {
-    let vivo = true;
-    listarIgrejasExtras().then((lista) => { if (vivo) setExtras(lista); });
-    return () => { vivo = false; };
-  }, []);
-
   // "Igreja que frequenta" (equipante) -- unico campo de igreja do
   // formulario de equipante, por isso usa lista fechada com busca. O
   // acampante NAO tem um select equivalente: "Igreja que frequenta" e
   // texto livre la (ver InfoEclesiasticas.jsx, layout ACAMPANTE) -- quem
   // usa lista fechada, pro acampante, e o campo abaixo,
   // "Igreja Responsável pela Ficha" (admin_responsavel).
+  // OUTRA e "84 - DIVERSOS" so ficam na lista enquanto valem na edicao -- ou
+  // se a ficha ja esta nelas (senao o valor atual sumiria do campo).
   const opcoesIgrejaQueFrequenta = useMemo(
-    () => [...IGREJAS_PARCEIRAS, ...extras, OUTRA_IGREJA],
-    [extras]
+    () => [...IGREJAS_PARCEIRAS, ...novas, ...extras,
+      ...(permiteOutra || igrejaEhOutra(form.igreja) ? [OUTRA_IGREJA] : [])],
+    [novas, extras, permiteOutra, form.igreja]
+  );
+  const opcoesResponsavelAcampante = useMemo(
+    () => [...IGREJAS_PARCEIRAS.filter((i) => i !== IGREJA_DIVERSOS || permiteDiversos || form.admin_responsavel === IGREJA_DIVERSOS),
+      ...novas, IGREJA_RADICAL_36],
+    [novas, permiteDiversos, form.admin_responsavel]
   );
 
   const set = (campo) => (valor) => setForm((prev) => ({ ...prev, [campo]: valor }));
@@ -310,7 +312,7 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
                 <IgrejaSelect
                   value={form.admin_responsavel}
                   onChange={set('admin_responsavel')}
-                  options={IGREJAS_RESPONSAVEL_ACAMPANTE}
+                  options={opcoesResponsavelAcampante}
                 />
               </div>
             </Secao>

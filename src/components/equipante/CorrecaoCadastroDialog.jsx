@@ -13,7 +13,7 @@ import CampoDataNascimento from '@/components/inscricao/CampoDataNascimento';
 import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
 import { IGREJAS_PARCEIRAS, NAO_CONGREGA, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
 import { NACIONALIDADES, bandeiraDoPais } from '@/constants/nacionalidades';
-import { listarIgrejasExtras } from '@/services/publicDataService';
+import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { completarMinhaInscricao } from '@/services/equipantesService';
 import { problemaTelefone } from '@/utils/telefone';
 import { calcularIdade, formatCPF } from '@/utils/formatters';
@@ -71,7 +71,7 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
 
   const cpfDoDono = (dono?.cpf || '').replace(/\D/g, '');
 
-  const [extras, setExtras] = useState([]);
+  const { novas, extras, permiteOutra } = useOpcoesDeIgreja();
   const [nome, setNome] = useState(pNome ? limparNomePessoa(pNome.valor) : '');
   const [pastor, setPastor] = useState(pPastor ? limparNomePessoa(pPastor.valor) : '');
   const [familiarCorrigido, setFamiliarCorrigido] = useState(pFamiliar ? limparNomePessoa(pFamiliar.valor) : '');
@@ -88,14 +88,10 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
   const [areas, setAreas] = useState({ areaTrabalhoOpcao1: '', areaTrabalhoOpcao2: '', areaTrabalhoOpcao3: '', areasTrabalhoExtra: [] });
   const [salvando, setSalvando] = useState(false);
 
-  useEffect(() => {
-    if (!temIgreja) return undefined;
-    let vivo = true;
-    listarIgrejasExtras().then((lista) => { if (vivo) setExtras(lista || []); }).catch(() => {});
-    return () => { vivo = false; };
-  }, [temIgreja]);
-
-  const opcoesDeIgreja = useMemo(() => [...IGREJAS_PARCEIRAS, ...extras, OUTRA_IGREJA, NAO_CONGREGA], [extras]);
+  const opcoesDeIgreja = useMemo(
+    () => [...IGREJAS_PARCEIRAS, ...novas, ...extras, ...(permiteOutra ? [OUTRA_IGREJA] : []), NAO_CONGREGA],
+    [novas, extras, permiteOutra]
+  );
 
   // Estrangeiro: o servidor ja sabe (nacionalidade gravada) ou a pessoa acabou
   // de escolher "sou estrangeiro" aqui.

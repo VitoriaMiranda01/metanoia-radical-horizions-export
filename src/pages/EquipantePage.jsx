@@ -36,6 +36,7 @@ import { calcularIdade } from '@/utils/formatters';
 import { getEquipanteWorkflow, reivindicarCadastroManual } from '@/services/equipantesService';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
 import { igrejaEhOutra } from '@/constants/igrejas';
+import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { liberacaoDeTesteValida } from '@/services/publicDataService';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
@@ -129,6 +130,8 @@ const mapDbToFormData = (dbData) => {
 const EquipantePage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  // OUTRA so existe ate a virada de edicao.
+  const { permiteOutra } = useOpcoesDeIgreja();
   const navigate = useNavigate();
   const { equipantesAbertos, loading: loadingStatus } = useInscricoesStatus();
 
@@ -475,6 +478,12 @@ const EquipantePage = () => {
     if (!formData.semCpf && !validateCPF(formData.cpf)) {
       toast({ title: 'CPF inválido', description: 'Confira os números do CPF.', variant: 'destructive' });
       document.getElementById('cpf')?.focus();
+      return;
+    }
+    // Ficha antiga que volta com OUTRA precisa escolher a igreja de verdade.
+    if (!permiteOutra && formData.estaAfastado === 'SIM' && igrejaEhOutra(formData.igreja)) {
+      toast({ title: 'Escolha a sua igreja', description: 'A opção "OUTRA" não existe mais nesta edição. Procure a sua igreja na lista.', variant: 'destructive' });
+      document.getElementById('igreja')?.focus();
       return;
     }
     const problemaCampo = conferirInscricao(formData, 'equipante');

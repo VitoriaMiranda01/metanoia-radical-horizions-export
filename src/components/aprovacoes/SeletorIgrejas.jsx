@@ -15,8 +15,14 @@ import { cn } from '@/lib/utils';
  *
  * opcoes: [{ igreja, quantidade }]. selecionadas: array com o nome das igrejas.
  */
-const SeletorIgrejas = ({ opcoes, selecionadas, onChange, rotuloQuantidade = 'inscrições' }) => {
-  const [busca, setBusca] = useState('');
+const SeletorIgrejas = ({
+  opcoes, selecionadas, onChange, rotuloQuantidade = 'inscrições',
+  // unica: escolhe UMA igreja (sem "selecionar todas" nem etiquetas) -- usado em
+  // Configuracoes para vincular um nome digitado em OUTRA. buscaInicial: ja abre
+  // com a busca preenchida.
+  unica = false, buscaInicial = ''
+}) => {
+  const [busca, setBusca] = useState(buscaInicial);
 
   const marcadas = useMemo(() => new Set(selecionadas), [selecionadas]);
   const filtradas = useMemo(
@@ -28,6 +34,7 @@ const SeletorIgrejas = ({ opcoes, selecionadas, onChange, rotuloQuantidade = 'in
   const filtradasMarcadas = filtradas.length > 0 && filtradas.every((o) => marcadas.has(o.igreja));
 
   const alternar = (igreja) => {
+    if (unica) { onChange([igreja]); return; }
     onChange(marcadas.has(igreja) ? selecionadas.filter((i) => i !== igreja) : [...selecionadas, igreja]);
   };
 
@@ -84,11 +91,14 @@ const SeletorIgrejas = ({ opcoes, selecionadas, onChange, rotuloQuantidade = 'in
             >
               <Caixa marcada={marcadas.has(o.igreja)} />
               <span className="min-w-0 flex-1 truncate">{o.igreja}</span>
-              <span className="ml-2 shrink-0 text-xs text-white/50 tabular-nums">{o.quantidade}</span>
+              {o.quantidade != null && (
+                <span className="ml-2 shrink-0 text-xs text-white/50 tabular-nums">{o.quantidade}</span>
+              )}
             </button>
           ))}
         </div>
 
+        {!unica && (
         <div className="border-t border-white/10 p-1.5">
           {buscando && filtradas.length > 0 && (
             <button
@@ -110,9 +120,10 @@ const SeletorIgrejas = ({ opcoes, selecionadas, onChange, rotuloQuantidade = 'in
             Selecionar todas as igrejas ({opcoes.length})
           </button>
         </div>
+        )}
       </div>
 
-      {selecionadas.length > 0 && !todasMarcadas && (
+      {!unica && selecionadas.length > 0 && !todasMarcadas && (
         <div className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto">
           {selecionadas.map((igreja) => {
             const o = opcoes.find((x) => x.igreja === igreja);
@@ -132,7 +143,7 @@ const SeletorIgrejas = ({ opcoes, selecionadas, onChange, rotuloQuantidade = 'in
           })}
         </div>
       )}
-      {selecionadas.length > 0 && (
+      {!unica && selecionadas.length > 0 && (
         <p className="text-xs text-gray-500">
           {opcoes.filter((o) => marcadas.has(o.igreja)).reduce((t, o) => t + o.quantidade, 0)} {rotuloQuantidade} no total.
         </p>

@@ -29,6 +29,8 @@ const MENSAGENS = {
   PARENTESCO_OBRIGATORIO: 'Responda se tem algum conhecido ou familiar que vai como acampante.',
   FAMILIAR_OBRIGATORIO: 'Escreva o nome do conhecido ou familiar.',
   AREAS_OBRIGATORIAS: 'Escolha as 3 opções de área de trabalho.',
+  IGREJA_OUTRA_ENCERRADA: 'A opção "OUTRA" não existe mais nesta edição: escolha a sua igreja na lista.',
+  IGREJA_DIVERSOS_ENCERRADA: 'A opção "DIVERSOS" não existe mais nesta edição: escolha a igreja responsável na lista.',
 };
 
 const CAMPO_DE_TEXTO = {

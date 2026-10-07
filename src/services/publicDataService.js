@@ -80,6 +80,13 @@ const chamar = async (funcao, args = undefined, { tentativas = 3, esperaBase = 6
 export const fetchConfigPublica = async () => chamar('config_publica');
 
 /**
+ * O que o formulario precisa saber sobre igrejas alem da lista do site: as
+ * criadas pela organizacao ("166 - NOME"), as acrescentadas sem codigo e se as
+ * opcoes OUTRA e "84 - DIVERSOS" ainda valem nesta edicao.
+ */
+export const fetchOpcoesDeIgreja = async () => chamar('opcoes_de_igreja');
+
+/**
  * Responde "essa pessoa ja tem inscricao?" sem devolver a ficha dela.
  * Quando ja pagou, devolve so { existe: true, pago: true } -- nem o nome.
  * Quando nao pagou, devolve tambem id e nome, porque a tela leva a pessoa

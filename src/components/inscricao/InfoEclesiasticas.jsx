@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import FormSection from './FormSection';
 import IgrejaSelect from './IgrejaSelect';
 import { IGREJAS_PARCEIRAS, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
-import { listarIgrejasExtras } from '@/services/publicDataService';
+import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 
 const InfoEclesiasticas = ({
   formData,
@@ -18,19 +18,15 @@ const InfoEclesiasticas = ({
   // OUTRA. Vem do banco; se a consulta falhar, a lista segue com as 145 do
   // arquivo mais a propria opcao OUTRA -- ninguem fica sem se inscrever por
   // causa disso.
-  const [extras, setExtras] = useState([]);
-
-  useEffect(() => {
-    let vivo = true;
-    listarIgrejasExtras().then((lista) => { if (vivo) setExtras(lista); });
-    return () => { vivo = false; };
-  }, []);
+  // `novas` sao as criadas pela organizacao ("166 - NOME"); OUTRA so existe ate
+  // a virada de edicao (permiteOutra).
+  const { novas, extras, permiteOutra } = useOpcoesDeIgreja();
 
   // OUTRA fica no FIM da lista, depois das extras: e a saida para quem nao
   // achou a igreja, nao a primeira coisa a considerar.
   const opcoesDeIgreja = useMemo(
-    () => [...IGREJAS_PARCEIRAS, ...extras, OUTRA_IGREJA],
-    [extras]
+    () => [...IGREJAS_PARCEIRAS, ...novas, ...extras, ...(permiteOutra ? [OUTRA_IGREJA] : [])],
+    [novas, extras, permiteOutra]
   );
 
   // --- EQUIPANTE LAYOUT (Conditional) ---

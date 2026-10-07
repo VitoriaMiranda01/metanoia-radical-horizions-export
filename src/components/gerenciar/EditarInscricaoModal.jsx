@@ -208,13 +208,15 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
       return;
     }
     // Demais campos com formato (so os que mudaram), como no formulario de inscricao.
+    // Estrangeiro (sem CPF) tem CEP e estado livres, como no formulario e no banco.
+    const estrangeiro = !String(form.cpf || '').replace(/\D/g, '');
     const formatos = [
       ['data_nascimento', 'Data de nascimento', () => problemaNascimento(form.data_nascimento)],
       ['email', 'E-mail', () => problemaEmail(form.email)],
       ['profissao', 'Profissão', () => problemaSemNumero(form.profissao, 'A profissão')],
-      ['cep', 'CEP', () => problemaCep(form.cep)],
+      ['cep', 'CEP', () => (estrangeiro ? null : problemaCep(form.cep))],
       ['cidade', 'Cidade', () => problemaSemNumero(form.cidade, 'A cidade')],
-      ['estado', 'Estado', () => (UFS.some(([uf]) => uf === String(form.estado || '').toUpperCase()) ? null : 'Escolha o estado na lista.')],
+      ['estado', 'Estado', () => (estrangeiro || UFS.some(([uf]) => uf === String(form.estado || '').toUpperCase()) ? null : 'Escolha o estado na lista.')],
       ['pastor_nome', 'Pastor', () => problemaNomeSimples(form.pastor_nome)],
       ['pastor', 'Pastor', () => problemaNomeSimples(form.pastor)],
       ['quem_indicou_nome', 'Nome de quem indicou', () => problemaNomeSimples(form.quem_indicou_nome)],

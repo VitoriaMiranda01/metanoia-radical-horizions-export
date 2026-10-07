@@ -273,7 +273,9 @@ export const completarMinhaInscricao = async (equipante_id, dono = {}, dados = {
       area3: dados.area3 ?? undefined,
     },
   });
-  if (error) throw new Error('Não foi possível salvar agora. Tente de novo em instantes.');
+  // Recusa de dado do gatilho validar_ficha chega como erro: vira a frase
+  // (errosDeDados) em vez do "tente de novo", que deixaria a pessoa presa.
+  if (error) throw new Error(mensagemDeErro(error.message) || 'Não foi possível salvar agora. Tente de novo em instantes.');
   if (!data?.ok) throw new Error(data?.erro || 'Não foi possível salvar.');
   return { pendencias: data.pendencias || [], salvo: data.salvo || {} };
 };

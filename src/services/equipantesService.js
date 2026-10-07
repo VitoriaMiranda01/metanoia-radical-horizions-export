@@ -464,14 +464,14 @@ export const fetchEquipantesDaEdicao = async () =>
   );
 
 // Equipantes confirmados na chamada da reuniao de escala (presentes, ou
-// ausentes que a organizacao manteve na area). Pessoa em duas areas conta
-// uma vez. Devolve null se a contagem nao estiver disponivel.
-export const contarEquipantesConfirmados = async () => {
+// ausentes que a organizacao manteve na area). Devolve a lista de ids (pessoa
+// em duas areas aparece uma vez) ou null se nao estiver disponivel.
+export const fetchIdsEquipantesConfirmados = async () => {
   const { data, error } = await comReenvio(
     () => supabase.rpc('equipantes_confirmados'),
     { rotulo: 'equipantes confirmados' }
   );
-  if (error || typeof data !== 'number') return null;
+  if (error || !Array.isArray(data)) return null;
   return data;
 };
 

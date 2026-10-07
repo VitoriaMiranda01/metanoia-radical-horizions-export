@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
@@ -18,6 +18,7 @@ import Layout from '@/components/Layout';
 import InscricoesStatsCards from '@/components/gerenciar/InscricoesStatsCards';
 import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
 import InscricoesTable from '@/components/gerenciar/InscricoesTable';
+import TotalEdicaoTable from '@/components/gerenciar/TotalEdicaoTable';
 import AcampantesTable from '@/components/gerenciar/AcampantesTable';
 import GruposTrailhaCards from '@/components/gerenciar/GruposTrailhaCards';
 import GruposTrailhaModal from '@/components/gerenciar/GruposTrailhaModal';
@@ -32,7 +33,7 @@ import CentralNotificacoes from '@/components/gerenciar/CentralNotificacoes';
 import { useAvisosInscricoes } from '@/hooks/useAvisosInscricoes';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import { deleteAcampante, getAcampantes, countAcampantes, realocarGrupoTrailha, salvarObservacaoAcampante, updateAcampante } from '@/services/acampantesService';
-import { fetchEquipantesDaEdicao, contarEquipantesConfirmados, updateEquipante, podeInscreverManual } from '@/services/equipantesService';
+import { fetchEquipantesDaEdicao, fetchIdsEquipantesConfirmados, updateEquipante, podeInscreverManual } from '@/services/equipantesService';
 import { groupAcampantesByTrilha } from '@/utils/gruposTrailha';
 
 const GerenciarInscricoesPage = () => {
@@ -42,8 +43,13 @@ const GerenciarInscricoesPage = () => {
   const [acampantesList, setAcampantesList] = useState([]);
   
   const [totalAcampantes, setTotalAcampantes] = useState(0);
-  // Confirmados na chamada da reuniao de escala (null = nao disponivel).
-  const [equipantesConfirmados, setEquipantesConfirmados] = useState(null);
+  // Ids dos confirmados na chamada da reuniao de escala (null = nao disponivel).
+  const [idsConfirmados, setIdsConfirmados] = useState(null);
+  // Aba aberta. Estado (e nao defaultValue) porque os quadros de cima trocam
+  // de aba: Equipantes inscritos/confirmados -> Equipantes, Acampantes ->
+  // Acampantes.
+  const [aba, setAba] = useState('acampantes');
+  const abasRef = useRef(null);
   // Situacao mostrada na lista de equipantes. Comeca em Aprovados, que era o
   // que esta tela mostrava antes; Pendentes e Rejeitados sao para corrigir a
   // ficha (igreja errada etc.) -- aprovar continua na tela de Aprovacoes.
@@ -127,7 +133,7 @@ const GerenciarInscricoesPage = () => {
       if (acampantesError) throw acampantesError;
 
       setTotalAcampantes(acampantesCount || 0);
-      setEquipantesConfirmados(await contarEquipantesConfirmados());
+      setIdsConfirmados(await fetchIdsEquipantesConfirmados());
     } catch (error) {
       console.error('Erro ao buscar totais:', error);
     }
@@ -180,21 +186,36 @@ const GerenciarInscricoesPage = () => {
   // ninguem (04/10/2026). A lista vai inteira.
   const filterInscricoes = (list) => list;
 
-  const { equipantes, filteredEquipantes, contagemSituacao } = useMemo(() => {
+  const { equipantes, equipantesConfirmados, filteredEquipantes, contagemSituacao } = useMemo(() => {
     const equipantes = inscricoes.filter(i => i.tipo === 'equipante');
-    const contagemSituacao = { aprovado: 0, pendente: 0, rejeitado: 0 };
+    const confirmados = new Set(idsConfirmados || []);
+    const equipantesConfirmados = equipantes.filter((i) => confirmados.has(i.id));
+    const contagemSituacao = { aprovado: 0, pendente: 0, rejeitado: 0, todos: equipantes.length, confirmados: equipantesConfirmados.length };
     equipantes.forEach((i) => {
       if (contagemSituacao[i.status] !== undefined) contagemSituacao[i.status] += 1;
     });
-    const daSituacao = situacaoEquipantes === 'todos'
-      ? equipantes
-      : equipantes.filter((i) => i.status === situacaoEquipantes);
+    let daSituacao;
+    if (situacaoEquipantes === 'todos') daSituacao = equipantes;
+    else if (situacaoEquipantes === 'confirmados') daSituacao = equipantesConfirmados;
+    else daSituacao = equipantes.filter((i) => i.status === situacaoEquipantes);
     return {
       equipantes,
+      equipantesConfirmados,
       contagemSituacao,
       filteredEquipantes: filterInscricoes(daSituacao, searchTermEquipantes),
     };
-  }, [inscricoes, searchTermEquipantes, situacaoEquipantes]);
+  }, [inscricoes, searchTermEquipantes, situacaoEquipantes, idsConfirmados]);
+
+  // Clique nos quadros de cima: abre a aba (e a situacao) e desce ate ela.
+  const abrirPeloQuadro = (chave) => {
+    if (chave === 'acampantes') {
+      setAba('acampantes');
+    } else {
+      setAba('equipantes');
+      setSituacaoEquipantes(chave === 'confirmados' ? 'confirmados' : 'todos');
+    }
+    requestAnimationFrame(() => abasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
 
   const allocatedGroups = useMemo(() => {
     return groupAcampantesByTrilha(acampantesList);
@@ -409,17 +430,21 @@ const GerenciarInscricoesPage = () => {
           
           <InscricoesStatsCards
             equipantesInscritos={equipantes.length}
-            equipantesConfirmados={equipantesConfirmados}
+            equipantesConfirmados={idsConfirmados === null ? null : equipantesConfirmados.length}
             acampantes={totalAcampantes}
+            onAbrir={abrirPeloQuadro}
           />
 
-          <Tabs defaultValue="acampantes" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 bg-white/10">
+          <Tabs ref={abasRef} value={aba} onValueChange={setAba} className="space-y-6 scroll-mt-4">
+            <TabsList className="grid w-full grid-cols-3 bg-white/10">
               <TabsTrigger value="acampantes" className="data-[state=active]:bg-green-600">
                 Acampantes ({totalAcampantes})
               </TabsTrigger>
               <TabsTrigger value="equipantes" className="data-[state=active]:bg-red-600">
                 Equipantes ({equipantes.length})
+              </TabsTrigger>
+              <TabsTrigger value="total" className="data-[state=active]:bg-blue-600">
+                Total da edição ({totalAcampantes + equipantesConfirmados.length})
               </TabsTrigger>
             </TabsList>
             
@@ -472,7 +497,17 @@ const GerenciarInscricoesPage = () => {
                 onSearchChange={setSearchTermEquipantes}
                 situacao={situacaoEquipantes}
                 onSituacaoChange={setSituacaoEquipantes}
-                contagemSituacao={{ ...contagemSituacao, todos: equipantes.length }}
+                contagemSituacao={contagemSituacao}
+              />
+            </TabsContent>
+
+            <TabsContent value="total">
+              <TotalEdicaoTable
+                acampantes={acampantesList}
+                equipantesConfirmados={equipantesConfirmados}
+                confirmadosDisponivel={idsConfirmados !== null}
+                onVerAcampante={handleViewDetails}
+                onVerEquipante={setSelectedInscricao}
               />
             </TabsContent>
           </Tabs>

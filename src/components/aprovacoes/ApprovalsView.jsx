@@ -90,9 +90,14 @@ const ApprovalsView = ({
       // alguma igreja?" respondida NÃO) nunca batem com nenhum código e por
       // isso nunca aparecem pra nenhum parceiro; só os organizadores (sem
       // esse filtro) continuam vendo essas.
-      if (isParceiro && igrejaUser?.codigo) {
-        const prefixoIgreja = `${igrejaUser.codigo} - `;
-        mappedEquipantes = mappedEquipantes.filter(e => e.igreja && e.igreja.startsWith(prefixoIgreja));
+      // Parceiro sem codigo de igreja nao ve nada (nunca "tudo"): quem ve
+      // todas as igrejas e so o organizador. O banco ja barra por RLS
+      // (policy "parceiro ve so a propria igreja"); isto e a segunda trava.
+      if (isParceiro) {
+        const prefixoIgreja = `${igrejaUser?.codigo} - `;
+        mappedEquipantes = igrejaUser?.codigo
+          ? mappedEquipantes.filter(e => e.igreja && e.igreja.startsWith(prefixoIgreja))
+          : [];
       }
 
       setInscricoes(mappedEquipantes);

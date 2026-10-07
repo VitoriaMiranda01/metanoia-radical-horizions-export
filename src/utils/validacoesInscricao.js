@@ -58,6 +58,9 @@ export const conferirInscricao = (f, tipo) => {
   const p = (titulo, descricao, id) => ({ titulo, descricao, id });
   let m;
 
+  // O select do Radix nao barra o envio em branco sozinho (ver DadosPessoais).
+  if (!f.sexo) return p('Escolha o sexo', 'Selecione uma das opções.', 'sexo');
+  if (!f.dataNascimento) return p('Informe a data de nascimento', 'Digite no formato dd/mm/aaaa.', 'dataNascimento');
   if ((m = problemaNascimento(f.dataNascimento))) return p('Confira a data de nascimento', m, 'dataNascimento');
   if ((m = problemaEmail(f.email))) return p('Confira o e-mail', m, 'email');
   if ((m = problemaSemNumero(f.profissao, 'A profissão'))) return p('Confira a profissão', m, 'profissao');

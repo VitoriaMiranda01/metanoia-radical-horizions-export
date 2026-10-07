@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
+import { mensagemDeErro } from '@/utils/errosDeDados';
 import { toast } from '@/components/ui/use-toast';
 import { comReenvio } from '@/services/serviceHelpers';
 
@@ -115,7 +116,7 @@ export const updateAcampante = async (acampanteId, dados) => {
     return { success: true };
   } catch (error) {
     console.error('acampantesApi - updateAcampante', error, { acampanteId, dados });
-    return { success: false, error: error.message || 'Erro ao tentar salvar as alterações.' };
+    return { success: false, error: mensagemDeErro(error.message) || error.message || 'Erro ao tentar salvar as alterações.' };
   }
 };
 

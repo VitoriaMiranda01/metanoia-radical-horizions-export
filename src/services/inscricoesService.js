@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
+import { mensagemDeErro } from '@/utils/errosDeDados';
 import { ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
 import { OUTRA_IGREJA } from '@/constants/igrejas';
 import { mapFormDataToDb as mapAcampanteToDb } from '@/utils/acampanteForm';
@@ -265,6 +266,11 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     // criar_inscricao_valida_abertura_e_dados). O servidor passou a conferir
     // a janela de inscricao e os dados minimos -- antes isso so existia no
     // navegador, entao uma chamada direta a API furava as duas coisas.
+    // Dado fora do padrao: o banco devolve o codigo; aqui vira a frase.
+    const recusaDeDado = mensagemDeErro(error?.message);
+    if (recusaDeDado) {
+      return { success: false, error: recusaDeDado };
+    }
     if (error?.message?.includes('INSCRICOES_FECHADAS')) {
       return { success: false, error: 'As inscrições não estão abertas no momento.' };
     }

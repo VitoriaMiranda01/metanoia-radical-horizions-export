@@ -1,6 +1,6 @@
 import { supabase } from '@/services/supabaseClient';
 import { mensagemDeErro } from '@/utils/errosDeDados';
-import { comReenvio } from '@/services/serviceHelpers';
+import { comReenvio, lerTodasAsLinhas } from '@/services/serviceHelpers';
 
 export const searchEquipanteByCPF = async (cpf) => {
   try {
@@ -451,6 +451,29 @@ export const fetchEquipantesInscritos = async () =>
     () => supabase.from('equipantes').select('*, idade').eq('inscrito', true).eq('status', 'aprovado'),
     { rotulo: 'equipantes inscritos' }
   );
+
+// Gerenciar Inscricoes (07/10/2026): a organizacao precisa EDITAR tambem quem
+// ainda esta pendente (ex.: escolheu a igreja errada e assim nao aparece para
+// o parceiro certo aprovar) -- entao a lista traz todas as inscricoes da
+// edicao, de qualquer situacao. Aprovar continua so na tela de Aprovacoes.
+// Pagina de 1000 em 1000 (o PostgREST corta no teto sem avisar).
+export const fetchEquipantesDaEdicao = async () =>
+  lerTodasAsLinhas(
+    () => supabase.from('equipantes').select('*, idade').eq('inscrito', true).order('id'),
+    { rotulo: 'equipantes da edição' }
+  );
+
+// Equipantes confirmados na chamada da reuniao de escala (presentes, ou
+// ausentes que a organizacao manteve na area). Pessoa em duas areas conta
+// uma vez. Devolve null se a contagem nao estiver disponivel.
+export const contarEquipantesConfirmados = async () => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('equipantes_confirmados'),
+    { rotulo: 'equipantes confirmados' }
+  );
+  if (error || typeof data !== 'number') return null;
+  return data;
+};
 
 export const countEquipantesInscritos = async () =>
   comReenvio(

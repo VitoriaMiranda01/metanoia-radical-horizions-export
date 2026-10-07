@@ -153,7 +153,16 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data, ord
   );
 };
 
-const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchTerm, onSearchChange }) => {
+// Botoes de situacao da lista de equipantes (Gerenciar Inscricoes). So
+// mostram e filtram -- aprovar/rejeitar fica na tela de Aprovacoes.
+const SITUACOES = [
+  { valor: 'aprovado', rotulo: 'Aprovados', ativo: 'bg-green-600 text-white border-green-500', dica: 'Inscrições já aprovadas.' },
+  { valor: 'pendente', rotulo: 'Pendentes', ativo: 'bg-yellow-600 text-white border-yellow-500', dica: 'Inscrições esperando aprovação. Dá para ver e corrigir a ficha (ex.: igreja errada); aprovar é na tela de Aprovações.' },
+  { valor: 'rejeitado', rotulo: 'Rejeitados', ativo: 'bg-red-600 text-white border-red-500', dica: 'Inscrições rejeitadas.' },
+  { valor: 'todos', rotulo: 'Todos', ativo: 'bg-white/20 text-white border-white/40', dica: 'Todas as inscrições de equipante desta edição.' },
+];
+
+const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchTerm, onSearchChange, situacao, onSituacaoChange, contagemSituacao }) => {
   const { toast } = useToast();
   const [filters, setFilters] = useState({});
   // Ordenacao pela seta do cabecalho (utils/ordenacao.js).
@@ -275,6 +284,27 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
               </CardTitle>
               <CardDescription className="text-blue-200">{dados.length} registros</CardDescription>
             </div>
+            {onSituacaoChange && (
+              <div className="flex flex-wrap gap-2 md:flex-1 md:justify-center" role="group" aria-label="Situação da inscrição">
+                {SITUACOES.map((s) => (
+                  <button
+                    key={s.valor}
+                    type="button"
+                    onClick={() => onSituacaoChange(s.valor)}
+                    aria-pressed={situacao === s.valor}
+                    data-dica={s.dica}
+                    className={cn(
+                      'h-9 px-3 rounded-md border text-sm font-medium transition-colors',
+                      situacao === s.valor
+                        ? s.ativo
+                        : 'bg-white/5 text-gray-300 border-white/15 hover:bg-white/10 hover:text-white'
+                    )}
+                  >
+                    {s.rotulo}{contagemSituacao ? ` (${contagemSituacao[s.valor] ?? 0})` : ''}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex items-center gap-2 flex-wrap">
                 {hasActiveFilters && (
                   <Button 

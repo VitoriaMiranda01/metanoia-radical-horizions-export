@@ -29,6 +29,7 @@ import ChamadaQuadro from '@/components/scales/ChamadaQuadro';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import { nomeDaIgreja } from '@/constants/igrejas';
+import { emTeste } from '@/services/ambiente';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
@@ -137,6 +138,12 @@ const OrganizerScalesPage = () => {
   // area. Quem divulga a escala e a reuniao; o site so acompanha.
   const [escala, setEscala] = useState(null);
   const [confirmandoLancamento, setConfirmandoLancamento] = useState(false);
+
+  // SO NO AMBIENTE DE TESTE (Patrick, 07/10/2026): la a escala pode ser lancada
+  // mesmo com gente na fila "A escalar" (o banco de teste tambem libera -- ver
+  // database/ambiente-teste/liberar-lancamento-com-fila.sql). No oficial a regra
+  // segue valendo: emTeste() e falso.
+  const liberaComFila = emTeste();
   const [confirmandoDesfazer, setConfirmandoDesfazer] = useState(false);
   const [lancando, setLancando] = useState(false);
 
@@ -1003,7 +1010,9 @@ const OrganizerScalesPage = () => {
                   : escala.faltam > 0
                     ? `Escala ainda não lançada. ${escala.faltam === 1
                         ? 'Falta 1 equipante sem destino'
-                        : `Faltam ${escala.faltam} equipantes sem destino`} — distribua (ou marque como “Não será escalado”) para poder lançar.`
+                        : `Faltam ${escala.faltam} equipantes sem destino`} — ${liberaComFila
+                          ? 'no ambiente de teste dá para lançar mesmo assim.'
+                          : 'distribua (ou marque como “Não será escalado”) para poder lançar.'}`
                     : !escala.escalados
                       ? 'Escala ainda não lançada — e não há ninguém escalado. Coloque pelo menos um equipante em uma área para poder lançar.'
                       : 'Todos distribuídos. A escala provisória já pode ser lançada.'}
@@ -1111,10 +1120,10 @@ const OrganizerScalesPage = () => {
                   precisa ter destino, nem que seja "Não será escalado". */}
               {!escala?.lancada_em ? (
                 <Button onClick={() => setConfirmandoLancamento(true)}
-                  disabled={!escala || escala.faltam > 0 || !escala.escalados || !escala.pode_gerir}
+                  disabled={!escala || (escala.faltam > 0 && !liberaComFila) || !escala.escalados || !escala.pode_gerir}
                   data-dica={escala && !escala.pode_gerir
                     ? 'Só Desenvolvedores, Raquel e Dudu lançam a escala.'
-                    : escala?.faltam > 0
+                    : escala?.faltam > 0 && !liberaComFila
                       ? 'Distribua todos os equipantes antes de lançar a escala.'
                       : escala && !escala.escalados
                         ? 'Não há ninguém escalado. Coloque pelo menos um equipante em uma área.'
@@ -1131,10 +1140,10 @@ const OrganizerScalesPage = () => {
                     <Undo2 className="mr-2 h-4 w-4" /> Desfazer provisória
                   </Button>
                   <Button onClick={() => setConfirmandoOficial(true)}
-                    disabled={escala.faltam > 0 || !escala.pode_gerir}
+                    disabled={(escala.faltam > 0 && !liberaComFila) || !escala.pode_gerir}
                     data-dica={!escala.pode_gerir
                       ? 'Só Desenvolvedores, Raquel e Dudu lançam a escala.'
-                      : escala.faltam > 0
+                      : escala.faltam > 0 && !liberaComFila
                         ? 'Há gente na fila "A escalar" (inscrição manual, por exemplo). Distribua antes de lançar a oficial.'
                         : 'Lançar a escala oficial (final), depois de refazer a escala com a chamada. Pede confirmação.'}
                     className="bg-green-600 hover:bg-green-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">

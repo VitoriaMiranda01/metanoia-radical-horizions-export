@@ -3,13 +3,10 @@ import { Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import BotaoOrdenar from '@/components/common/BotaoOrdenar';
+import MenuFiltroColuna from '@/components/common/MenuFiltroColuna';
 import { cn } from '@/lib/utils';
 
 /**
@@ -61,38 +58,14 @@ const CabecalhoFiltroOrdem = ({ titulo, chave, dados, valorDe, filtros, onFiltra
             <span className="sr-only">Filtrar {titulo}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56 bg-black border-white/20 max-h-80 overflow-y-auto z-50 p-1 shadow-xl">
-          <DropdownMenuLabel className="flex justify-between items-center text-white px-2 py-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Filtrar por {titulo}</span>
-            {ativo && (
-              <Button
-                variant="ghost" size="sm"
-                onClick={(e) => { e.preventDefault(); onFiltrar(chave, []); }}
-                className="h-5 text-[10px] text-red-300 hover:text-red-200 hover:bg-black/20 px-2 rounded-full"
-              >
-                Limpar
-              </Button>
-            )}
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator className="bg-white/10 my-1" />
-          {valores.length === 0 ? (
-            <div className="p-4 text-xs text-white/40 text-center italic">Sem opções disponíveis</div>
-          ) : (
-            <div className="space-y-0.5">
-              {valores.map((valor) => (
-                <DropdownMenuCheckboxItem
-                  key={valor}
-                  checked={marcados.includes(valor)}
-                  onCheckedChange={() => alternar(valor)}
-                  onSelect={(e) => e.preventDefault()}
-                  className="text-white/90 text-sm focus:text-white focus:bg-white/10 rounded-sm cursor-pointer data-[state=checked]:bg-blue-500/20 data-[state=checked]:text-blue-200 pl-8"
-                >
-                  {valor}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </div>
-          )}
-        </DropdownMenuContent>
+        <MenuFiltroColuna
+          titulo={titulo}
+          valores={valores}
+          marcados={marcados}
+          onAlternar={alternar}
+          onLimpar={() => onFiltrar(chave, [])}
+          className="bg-black"
+        />
       </DropdownMenu>
       <BotaoOrdenar titulo={titulo} chave={chave} ordem={ordem} onOrdenar={onOrdenar} />
     </div>

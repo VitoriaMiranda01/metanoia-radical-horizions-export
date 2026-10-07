@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import BotaoOrdenar from '@/components/common/BotaoOrdenar';
+import MenuFiltroColuna from '@/components/common/MenuFiltroColuna';
 import { ordenarLista } from '@/utils/ordenacao';
 import { Badge } from '@/components/ui/badge';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
@@ -12,12 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Users, Eye, Pencil, Download, Search, Filter, X } from 'lucide-react';
 import {
   DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuCheckboxItem
-} from "@/components/ui/dropdown-menu";
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { cn } from "@/lib/utils";
 import { useToast } from '@/components/ui/use-toast';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
@@ -142,42 +139,14 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data, ord
             <span className="sr-only">Filtrar {title}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56 bg-zinc-900 border-white/20 max-h-80 overflow-y-auto z-50 p-1 shadow-xl">
-          <DropdownMenuLabel className="flex justify-between items-center text-white px-2 py-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Filtrar por {title}</span>
-            {isActive && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  clearFilter();
-                }} 
-                className="h-5 text-[10px] text-red-300 hover:text-red-200 hover:bg-red-500/20 px-2 rounded-full"
-              >
-                Limpar
-              </Button>
-            )}
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator className="bg-white/10 my-1" />
-          {uniqueValues.length === 0 ? (
-            <div className="p-4 text-xs text-white/40 text-center italic">Sem opções disponíveis</div>
-          ) : (
-            <div className="space-y-0.5">
-              {uniqueValues.map((value) => (
-                <DropdownMenuCheckboxItem
-                  key={value}
-                  checked={selectedValues.includes(value)}
-                  onCheckedChange={() => toggleValue(value)}
-                  onSelect={(e) => e.preventDefault()}
-                  className="text-white/90 text-sm focus:text-white focus:bg-white/10 rounded-sm cursor-pointer data-[state=checked]:bg-blue-500/20 data-[state=checked]:text-blue-200 pl-8"
-                >
-                  {value}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </div>
-          )}
-        </DropdownMenuContent>
+        <MenuFiltroColuna
+          titulo={title}
+          valores={uniqueValues}
+          marcados={selectedValues}
+          onAlternar={toggleValue}
+          onLimpar={clearFilter}
+          className="bg-zinc-900"
+        />
       </DropdownMenu>
       <BotaoOrdenar titulo={title} chave={filterKey} ordem={ordem} onOrdenar={onOrdenar} />
     </div>

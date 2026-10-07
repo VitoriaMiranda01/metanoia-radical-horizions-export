@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { normalizarBusca } from '@/utils/busca';
 import { Plus, Trash2, Edit2, Check, X, Loader2, Save, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -171,7 +172,7 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
   const igrejasDisponiveis = IGREJAS_PARCEIRAS.filter(ig => !excecoes.some(e => e.igreja === ig));
 
   const excecoesFiltradas = searchTerm.trim()
-    ? excecoes.filter(e => e.igreja.toLowerCase().includes(searchTerm.trim().toLowerCase()))
+    ? excecoes.filter(e => normalizarBusca(e.igreja).includes(normalizarBusca(searchTerm)))
     : excecoes;
 
   return (

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { formatCPF } from '@/utils/formatters';
 import { validateCPF } from '@/utils/validation';
+import { normalizarBusca } from '@/utils/busca';
 import { AREAS_ESPECIAIS } from '@/constants/workAreas';
 
 /**
@@ -71,12 +72,12 @@ const CpfsAreaEspecialManager = ({
 
   // Quem casa com a busca, esteja ou nao ja na lista.
   const encontrados = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
+    const termo = normalizarBusca(busca);
     if (!termo) return [];
     const termoDigitos = soDigitos(termo);
 
     return (equipantes || []).filter((eq) => {
-      const porNome = (eq.nome || '').toLowerCase().includes(termo);
+      const porNome = normalizarBusca(eq.nome).includes(termo);
       const porCpf = termoDigitos && soDigitos(eq.cpf).includes(termoDigitos);
       return porNome || porCpf;
     });

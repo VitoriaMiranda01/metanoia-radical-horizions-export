@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnimatePresence } from 'framer-motion';
@@ -32,6 +32,17 @@ const ApprovalsView = ({
   const [searchTermPendentes, setSearchTermPendentes] = useState('');
   const [searchTermAprovadas, setSearchTermAprovadas] = useState('');
   const [searchTermRejeitadas, setSearchTermRejeitadas] = useState('');
+  const buscaPendentesRef = useRef(null);
+
+  // Quem procurou alguem pelo nome na aba Pendentes e decidiu (aprovou ou
+  // rejeitou) quase sempre vai procurar a proxima pessoa: a busca zera e o
+  // cursor volta para ela (pedido de 07/10/2026). Sem nada digitado nao mexe
+  // -- quem aprova rolando a lista nao e puxado de volta para o topo.
+  const voltarParaBuscaPendentes = (inscricao) => {
+    if (inscricao.status !== 'pendente' || !searchTermPendentes) return;
+    setSearchTermPendentes('');
+    requestAnimationFrame(() => buscaPendentesRef.current?.focus());
+  };
 
   // Conferencia das cartas dos menores. O numero no botao conta so quem JA
   // entregou (arquivo ou declaracao) e ainda espera o visto -- e essa a fila
@@ -172,6 +183,8 @@ const ApprovalsView = ({
 
     if (!decisao) return;
 
+    voltarParaBuscaPendentes(inscricao);
+
     // A aprovacao NAO escala mais ninguem automaticamente (decidido com o
     // Patrick em 12/09/2026). Antes, aprovar ja jogava a pessoa na primeira
     // das 3 preferencias que tivesse vaga; agora ela entra na fila "A
@@ -202,6 +215,7 @@ const ApprovalsView = ({
     const decisao = await updateInscricaoStatus(id, inscricao.tipo, 'rejeitado');
 
     if (decisao) {
+      voltarParaBuscaPendentes(inscricao);
       toast({ 
         title: decisao.decidido_por
           ? `Rejeitada por ${decisao.decidido_por}`
@@ -348,6 +362,7 @@ const ApprovalsView = ({
             onLoteConcluido={() => carregarInscricoes(false)}
             searchTerm={searchTermPendentes}
             onSearchChange={setSearchTermPendentes}
+            buscaRef={buscaPendentesRef}
           />
         </TabsContent>
         <TabsContent value="aprovadas">

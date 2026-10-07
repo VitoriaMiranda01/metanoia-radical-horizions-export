@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
 import TelefoneInput from './TelefoneInput';
+import { limparNomeSimples } from '@/utils/validacoesInscricao';
 
 const QuemIndicou = ({ formData, handleChange, handleSelectChange }) => {
   return (
@@ -17,7 +18,7 @@ const QuemIndicou = ({ formData, handleChange, handleSelectChange }) => {
             id="nomeQuemIndicou" 
             name="nomeQuemIndicou" 
             value={formData.nomeQuemIndicou || ''} 
-            onChange={handleChange} 
+            onChange={(e) => handleChange({ target: { name: 'nomeQuemIndicou', value: limparNomeSimples(e.target.value) } })} 
             required 
             className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
             placeholder="Digite o nome..." 
@@ -74,7 +75,7 @@ const QuemIndicou = ({ formData, handleChange, handleSelectChange }) => {
               id="nomeFamiliarConhecido" 
               name="nomeFamiliarConhecido" 
               value={formData.nomeFamiliarConhecido || ''} 
-              onChange={handleChange} 
+              onChange={(e) => handleChange({ target: { name: 'nomeFamiliarConhecido', value: limparNomeSimples(e.target.value) } })} 
               required
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
               placeholder="Digite o nome..." 

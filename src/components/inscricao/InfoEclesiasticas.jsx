@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { limparNomeSimples } from '@/utils/validacoesInscricao';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
 import IgrejaSelect from './IgrejaSelect';
@@ -116,7 +117,7 @@ const InfoEclesiasticas = ({
                       id="pastor" 
                       name="pastor" 
                       value={formData.pastor} 
-                      onChange={handleChange} 
+                      onChange={(e) => handleChange({ target: { name: 'pastor', value: limparNomeSimples(e.target.value) } })} 
                       className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
                       placeholder="Nome do pastor" 
                     />
@@ -281,7 +282,7 @@ const InfoEclesiasticas = ({
                     id="pastor" 
                     name="pastor" 
                     value={formData.pastor} 
-                    onChange={handleChange} 
+                    onChange={(e) => handleChange({ target: { name: 'pastor', value: limparNomeSimples(e.target.value) } })} 
                     className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
                     placeholder="Nome do pastor" 
                   />

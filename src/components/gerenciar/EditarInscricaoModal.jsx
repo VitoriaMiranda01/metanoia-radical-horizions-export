@@ -14,6 +14,9 @@ import { toBoolean } from '@/utils/formatters';
 import { mascararTelefone, problemaTelefone, ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
 import { limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE } from '@/utils/contatoEmergencia';
 import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
+import {
+  UFS, problemaEmail, problemaCep, problemaNascimento, problemaNomeSimples, problemaSemNumero
+} from '@/utils/validacoesInscricao';
 import { validateCPF } from '@/utils/validation';
 
 /**
@@ -204,6 +207,28 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
       toast({ title: 'CPF inválido', description: 'Confira os números do CPF.', variant: 'destructive' });
       return;
     }
+    // Demais campos com formato (so os que mudaram), como no formulario de inscricao.
+    const formatos = [
+      ['data_nascimento', 'Data de nascimento', () => problemaNascimento(form.data_nascimento)],
+      ['email', 'E-mail', () => problemaEmail(form.email)],
+      ['profissao', 'Profissão', () => problemaSemNumero(form.profissao, 'A profissão')],
+      ['cep', 'CEP', () => problemaCep(form.cep)],
+      ['cidade', 'Cidade', () => problemaSemNumero(form.cidade, 'A cidade')],
+      ['estado', 'Estado', () => (UFS.some(([uf]) => uf === String(form.estado || '').toUpperCase()) ? null : 'Escolha o estado na lista.')],
+      ['pastor_nome', 'Pastor', () => problemaNomeSimples(form.pastor_nome)],
+      ['pastor', 'Pastor', () => problemaNomeSimples(form.pastor)],
+      ['quem_indicou_nome', 'Nome de quem indicou', () => problemaNomeSimples(form.quem_indicou_nome)],
+      ['nome_familiar_conhecido', 'Nome do conhecido/familiar', () => problemaNomeSimples(form.nome_familiar_conhecido)],
+      ['familiar_nome', 'Nome do familiar', () => problemaNomeSimples(form.familiar_nome)],
+    ];
+    for (const [campo, rotulo, conferir] of formatos) {
+      if (!(campo in alterados)) continue;
+      const problema = conferir();
+      if (problema) {
+        toast({ title: `Confira: ${rotulo}`, description: problema, variant: 'destructive' });
+        return;
+      }
+    }
 
     // Telefone alterado precisa sair certo; os que nao mudaram passam como estao.
     for (const campo of Object.keys(CAMPOS_TELEFONE)) {
@@ -317,7 +342,7 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
               <CampoTexto label="Complemento" valor={form.complemento} onChange={set('complemento')} />
               <CampoTexto label="Bairro" valor={form.bairro} onChange={set('bairro')} />
               <CampoTexto label="Cidade" valor={form.cidade} onChange={set('cidade')} />
-              <CampoTexto label="Estado" valor={form.estado} onChange={set('estado')} />
+              <CampoSelect label="Estado" valor={form.estado} onChange={set('estado')} opcoes={UFS.map(([uf]) => uf)} />
             </Secao>
           )}
 

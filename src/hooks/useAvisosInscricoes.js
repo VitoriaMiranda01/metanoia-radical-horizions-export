@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   fetchTelefonesAcampantesPendentes, fetchContatosEmergenciaPendentes, fetchCamisasPendentes,
+  fetchCadastroAcampantesPendentes,
   fetchMeusAvisosOcultos, ocultarAviso
 } from '@/services/acampantesService';
 
@@ -35,6 +36,11 @@ export const AVISOS = [
     chave: 'camisas',
     buscar: fetchCamisasPendentes,
     titulo: (n) => (n === 1 ? '1 acampante sem tamanho de camisa' : `${n} acampantes sem tamanho de camisa`),
+  },
+  {
+    chave: 'cadastro',
+    buscar: fetchCadastroAcampantesPendentes,
+    titulo: (n) => (n === 1 ? '1 acampante com dado fora do padrão no cadastro' : `${n} acampantes com dado fora do padrão no cadastro`),
   },
 ];
 

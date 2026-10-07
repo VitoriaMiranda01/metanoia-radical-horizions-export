@@ -18,6 +18,7 @@ import { completarMinhaInscricao } from '@/services/equipantesService';
 import { problemaTelefone } from '@/utils/telefone';
 import { calcularIdade, formatCPF } from '@/utils/formatters';
 import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
+import { problemaNomeSimples } from '@/utils/validacoesInscricao';
 import { validateCPF } from '@/utils/validation';
 
 /**
@@ -29,6 +30,7 @@ import { validateCPF } from '@/utils/validation';
  *
  * As pendencias vem do servidor (_pendencias_equipante):
  *   { tipo: 'nome', valor }   nome com numero/simbolo ou sem sobrenome
+ *   { tipo: 'pastor' | 'familiar', valor }   nome do pastor / do familiar fora do padrao
  *   { tipo: 'igreja' }        igreja em branco (ou "OUTRA" sem o nome)
  *   { tipo: 'cpf' }           sem CPF e sem nacionalidade
  *   { tipo: 'nascimento' }    data de nascimento em branco
@@ -57,6 +59,8 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
   const { toast } = useToast();
   const tem = (tipo) => pendencias.some((p) => p.tipo === tipo);
   const pNome = pendencias.find((p) => p.tipo === 'nome');
+  const pPastor = pendencias.find((p) => p.tipo === 'pastor');
+  const pFamiliar = pendencias.find((p) => p.tipo === 'familiar');
   const temIgreja = tem('igreja');
   const temCpf = tem('cpf');
   const temNascimento = tem('nascimento');
@@ -69,6 +73,8 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
 
   const [extras, setExtras] = useState([]);
   const [nome, setNome] = useState(pNome ? limparNomePessoa(pNome.valor) : '');
+  const [pastor, setPastor] = useState(pPastor ? limparNomePessoa(pPastor.valor) : '');
+  const [familiarCorrigido, setFamiliarCorrigido] = useState(pFamiliar ? limparNomePessoa(pFamiliar.valor) : '');
   const [igreja, setIgreja] = useState('');
   const [igrejaOutra, setIgrejaOutra] = useState('');
   const [cpf, setCpf] = useState(cpfDoDono ? formatCPF(cpfDoDono) : '');
@@ -109,6 +115,14 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
     if (pNome) {
       const problema = problemaNomePessoa(nome) || (!nome.trim() ? 'Escreva o seu nome completo.' : null);
       if (problema) return erro('Confira o seu nome', problema);
+    }
+    if (pPastor) {
+      const problema = problemaNomeSimples(pastor) || (!pastor.trim() ? 'Escreva o nome do pastor.' : null);
+      if (problema) return erro('Confira o nome do pastor', problema);
+    }
+    if (pFamiliar) {
+      const problema = problemaNomeSimples(familiarCorrigido) || (!familiarCorrigido.trim() ? 'Escreva o nome do conhecido / familiar.' : null);
+      if (problema) return erro('Confira o nome do conhecido / familiar', problema);
     }
     if (temIgreja) {
       if (!igreja) return erro('Escolha a sua igreja', 'Selecione na lista. Se não congrega em nenhuma, escolha "Não se aplica (não congrega)".');
@@ -153,6 +167,8 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
     try {
       const { pendencias: sobraram, salvo } = await completarMinhaInscricao(equipanteId, dono, {
         ...(pNome ? { nome } : {}),
+        ...(pPastor ? { pastor } : {}),
+        ...(pFamiliar ? { familiarNome: familiarCorrigido } : {}),
         ...(temIgreja ? { igreja, igrejaOutra: igrejaEhOutra(igreja) ? igrejaOutra : null } : {}),
         ...(temCpf ? (semCpf ? { semCpf: true, nacionalidade } : { cpf }) : {}),
         ...(temNascimento ? { nascimento } : {}),
@@ -214,6 +230,27 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
                   autoComplete="name"
                   className={campo}
                 />
+              </div>
+            </Secao>
+          )}
+
+          {(pPastor || pFamiliar) && (
+            <Secao Icone={Users} texto="Confira estes nomes: só letras, sem números ou símbolos.">
+              <div className="space-y-3">
+                {pPastor && (
+                  <div className="space-y-2">
+                    <Label htmlFor="correcao-pastor" className="text-white">Nome do pastor</Label>
+                    <Input id="correcao-pastor" value={pastor} onChange={(e) => setPastor(limparNomePessoa(e.target.value))}
+                      placeholder="Nome do pastor" className={campo} />
+                  </div>
+                )}
+                {pFamiliar && (
+                  <div className="space-y-2">
+                    <Label htmlFor="correcao-familiar2" className="text-white">Nome do conhecido / familiar que vai como acampante</Label>
+                    <Input id="correcao-familiar2" value={familiarCorrigido} onChange={(e) => setFamiliarCorrigido(limparNomePessoa(e.target.value))}
+                      placeholder="Nome do conhecido/familiar" className={campo} />
+                  </div>
+                )}
               </div>
             </Secao>
           )}

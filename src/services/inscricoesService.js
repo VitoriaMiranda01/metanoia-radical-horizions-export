@@ -274,6 +274,29 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     if (error?.message?.includes('NOME_INVALIDO')) {
       return { success: false, error: 'Confira o seu nome: use só letras (sem números ou símbolos), com nome e sobrenome.' };
     }
+    if (error?.message?.includes('EMAIL_INVALIDO')) {
+      return { success: false, error: 'E-mail inválido: confira, por exemplo nome@exemplo.com.' };
+    }
+    if (error?.message?.includes('NASCIMENTO_INVALIDO')) {
+      return { success: false, error: 'Confira a data de nascimento: a idade que ela dá não parece certa.' };
+    }
+    if (error?.message?.includes('PROFISSAO_INVALIDA')) {
+      return { success: false, error: 'A profissão não leva números.' };
+    }
+    if (error?.message?.includes('NOME_TEXTO_INVALIDO')) {
+      const campo = (error.message.match(/NOME_TEXTO_INVALIDO:(\w+)/) || [])[1];
+      const rotulo = { pastor_nome: 'do pastor', quem_indicou_nome: 'de quem indicou', nome_familiar_conhecido: 'do familiar / conhecido', familiar_nome: 'do conhecido / familiar' }[campo] || '';
+      return { success: false, error: `Confira o nome ${rotulo}: use só letras, sem números ou símbolos.`.replace('nome :', 'nome:') };
+    }
+    if (error?.message?.includes('CEP_INVALIDO')) {
+      return { success: false, error: 'Confira o CEP: são 8 números.' };
+    }
+    if (error?.message?.includes('ESTADO_INVALIDO')) {
+      return { success: false, error: 'Escolha o estado na lista.' };
+    }
+    if (error?.message?.includes('CIDADE_INVALIDA')) {
+      return { success: false, error: 'Confira a cidade: não leva números.' };
+    }
     if (error?.message?.includes('CPF_INVALIDO')) {
       return { success: false, error: 'CPF inválido: confira os números do CPF.' };
     }

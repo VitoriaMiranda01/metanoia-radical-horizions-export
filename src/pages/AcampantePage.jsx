@@ -27,6 +27,7 @@ import InfoSaude from '@/components/inscricao/InfoSaude';
 import ContatoEmergencia from '@/components/inscricao/ContatoEmergencia';
 import { problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE } from '@/utils/contatoEmergencia';
 import { problemaNomePessoa } from '@/utils/nomePessoa';
+import { conferirInscricao } from '@/utils/validacoesInscricao';
 import { validateCPF } from '@/utils/validation';
 import QuemIndicou from '@/components/inscricao/QuemIndicou';
 import TermosResponsabilidade from '@/components/inscricao/TermosResponsabilidade';
@@ -189,6 +190,14 @@ const AcampantePage = () => {
     if (!formData.semCpf && !validateCPF(formData.cpf)) {
       toast({ title: 'CPF inválido', description: 'Confira os números do CPF.', variant: 'destructive' });
       document.getElementById('cpf')?.focus();
+      return;
+    }
+
+    // Demais campos com formato (e-mail, CEP, cidade, estado, nascimento...).
+    const problemaCampo = conferirInscricao(formData, 'acampante');
+    if (problemaCampo) {
+      toast({ title: problemaCampo.titulo, description: problemaCampo.descricao, variant: 'destructive' });
+      document.getElementById(problemaCampo.id)?.focus();
       return;
     }
 

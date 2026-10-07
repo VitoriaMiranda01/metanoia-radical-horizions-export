@@ -27,6 +27,7 @@ import EditarInscricaoModal from '@/components/gerenciar/EditarInscricaoModal';
 import AvisoTelefonesAcampantes from '@/components/gerenciar/AvisoTelefonesAcampantes';
 import AvisoContatoEmergencia from '@/components/gerenciar/AvisoContatoEmergencia';
 import AvisoCamisas from '@/components/gerenciar/AvisoCamisas';
+import AvisoCadastro from '@/components/gerenciar/AvisoCadastro';
 import CentralNotificacoes from '@/components/gerenciar/CentralNotificacoes';
 import { useAvisosInscricoes } from '@/hooks/useAvisosInscricoes';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
@@ -365,6 +366,16 @@ const GerenciarInscricoesPage = () => {
             onOcultar={() => avisosInscricoes.ocultar('contatos')}
             onOcultarFicha={(id) => avisosInscricoes.ocultarFicha('contatos', id)}
             onCorrigido={fetchAcampantesSupabase}
+            onAbrirFicha={(id) => {
+              const acampante = acampantesList.find((a) => a.id === id);
+              if (acampante) setInscricaoParaEditar(acampante);
+            }}
+          />
+
+          <AvisoCadastro
+            aviso={avisosInscricoes.avisos.find((a) => a.chave === 'cadastro')}
+            onOcultar={() => avisosInscricoes.ocultar('cadastro')}
+            onOcultarFicha={(id) => avisosInscricoes.ocultarFicha('cadastro', id)}
             onAbrirFicha={(id) => {
               const acampante = acampantesList.find((a) => a.id === id);
               if (acampante) setInscricaoParaEditar(acampante);

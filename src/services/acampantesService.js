@@ -189,6 +189,14 @@ export const ocultarAviso = async (chave, oculto) => {
   return true;
 };
 
+// Acampantes com dado fora do padrao (nome com numero, nascimento ou sexo em
+// branco, CEP/estado invalido, e-mail errado...). null = este login nao ve o aviso.
+export const fetchCadastroAcampantesPendentes = async () => {
+  const { data, error } = await supabase.rpc('cadastro_acampantes_pendentes');
+  if (error) throw error;
+  return data || null;
+};
+
 // Acampantes sem tamanho de camisa (fichas antigas). null = este login nao
 // ve o aviso.
 export const fetchCamisasPendentes = async () => {

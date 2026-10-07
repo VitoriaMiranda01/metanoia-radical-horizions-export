@@ -244,7 +244,7 @@ export const corrigirMinhaInscricao = async (equipante_id, dono = {}, { igreja, 
  * nascimento, sexo, WhatsApp, familiar, areas de trabalho). Quem decide o que
  * pode ser gravado e o servidor (completar_minha_inscricao, migration
  * 20261006l): so o que esta pendente, validando tudo antes de gravar.
- * `dados`: nome, igreja, igrejaOutra, cpf, semCpf, nacionalidade, nascimento,
+ * `dados`: nome, pastor, igreja, igrejaOutra, cpf, semCpf, nacionalidade, nascimento,
  * sexo, whatsapp, parentesco, familiarNome, area1, area2, area3.
  * Devolve { pendencias, salvo: { cpf, nascimento } }.
  */
@@ -256,6 +256,7 @@ export const completarMinhaInscricao = async (equipante_id, dono = {}, dados = {
     p_nascimento: dono.nascimento ?? null,
     p_dados: {
       nome: dados.nome ?? undefined,
+      pastor: dados.pastor ?? undefined,
       igreja: dados.igreja ?? undefined,
       igreja_outra: dados.igrejaOutra ?? undefined,
       cpf: dados.cpf ?? undefined,

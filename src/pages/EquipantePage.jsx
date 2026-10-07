@@ -30,6 +30,7 @@ import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao, buscarFichaAnterior } from '@/services/inscricoesService';
 import { problemaTelefone } from '@/utils/telefone';
 import { problemaNomePessoa } from '@/utils/nomePessoa';
+import { conferirInscricao } from '@/utils/validacoesInscricao';
 import { validateCPF } from '@/utils/validation';
 import { calcularIdade } from '@/utils/formatters';
 import { getEquipanteWorkflow, reivindicarCadastroManual } from '@/services/equipantesService';
@@ -476,9 +477,10 @@ const EquipantePage = () => {
       document.getElementById('cpf')?.focus();
       return;
     }
-    if (formData.parentesco && formData.parentesco !== 'NÃO TENHO' && problemaNomePessoa(formData.familiarNome)) {
-      toast({ title: 'Confira o nome do conhecido / familiar', description: 'Use só letras, sem números ou símbolos.', variant: 'destructive' });
-      document.getElementById('familiarNome')?.focus();
+    const problemaCampo = conferirInscricao(formData, 'equipante');
+    if (problemaCampo) {
+      toast({ title: problemaCampo.titulo, description: problemaCampo.descricao, variant: 'destructive' });
+      document.getElementById(problemaCampo.id)?.focus();
       return;
     }
 

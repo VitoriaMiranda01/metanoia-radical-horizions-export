@@ -13,6 +13,7 @@ import { toBoolean, calcularIdade } from '@/utils/formatters';
 import { NACIONALIDADES, bandeiraDoPais } from '@/constants/nacionalidades';
 import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
 import { validateCPF } from '@/utils/validation';
+import { limparSemNumero, problemaEmail } from '@/utils/validacoesInscricao';
 
 const DadosPessoais = ({
   formData,
@@ -247,14 +248,14 @@ const DadosPessoais = ({
         {!isEquipante && (
           <div className="space-y-2">
             <Label htmlFor="email" className="text-white">E-mail</Label>
-            <Input id="email" name="email" type="email" value={formData.email || ''} onChange={handleChange} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="seuemail@exemplo.com" />
+            <Input id="email" name="email" type="email" value={formData.email || ''} onChange={handleChange} className={`bg-white/10 border-white/20 text-white placeholder:text-white/50 ${problemaEmail(formData.email) && (formData.email || '').includes('@') ? 'border-red-500/70' : ''}`} placeholder="seuemail@exemplo.com" />
           </div>
         )}
 
         {!isEquipante && (
           <div className="space-y-2">
             <Label htmlFor="profissao" className="text-white">Profissão</Label>
-            <Input id="profissao" name="profissao" value={formData.profissao || ''} onChange={handleChange} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Sua profissão" />
+            <Input id="profissao" name="profissao" value={formData.profissao || ''} onChange={(e) => handleChange({ target: { name: 'profissao', value: limparSemNumero(e.target.value) } })} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Sua profissão" />
           </div>
         )}
 

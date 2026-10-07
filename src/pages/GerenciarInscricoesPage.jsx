@@ -32,7 +32,7 @@ import CentralNotificacoes from '@/components/gerenciar/CentralNotificacoes';
 import { useAvisosInscricoes } from '@/hooks/useAvisosInscricoes';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import { deleteAcampante, getAcampantes, countAcampantes, realocarGrupoTrailha, salvarObservacaoAcampante, updateAcampante } from '@/services/acampantesService';
-import { fetchEquipantesInscritos, countEquipantesInscritos, updateEquipante, podeInscreverManual } from '@/services/equipantesService';
+import { fetchEquipantesDaEdicao, contarEquipantesConfirmados, updateEquipante, podeInscreverManual } from '@/services/equipantesService';
 import { groupAcampantesByTrilha } from '@/utils/gruposTrailha';
 
 const GerenciarInscricoesPage = () => {
@@ -41,8 +41,13 @@ const GerenciarInscricoesPage = () => {
   const [inscricoes, setInscricoes] = useState([]);
   const [acampantesList, setAcampantesList] = useState([]);
   
-  const [totalEquipantes, setTotalEquipantes] = useState(0);
   const [totalAcampantes, setTotalAcampantes] = useState(0);
+  // Confirmados na chamada da reuniao de escala (null = nao disponivel).
+  const [equipantesConfirmados, setEquipantesConfirmados] = useState(null);
+  // Situacao mostrada na lista de equipantes. Comeca em Aprovados, que era o
+  // que esta tela mostrava antes; Pendentes e Rejeitados sao para corrigir a
+  // ficha (igreja errada etc.) -- aprovar continua na tela de Aprovacoes.
+  const [situacaoEquipantes, setSituacaoEquipantes] = useState('aprovado');
 
   const [loadingAcampantes, setLoadingAcampantes] = useState(false);
   const [errorAcampantes, setErrorAcampantes] = useState(null);
@@ -82,7 +87,7 @@ const GerenciarInscricoesPage = () => {
 
   const carregarEquipantes = async () => {
   try {
-    const { data, error } = await fetchEquipantesInscritos();
+    const { data, error } = await fetchEquipantesDaEdicao();
 
     if (error) throw error;
 
@@ -115,16 +120,14 @@ const GerenciarInscricoesPage = () => {
 
   const buscarTotais = async () => {
     try {
-      const { count: equipantesCount, error: equipantesError } = await countEquipantesInscritos();
-
-      if (equipantesError) throw equipantesError;
-
+      // Os equipantes sao contados pela propria lista (carregarEquipantes),
+      // para o quadro e a lista mostrarem sempre o mesmo numero.
       const { count: acampantesCount, error: acampantesError } = await countAcampantes();
 
       if (acampantesError) throw acampantesError;
 
-      setTotalEquipantes(equipantesCount || 0);
       setTotalAcampantes(acampantesCount || 0);
+      setEquipantesConfirmados(await contarEquipantesConfirmados());
     } catch (error) {
       console.error('Erro ao buscar totais:', error);
     }
@@ -177,13 +180,21 @@ const GerenciarInscricoesPage = () => {
   // ninguem (04/10/2026). A lista vai inteira.
   const filterInscricoes = (list) => list;
 
-  const { equipantes, filteredEquipantes } = useMemo(() => {
+  const { equipantes, filteredEquipantes, contagemSituacao } = useMemo(() => {
     const equipantes = inscricoes.filter(i => i.tipo === 'equipante');
+    const contagemSituacao = { aprovado: 0, pendente: 0, rejeitado: 0 };
+    equipantes.forEach((i) => {
+      if (contagemSituacao[i.status] !== undefined) contagemSituacao[i.status] += 1;
+    });
+    const daSituacao = situacaoEquipantes === 'todos'
+      ? equipantes
+      : equipantes.filter((i) => i.status === situacaoEquipantes);
     return {
       equipantes,
-      filteredEquipantes: filterInscricoes(equipantes, searchTermEquipantes),
+      contagemSituacao,
+      filteredEquipantes: filterInscricoes(daSituacao, searchTermEquipantes),
     };
-  }, [inscricoes, searchTermEquipantes]);
+  }, [inscricoes, searchTermEquipantes, situacaoEquipantes]);
 
   const allocatedGroups = useMemo(() => {
     return groupAcampantesByTrilha(acampantesList);
@@ -397,9 +408,9 @@ const GerenciarInscricoesPage = () => {
           />
           
           <InscricoesStatsCards
-            equipantes={totalEquipantes}
+            equipantesInscritos={equipantes.length}
+            equipantesConfirmados={equipantesConfirmados}
             acampantes={totalAcampantes}
-            total={totalEquipantes + totalAcampantes}
           />
 
           <Tabs defaultValue="acampantes" className="space-y-6">
@@ -408,7 +419,7 @@ const GerenciarInscricoesPage = () => {
                 Acampantes ({totalAcampantes})
               </TabsTrigger>
               <TabsTrigger value="equipantes" className="data-[state=active]:bg-red-600">
-                Equipantes ({totalEquipantes})
+                Equipantes ({equipantes.length})
               </TabsTrigger>
             </TabsList>
             
@@ -459,6 +470,9 @@ const GerenciarInscricoesPage = () => {
                 onEdit={handleEditarInscricao}
                 searchTerm={searchTermEquipantes}
                 onSearchChange={setSearchTermEquipantes}
+                situacao={situacaoEquipantes}
+                onSituacaoChange={setSituacaoEquipantes}
+                contagemSituacao={{ ...contagemSituacao, todos: equipantes.length }}
               />
             </TabsContent>
           </Tabs>

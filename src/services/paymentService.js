@@ -145,16 +145,24 @@ export const fetchEquipantesPendentesPagamento = async () => {
     .in('metodo_pagamento', ['manual', 'isento']);
 };
 
-export const confirmarPagamentoManual = async (tipo, id) => {
-  const table = tipo === 'acampante' ? 'acampantes' : 'equipantes';
-  return supabase
-    .from(table)
-    .update({
-      status_pagamento: 'confirmado',
-      data_pagamento: new Date().toISOString()
-    })
-    .eq('id', id);
+// Registro de pagamento pelo organizador (08/10/2026): em maos, PIX que
+// travou ou isencao. Grava valor recebido, cupom (se houve) e quem confirmou
+// -- antes era um UPDATE direto que so marcava "pago". A regra mora no banco
+// (registrar_pagamento). forma: 'manual' | 'pix' | 'isento'.
+export const registrarPagamento = async (tipo, id, forma, valor = null, cupom = null) => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('registrar_pagamento', {
+      p_tipo: tipo, p_id: id, p_forma: forma, p_valor: valor, p_cupom: cupom || null,
+    }),
+    { rotulo: 'registrar pagamento' }
+  );
+  if (error) return { error };
+  if (!data?.ok) return { error: new Error(data?.erro || 'Não foi possível registrar o pagamento.') };
+  return { data };
 };
+
+export const confirmarPagamentoManual = async (tipo, id, valor, cupom) =>
+  registrarPagamento(tipo, id, 'manual', valor, cupom);
 
 // ---------------------------------------------------------------------------
 // Rede de seguranca de pagamento (Etapa 3 do Passo 2)
@@ -218,27 +226,69 @@ export const fetchInscricoesNaoQuitadas = async () => {
  * resto do sistema usa (STATUS_QUITADOS), para nao haver duas definicoes de
  * "pago" no codigo.
  */
+// Valor, cupom e quem confirmou, de onde estiver: registro do organizador
+// (em maos, PIX travado, isencao) ou a cobranca PIX paga (automatico).
+const detalheDoPagamento = (ficha, pix) => {
+  const doOrganizador = ficha.pagamento_valor !== null && ficha.pagamento_valor !== undefined;
+  if (doOrganizador) {
+    return {
+      valor_pago: Number(ficha.pagamento_valor),
+      cupom_usado: ficha.pagamento_cupom || null,
+      desconto: ficha.pagamento_desconto !== null ? Number(ficha.pagamento_desconto) : null,
+      confirmado_por: ficha.pagamento_confirmado_por || null,
+    };
+  }
+  if (pix && String(ficha.metodo_pagamento || '').toLowerCase() === 'pix') {
+    return {
+      valor_pago: Number(pix.valor),
+      cupom_usado: pix.cupom_codigo || null,
+      desconto: pix.desconto !== null && pix.desconto !== undefined ? Number(pix.desconto) : null,
+      confirmado_por: 'PIX automático',
+    };
+  }
+  if (String(ficha.metodo_pagamento || '').toLowerCase() === 'isento') {
+    return { valor_pago: 0, cupom_usado: null, desconto: null, confirmado_por: null };
+  }
+  return { valor_pago: null, cupom_usado: null, desconto: null, confirmado_por: null };
+};
+
 export const fetchRelacaoDePagamentos = async () => {
   const colunasComuns =
-    'id, nome, cpf, whatsapp, nacionalidade, status_pagamento, metodo_pagamento, data_pagamento';
+    'id, nome, cpf, whatsapp, nacionalidade, status_pagamento, metodo_pagamento, data_pagamento, '
+    + 'pagamento_valor, pagamento_cupom, pagamento_desconto, pagamento_confirmado_por';
 
-  const [acampantes, equipantes] = await Promise.all([
+  const [acampantes, equipantes, pixPagos] = await Promise.all([
     // Todas as linhas: os equipantes ja passam de 900 e o corte de 1000
     // linhas do Supabase deixaria gente fora da lista sem avisar.
     lerTodasAsLinhas(() => supabase.from('acampantes').select(`${colunasComuns}, igreja, admin_responsavel`).order('id'),
       { rotulo: 'acampantes' }),
     lerTodasAsLinhas(() => supabase.from('equipantes').select(`${colunasComuns}, igreja, igreja_outra, status`).order('id'),
       { rotulo: 'equipantes' }),
+    // Cobrancas PIX pagas: valor, lote, desconto e cupom (os dois ultimos so
+    // a partir de 08/10/2026 -- antes nao eram gravados).
+    lerTodasAsLinhas(() => supabase.from('pix_sicoob')
+      .select('id, inscricao_id, valor, valor_base, desconto, cupom_codigo, updated_at')
+      .eq('status', 'pago').order('id'),
+      { rotulo: 'cobranças PIX pagas' }),
   ]);
 
   if (acampantes.error) throw acampantes.error;
   if (equipantes.error) throw equipantes.error;
+  if (pixPagos.error) throw pixPagos.error;
+
+  // A cobranca paga mais recente de cada ficha.
+  const pixPorFicha = new Map();
+  (pixPagos.data || []).forEach((p) => {
+    const atual = pixPorFicha.get(p.inscricao_id);
+    if (!atual || String(p.updated_at) > String(atual.updated_at)) pixPorFicha.set(p.inscricao_id, p);
+  });
 
   const marcar = (linhas, tipo) =>
     (linhas || []).map((linha) => ({
       ...linha,
       tipo,
       quitado: estaQuitada(linha.status_pagamento),
+      ...detalheDoPagamento(linha, pixPorFicha.get(linha.id)),
       // O acampante nao escolhe igreja: quem responde por ele e a igreja que
       // fez a ficha. Para a conferencia no portao, e o mesmo dado.
       igreja: nomeDaIgreja(linha) || linha.admin_responsavel || null,
@@ -321,17 +371,7 @@ export const fetchPixTravados = async () => {
  * e SEMPRE decisao de um organizador, nunca de cupom -- por isso os cupons
  * ISENTO_* foram desativados.
  */
-export const isentarInscricao = async (tipo, id) => {
-  const table = tipo === 'equipante' ? 'equipantes' : 'acampantes';
-  return supabase
-    .from(table)
-    .update({
-      status_pagamento: 'confirmado',
-      metodo_pagamento: 'isento',
-      data_pagamento: new Date().toISOString()
-    })
-    .eq('id', id);
-};
+export const isentarInscricao = async (tipo, id) => registrarPagamento(tipo, id, 'isento');
 
 /**
  * Cobranca dos acampantes que nao pagaram (migration 20261006h, pedido da

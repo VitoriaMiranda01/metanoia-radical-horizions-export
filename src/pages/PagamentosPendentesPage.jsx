@@ -87,6 +87,13 @@ const valorDaColuna = (item, chave) => {
       if (!item.quitado) return FORMA_DE_QUEM_DEVE[item.metodo_pagamento] || 'Não escolheu';
       return FORMA_DE_QUEM_PAGOU[String(item.metodo_pagamento || '').toLowerCase()] || 'Não informado';
     }
+    // Aba Pagos: forma e quem confirmou numa coluna so ("Em mãos · Raquel"),
+    // para a tabela caber na tela sem cortar (Patrick, 08/10/2026).
+    case 'pagamento': {
+      const forma = valorDaColuna(item, 'forma');
+      const quem = item.confirmado_por && item.confirmado_por !== 'PIX automático' ? item.confirmado_por : null;
+      return quem ? `${forma} · ${quem}` : forma;
+    }
     case 'valor': return item.valor_pago === null || item.valor_pago === undefined ? 'Sem valor registrado' : formatarValor(item.valor_pago);
     case 'cupom': return item.cupom_usado || 'Sem cupom';
     case 'confirmado_por': return item.confirmado_por || '—';
@@ -442,7 +449,7 @@ const PagamentosPendentesPage = () => {
   // de pendentes — desenhar tudo de uma vez trava celular mais simples.
   const paginacao = usePaginacao(linhas);
 
-  const colunas = aba === 'pagos' ? 10 : 6;
+  const colunas = aba === 'pagos' ? 7 : 6;
   const faltamNaLista = aba === 'pagos' ? linhas.filter((i) => !i.grupo) : [];
 
   const marcarLote = async () => {
@@ -502,14 +509,8 @@ const PagamentosPendentesPage = () => {
       );
     }
 
-    // Quem ja pagou nao tem o que fazer aqui -- so a data, para conferencia.
-    if (aba === 'pagos') {
-      return (
-        <span className="text-xs text-gray-500 whitespace-nowrap">
-          {item.data_pagamento ? `Pago em ${new Date(item.data_pagamento).toLocaleDateString('pt-BR')}` : 'Pago'}
-        </span>
-      );
-    }
+    // A aba Pagos nao tem coluna de acoes: a data do pagamento fica na coluna
+    // Pagamento.
 
     const botaoCobranca = 'h-8 px-2.5 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10';
     const cobravel = item.tipo === 'acampante' && aba !== 'travados';
@@ -784,7 +785,9 @@ const PagamentosPendentesPage = () => {
                     <TableHead>{cabecalho('Tipo', 'tipo')}</TableHead>
                     <TableHead>{cabecalho('WhatsApp', 'whatsapp')}</TableHead>
                     <TableHead>
-                      {aba === 'travados'
+                      {aba === 'pagos'
+                        ? cabecalho('Pagamento', 'pagamento')
+                        : aba === 'travados'
                         ? cabecalho('Motivo', 'motivo')
                         : aba === 'cobranca'
                           ? cabecalho('Em cobrança desde', 'desde')
@@ -795,12 +798,10 @@ const PagamentosPendentesPage = () => {
                     {aba === 'pagos' && (
                       <>
                         <TableHead>{cabecalho('Valor pago', 'valor')}</TableHead>
-                        <TableHead>{cabecalho('Cupom', 'cupom')}</TableHead>
-                        <TableHead>{cabecalho('Confirmado por', 'confirmado_por')}</TableHead>
                         <TableHead>{cabecalho('Grupo do WhatsApp', 'grupo')}</TableHead>
                       </>
                     )}
-                    <TableHead className="w-px text-gray-300">Ações</TableHead>
+                    {aba !== 'pagos' && <TableHead className="w-px text-gray-300">Ações</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -869,6 +870,16 @@ const PagamentosPendentesPage = () => {
                             </span>
                           ) : aba === 'agendado' ? (
                             <DataCombinada iso={item.cobranca?.agendado_para} />
+                          ) : aba === 'pagos' ? (
+                            <div className="flex flex-col whitespace-nowrap">
+                              <span className="text-gray-300">{valorDaColuna(item, 'forma')}</span>
+                              <span className="text-gray-500 text-xs mt-0.5">
+                                {[
+                                  item.data_pagamento ? new Date(item.data_pagamento).toLocaleDateString('pt-BR') : null,
+                                  item.confirmado_por,
+                                ].filter(Boolean).join(' · ') || '—'}
+                              </span>
+                            </div>
                           ) : (
                             <span className="text-gray-400">{valorDaColuna(item, 'forma')}</span>
                           )}
@@ -876,20 +887,17 @@ const PagamentosPendentesPage = () => {
                         {aba === 'pagos' && (
                           <>
                             <TableCell className="text-sm whitespace-nowrap">
-                              {item.valor_pago === null || item.valor_pago === undefined
-                                ? <span className="text-gray-600" data-dica="Pago antes de 08/10/2026, quando o valor ainda não era registrado.">—</span>
-                                : <span className="text-white font-medium">{formatarValor(item.valor_pago)}</span>}
-                            </TableCell>
-                            <TableCell className="text-sm whitespace-nowrap">
-                              {item.cupom_usado
-                                ? (
-                                  <Badge variant="outline" className="border-pink-500/40 bg-pink-500/10 text-pink-300">
+                              <div className="flex flex-col items-start gap-1">
+                                {item.valor_pago === null || item.valor_pago === undefined
+                                  ? <span className="text-gray-600" data-dica="Pago antes de 08/10/2026, quando o valor ainda não era registrado.">—</span>
+                                  : <span className="text-white font-medium">{formatarValor(item.valor_pago)}</span>}
+                                {item.cupom_usado && (
+                                  <Badge variant="outline" className="border-pink-500/40 bg-pink-500/10 text-pink-300 text-[11px] px-2 py-0">
                                     {item.cupom_usado}{item.desconto ? ` · −${formatarValor(item.desconto)}` : ''}
                                   </Badge>
-                                )
-                                : <span className="text-gray-600">—</span>}
+                                )}
+                              </div>
                             </TableCell>
-                            <TableCell className="text-sm text-gray-400 whitespace-nowrap">{item.confirmado_por || '—'}</TableCell>
                           </>
                         )}
                         {aba === 'pagos' && (
@@ -897,9 +905,11 @@ const PagamentosPendentesPage = () => {
                             <CelulaGrupo item={item} onMarcar={registrarEnvio} onDesmarcar={desmarcarEnvio} ocupado={gravandoGrupo} />
                           </TableCell>
                         )}
-                        <TableCell>
-                          <Acoes item={item} />
-                        </TableCell>
+                        {aba !== 'pagos' && (
+                          <TableCell>
+                            <Acoes item={item} />
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))
                   )}

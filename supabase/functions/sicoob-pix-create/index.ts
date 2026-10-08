@@ -5,33 +5,31 @@
 // 1) O VALOR DEIXOU DE VIR DO NAVEGADOR.
 //    Antes: o corpo da requisicao trazia "valor" e essa funcao repassava
 //    direto pro backend. Qualquer pessoa podia gerar uma cobranca de R$ 0,01
-//    -- inclusive sem abrir o site, porque a funcao aceita chamada de fora.
+//    -- inclusive sem abrir o site, porque a funcao aceitava chamada de fora.
 //    Agora: o valor e recalculado aqui, a partir da tabela "configuracoes"
 //    (mesma regra de lotes que a tela usa) e do cupom conferido no banco.
-//    O "valor" que o navegador manda e usado SO para registrar divergencia
-//    no log.
 //
-// 2) O CUPOM PASSOU A VALER DE VERDADE.
-//    Antes: "coupon_code" era recebido e ignorado -- o desconto era calculado
-//    no navegador. Agora o desconto sai da tabela "cupons", e so de cupom
-//    ativo.
+// 2) O CUPOM PASSOU A VALER DE VERDADE (antes era recebido e ignorado).
 //
-// 3) ISENCAO NAO E MAIS FEITA POR CUPOM.
-//    Regra definida com a organizacao: quem isenta alguem e sempre um
-//    organizador. Se a conta zerar, a funcao recusa e manda procurar a
-//    organizacao, em vez de liberar sozinha.
+// 3) ISENCAO NAO E MAIS FEITA POR CUPOM. Regra definida com a organizacao:
+//    quem isenta alguem e sempre um organizador.
 //
-// 4) O REGISTRO EM pix_sicoob PASSOU A SER AGUARDADO.
-//    Antes o insert era disparado sem await. Se falhasse, o usuario recebia
-//    um QR Code que o webhook JAMAIS conseguiria reconciliar -- a pessoa
-//    pagava e ficava "pendente" pra sempre, sem ninguem saber. Agora, se o
-//    registro falhar, a cobranca nao e entregue.
+// 4) O REGISTRO EM pix_sicoob PASSOU A SER AGUARDADO. Antes era disparado sem
+//    await -- se falhasse, o usuario recebia um QR Code que o webhook JAMAIS
+//    conseguiria reconciliar: a pessoa pagava e ficava pendente pra sempre.
 //
 // 5) CPF E NOME SAIRAM DO LOG.
 //
-// 6) PASSOU A USAR service_role em vez da chave anonima, porque as tabelas
-//    vao ser trancadas por RLS. Com a chave anonima, o registro do PIX
-//    pararia de funcionar silenciosamente.
+// 6) PASSOU A USAR service_role, porque as tabelas vao ser trancadas por RLS.
+//
+// 7) (06/10/2026) EQUIPANTE SO GERA COBRANCA QUANDO PODE PAGAR. Antes so a
+//    tela escondia o botao; chamando esta funcao direto, dava para pagar
+//    antes de ser aprovado e escalado. A regra mora no banco
+//    (_equipante_pode_pagar), a mesma do "pode_pagar" do acompanhamento.
+//
+// 8) (08/10/2026) A COBRANCA REGISTRA O LOTE, O DESCONTO E O CUPOM USADO
+//    (valor_base, desconto, cupom_codigo em pix_sicoob), para a tela de
+//    Pagamentos mostrar quem usou qual cupom. Nada mais mudou.
 
 import { corsHeaders } from "./cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
@@ -45,8 +43,8 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// "hoje" no fuso de Brasilia, como AAAAMMDD. Usar new Date() cru daria UTC,
-// e a virada de lote aconteceria 3 horas antes do esperado.
+// "hoje" no fuso de Brasilia, como AAAAMMDD. Usar new Date() cru daria UTC, e
+// a virada de lote aconteceria 3 horas antes do esperado.
 const hojeBrasilia = (): number => {
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
@@ -91,7 +89,7 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { headers: corsHeaders });
   }
   if (req.method !== "POST") {
-    return json({ success: false, error: "Método não permitido" }, 405);
+    return json({ success: false, error: "Metodo nao permitido" }, 405);
   }
 
   try {
@@ -109,17 +107,17 @@ Deno.serve(async (req: Request) => {
     const valorDoNavegador = Number(body?.valor);
 
     if (!inscricaoId) {
-      return json({ success: false, error: "Inscrição não identificada." }, 400);
+      return json({ success: false, error: "Inscricao nao identificada." }, 400);
     }
     if (cpf.length !== 11) {
-      return json({ success: false, error: "CPF inválido." }, 400);
+      return json({ success: false, error: "CPF invalido." }, 400);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!supabaseUrl || !serviceKey) {
-      console.error("[pix] variáveis de ambiente ausentes");
-      return json({ success: false, error: "Serviço de pagamento indisponível." }, 500);
+      console.error("[pix] variaveis de ambiente ausentes");
+      return json({ success: false, error: "Servico de pagamento indisponivel." }, 500);
     }
 
     const db = createClient(supabaseUrl, serviceKey, {
@@ -139,7 +137,7 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
       if (error) {
         console.error(`[pix] erro consultando ${t}:`, error.message);
-        return json({ success: false, error: "Serviço de pagamento indisponível." }, 500);
+        return json({ success: false, error: "Servico de pagamento indisponivel." }, 500);
       }
       if (data) {
         inscricao = data;
@@ -149,23 +147,17 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!inscricao || !tipo) {
-      return json({ success: false, error: "Inscrição não encontrada." }, 404);
+      return json({ success: false, error: "Inscricao nao encontrada." }, 404);
     }
 
     const statusAtual = String(inscricao.status_pagamento ?? "");
     if (["pago", "confirmado", "completed"].includes(statusAtual)) {
-      return json(
-        { success: false, error: "Esta inscrição já está paga." },
-        409,
-      );
+      return json({ success: false, error: "Esta inscricao ja esta paga." }, 409);
     }
 
     // --- 1b. Equipante: so paga quando o acompanhamento libera ---------
-    // (06/10/2026) Antes so a tela escondia o botao; chamando esta funcao
-    // direto dava para pagar antes de ser aprovado e escalado. Aprovado,
-    // escala lancada, numa area de verdade e, se menor, com a autorizacao
-    // dos pais -- a regra mora no banco (_equipante_pode_pagar), a mesma do
-    // "pode_pagar" do acompanhamento.
+    // Aprovado, escala lancada, numa area de verdade e, se menor, com a
+    // autorizacao dos pais. A regra mora no banco (_equipante_pode_pagar).
     if (tipo === "equipante") {
       const { data: liberado, error: liberadoError } = await db.rpc(
         "_equipante_pode_pagar",
@@ -173,12 +165,12 @@ Deno.serve(async (req: Request) => {
       );
       if (liberadoError) {
         console.error("[pix] erro conferindo se o equipante pode pagar:", liberadoError.message);
-        return json({ success: false, error: "Serviço de pagamento indisponível." }, 500);
+        return json({ success: false, error: "Servico de pagamento indisponivel." }, 500);
       }
       if (!liberado?.ok) {
-        console.warn("[pix] equipante ainda sem liberação para pagar -- recusado");
+        console.warn("[pix] equipante ainda sem liberacao para pagar -- recusado");
         return json(
-          { success: false, error: liberado?.erro || "O pagamento ainda não está liberado." },
+          { success: false, error: liberado?.erro || "O pagamento ainda nao esta liberado." },
           403,
         );
       }
@@ -194,7 +186,7 @@ Deno.serve(async (req: Request) => {
 
     if (configError || !config) {
       console.error("[pix] erro lendo configuracoes:", configError?.message);
-      return json({ success: false, error: "Serviço de pagamento indisponível." }, 500);
+      return json({ success: false, error: "Servico de pagamento indisponivel." }, 500);
     }
 
     const periodos = tipo === "equipante"
@@ -214,7 +206,7 @@ Deno.serve(async (req: Request) => {
         {
           success: false,
           error:
-            "As inscrições não têm um valor definido para a data de hoje. Entre em contato com a organização.",
+            "As inscricoes nao tem um valor definido para a data de hoje. Entre em contato com a organizacao.",
         },
         422,
       );
@@ -234,7 +226,7 @@ Deno.serve(async (req: Request) => {
 
       if (cupomError) {
         console.error("[pix] erro lendo cupons:", cupomError.message);
-        return json({ success: false, error: "Serviço de pagamento indisponível." }, 500);
+        return json({ success: false, error: "Servico de pagamento indisponivel." }, 500);
       }
       if (cupom) {
         const d = Number(cupom.desconto_fixo);
@@ -243,34 +235,31 @@ Deno.serve(async (req: Request) => {
           cupomAplicado = String(cupom.codigo);
         }
       }
-      // Cupom invalido nao derruba a cobranca: so nao aplica desconto.
-      // A tela ja avisa o usuario no momento em que ele clica em "Aplicar".
+      // Cupom invalido nao derruba a cobranca: so nao aplica desconto. A tela
+      // ja avisa o usuario no momento em que ele clica em "Aplicar".
     }
 
     const valorFinal = Math.max(0, precoBase - desconto);
 
-    // Isencao e decisao de organizador, nunca de cupom (regra definida com a
-    // organizacao em 11/09/2026).
+    // Isencao e decisao de organizador, nunca de cupom.
     if (valorFinal <= 0) {
-      console.warn(`[pix] cupom ${cupomAplicado} zeraria a inscrição -- recusado`);
+      console.warn(`[pix] cupom ${cupomAplicado} zeraria a inscricao -- recusado`);
       return json(
         {
           success: false,
           error:
-            "Este desconto cobre o valor total. A isenção precisa ser liberada pela organização.",
+            "Este desconto cobre o valor total. A isencao precisa ser liberada pela organizacao.",
         },
         422,
       );
     }
 
-    // Registra divergencia sem expor dado pessoal. Depois que o frontend novo
-    // estiver no ar, divergencia aqui significa ou cache antigo, ou tentativa
-    // de manipulacao.
+    // Registra divergencia sem expor dado pessoal.
     if (Number.isFinite(valorDoNavegador)) {
       const enviadoEmReais = valorDoNavegador / 100;
       if (Math.abs(enviadoEmReais - valorFinal) > 0.001) {
         console.warn(
-          `[pix] divergência de valor: navegador=${enviadoEmReais.toFixed(2)} servidor=${valorFinal.toFixed(2)} tipo=${tipo}`,
+          `[pix] divergencia de valor: navegador=${enviadoEmReais.toFixed(2)} servidor=${valorFinal.toFixed(2)} tipo=${tipo}`,
         );
       }
     }
@@ -279,7 +268,7 @@ Deno.serve(async (req: Request) => {
     const cpfFormatado = cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
 
     // Sem CPF e sem nome no log.
-    console.log(`[pix] gerando cobrança tipo=${tipo} valor=${valorFinal.toFixed(2)}`);
+    console.log(`[pix] gerando cobranca tipo=${tipo} valor=${valorFinal.toFixed(2)}`);
 
     const resposta = await fetch(BACKEND_URL, {
       method: "POST",
@@ -295,7 +284,7 @@ Deno.serve(async (req: Request) => {
     if (!resposta.ok) {
       console.error(`[pix] backend respondeu ${resposta.status}`);
       return json(
-        { success: false, error: "Não foi possível gerar a cobrança. Tente novamente." },
+        { success: false, error: "Nao foi possivel gerar a cobranca. Tente novamente." },
         502,
       );
     }
@@ -308,16 +297,16 @@ Deno.serve(async (req: Request) => {
     // Sem txid o webhook nunca acha essa cobranca -- a pessoa pagaria e
     // ficaria pendente pra sempre. Antes isso so virava log; agora barra.
     if (!txid) {
-      console.error("[pix] backend não retornou txid -- cobrança não seria reconciliável");
+      console.error("[pix] backend nao retornou txid -- cobranca nao seria reconciliavel");
       return json(
-        { success: false, error: "Não foi possível gerar a cobrança. Tente novamente." },
+        { success: false, error: "Nao foi possivel gerar a cobranca. Tente novamente." },
         502,
       );
     }
     if (!pixCopiaECola) {
-      console.error("[pix] backend não retornou o código copia-e-cola");
+      console.error("[pix] backend nao retornou o codigo copia-e-cola");
       return json(
-        { success: false, error: "Não foi possível gerar a cobrança. Tente novamente." },
+        { success: false, error: "Nao foi possivel gerar a cobranca. Tente novamente." },
         502,
       );
     }
@@ -334,6 +323,9 @@ Deno.serve(async (req: Request) => {
       expires_at: expiraEm.toISOString(),
       inscricao_id: inscricaoId,
       inscricao_tipo: tipo,
+      valor_base: precoBase,
+      desconto,
+      cupom_codigo: cupomAplicado,
     }]);
 
     if (insertError) {
@@ -342,7 +334,7 @@ Deno.serve(async (req: Request) => {
         {
           success: false,
           error:
-            "Não foi possível registrar a cobrança. Nada foi cobrado — tente novamente.",
+            "Nao foi possivel registrar a cobranca. Nada foi cobrado -- tente novamente.",
         },
         500,
       );
@@ -359,9 +351,9 @@ Deno.serve(async (req: Request) => {
       expires_at: expiraEm.toISOString(),
     });
   } catch (error) {
-    console.error("[pix] exceção não tratada:", (error as Error)?.message);
+    console.error("[pix] excecao nao tratada:", (error as Error)?.message);
     return json(
-      { success: false, error: "Não foi possível gerar a cobrança. Tente novamente." },
+      { success: false, error: "Nao foi possivel gerar a cobranca. Tente novamente." },
       500,
     );
   }

@@ -75,6 +75,16 @@ const DataCombinada = ({ iso }) => {
   );
 };
 
+// Quando o pagamento entrou (PIX: a hora em que o banco avisou, segundos
+// depois de pago; em maos/isento: a hora em que o organizador confirmou),
+// no horario de Brasilia (Patrick, 08/10/2026).
+const dataHoraBR = (iso) => {
+  if (!iso) return null;
+  const d = new Date(iso);
+  const fuso = { timeZone: 'America/Sao_Paulo' };
+  return `${d.toLocaleDateString('pt-BR', fuso)} às ${d.toLocaleTimeString('pt-BR', { ...fuso, hour: '2-digit', minute: '2-digit' })}`;
+};
+
 // Texto de cada coluna, o mesmo da tela: e por ele que o funil filtra e a
 // seta ordena (pedido do Patrick, 06/10/2026).
 const valorDaColuna = (item, chave) => {
@@ -872,13 +882,8 @@ const PagamentosPendentesPage = () => {
                             <DataCombinada iso={item.cobranca?.agendado_para} />
                           ) : aba === 'pagos' ? (
                             <div className="flex flex-col whitespace-nowrap">
-                              <span className="text-gray-300">{valorDaColuna(item, 'forma')}</span>
-                              <span className="text-gray-500 text-xs mt-0.5">
-                                {[
-                                  item.data_pagamento ? new Date(item.data_pagamento).toLocaleDateString('pt-BR') : null,
-                                  item.confirmado_por,
-                                ].filter(Boolean).join(' · ') || '—'}
-                              </span>
+                              <span className="text-gray-300">{valorDaColuna(item, 'pagamento')}</span>
+                              <span className="text-gray-500 text-xs mt-0.5">{dataHoraBR(item.data_pagamento) || '—'}</span>
                             </div>
                           ) : (
                             <span className="text-gray-400">{valorDaColuna(item, 'forma')}</span>

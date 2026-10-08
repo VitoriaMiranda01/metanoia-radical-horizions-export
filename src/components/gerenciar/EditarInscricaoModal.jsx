@@ -18,6 +18,9 @@ import {
   UFS, problemaEmail, problemaCep, problemaNascimento, problemaNomeSimples, problemaSemNumero
 } from '@/utils/validacoesInscricao';
 import { validateCPF } from '@/utils/validation';
+import { useAuth } from '@/contexts/AuthContext';
+import { GROUPS } from '@/utils/gruposTrailha';
+import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
 
 /**
  * Edicao dos dados cadastrais de uma inscricao (acampante ou equipante),
@@ -27,9 +30,12 @@ import { validateCPF } from '@/utils/validation';
  * InscricaoDetalhesModal.jsx (que so mostra) -- assim quem ja usa aquela
  * tela reconhece onde cada campo mora nesta.
  *
+ * Grupo de trilha e observacao do organizador (acampante) aparecem so para
+ * organizador, na secao "Grupo de Trilha" (Patrick, 08/10/2026) -- os mesmos
+ * dois campos do card do acampante na janela do grupo.
+ *
  * De caso pensado, NAO aparecem aqui: pagamento (status_pagamento e afins),
- * aprovacao/decisao, escala e area de trabalho (equipante), grupo de trilha
- * (acampante) e as observacoes do organizador -- cada um desses ja tem a
+ * aprovacao/decisao, escala e area de trabalho (equipante) -- cada um desses ja tem a
  * propria tela/acao que decide aquele dado, e editar por aqui destrancaria
  * esse controle. Tambem fora: consentimentos (autorizacao de imagem, termo
  * de responsabilidade) e o fluxo de autorizacao de menor de idade.
@@ -150,6 +156,7 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
   const [salvando, setSalvando] = useState(false);
   const [form, setForm] = useState(inscricao || {});
   const { parceiras, extras, permiteOutra, permiteDiversos } = useOpcoesDeIgreja();
+  const { isOrganizador } = useAuth();
 
   useEffect(() => {
     setForm(inscricao || {});
@@ -305,6 +312,38 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
         </div>
 
         <div className="overflow-y-auto p-6 space-y-6">
+          {!isEquipante && isOrganizador && (
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2 flex items-center gap-2 flex-wrap">
+                Grupo de Trilha
+                <span className="text-[11px] font-normal px-2 py-0.5 rounded-full border border-amber-500/40 text-amber-300">só organizadores</span>
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-white text-sm">Grupo</Label>
+                  <Select value={form.grupo_trailha || undefined} onValueChange={set('grupo_trailha')}>
+                    <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                      <SelectValue placeholder="Sem grupo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GROUPS.map((g) => (
+                        <SelectItem key={g} value={g}><GrupoTrilhaTag grupo={g} /></SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {form.grupo_trailha !== inscricao.grupo_trailha && inscricao.grupo_trailha && (
+                    <p className="text-xs text-amber-300">Sai do grupo {inscricao.grupo_trailha} ao salvar.</p>
+                  )}
+                </div>
+                <CampoArea
+                  label="Observações (as mesmas do card no grupo de trilha)"
+                  valor={form.observacoes_organizador}
+                  onChange={set('observacoes_organizador')}
+                />
+              </div>
+            </div>
+          )}
+
           {!isEquipante && (
             <Secao titulo="Responsável pela Ficha">
               <div className="space-y-1.5">

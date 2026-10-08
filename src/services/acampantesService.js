@@ -97,10 +97,10 @@ export const realocarGrupoTrailha = async (acampanteId, novoGrupo) => {
 // sao alterados -- a tela so manda os campos daquela secao/formulario.
 //
 // Fora do escopo de proposito: pagamento (status_pagamento, metodo_pagamento
-// etc.), aprovacao, grupo de trilha (tem tela propria, realocarGrupoTrailha)
-// e observacoes do organizador (idem, salvarObservacaoAcampante) -- editar
-// esses por aqui poderia descolar o dado da tela que realmente controla
-// aquele fluxo.
+// etc.) e aprovacao -- editar esses por aqui poderia descolar o dado da tela
+// que realmente controla aquele fluxo. Grupo de trilha e observacoes do
+// organizador entram pela secao so de organizador (08/10/2026), o mesmo
+// update que realocarGrupoTrailha / salvarObservacaoAcampante fazem.
 export const updateAcampante = async (acampanteId, dados) => {
   if (!acampanteId) {
     return { success: false, error: 'Acampante não informado' };

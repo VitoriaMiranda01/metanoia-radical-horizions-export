@@ -873,7 +873,7 @@ const PagamentosPendentesPage = () => {
                               <button
                                 type="button"
                                 onClick={() => setFichaAberta({ tipo: item.tipo, id: aba === 'travados' ? item.inscricao_id : item.id })}
-                                data-dica="Abrir a ficha de inscrição (dá para editar dali)."
+                                data-dica="Abrir a ficha de inscrição."
                                 aria-label={`Abrir a ficha de ${item.nome}`}
                                 className="mt-px shrink-0 rounded p-0.5 text-gray-500 hover:text-blue-300 hover:bg-white/10"
                               >

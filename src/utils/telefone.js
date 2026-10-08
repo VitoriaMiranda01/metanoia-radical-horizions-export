@@ -62,9 +62,13 @@ export const problemaTelefone = (valor, { aceitaFixo = false, estrangeiro = fals
   return `Faltou um dígito: celular tem o 9 depois do DDD. ${EXEMPLO}`;
 };
 
-/** "(21) 99999-9999" (ou "(21) 2417-0850"); formata tambem pela metade, enquanto digita. */
+/**
+ * "(21) 99999-9999" (ou "(21) 2417-0850"); formata tambem pela metade, enquanto digita.
+ * Numero antigo gravado com o 0 ou o +55 antes do DDD ("(021)987968565") sai
+ * sem eles -- antes aparecia "(02) 19879-6856" (Patrick, 08/10/2026).
+ */
 export const formatarTelefone = (valor) => {
-  const d = String(valor || '').replace(/\D/g, '').slice(0, 11);
+  const d = digitosTelefone(valor).slice(0, 11);
   if (!d) return '';
   if (d.length <= 2) return `(${d}`;
   const ddd = d.slice(0, 2);

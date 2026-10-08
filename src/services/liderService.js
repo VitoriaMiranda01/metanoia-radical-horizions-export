@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabaseClient';
 import { comReenvio } from '@/services/serviceHelpers';
+import { digitosTelefone } from '@/utils/telefone';
 
 /**
  * Relacao do lider (pedido do Patrick, 05/10/2026).
@@ -57,7 +58,8 @@ export const marcarConviteLider = (equipanteId, dono, escalaId) =>
  * digitos) ganha o 55; quem ja veio com 55 ou e estrangeiro vai como esta.
  */
 export const linkWhatsApp = (telefone, estrangeiro = false, texto = '') => {
-  let d = String(telefone || '').replace(/\D/g, '');
+  // Brasileiro: sem o 0 / +55 antes do DDD de numero antigo (digitosTelefone).
+  let d = estrangeiro ? String(telefone || '').replace(/\D/g, '') : digitosTelefone(telefone);
   if (!d) return null;
   if (!estrangeiro && (d.length === 10 || d.length === 11)) d = `55${d}`;
   if (d.length < 10) return null;

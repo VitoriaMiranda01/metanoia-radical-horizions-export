@@ -46,6 +46,44 @@ const dataCurta = (iso) => {
   });
 };
 
+// Filtro por situacao da carta (Patrick, 08/10/2026). So filtra a lista: os
+// botoes de cada menor continuam os mesmos. "Todos" fica por ultimo, como nas
+// outras telas.
+const temNada = (i) => !i.parental_auth_file_url && !i.autorizacao_entregue_em;
+const SITUACOES = [
+  {
+    chave: 'vincular', rotulo: 'Ainda não entregou', casa: temNada,
+    dica: 'Não anexou nem declarou entrega. Se a carta está com você, use "Vincular carta".',
+    ativo: 'border-red-500/50 bg-red-500/15 text-red-200',
+  },
+  {
+    chave: 'conferir', rotulo: 'Esperando conferência',
+    casa: (i) => !i.autorizacao_conferida_em && !temNada(i),
+    dica: 'Anexou ou declarou que entregou, e ninguém conferiu ainda ("Tenho a carta" / "Não recebi").',
+    ativo: 'border-amber-500/50 bg-amber-500/15 text-amber-200',
+  },
+  {
+    chave: 'maos', rotulo: 'Declarou em mãos', casa: (i) => !!i.autorizacao_entregue_em,
+    dica: 'Disse que entregou a carta em mãos (conferida ou não).',
+    ativo: 'border-emerald-500/50 bg-emerald-500/15 text-emerald-200',
+  },
+  {
+    chave: 'arquivo', rotulo: 'Anexou arquivo', casa: (i) => !!i.parental_auth_file_url,
+    dica: 'Anexou a carta no sistema (conferida ou não).',
+    ativo: 'border-blue-500/50 bg-blue-500/15 text-blue-200',
+  },
+  {
+    chave: 'conferida', rotulo: 'Conferidas', casa: (i) => !!i.autorizacao_conferida_em,
+    dica: 'Alguém já confirmou que a carta está com a organização ou com a igreja.',
+    ativo: 'border-green-500/50 bg-green-500/15 text-green-200',
+  },
+  {
+    chave: 'todos', rotulo: 'Todos', casa: () => true,
+    dica: 'Todos os menores inscritos.',
+    ativo: 'border-white/30 bg-white/15 text-white',
+  },
+];
+
 const ConferenciaMenoresDialog = ({ onClose }) => {
   const { toast } = useToast();
   const [itens, setItens] = useState([]);
@@ -53,6 +91,7 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
   const [busca, setBusca] = useState('');
+  const [situacao, setSituacao] = useState('todos');
   const [salvando, setSalvando] = useState({});
   const [podeManual, setPodeManual] = useState(false);
   const [manualAberta, setManualAberta] = useState(false);
@@ -83,14 +122,16 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
 
   const termo = semAcento(busca.trim());
   const filtrados = useMemo(() => {
-    if (!termo) return itens;
+    const casaSituacao = SITUACOES.find((x) => x.chave === situacao)?.casa || (() => true);
+    const porSituacao = itens.filter(casaSituacao);
+    if (!termo) return porSituacao;
     const digitos = termo.replace(/\D/g, '');
-    return itens.filter((i) =>
+    return porSituacao.filter((i) =>
       semAcento(i.nome).includes(termo)
       || semAcento(nomeDaIgreja(i)).includes(termo)
       || (digitos !== '' && (i.cpf || '').includes(digitos))
     );
-  }, [itens, termo]);
+  }, [itens, termo, situacao]);
 
   const aConferir = itens.filter((i) => !i.autorizacao_conferida_em
     && (i.parental_auth_file_url || i.autorizacao_entregue_em)).length;
@@ -287,6 +328,30 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
           </Button>
         </div>
 
+        {!loading && !erro && itens.length > 0 && (
+          <div className="px-4 py-3 border-b border-white/10 flex flex-wrap gap-2" role="group" aria-label="Filtrar pela situação da autorização">
+            {SITUACOES.map((x) => {
+              const ativo = situacao === x.chave;
+              const n = itens.filter(x.casa).length;
+              return (
+                <button
+                  key={x.chave} type="button"
+                  onClick={() => setSituacao(x.chave)}
+                  aria-pressed={ativo}
+                  data-dica={x.dica}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-xs transition-colors',
+                    ativo ? x.ativo : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
+                  )}
+                >
+                  {x.rotulo}
+                  <span className={cn('tabular-nums', ativo ? 'opacity-90' : 'text-gray-500')}>{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {loading && (
             <div className="flex items-center justify-center gap-2 py-12 text-gray-400">
@@ -300,7 +365,10 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
             </p>
           )}
           {!loading && !erro && itens.length > 0 && filtrados.length === 0 && (
-            <p className="text-gray-400 text-sm text-center py-12">Ninguém bate com a busca.</p>
+            <p className="text-gray-400 text-sm text-center py-12">
+              {termo ? 'Ninguém bate com a busca' : 'Ninguém nesta situação'}
+              {situacao !== 'todos' ? ' neste filtro.' : '.'}
+            </p>
           )}
           {!loading && !erro && filtrados.map(renderMenor)}
         </div>

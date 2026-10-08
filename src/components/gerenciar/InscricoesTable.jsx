@@ -15,6 +15,7 @@ import {
   DropdownMenu,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
 import { cn } from "@/lib/utils";
 import { useToast } from '@/components/ui/use-toast';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
@@ -48,19 +49,8 @@ const getStatusBadge = (status) => {
 // constants/workAreas.js) -- aqui so o mapeamento pra classe Tailwind,
 // mesmo padrao visual do getStatusBadge acima (pilula: fundo fraco +
 // borda + texto na cor, sem bolinha).
-const CORES_TAG_GRUPO_TRILHA = {
-  Amarelo: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/50',
-  Azul: 'bg-blue-500/15 text-blue-300 border-blue-500/50',
-  Roxo: 'bg-purple-500/15 text-purple-300 border-purple-500/50',
-  Verde: 'bg-green-500/15 text-green-300 border-green-500/50',
-  Vermelho: 'bg-red-500/15 text-red-300 border-red-500/50',
-};
 
-const getGrupoTrilhaBadge = (grupo) => {
-  if (!grupo) return '-';
-  const className = `border ${CORES_TAG_GRUPO_TRILHA[grupo] || 'bg-white/10 text-gray-300 border-white/20'}`;
-  return <Badge className={className} variant="outline">{grupo}</Badge>;
-};
+const getGrupoTrilhaBadge = (grupo) => (grupo ? <GrupoTrilhaTag grupo={grupo} /> : '-');
 
 const formatarData = (dataString) => {
   if (!dataString) return '';

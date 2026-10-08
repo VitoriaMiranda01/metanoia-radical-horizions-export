@@ -17,6 +17,7 @@ import { useToast } from '@/components/ui/use-toast';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { cn } from "@/lib/utils";
 import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDropdown';
+import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
 import { 
   getVisibleColumnsFromStorage, 
   saveVisibleColumnsToStorage,
@@ -228,6 +229,12 @@ const AcampantesTable = ({
     return item[key] || '-';
   };
 
+  // Na tela o grupo de trilha sai com a cor dele; a planilha continua com o
+  // nome em texto (renderCellContent).
+  const renderCell = (item, key) => (
+    key === 'grupo_trailha' ? <GrupoTrilhaTag grupo={item.grupo_trailha} /> : renderCellContent(item, key)
+  );
+
   return (
     <Card className="bg-black/60 glass-effect border-white/10">
       <CardHeader className="p-4 md:p-6">
@@ -321,7 +328,7 @@ const AcampantesTable = ({
                         return (
                           <div key={colKey} className="flex justify-between items-center gap-4 text-sm">
                             <span className="text-gray-400 font-medium shrink-0">{def ? def.label : colKey}:</span>
-                            <span className="text-gray-200 truncate">{renderCellContent(item, colKey)}</span>
+                            <span className="text-gray-200 truncate">{renderCell(item, colKey)}</span>
                           </div>
                         );
                       })}
@@ -405,7 +412,7 @@ const AcampantesTable = ({
                         if (colKey === 'nome') return null;
                         return (
                           <TableCell key={colKey} className="text-gray-300 whitespace-nowrap p-2 md:p-4 text-xs md:text-sm">
-                            {renderCellContent(item, colKey)}
+                            {renderCell(item, colKey)}
                           </TableCell>
                         );
                       })}

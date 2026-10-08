@@ -9,6 +9,7 @@ import {
   fetchRelacaoDePagamentos,
   fetchPixTravados,
   registrarPagamento,
+  desfazerPagamento,
   isentarInscricao,
   fetchCobrancas,
   fetchGruposEnviados,
@@ -319,6 +320,29 @@ const PagamentosPendentesPage = () => {
     });
     await carregar();
     return data;
+  };
+
+  // Desfazer pagamento confirmado por engano (Patrick, 08/10/2026): so em
+  // maos e isencao; a pessoa volta para "Nao pagaram". Confirmacao na propria
+  // linha, como o isentar.
+  const [desfazendo, setDesfazendo] = useState(null); // id em confirmacao
+  const [desfazendoAgora, setDesfazendoAgora] = useState(false);
+  const podeDesfazer = (item) => ['manual', 'isento'].includes(String(item.metodo_pagamento || '').toLowerCase());
+
+  const desfazer = async (item) => {
+    setDesfazendoAgora(true);
+    const { error: err } = await desfazerPagamento(item.tipo, item.id);
+    setDesfazendoAgora(false);
+    setDesfazendo(null);
+    if (err) {
+      toast({ title: 'Não deu para desfazer', description: err.message, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: 'Pagamento desfeito',
+      description: `${item.nome} voltou para a aba Não pagaram.`,
+    });
+    await carregar();
   };
 
   // Todo mundo com a cobranca junto (so acampante tem cobranca).
@@ -884,6 +908,33 @@ const PagamentosPendentesPage = () => {
                             <div className="flex flex-col whitespace-nowrap">
                               <span className="text-gray-300">{valorDaColuna(item, 'pagamento')}</span>
                               <span className="text-gray-500 text-xs mt-0.5">{dataHoraBR(item.data_pagamento) || '—'}</span>
+                              {podeDesfazer(item) && (
+                                desfazendo === item.id ? (
+                                  <span className="mt-1 inline-flex items-center gap-1 text-xs">
+                                    <span className="text-amber-300 mr-0.5">Voltar para não pago?</span>
+                                    <button
+                                      type="button" disabled={desfazendoAgora} onClick={() => setDesfazendo(null)}
+                                      className="px-1.5 py-0.5 rounded text-gray-300 hover:bg-white/10 hover:text-white"
+                                    >
+                                      Não
+                                    </button>
+                                    <button
+                                      type="button" disabled={desfazendoAgora} onClick={() => desfazer(item)}
+                                      className="px-1.5 py-0.5 rounded bg-red-600 hover:bg-red-700 text-white"
+                                    >
+                                      {desfazendoAgora ? <RefreshCw className="w-3 h-3 animate-spin" /> : 'Sim'}
+                                    </button>
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button" onClick={() => setDesfazendo(item.id)}
+                                    data-dica="Confirmou por engano? A pessoa volta para Não pagaram (valor, cupom e quem confirmou são apagados)."
+                                    className="mt-1 inline-flex items-center gap-1 w-fit text-xs text-gray-500 hover:text-red-300"
+                                  >
+                                    <Undo2 className="w-3 h-3" /> Desfazer pagamento
+                                  </button>
+                                )
+                              )}
                             </div>
                           ) : (
                             <span className="text-gray-400">{valorDaColuna(item, 'forma')}</span>

@@ -161,6 +161,18 @@ export const registrarPagamento = async (tipo, id, forma, valor = null, cupom = 
   return { data };
 };
 
+/**
+ * Desfaz um pagamento confirmado por engano (em maos ou isencao): a pessoa
+ * volta para "Nao pagaram". PIX o servidor recusa -- o dinheiro entrou pelo
+ * banco. Sem reenvio automatico: e uma gravacao.
+ */
+export const desfazerPagamento = async (tipo, id) => {
+  const { data, error } = await supabase.rpc('desfazer_pagamento', { p_tipo: tipo, p_id: id });
+  if (error) return { error };
+  if (!data?.ok) return { error: new Error(data?.erro || 'Não foi possível desfazer o pagamento.') };
+  return { data };
+};
+
 export const confirmarPagamentoManual = async (tipo, id, valor, cupom) =>
   registrarPagamento(tipo, id, 'manual', valor, cupom);
 

@@ -674,6 +674,7 @@ const OrganizerConfigPage = () => {
                           <TableRow className="border-b border-white/10 hover:bg-transparent">
                             <TableHead className="text-gray-300">Código</TableHead>
                             <TableHead className="text-gray-300">Desconto</TableHead>
+                            <TableHead className="text-gray-300">Edição</TableHead>
                             <TableHead className="text-gray-300">Status</TableHead>
                             <TableHead className="text-right text-gray-300">Ações</TableHead>
                           </TableRow>
@@ -681,20 +682,21 @@ const OrganizerConfigPage = () => {
                         <TableBody>
                           {loadingCoupons ? (
                             <TableRow className="border-b border-white/5 hover:bg-white/5">
-                              <TableCell colSpan={4} className="h-24 text-center">
+                              <TableCell colSpan={5} className="h-24 text-center">
                                 <Loader2 className="w-6 h-6 animate-spin text-gray-400 mx-auto mb-2" />
                                 <span className="text-gray-400 text-sm">Carregando cupons...</span>
                               </TableCell>
                             </TableRow>
                           ) : coupons.length === 0 ? (
                             <TableRow className="border-b border-white/5 hover:bg-white/5">
-                              <TableCell colSpan={4} className="h-24 text-center text-gray-400">Nenhum cupom criado ainda.</TableCell>
+                              <TableCell colSpan={5} className="h-24 text-center text-gray-400">Nenhum cupom criado ainda.</TableCell>
                             </TableRow>
                           ) : (
                             coupons.map(coupon => (
                               <TableRow key={coupon.id} className="border-b border-white/5 hover:bg-white/5">
                                 <TableCell className="font-medium text-white">{coupon.codigo}</TableCell>
                                 <TableCell className="text-emerald-400 font-medium">{formatCurrency(coupon.desconto_fixo)}</TableCell>
+                                <TableCell className="text-gray-400" data-dica="Edição em que o cupom foi criado. Na virada de edição todos os cupons são desativados (não apagados).">{coupon.edicao_numero ? `${coupon.edicao_numero}ª` : '—'}</TableCell>
                                 <TableCell>
                                   <Badge variant={coupon.ativo ? "default" : "secondary"} className={coupon.ativo ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border-none" : "bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border-none"}>
                                     {coupon.ativo ? "Ativo" : "Inativo"}

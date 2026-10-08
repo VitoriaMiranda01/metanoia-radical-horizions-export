@@ -8,7 +8,7 @@ import { exportRelacaoPagamentos } from '@/utils/excelExport';
 import {
   fetchRelacaoDePagamentos,
   fetchPixTravados,
-  confirmarPagamentoManual,
+  registrarPagamento,
   isentarInscricao,
   fetchCobrancas,
   fetchGruposEnviados,
@@ -19,6 +19,11 @@ import {
   removerCobranca
 } from '@/services/paymentService';
 import CobrancaDialog from '@/components/pagamentos/CobrancaDialog';
+import ConfirmarPagamentoDialog from '@/components/pagamentos/ConfirmarPagamentoDialog';
+import ResumoPagamentos from '@/components/pagamentos/ResumoPagamentos';
+import { fetchCoupons } from '@/services/couponsService';
+import { fetchPricingConfig } from '@/services/organizerConfigService';
+import { precoDoLoteHoje } from '@/utils/precoDoLote';
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -40,6 +45,8 @@ const formatarValor = (valor) => {
 
 // Quem ainda deve: o que a pessoa fez na hora de pagar.
 const FORMA_DE_QUEM_DEVE = { pix: 'PIX não concluído', manual: 'Manual', isento: 'Isento' };
+// Quem ja pagou: por onde o dinheiro entrou.
+const FORMA_DE_QUEM_PAGOU = { pix: 'PIX', manual: 'Em mãos', isento: 'Isento' };
 
 // "2026-10-10" -> "10/10/2026"
 const dataBR = (iso) => (iso ? String(iso).slice(0, 10).split('-').reverse().join('/') : '');
@@ -78,9 +85,12 @@ const valorDaColuna = (item, chave) => {
       return item.nacionalidade ? String(item.whatsapp) : formatarTelefone(item.whatsapp);
     case 'forma': {
       if (!item.quitado) return FORMA_DE_QUEM_DEVE[item.metodo_pagamento] || 'Não escolheu';
-      const m = item.metodo_pagamento || 'não informado';
-      return m.charAt(0).toUpperCase() + m.slice(1);
+      return FORMA_DE_QUEM_PAGOU[String(item.metodo_pagamento || '').toLowerCase()] || 'Não informado';
     }
+    case 'valor': return item.valor_pago === null || item.valor_pago === undefined ? 'Sem valor registrado' : formatarValor(item.valor_pago);
+    case 'cupom': return item.cupom_usado || 'Sem cupom';
+    case 'confirmado_por': return item.confirmado_por || '—';
+    case 'pago_em': return item.data_pagamento ? new Date(item.data_pagamento).toLocaleDateString('pt-BR') : '';
     case 'motivo': return item.motivo || '';
     case 'desde': return item.cobranca?.marcado_em ? new Date(item.cobranca.marcado_em).toLocaleDateString('pt-BR') : '';
     case 'agendado_para': return dataBR(item.cobranca?.agendado_para);
@@ -182,6 +192,11 @@ const PagamentosPendentesPage = () => {
   const [equipantesLiberados, setEquipantesLiberados] = useState(new Set());
   // Janela de cobranca aberta: { item, status } ou null.
   const [dialogo, setDialogo] = useState(null);
+  // Janela de "Confirmar pagamento": { item, forma, valorLote, valorCobrado } ou null.
+  const [confirmacao, setConfirmacao] = useState(null);
+  // Cupons (para escolher na confirmacao) e lotes de preco (valor sugerido).
+  const [cupons, setCupons] = useState([]);
+  const [lotes, setLotes] = useState({ acampante: [], equipante: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterText, setFilterText] = useState('');
@@ -230,22 +245,22 @@ const PagamentosPendentesPage = () => {
 
   useEffect(() => {
     carregar();
+    fetchCoupons().then(({ data }) => setCupons(data || [])).catch(() => {});
+    fetchPricingConfig().then(({ data }) => {
+      if (data) setLotes({ acampante: data.acampante_pricing_periods || [], equipante: data.equipante_pricing_periods || [] });
+    }).catch(() => {});
   }, []);
 
   const executarAcao = async (id, tipo, acao) => {
     setProcessingId(id);
     try {
-      const { error: err } = acao === 'isentar'
-        ? await isentarInscricao(tipo, id)
-        : await confirmarPagamentoManual(tipo, id);
+      const { error: err } = await isentarInscricao(tipo, id);
 
       if (err) throw err;
 
       toast({
-        title: acao === 'isentar' ? 'Isenção registrada' : 'Pagamento confirmado',
-        description: acao === 'isentar'
-          ? 'A inscrição foi marcada como isenta da taxa.'
-          : 'A pessoa foi para a aba Pagos.',
+        title: 'Isenção registrada',
+        description: 'A inscrição foi marcada como isenta da taxa.',
         className: 'bg-emerald-600 text-white border-none'
       });
 
@@ -256,12 +271,37 @@ const PagamentosPendentesPage = () => {
       console.error('[Pagamentos] Erro ao liberar:', err);
       toast({
         title: 'Erro',
-        description: 'Não foi possível concluir a operação.',
+        description: err?.message || 'Não foi possível concluir a operação.',
         variant: 'destructive'
       });
     } finally {
       setProcessingId(null);
     }
+  };
+
+  // Confirmar pagamento (janela): em maos ou PIX travado. O erro volta para a
+  // janela, que mostra a mensagem do servidor.
+  const abrirConfirmacao = (item) => {
+    const travado = aba === 'travados';
+    setConfirmacao({
+      item: travado ? { ...item, id: item.inscricao_id } : item,
+      forma: travado ? 'pix' : 'manual',
+      valorLote: precoDoLoteHoje(lotes[item.tipo]),
+      valorCobrado: travado ? Number(item.valor) : null,
+    });
+  };
+
+  const confirmarPagamento = async (pedido, valor, cupom) => {
+    const { data, error: err } = await registrarPagamento(pedido.item.tipo, pedido.item.id, pedido.forma, valor, cupom);
+    if (err) throw err;
+    setConfirmacao(null);
+    toast({
+      title: 'Pagamento confirmado',
+      description: `${pedido.item.nome}: ${formatarValor(valor)}${cupom ? ` com o cupom ${cupom}` : ''}. Foi para a aba Pagos.`,
+      className: 'bg-emerald-600 text-white border-none'
+    });
+    await carregar();
+    return data;
   };
 
   // Todo mundo com a cobranca junto (so acampante tem cobranca).
@@ -402,7 +442,7 @@ const PagamentosPendentesPage = () => {
   // de pendentes — desenhar tudo de uma vez trava celular mais simples.
   const paginacao = usePaginacao(linhas);
 
-  const colunas = aba === 'pagos' ? 7 : 6;
+  const colunas = aba === 'pagos' ? 10 : 6;
   const faltamNaLista = aba === 'pagos' ? linhas.filter((i) => !i.grupo) : [];
 
   const marcarLote = async () => {
@@ -521,10 +561,10 @@ const PagamentosPendentesPage = () => {
           </Button>
           <Button
             size="sm"
-            onClick={() => setAcaoPendente({ id: item.id, tipo: item.tipo, acao: 'liberar' })}
+            onClick={() => abrirConfirmacao(item)}
             data-dica={aba === 'travados'
-              ? 'O PIX foi pago mas não confirmou sozinho: marca como pago. Pede confirmação.'
-              : 'Confirmar que o pagamento foi recebido (dinheiro, depósito...). Pede confirmação.'}
+              ? 'O PIX foi pago mas não confirmou sozinho: marca como pago (com o valor da cobrança).'
+              : 'Confirmar que o pagamento foi recebido (dinheiro, depósito...): informe o valor e o cupom, se houve.'}
             className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all"
           >
             <CheckCircle className="w-4 h-4 mr-1.5" />
@@ -727,6 +767,14 @@ const PagamentosPendentesPage = () => {
               </div>
             </div>
 
+            {aba === 'pagos' && (
+              <ResumoPagamentos
+                pagos={tipoFiltro === 'all' ? pagos : pagos.filter((i) => i.tipo === tipoFiltro)}
+                cupomFiltrado={(filtrosColuna.cupom || []).length === 1 ? filtrosColuna.cupom[0] : null}
+                onFiltrarCupom={(codigo) => filtrarColuna('cupom', codigo ? [codigo] : [])}
+              />
+            )}
+
             <div className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader className="bg-white/5">
@@ -744,7 +792,14 @@ const PagamentosPendentesPage = () => {
                             ? cabecalho('Data combinada', 'agendado_para')
                             : cabecalho('Forma de pagamento', 'forma')}
                     </TableHead>
-                    {aba === 'pagos' && <TableHead>{cabecalho('Grupo do WhatsApp', 'grupo')}</TableHead>}
+                    {aba === 'pagos' && (
+                      <>
+                        <TableHead>{cabecalho('Valor pago', 'valor')}</TableHead>
+                        <TableHead>{cabecalho('Cupom', 'cupom')}</TableHead>
+                        <TableHead>{cabecalho('Confirmado por', 'confirmado_por')}</TableHead>
+                        <TableHead>{cabecalho('Grupo do WhatsApp', 'grupo')}</TableHead>
+                      </>
+                    )}
                     <TableHead className="w-px text-gray-300">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -819,6 +874,25 @@ const PagamentosPendentesPage = () => {
                           )}
                         </TableCell>
                         {aba === 'pagos' && (
+                          <>
+                            <TableCell className="text-sm whitespace-nowrap">
+                              {item.valor_pago === null || item.valor_pago === undefined
+                                ? <span className="text-gray-600" data-dica="Pago antes de 08/10/2026, quando o valor ainda não era registrado.">—</span>
+                                : <span className="text-white font-medium">{formatarValor(item.valor_pago)}</span>}
+                            </TableCell>
+                            <TableCell className="text-sm whitespace-nowrap">
+                              {item.cupom_usado
+                                ? (
+                                  <Badge variant="outline" className="border-pink-500/40 bg-pink-500/10 text-pink-300">
+                                    {item.cupom_usado}{item.desconto ? ` · −${formatarValor(item.desconto)}` : ''}
+                                  </Badge>
+                                )
+                                : <span className="text-gray-600">—</span>}
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-400 whitespace-nowrap">{item.confirmado_por || '—'}</TableCell>
+                          </>
+                        )}
+                        {aba === 'pagos' && (
                           <TableCell className="text-sm">
                             <CelulaGrupo item={item} onMarcar={registrarEnvio} onDesmarcar={desmarcarEnvio} ocupado={gravandoGrupo} />
                           </TableCell>
@@ -836,6 +910,13 @@ const PagamentosPendentesPage = () => {
             <Paginacao {...paginacao} />
           </motion.div>
         )}
+
+        <ConfirmarPagamentoDialog
+          pedido={confirmacao}
+          cupons={cupons}
+          onConfirmar={confirmarPagamento}
+          onFechar={() => setConfirmacao(null)}
+        />
 
         <CobrancaDialog
           item={dialogo?.item || null}

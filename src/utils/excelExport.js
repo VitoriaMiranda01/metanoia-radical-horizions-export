@@ -167,7 +167,7 @@ export const exportRelacaoPagamentos = (linhas) => {
     'Igreja': item.igreja || '-',
     'Forma de pagamento': ({
       pix: 'PIX',
-      manual: 'Cartão / Dinheiro',
+      manual: 'Em mãos',
       isento: 'Isento',
     })[item.metodo_pagamento] || '-',
     'Data do pagamento': item.data_pagamento
@@ -176,6 +176,12 @@ export const exportRelacaoPagamentos = (linhas) => {
           hour: '2-digit', minute: '2-digit',
         })
       : '-',
+    // Valor, cupom e quem confirmou (08/10/2026). Pagamento antigo sem valor
+    // registrado fica "-".
+    'Valor pago': !item.quitado || item.valor_pago === null || item.valor_pago === undefined ? '-' : Number(item.valor_pago),
+    'Cupom': (item.quitado && item.cupom_usado) || '-',
+    'Desconto do cupom': item.quitado && item.cupom_usado && item.desconto ? Number(item.desconto) : '-',
+    'Confirmado por': (item.quitado && item.confirmado_por) || '-',
     // Cobranca de quem nao pagou (aba Cobranca em andamento / Pagamento agendado).
     'Cobrança': item.quitado || !item.cobranca ? '-'
       : item.cobranca.status === 'agendado'
@@ -198,6 +204,10 @@ export const exportRelacaoPagamentos = (linhas) => {
     { wch: 38 }, // Igreja
     { wch: 20 }, // Forma
     { wch: 18 }, // Data
+    { wch: 12 }, // Valor pago
+    { wch: 14 }, // Cupom
+    { wch: 12 }, // Desconto do cupom
+    { wch: 20 }, // Confirmado por
     { wch: 24 }, // Cobrança
     { wch: 40 }, // Observação
     { wch: 38 }, // Grupo do WhatsApp

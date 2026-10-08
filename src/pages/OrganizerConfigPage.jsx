@@ -14,13 +14,14 @@ import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimi
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
-import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users, Church } from 'lucide-react';
+import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users, Church, BookUser } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
 import LimiteIgrejasManager from '@/components/organizer/LimiteIgrejasManager';
 import OutrasIgrejasManager from '@/components/organizer/OutrasIgrejasManager';
 import IgrejasCadastradasManager from '@/components/organizer/IgrejasCadastradasManager';
+import PastoresParceirosManager from '@/components/organizer/PastoresParceirosManager';
 import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizadoresManager';
 import BackupStatusCard from '@/components/organizer/BackupStatusCard';
 import AuditoriaCard from '@/components/organizer/AuditoriaCard';
@@ -607,6 +608,25 @@ const OrganizerConfigPage = () => {
               </CardHeader>
               <CardContent>
                 <IgrejasCadastradasManager />
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Pastores Parceiros (08/10/2026): todos os pastores de cada igreja,
+              para a automacao futura. Ver PastoresParceirosManager.jsx. */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.215 }}>
+            <Card className="glass-effect border-white/10 bg-black/40">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-white">
+                  <BookUser className="w-5 h-5 text-sky-400" />
+                  <span>Pastores Parceiros</span>
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Todos os pastores de cada igreja parceira, com contato. Uma igreja pode ter mais de um pastor.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PastoresParceirosManager />
               </CardContent>
             </Card>
           </motion.div>

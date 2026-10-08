@@ -115,3 +115,45 @@ export const fetchRelatorioIgrejas = async () => {
   if (!data) throw new Error('Só organizador pode exportar a lista de igrejas.');
   return data;
 };
+
+/**
+ * Quadro "Todas as igrejas cadastradas" (Configuracoes, 08/10/2026): codigo,
+ * nome, pastor e limite de cada igreja, e o proximo codigo livre. So
+ * organizador.
+ */
+export const fetchIgrejasCadastro = async () => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('igrejas_cadastro'),
+    { rotulo: 'igrejas cadastradas' }
+  );
+  if (error) throw new Error(error.message || 'Erro ao carregar as igrejas');
+  if (!data?.ok) throw new Error(data?.erro || 'Não foi possível carregar as igrejas');
+  return { igrejas: data.igrejas || [], proximoCodigo: data.proximo_codigo || '' };
+};
+
+/**
+ * Troca codigo, nome e pastor de uma igreja. O servidor recusa codigo ou nome
+ * que ja sejam de outra igreja e leva o "NNN - NOME" novo para as fichas, os
+ * limites e a conta do parceiro. Sem reenvio automatico: e uma gravacao.
+ */
+export const editarIgreja = async (codigo, { codigoNovo, nome, pastor }) => {
+  const { data, error } = await supabase.rpc('editar_igreja', {
+    p_codigo: codigo, p_codigo_novo: String(codigoNovo ?? '').trim(), p_nome: nome, p_pastor: pastor,
+  });
+  if (error) return { success: false, error: error.message || 'Erro ao salvar a igreja' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar a igreja' };
+  return { success: true, igreja: data.igreja, antes: data.antes, codigoMudou: !!data.codigo_mudou, fichas: data.fichas || 0 };
+};
+
+/**
+ * Cadastra a igreja (com conta de parceiro trancada, como as outras) e o
+ * limite de inscricoes dela.
+ */
+export const cadastrarIgreja = async ({ codigo, nome, pastor, limite }) => {
+  const { data, error } = await supabase.rpc('cadastrar_igreja', {
+    p_codigo: String(codigo ?? '').trim(), p_nome: nome, p_pastor: pastor, p_limite: limite,
+  });
+  if (error) return { success: false, error: error.message || 'Erro ao cadastrar a igreja' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível cadastrar a igreja' };
+  return { success: true, igreja: data.igreja, codigo: data.codigo, limite: data.limite };
+};

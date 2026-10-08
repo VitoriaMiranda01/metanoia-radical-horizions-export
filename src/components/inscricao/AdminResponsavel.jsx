@@ -2,7 +2,7 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import FormSection from './FormSection';
 import IgrejaSelect from './IgrejaSelect';
-import { IGREJAS_PARCEIRAS, IGREJA_DIVERSOS, IGREJA_RADICAL_36 } from '@/constants/igrejas';
+import { IGREJA_DIVERSOS, IGREJA_RADICAL_36 } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 
 // A lista aqui e IGREJAS_RESPONSAVEL_ACAMPANTE, nao IGREJAS_PARCEIRAS: alem
@@ -19,10 +19,9 @@ import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 const AdminResponsavel = ({ formData, handleChange, handleSelectChange, igrejasEsgotadas }) => {
   // As igrejas criadas pela organizacao entram antes de RADICAL 36; "84 -
   // DIVERSOS" so existe ate a virada de edicao.
-  const { novas, permiteDiversos } = useOpcoesDeIgreja();
+  const { parceiras, permiteDiversos } = useOpcoesDeIgreja();
   const opcoes = [
-    ...IGREJAS_PARCEIRAS.filter((i) => permiteDiversos || i !== IGREJA_DIVERSOS),
-    ...novas,
+    ...parceiras.filter((i) => permiteDiversos || i !== IGREJA_DIVERSOS),
     IGREJA_RADICAL_36,
   ];
   return (

@@ -304,11 +304,12 @@ export const exportDisponibilidadesExtra = (itens, areas) => {
  * Configuracoes (montarLinhasIgrejas). Segunda aba: o que foi escrito em
  * OUTRA.
  */
-export const exportListaIgrejas = (lista, relatorio, contas = []) => {
-  const base = montarLinhasIgrejas(lista, relatorio, contas);
+export const exportListaIgrejas = (lista, relatorio, contas = [], cadastro = {}) => {
+  const base = montarLinhasIgrejas(lista, relatorio, contas, cadastro);
   const linhas = base.map((l) => ({
     'Código': l.codigo,
     'Igreja': l.nome,
+    'Pastor': l.pastor,
     'Tipo': l.tipo,
     'Responsável no sistema': l.responsavel,
     'Acesso do parceiro': l.acesso,
@@ -318,7 +319,7 @@ export const exportListaIgrejas = (lista, relatorio, contas = []) => {
   }));
   const soma = (campo) => linhas.reduce((t, l) => t + (Number(l[campo]) || 0), 0);
   linhas.push({
-    'Código': '', 'Igreja': `TOTAL (${base.length} igrejas)`, 'Tipo': '', 'Responsável no sistema': '',
+    'Código': '', 'Igreja': `TOTAL (${base.length} igrejas)`, 'Pastor': '', 'Tipo': '', 'Responsável no sistema': '',
     'Acesso do parceiro': '',
     'Equipantes inscritos': soma('Equipantes inscritos'),
     'Equipantes aprovados': soma('Equipantes aprovados'),
@@ -327,8 +328,8 @@ export const exportListaIgrejas = (lista, relatorio, contas = []) => {
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet(linhas);
-  ws['!cols'] = [{ wch: 8 }, { wch: 55 }, { wch: 26 }, { wch: 30 }, { wch: 26 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
-  ws['!autofilter'] = { ref: `A1:H${linhas.length}` };
+  ws['!cols'] = [{ wch: 8 }, { wch: 55 }, { wch: 30 }, { wch: 26 }, { wch: 30 }, { wch: 26 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+  ws['!autofilter'] = { ref: `A1:I${linhas.length}` };
   XLSX.utils.book_append_sheet(wb, ws, 'Igrejas');
 
   const outra = (relatorio?.outra || []).map((o) => ({

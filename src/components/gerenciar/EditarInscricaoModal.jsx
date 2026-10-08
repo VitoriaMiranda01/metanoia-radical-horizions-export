@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
-import { IGREJAS_PARCEIRAS, IGREJA_DIVERSOS, IGREJA_RADICAL_36, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
+import { IGREJA_DIVERSOS, IGREJA_RADICAL_36, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { toBoolean } from '@/utils/formatters';
 import { mascararTelefone, problemaTelefone, ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
@@ -149,7 +149,7 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
   const isEquipante = inscricao?.tipo === 'equipante';
   const [salvando, setSalvando] = useState(false);
   const [form, setForm] = useState(inscricao || {});
-  const { novas, extras, permiteOutra, permiteDiversos } = useOpcoesDeIgreja();
+  const { parceiras, extras, permiteOutra, permiteDiversos } = useOpcoesDeIgreja();
 
   useEffect(() => {
     setForm(inscricao || {});
@@ -166,14 +166,14 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
   // OUTRA e "84 - DIVERSOS" so ficam na lista enquanto valem na edicao -- ou
   // se a ficha ja esta nelas (senao o valor atual sumiria do campo).
   const opcoesIgrejaQueFrequenta = useMemo(
-    () => [...IGREJAS_PARCEIRAS, ...novas, ...extras,
+    () => [...parceiras, ...extras,
       ...(permiteOutra || igrejaEhOutra(form.igreja) ? [OUTRA_IGREJA] : [])],
-    [novas, extras, permiteOutra, form.igreja]
+    [parceiras, extras, permiteOutra, form.igreja]
   );
   const opcoesResponsavelAcampante = useMemo(
-    () => [...IGREJAS_PARCEIRAS.filter((i) => i !== IGREJA_DIVERSOS || permiteDiversos || form.admin_responsavel === IGREJA_DIVERSOS),
-      ...novas, IGREJA_RADICAL_36],
-    [novas, permiteDiversos, form.admin_responsavel]
+    () => [...parceiras.filter((i) => i !== IGREJA_DIVERSOS || permiteDiversos || form.admin_responsavel === IGREJA_DIVERSOS),
+      IGREJA_RADICAL_36],
+    [parceiras, permiteDiversos, form.admin_responsavel]
   );
 
   const set = (campo) => (valor) => setForm((prev) => ({ ...prev, [campo]: valor }));

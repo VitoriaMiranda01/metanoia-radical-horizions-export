@@ -52,7 +52,7 @@ const dataCurta = (iso) => {
 const temNada = (i) => !i.parental_auth_file_url && !i.autorizacao_entregue_em;
 const SITUACOES = [
   {
-    chave: 'vincular', rotulo: 'Ainda não entregou', casa: temNada,
+    chave: 'vincular', rotulo: 'Vincular carta', casa: temNada,
     dica: 'Não anexou nem declarou entrega. Se a carta está com você, use "Vincular carta".',
     ativo: 'border-red-500/50 bg-red-500/15 text-red-200',
   },

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift, Download, MessageCircle, Copy, X, PhoneCall, CalendarClock, StickyNote, Pencil, Check, Undo2 } from 'lucide-react';
+import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift, Download, MessageCircle, Copy, X, PhoneCall, CalendarClock, StickyNote, Pencil, Check, Undo2, FileText } from 'lucide-react';
 import Layout from '@/components/Layout';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { exportRelacaoPagamentos } from '@/utils/excelExport';
@@ -22,6 +22,7 @@ import {
 import CobrancaDialog from '@/components/pagamentos/CobrancaDialog';
 import ConfirmarPagamentoDialog from '@/components/pagamentos/ConfirmarPagamentoDialog';
 import ResumoPagamentos from '@/components/pagamentos/ResumoPagamentos';
+import FichaInscricaoDialog from '@/components/common/FichaInscricaoDialog';
 import { fetchCoupons } from '@/services/couponsService';
 import { fetchPricingConfig } from '@/services/organizerConfigService';
 import { precoDoLoteHoje } from '@/utils/precoDoLote';
@@ -326,6 +327,8 @@ const PagamentosPendentesPage = () => {
   // maos e isencao; a pessoa volta para "Nao pagaram". Confirmacao na propria
   // linha, como o isentar.
   const [desfazendo, setDesfazendo] = useState(null); // id em confirmacao
+  // Ficha de inscricao aberta pelo icone ao lado do nome: { tipo, id } ou null.
+  const [fichaAberta, setFichaAberta] = useState(null);
   const [desfazendoAgora, setDesfazendoAgora] = useState(false);
   const podeDesfazer = (item) => ['manual', 'isento'].includes(String(item.metodo_pagamento || '').toLowerCase());
 
@@ -864,7 +867,20 @@ const PagamentosPendentesPage = () => {
                     paginacao.itensDaPagina.map((item) => (
                       <TableRow key={item.id} className="border-white/10 hover:bg-white/5 transition-colors">
                         <TableCell className="font-medium text-white">
-                          <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} />
+                          <span className="inline-flex items-start gap-1.5">
+                            <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} />
+                            {(aba === 'travados' ? item.inscricao_id : item.id) && (
+                              <button
+                                type="button"
+                                onClick={() => setFichaAberta({ tipo: item.tipo, id: aba === 'travados' ? item.inscricao_id : item.id })}
+                                data-dica="Abrir a ficha de inscrição (dá para editar dali)."
+                                aria-label={`Abrir a ficha de ${item.nome}`}
+                                className="mt-px shrink-0 rounded p-0.5 text-gray-500 hover:text-blue-300 hover:bg-white/10"
+                              >
+                                <FileText className="w-4 h-4" />
+                              </button>
+                            )}
+                          </span>
                           {item.cobranca?.observacao && aba !== 'nao' && (
                             <p className="mt-1 flex items-start gap-1 text-xs font-normal text-gray-400 max-w-xs">
                               <StickyNote className="w-3.5 h-3.5 mt-px shrink-0" />
@@ -975,6 +991,15 @@ const PagamentosPendentesPage = () => {
 
             <Paginacao {...paginacao} />
           </motion.div>
+        )}
+
+        {fichaAberta && (
+          <FichaInscricaoDialog
+            tipo={fichaAberta.tipo}
+            id={fichaAberta.id}
+            onClose={() => setFichaAberta(null)}
+            onSalvo={carregar}
+          />
         )}
 
         <ConfirmarPagamentoDialog

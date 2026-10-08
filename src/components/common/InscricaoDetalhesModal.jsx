@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle, Pencil } from 'lucide-react';
 import { naoCongrega, nomeDaIgreja } from '@/constants/igrejas';
 import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
@@ -46,7 +46,9 @@ const formatBoolean = (value) => {
 // sempre aparecia em branco dependendo de quem estava sendo visualizado.
 // Agora cada secao/campo so aparece quando existe de verdade pro tipo em
 // questao (checado direto contra o schema real das duas tabelas).
-const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
+// onEditar (opcional): mostra o botao "Editar" no topo (ex.: Pagamentos abre
+// a ficha e edita na mesma janela -- FichaInscricaoDialog.jsx).
+const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
   const isEquipante = inscricao?.tipo === 'equipante';
 
   const displayValue = (value) => {
@@ -70,14 +72,25 @@ const InscricaoDetalhesModal = ({ inscricao, onClose }) => {
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-white/10 bg-zinc-900">
           <h3 className="text-xl md:text-2xl font-bold text-white">Detalhes da Inscrição</h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="text-white hover:bg-white/10 h-8 w-8 p-0"
-          >
-            <X className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {onEditar && (
+              <Button
+                size="sm" onClick={onEditar}
+                data-dica="Editar os dados desta ficha."
+                className="h-8 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Pencil className="w-4 h-4 mr-1.5" /> Editar
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="text-white hover:bg-white/10 h-8 w-8 p-0"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Content */}

@@ -17,7 +17,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
-import { IGREJAS_PARCEIRAS } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { fetchLimitesIgrejas, saveLimiteIgreja, deleteLimiteIgreja } from '@/services/limitesIgrejasService';
 
@@ -52,9 +51,8 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
   const [excecaoToDelete, setExcecaoToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // As igrejas criadas pela organizacao (166...) ficam no fim, depois das do arquivo.
-  const { novas } = useOpcoesDeIgreja();
-  const todasAsIgrejas = [...IGREJAS_PARCEIRAS, ...novas];
+  // Todas as igrejas com codigo, do banco, na ordem do codigo.
+  const { parceiras: todasAsIgrejas } = useOpcoesDeIgreja();
   const ordenarExcecoes = (lista) =>
     [...lista].sort((a, b) => todasAsIgrejas.indexOf(a.igreja) - todasAsIgrejas.indexOf(b.igreja));
 
@@ -67,7 +65,9 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
       setLoadingExcecoes(false);
     };
     carregar();
-  }, []);
+    // De novo quando a lista de igrejas muda: igreja cadastrada ou editada em
+    // "Todas as igrejas cadastradas" ja chega com o limite dela.
+  }, [todasAsIgrejas]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSalvarGeral = async () => {
     setSavingGeral(true);

@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
 import { Eye, EyeOff, Heart, Shield, Users, AlertCircle, CheckCircle2, KeyRound, MailCheck, UserPlus } from 'lucide-react';
-import { buscarIgrejaPorCodigo, IGREJAS_PARA_PRIMEIRO_ACESSO } from '@/constants/igrejas';
+import { buscarIgrejaPorCodigo, IGREJAS_TESTE } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
 import {
@@ -47,8 +47,8 @@ const LoginPage = () => {
   const { toast } = useToast();
 
   const [selectedType, setSelectedType] = useState('organizador');
-  // Igrejas criadas pela organizacao (166...): o codigo delas tambem precisa ser reconhecido aqui.
-  const { novas: novasIgrejas } = useOpcoesDeIgreja();
+  // A lista de igrejas do banco: codigo e nome podem ser editados em Configuracoes.
+  const { parceiras: igrejasDoBanco } = useOpcoesDeIgreja();
   const [formData, setFormData] = useState({
     identifier: '',
     password: ''
@@ -120,7 +120,7 @@ const LoginPage = () => {
       setCodigoDesconhecido(false);
       return;
     }
-    const achada = buscarIgrejaPorCodigo(digitado, novasIgrejas);
+    const achada = buscarIgrejaPorCodigo(digitado, igrejasDoBanco);
     setIgrejaDoCodigo(achada);
     setCodigoDesconhecido(!achada);
     if (achada && achada.codigo !== digitado) {
@@ -491,7 +491,7 @@ const LoginPage = () => {
                       id="paIgreja"
                       value={paIgreja}
                       onChange={setPaIgreja}
-                      options={[...IGREJAS_PARA_PRIMEIRO_ACESSO, ...novasIgrejas]}
+                      options={[...igrejasDoBanco, ...IGREJAS_TESTE]}
                       placeholder="Procure pelo nome ou pelo número..."
                     />
                   </div>

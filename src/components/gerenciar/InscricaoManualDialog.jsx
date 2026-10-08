@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/components/ui/use-toast';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
 import TelefoneInput from '@/components/inscricao/TelefoneInput';
-import { IGREJAS_PARCEIRAS, NAO_CONGREGA, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
+import { NAO_CONGREGA, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
 import { AREAS_INSCRICAO } from '@/constants/workAreas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { inscricaoManualEquipante } from '@/services/equipantesService';
@@ -65,7 +65,7 @@ const Campo = ({ label, children, className = '' }) => (
 const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
   const { toast } = useToast();
   const [form, setForm] = useState({ ...VAZIO, nome: nomeInicial });
-  const { novas, extras, permiteOutra } = useOpcoesDeIgreja();
+  const { parceiras, extras, permiteOutra } = useOpcoesDeIgreja();
   const [salvando, setSalvando] = useState(false);
   const [mesmoNome, setMesmoNome] = useState(null);
 
@@ -76,8 +76,8 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
   }, [onClose, salvando]);
 
   const igrejas = useMemo(
-    () => [...IGREJAS_PARCEIRAS, ...novas, ...extras, ...(permiteOutra ? [OUTRA_IGREJA] : []), NAO_CONGREGA],
-    [novas, extras, permiteOutra]
+    () => [...parceiras, ...extras, ...(permiteOutra ? [OUTRA_IGREJA] : []), NAO_CONGREGA],
+    [parceiras, extras, permiteOutra]
   );
   const set = (campo) => (valor) => {
     setForm((f) => ({ ...f, [campo]: valor }));

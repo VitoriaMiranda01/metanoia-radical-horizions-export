@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Check, Eye, Info, Link2, Loader2, Plus, RotateCcw, Trash2, AlertTriangle, Users } from 'lucide-react';
-import { IGREJAS_PARCEIRAS } from '@/constants/igrejas';
 import {
   fetchOutrasIgrejas,
   fetchPessoasEmOutra,
@@ -11,7 +10,7 @@ import {
   criarIgrejaParceira,
   removerIgrejaExtra
 } from '@/services/igrejasExtrasService';
-import { limparOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
+import { limparOpcoesDeIgreja, useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import SeletorIgrejas from '@/components/aprovacoes/SeletorIgrejas';
 import { casaBusca } from '@/utils/busca';
 import { digitosTelefone, formatarTelefone } from '@/utils/telefone';
@@ -65,6 +64,7 @@ const OutrasIgrejasManager = () => {
   const [digitadas, setDigitadas] = useState([]);
   const [extras, setExtras] = useState([]);
   const [novas, setNovas] = useState([]);
+  const { parceiras } = useOpcoesDeIgreja();
   const [proximoCodigo, setProximoCodigo] = useState('');
   const [permiteOutra, setPermiteOutra] = useState(true);
   const [permiteDiversos, setPermiteDiversos] = useState(true);
@@ -107,8 +107,8 @@ const OutrasIgrejasManager = () => {
   // Todas as igrejas que existem de verdade: as do arquivo, as criadas por aqui
   // e as acrescentadas sem código.
   const completas = useMemo(
-    () => [...IGREJAS_PARCEIRAS, ...novas.map((n) => `${n.codigo} - ${n.nome}`), ...extras.map((x) => x.nome)],
-    [novas, extras]
+    () => [...new Set([...parceiras, ...novas.map((n) => `${n.codigo} - ${n.nome}`)]), ...extras.map((x) => x.nome)],
+    [parceiras, novas, extras]
   );
   const opcoesDeVinculo = useMemo(() => completas.map((igreja) => ({ igreja })), [completas]);
 

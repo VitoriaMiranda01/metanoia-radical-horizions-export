@@ -11,7 +11,7 @@ import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
 import TelefoneInput from '@/components/inscricao/TelefoneInput';
 import CampoDataNascimento from '@/components/inscricao/CampoDataNascimento';
 import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
-import { IGREJAS_PARCEIRAS, NAO_CONGREGA, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
+import { NAO_CONGREGA, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
 import { NACIONALIDADES, bandeiraDoPais } from '@/constants/nacionalidades';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { completarMinhaInscricao } from '@/services/equipantesService';
@@ -71,7 +71,7 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
 
   const cpfDoDono = (dono?.cpf || '').replace(/\D/g, '');
 
-  const { novas, extras, permiteOutra } = useOpcoesDeIgreja();
+  const { parceiras, extras, permiteOutra } = useOpcoesDeIgreja();
   const [nome, setNome] = useState(pNome ? limparNomePessoa(pNome.valor) : '');
   const [pastor, setPastor] = useState(pPastor ? limparNomePessoa(pPastor.valor) : '');
   const [familiarCorrigido, setFamiliarCorrigido] = useState(pFamiliar ? limparNomePessoa(pFamiliar.valor) : '');
@@ -89,8 +89,8 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
   const [salvando, setSalvando] = useState(false);
 
   const opcoesDeIgreja = useMemo(
-    () => [...IGREJAS_PARCEIRAS, ...novas, ...extras, ...(permiteOutra ? [OUTRA_IGREJA] : []), NAO_CONGREGA],
-    [novas, extras, permiteOutra]
+    () => [...parceiras, ...extras, ...(permiteOutra ? [OUTRA_IGREJA] : []), NAO_CONGREGA],
+    [parceiras, extras, permiteOutra]
   );
 
   // Estrangeiro: o servidor ja sabe (nacionalidade gravada) ou a pessoa acabou

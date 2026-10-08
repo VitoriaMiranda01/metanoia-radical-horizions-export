@@ -343,14 +343,15 @@ export const nomeDaIgreja = (inscricao) => {
 export const naoCongrega = (inscricao) =>
   (inscricao?.igreja || inscricao?.nome_igreja || '') === NAO_CONGREGA;
 
-// `novas`: as igrejas criadas pela organizacao em Configuracoes (166, 167...),
-// que nao estao neste arquivo -- vem do banco (opcoes_de_igreja).
-export const buscarIgrejaPorCodigo = (codigo, novas = []) => {
+// `lista`: as igrejas do banco (opcoes_de_igreja -> lista, via
+// useOpcoesDeIgreja), que a organizacao edita em Configuracoes. Sem ela, vale
+// a lista deste arquivo. As de teste (999) entram sempre.
+export const buscarIgrejaPorCodigo = (codigo, lista = IGREJAS_PARCEIRAS) => {
   const digitado = String(codigo ?? '').trim();
   if (!digitado || !/^\d+$/.test(digitado)) return null;
 
   const alvo = Number(digitado);
-  for (const item of [...IGREJAS_PARA_PRIMEIRO_ACESSO, ...novas]) {
+  for (const item of [...lista, ...IGREJAS_TESTE]) {
     const separador = item.indexOf(' - ');
     if (separador === -1) continue;
     const cod = item.slice(0, separador);

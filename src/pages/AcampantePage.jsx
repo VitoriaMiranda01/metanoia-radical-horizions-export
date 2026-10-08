@@ -38,14 +38,14 @@ import { criarInscricao } from '@/services/inscricoesService';
 import { problemaTelefone } from '@/utils/telefone';
 import { fetchLimitesIgrejas, fetchOcupacaoIgrejasAcampantes } from '@/services/limitesIgrejasService';
 import { fetchLimiteAcampantesPorIgrejaPadrao } from '@/services/organizerConfigService';
-import { IGREJAS_RESPONSAVEL_ACAMPANTE, IGREJA_DIVERSOS } from '@/constants/igrejas';
+import { IGREJA_RADICAL_36, IGREJA_DIVERSOS } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { liberacaoDeTesteValida } from '@/services/publicDataService';
 
 const AcampantePage = () => {
   const { user } = useAuth();
-  // Igrejas criadas pela organizacao (166...) e se "84 - DIVERSOS" ainda vale.
-  const { novas: novasIgrejas, permiteDiversos } = useOpcoesDeIgreja();
+  // As igrejas do banco e se "84 - DIVERSOS" ainda vale.
+  const { parceiras: igrejasDoBanco, permiteDiversos } = useOpcoesDeIgreja();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { acampantesAbertos, loading: loadingStatus } = useInscricoesStatus();
@@ -117,7 +117,7 @@ const AcampantePage = () => {
         ]);
 
         const esgotadas = new Set();
-        [...IGREJAS_RESPONSAVEL_ACAMPANTE, ...novasIgrejas].forEach(igreja => {
+        [...igrejasDoBanco, IGREJA_RADICAL_36].forEach(igreja => {
           const limite = excecoes[igreja] !== undefined ? excecoes[igreja] : limitePadrao;
           if (limite === null || limite === undefined) return;
           const ocupados = ocupacao[igreja] || 0;
@@ -129,7 +129,7 @@ const AcampantePage = () => {
       }
     };
     carregarLimitesIgrejas();
-  }, [novasIgrejas]);
+  }, [igrejasDoBanco]);
 
   const handleVerificationComplete = (result) => {
     if (result.cpf) setFormData(prev => ({ ...prev, cpf: result.cpf }));

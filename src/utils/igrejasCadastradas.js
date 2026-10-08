@@ -4,13 +4,14 @@
  * exatamente a mesma coisa.
  *
  * lista: IGREJAS_PARCEIRAS ("NN - NOME"); relatorio: relatorio_igrejas();
- * contas: listar_contas_parceiros() (pode vir vazio).
+ * contas: listar_contas_parceiros() (pode vir vazio);
+ * cadastro: { codigo: { pastor, ... } } de igrejas_cadastro() (pode vir vazio).
  *
  * So entram as igrejas da lista do formulario (parceiras + adicionadas pela
  * organizacao). Sem igreja, NAO CONGREGA, OUTRA e nomes antigos ficam de
  * fora (pedido do Patrick, 04/10/2026).
  */
-export const montarLinhasIgrejas = (lista, relatorio, contas = []) => {
+export const montarLinhasIgrejas = (lista, relatorio, contas = [], cadastro = {}) => {
   const porCodigo = Object.fromEntries((contas || []).map((c) => [String(c.codigo), c]));
   const eq = relatorio?.equipantes || {};
   const ac = relatorio?.acampantes || {};
@@ -26,6 +27,7 @@ export const montarLinhasIgrejas = (lista, relatorio, contas = []) => {
     codigo,
     nome,
     tipo,
+    pastor: (codigo && cadastro[codigo]?.pastor) || '',
     responsavel: conta?.responsavel_nome || '',
     acesso: acesso(conta),
     equipantesInscritos: eq[chave]?.inscritos || 0,

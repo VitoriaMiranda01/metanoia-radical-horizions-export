@@ -6,7 +6,7 @@ import { limparNomeSimples } from '@/utils/validacoesInscricao';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
 import IgrejaSelect from './IgrejaSelect';
-import { IGREJAS_PARCEIRAS, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
+import { OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 
 const InfoEclesiasticas = ({
@@ -20,13 +20,13 @@ const InfoEclesiasticas = ({
   // causa disso.
   // `novas` sao as criadas pela organizacao ("166 - NOME"); OUTRA so existe ate
   // a virada de edicao (permiteOutra).
-  const { novas, extras, permiteOutra } = useOpcoesDeIgreja();
+  const { parceiras, extras, permiteOutra } = useOpcoesDeIgreja();
 
   // OUTRA fica no FIM da lista, depois das extras: e a saida para quem nao
   // achou a igreja, nao a primeira coisa a considerar.
   const opcoesDeIgreja = useMemo(
-    () => [...IGREJAS_PARCEIRAS, ...novas, ...extras, ...(permiteOutra ? [OUTRA_IGREJA] : [])],
-    [novas, extras, permiteOutra]
+    () => [...parceiras, ...extras, ...(permiteOutra ? [OUTRA_IGREJA] : [])],
+    [parceiras, extras, permiteOutra]
   );
 
   // --- EQUIPANTE LAYOUT (Conditional) ---

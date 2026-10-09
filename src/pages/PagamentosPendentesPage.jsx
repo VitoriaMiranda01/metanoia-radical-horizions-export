@@ -38,7 +38,7 @@ import { formatarTelefone } from '@/utils/telefone';
 import { linkWhatsApp } from '@/services/liderService';
 import CabecalhoFiltroOrdem from '@/components/common/CabecalhoFiltroOrdem';
 import { ordenarLista } from '@/utils/ordenacao';
-import { normalizarBusca } from '@/utils/busca';
+import { casaBuscaPagamento, CHAVES_SEMPRE_BUSCADAS } from '@/utils/buscaPagamentos';
 import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDropdown';
 import { COLUMN_DEFINITIONS, getVisibleColumnsFromStorage, saveVisibleColumnsToStorage } from '@/utils/columnVisibility';
 import { nomeDoPais } from '@/constants/nacionalidades';
@@ -519,16 +519,21 @@ const PagamentosPendentesPage = () => {
   );
 
   const linhas = useMemo(() => {
-    // Sem diferenca de maiuscula nem de acento ("joao" acha "João").
-    const busca = normalizarBusca(filterText);
-    const digitos = busca.replace(/\D/g, '');
+    // A busca olha o texto de cada coluna (nome, CPF, WhatsApp, igreja, pastor,
+    // e-mail, as colunas escolhidas em "Colunas" e a coluna da aba), sem
+    // diferenca de maiuscula nem de acento ("joao" acha "João").
+    const chavesBusca = [...new Set([
+      ...CHAVES_SEMPRE_BUSCADAS,
+      ...(aba === 'pagos' ? ['pagamento', 'valor', 'grupo']
+        : aba === 'travados' ? ['motivo']
+          : aba === 'cobranca' ? ['desde']
+            : aba === 'agendado' ? ['agendado_para']
+              : ['forma']),
+      ...colunasExtras.map((d) => d.key),
+    ])];
 
     const filtradas = baseDaAba.filter((item) => {
-      const cpf = String(item.cpf || '');
-      const whats = String(item.whatsapp || '').replace(/\D/g, '');
-      const casaBusca = !busca || normalizarBusca(item.nome).includes(busca) || cpf.includes(busca)
-        || (digitos.length >= 3 && cpf.replace(/\D/g, '').includes(digitos))
-        || (digitos.length >= 4 && whats.includes(digitos));
+      const casaBusca = casaBuscaPagamento(filterText, item, chavesBusca, valorDaColuna);
       const casaTipo = tipoFiltro === 'all' || item.tipo === tipoFiltro;
       const casaGrupo = aba !== 'pagos' || filtroGrupo === 'todos' || !item.grupo;
       const casaColunas = Object.entries(filtrosColuna).every(([chave, valores]) =>
@@ -538,7 +543,7 @@ const PagamentosPendentesPage = () => {
     // Agendados: sem seta escolhida, a data mais proxima vem primeiro.
     const ordemFinal = ordem || (aba === 'agendado' ? { chave: 'agendado_para', direcao: 'asc' } : null);
     return ordenarLista(filtradas, ordemFinal, valorDaColuna);
-  }, [baseDaAba, filterText, tipoFiltro, filtrosColuna, ordem, aba, filtroGrupo]);
+  }, [baseDaAba, filterText, tipoFiltro, filtrosColuna, ordem, aba, filtroGrupo, colunasVisiveis]);
 
   // Pagina a lista já filtrada. No dia do evento essa tela pode ter centenas
   // de pendentes — desenhar tudo de uma vez trava celular mais simples.
@@ -832,7 +837,7 @@ const PagamentosPendentesPage = () => {
                   <div className="relative w-full md:w-72">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
-                      placeholder="Buscar por nome, CPF ou WhatsApp..."
+                      placeholder="Buscar por nome, CPF, igreja, WhatsApp..."
                       value={filterText}
                       onChange={(e) => setFilterText(e.target.value)}
                       className="pl-9 h-11 bg-white/5 border-white/10 text-white w-full placeholder:text-gray-500 focus-visible:ring-blue-500"

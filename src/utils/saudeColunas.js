@@ -9,7 +9,7 @@ const descrito = (texto, marcado) => texto || (marcado ? 'Sim (não descreveu)' 
 export const COLUNAS_SAUDE = [
   { chave: 'nome', rotulo: 'Nome', valor: (p) => p.nome || '' },
   { chave: 'inscricao', rotulo: 'Situação', valor: (p) => (p.pago ? 'Confirmado (pago)' : 'Só inscrito (aguardando pagamento)') },
-  { chave: 'idade', rotulo: 'Idade', valor: (p) => (p.idade ?? '') },
+  { chave: 'idade', rotulo: 'Idade', valor: (p) => (p.idade ?? 'sem data de nascimento') },
   { chave: 'sexo', rotulo: 'Sexo', valor: (p) => p.sexo || '' },
   { chave: 'igreja', rotulo: 'Igreja', valor: (p) => p.igreja || '' },
   { chave: 'grupo', rotulo: 'Grupo de trilha', valor: (p) => p.grupo_trailha || '' },

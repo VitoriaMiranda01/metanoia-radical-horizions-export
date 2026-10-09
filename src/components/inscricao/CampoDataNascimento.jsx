@@ -70,6 +70,7 @@ const CampoDataNascimento = ({ id, value, onChange, max, min, required, classNam
   const [digitado, setDigitado] = useState(() => isoParaDigitado(value));
   const [invalido, setInvalido] = useState(false);
   const inputNativoRef = useRef(null);
+  const campoRef = useRef(null);
 
   // Sincroniza quando o valor muda por fora (ex: sessao de teste
   // preenchendo o formulario, ou o seletor nativo do calendario).
@@ -77,6 +78,16 @@ const CampoDataNascimento = ({ id, value, onChange, max, min, required, classNam
     setDigitado(isoParaDigitado(value));
     setInvalido(false);
   }, [value]);
+
+  // O campo mostra o que foi digitado, mas so grava a data completa e valida.
+  // Sem isto, "12/05/197" ou "31/02/1980" deixavam o campo preenchido na tela,
+  // o "required" passava e a ficha ia SEM data (6 acampantes, 09/10/2026).
+  // Assim o navegador barra o envio e diz o que falta.
+  useEffect(() => {
+    const el = campoRef.current;
+    if (!el?.setCustomValidity) return;
+    el.setCustomValidity(digitado && !value ? 'Data incompleta ou inválida: use dd/mm/aaaa.' : '');
+  }, [digitado, value]);
 
   const dispararChange = (novoValor) => {
     onChange({ target: { name: id, value: novoValor } });
@@ -120,6 +131,7 @@ const CampoDataNascimento = ({ id, value, onChange, max, min, required, classNam
     <div>
       <div className="relative">
         <Input
+          ref={campoRef}
           id={id}
           name={id}
           type="text"

@@ -14,7 +14,7 @@ import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimi
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
-import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users, Church, BookUser } from 'lucide-react';
+import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users, Church, BookUser, HeartPulse } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
@@ -26,6 +26,7 @@ import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizador
 import BackupStatusCard from '@/components/organizer/BackupStatusCard';
 import AuditoriaCard from '@/components/organizer/AuditoriaCard';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
 
 const OrganizerConfigPage = () => {
@@ -407,6 +408,13 @@ const OrganizerConfigPage = () => {
               <p className="text-white text-sm mt-1">Gerencie as configurações do projeto</p>
             </div>
           </div>
+          {/* A tela da equipe de saude (login Apoio, 09/10/2026). Fica aqui e
+              nao no menu: a organizacao abre pouco (Patrick). */}
+          <Button asChild variant="outline"
+            data-dica="Abrir a tela da equipe de saúde: problemas de saúde, medicamentos e restrições alimentares dos acampantes."
+            className="border-rose-500/40 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20 hover:text-white">
+            <Link to="/saude"><HeartPulse className="w-4 h-4 mr-2" />Saúde dos acampantes</Link>
+          </Button>
         </motion.div>
 
         {dbStatus.checked && !dbStatus.success && (

@@ -18,9 +18,12 @@
 //   guardado so no banco), escolhida para facilitar a distribuicao para as
 //   145 igrejas. Como formula vaza, a conta so entra depois que um
 //   organizador LIBERA aquela igreja (acesso_liberado);
-// - organizador: recebe senha gerada pelo login de permissao maxima.
+// - organizador: recebe senha gerada pelo login de permissao maxima;
+// - apoio (09/10/2026): contas de apoio de uma area (a primeira e a lider da
+//   saude), em apoio_auth. O cracha sai com user_role "apoio" e a area em
+//   "apoio_area"; nenhuma tabela aceita esse papel, so as funcoes da area.
 //
-// Nos dois casos, enquanto senha_definida for false a conta esta com senha
+// Em todos os casos, enquanto senha_definida for false a conta esta com senha
 // temporaria e o site obriga a pessoa a criar a dela antes de usar o sistema.
 //
 // LIMITE DE TENTATIVAS (03/10/2026)
@@ -92,7 +95,7 @@ Deno.serve(async (req: Request) => {
     const identifier = typeof body?.identifier === "string" ? body.identifier.trim() : "";
     const senha = typeof body?.senha === "string" ? body.senha : "";
 
-    if (!identifier || !senha || (tipo !== "organizador" && tipo !== "igreja")) {
+    if (!identifier || !senha || !["organizador", "igreja", "apoio"].includes(tipo)) {
       return json({ success: false, error: GENERIC_ERROR }, 400);
     }
 
@@ -149,6 +152,19 @@ Deno.serve(async (req: Request) => {
       // exatamente o que o site fazia antes.
       const papel = (row?.role ?? row?.tipo ?? row?.perfil) as string | undefined;
       if (papel === "organizador-aprovador") userRole = "organizador-aprovador";
+    } else if (tipo === "apoio") {
+      const { data, error } = await admin
+        .from("apoio_auth")
+        .select("*")
+        .ilike("nome", identifier)
+        .maybeSingle();
+      if (error) {
+        console.error("[login] erro na consulta apoio_auth:", error.message);
+        return json({ success: false, error: "Serviço de login indisponível" }, 500);
+      }
+      row = data;
+      userRole = "apoio";
+      if (row?.area) extraClaims.apoio_area = String(row.area);
     } else {
       const { data, error } = await admin
         .from("igrejas_parceiras")
@@ -202,7 +218,9 @@ Deno.serve(async (req: Request) => {
     // que e como o organizador enxerga quem ja entrou). Falha aqui nao pode
     // derrubar o login -- e informacao de apoio, nao parte da autenticacao.
     {
-      const tabela = tipo === "igreja" ? "igrejas_parceiras" : "organizadores_auth";
+      const tabela = tipo === "igreja"
+        ? "igrejas_parceiras"
+        : tipo === "apoio" ? "apoio_auth" : "organizadores_auth";
       const { error: erroAcesso } = await admin
         .from(tabela)
         .update({ ultimo_acesso: new Date().toISOString() })

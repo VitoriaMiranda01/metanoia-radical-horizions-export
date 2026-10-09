@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
-import { Eye, EyeOff, Heart, Shield, Users, AlertCircle, CheckCircle2, KeyRound, MailCheck, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, Heart, HeartPulse, Shield, Users, AlertCircle, CheckCircle2, KeyRound, MailCheck, UserPlus } from 'lucide-react';
 import { buscarIgrejaPorCodigo, IGREJAS_TESTE } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
@@ -16,6 +16,7 @@ import {
   trocarSenhaIgreja,
   solicitarRedefinicaoSenha,
   trocarSenhaOrganizador,
+  trocarSenhaApoio,
   primeiroAcessoHabilitado,
   primeiroAcessoParceiro,
   definirSenhaPrimeiroAcesso
@@ -25,13 +26,13 @@ import {
 // schema-update-20260911d). Aqui e so cortesia -- avisar antes de enviar, em
 // vez de o parceiro tomar o erro depois. Quem MANDA continua sendo o servidor:
 // se estas regras e as de la discordarem, vale a resposta do banco.
-const criticarSenha = (senha, codigo) => {
+const criticarSenha = (senha, codigo, rotulo = 'o código da sua igreja') => {
   const valor = senha || '';
   if (valor.length < 8) return 'A senha precisa ter pelo menos 8 caracteres.';
   if (!/[A-Za-zÀ-ÿ]/.test(valor)) return 'A senha precisa ter pelo menos uma letra.';
   if (!/[0-9]/.test(valor)) return 'A senha precisa ter pelo menos um número.';
   if (codigo && valor.toLowerCase().includes(String(codigo).toLowerCase())) {
-    return 'A senha não pode conter o código da sua igreja.';
+    return `A senha não pode conter ${rotulo}.`;
   }
   return null;
 };
@@ -40,8 +41,10 @@ const LoginPage = () => {
   const {
     loginAsOrganizador,
     loginAsIgreja,
+    loginAsApoio,
     organizadorUser,
-    igrejaUser
+    igrejaUser,
+    apoioUser
   } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -106,8 +109,12 @@ const LoginPage = () => {
 
   if (organizadorUser) return <Navigate to="/gerenciar" replace />;
   if (igrejaUser) return <Navigate to="/parceiros" replace />;
+  if (apoioUser) return <Navigate to="/saude" replace />;
 
   const ehParceiro = selectedType === 'parceiro';
+  // Apoio (09/10/2026): lider de area -- hoje a da saude -- entra com o
+  // primeiro nome e cai direto na tela dela (/saude).
+  const ehApoio = selectedType === 'apoio';
 
   // Ao sair do campo do codigo: acha a igreja e corrige o codigo para a forma
   // canonica (quem digita "1" quer dizer "01" -- sem isso o login falharia
@@ -159,6 +166,24 @@ const LoginPage = () => {
         });
         setFormData({ identifier: '', password: '' });
         navigate('/gerenciar');
+      } else if (ehApoio) {
+        const resultado = await loginAsApoio(formData.identifier, formData.password);
+
+        // Senha inicial (ou gerada pelo Desenvolvedores): pede a senha propria.
+        if (resultado?.precisa_trocar_senha) {
+          setSenhaTemporaria(formData.password);
+          setNovaSenha('');
+          setConfirmaSenha('');
+          setEtapa('definir-senha');
+          return;
+        }
+
+        toast({
+          title: "Login realizado com sucesso!",
+          description: `Bem-vindo(a), ${resultado?.user?.nome || 'apoio'}!`
+        });
+        setFormData({ identifier: '', password: '' });
+        navigate('/saude');
       } else {
         const resultado = await loginAsIgreja(formData.identifier, formData.password);
 
@@ -193,7 +218,9 @@ const LoginPage = () => {
       showError('As duas senhas não são iguais.');
       return;
     }
-    const critica = criticarSenha(novaSenha, ehParceiro ? formData.identifier.trim() : null);
+    const critica = ehApoio
+      ? criticarSenha(novaSenha, formData.identifier.trim(), 'o seu nome')
+      : criticarSenha(novaSenha, ehParceiro ? formData.identifier.trim() : null);
     if (critica) {
       showError(critica);
       return;
@@ -205,7 +232,9 @@ const LoginPage = () => {
         ? await definirSenhaPrimeiroAcesso(formData.identifier, novaSenha)
         : ehParceiro
           ? await trocarSenhaIgreja(formData.identifier, senhaTemporaria, novaSenha)
-          : await trocarSenhaOrganizador(formData.identifier, senhaTemporaria, novaSenha);
+          : ehApoio
+            ? await trocarSenhaApoio(formData.identifier, senhaTemporaria, novaSenha)
+            : await trocarSenhaOrganizador(formData.identifier, senhaTemporaria, novaSenha);
 
       if (!resposta?.ok) {
         showError(resposta?.erro || 'Não foi possível criar a senha. Tente novamente.');
@@ -215,6 +244,8 @@ const LoginPage = () => {
       // Senha criada: entra de verdade, agora com a senha dela.
       if (ehParceiro) {
         await loginAsIgreja(formData.identifier, novaSenha);
+      } else if (ehApoio) {
+        await loginAsApoio(formData.identifier, novaSenha);
       } else {
         await loginAsOrganizador(formData.identifier, novaSenha);
       }
@@ -227,7 +258,7 @@ const LoginPage = () => {
       setConfirmaSenha('');
       setPrimeiroAcessoEmAndamento(false);
       setFormData({ identifier: '', password: '' });
-      navigate(ehParceiro ? '/parceiros' : '/gerenciar');
+      navigate(ehParceiro ? '/parceiros' : ehApoio ? '/saude' : '/gerenciar');
     } catch (error) {
       showError(error.message || 'Não foi possível criar a senha. Tente novamente.');
     } finally {
@@ -432,7 +463,7 @@ const LoginPage = () => {
                   <ul className="text-xs text-gray-500 space-y-1 pl-1">
                     <li>• pelo menos 8 caracteres</li>
                     <li>• pelo menos uma letra e um número</li>
-                    <li>• não pode conter {ehParceiro ? 'o código da igreja' : 'o seu nome de usuário'}</li>
+                    <li>• não pode conter {ehParceiro ? 'o código da igreja' : ehApoio ? 'o seu nome' : 'o seu nome de usuário'}</li>
                   </ul>
 
                   <Button type="submit" className="w-full bg-gradient-to-r from-green-700 to-green-900 hover:from-green-600 hover:to-green-800 text-white font-bold py-2 px-4 rounded-md transition-all duration-200 shadow-lg mt-2 disabled:opacity-50" disabled={loading}>
@@ -550,7 +581,7 @@ const LoginPage = () => {
               <CardDescription className="text-gray-400">Selecione seu tipo de acesso</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-3 gap-3 mb-6">
                 <button type="button" onClick={() => handleTypeChange('organizador')} className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-300 ${selectedType === 'organizador' ? 'border-red-500 bg-red-500/10' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
                   <Users className={`w-6 h-6 mb-2 ${selectedType === 'organizador' ? 'text-red-500' : 'text-gray-400'}`} />
                   <span className={`text-sm font-medium ${selectedType === 'organizador' ? 'text-white' : 'text-gray-400'}`}>Organizador</span>
@@ -559,6 +590,10 @@ const LoginPage = () => {
                   <Shield className={`w-6 h-6 mb-2 ${selectedType === 'parceiro' ? 'text-green-500' : 'text-gray-400'}`} />
                   <span className={`text-sm font-medium ${selectedType === 'parceiro' ? 'text-white' : 'text-gray-400'}`}>Parceiro</span>
                 </button>
+                <button type="button" onClick={() => handleTypeChange('apoio')} className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-300 ${selectedType === 'apoio' ? 'border-sky-500 bg-sky-500/10' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
+                  <HeartPulse className={`w-6 h-6 mb-2 ${selectedType === 'apoio' ? 'text-sky-400' : 'text-gray-400'}`} />
+                  <span className={`text-sm font-medium ${selectedType === 'apoio' ? 'text-white' : 'text-gray-400'}`}>Apoio</span>
+                </button>
               </div>
 
               {avisoErro}
@@ -566,7 +601,7 @@ const LoginPage = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="identifier" className="text-gray-200">
-                    {selectedType === 'organizador' ? 'Nome do Organizador' : 'Código da Igreja'}
+                    {selectedType === 'organizador' ? 'Nome do Organizador' : ehApoio ? 'Seu primeiro nome' : 'Código da Igreja'}
                   </Label>
                   <Input
                     id="identifier"
@@ -577,7 +612,7 @@ const LoginPage = () => {
                     onBlur={handleCodigoBlur}
                     required
                     className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-red-500 transition-colors"
-                    placeholder={selectedType === 'organizador' ? 'Organizador' : 'Código'}
+                    placeholder={selectedType === 'organizador' ? 'Organizador' : ehApoio ? 'Primeiro nome' : 'Código'}
                   />
 
                   {/* Nome da igreja reconhecida -- para o parceiro perceber na

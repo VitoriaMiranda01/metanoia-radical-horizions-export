@@ -1,7 +1,8 @@
 import { supabase } from '@/services/supabaseClient';
 
 /**
- * Login de organizador e de igreja parceira.
+ * Login de organizador, de igreja parceira e de apoio (lider de area, desde
+ * 09/10/2026).
  *
  * MUDANCA DE SEGURANCA (Passo 1 da Fase 2)
  * ----------------------------------------
@@ -103,3 +104,5 @@ const chamarLogin = async (tipo, identifier, senha) => {
 export const organizadorLogin = async (nome, senha) => chamarLogin('organizador', nome, senha);
 
 export const igrejaLogin = async (codigo, senha) => chamarLogin('igreja', codigo, senha);
+
+export const apoioLogin = async (nome, senha) => chamarLogin('apoio', nome, senha);

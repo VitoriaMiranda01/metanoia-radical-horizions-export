@@ -167,6 +167,28 @@ export const redefinirSenhaOrganizador = async (nome) =>
   }, 'nova senha do organizador');
 
 // ---------------------------------------------------------------------------
+// Contas de APOIO (lider de area -- a primeira e a da saude, 09/10/2026)
+//
+// Mesma regra dos organizadores: a propria pessoa troca provando a senha
+// atual; so a conta Desenvolvedores lista as contas e gera senha nova.
+// ---------------------------------------------------------------------------
+
+export const trocarSenhaApoio = async (nome, senhaAtual, senhaNova) =>
+  chamar('trocar_senha_apoio', {
+    p_nome: String(nome || '').trim(),
+    p_senha_atual: senhaAtual,
+    p_senha_nova: senhaNova,
+  }, 'troca de senha do apoio');
+
+export const listarContasApoio = async () =>
+  chamar('listar_contas_apoio', undefined, 'contas de apoio');
+
+/** Gera senha nova (temporaria) para uma conta de apoio. Devolve a senha em texto uma vez so. */
+export const redefinirSenhaApoio = async (nome) =>
+  chamar('redefinir_senha_apoio', { p_nome: String(nome || '').trim() },
+    'nova senha do apoio');
+
+// ---------------------------------------------------------------------------
 // Logins bloqueados por senha errada (migration 20261003b)
 //
 // 10 senhas erradas seguidas bloqueiam o login por 10 minutos. So a conta

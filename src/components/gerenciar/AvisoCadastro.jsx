@@ -41,7 +41,8 @@ const CAMPOS = {
   },
   sexo: { rotulo: 'Sexo', motivo: 'em branco', colunas: ['sexo'], atual: (i) => i.sexo, tipo: 'sexo' },
   nascimento: {
-    rotulo: 'Data de nascimento', motivo: 'em branco ou impossível', colunas: ['data_nascimento'],
+    // Em branco tem aviso proprio (AvisoNascimento); aqui so data impossivel.
+    rotulo: 'Data de nascimento', motivo: 'idade impossível', colunas: ['data_nascimento'],
     atual: (i) => dataBR(i.data_nascimento), tipo: 'data', conferir: problemaNascimento,
   },
   email: {

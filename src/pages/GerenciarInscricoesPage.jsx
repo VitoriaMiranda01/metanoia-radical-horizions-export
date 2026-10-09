@@ -29,6 +29,7 @@ import AvisoTelefonesAcampantes from '@/components/gerenciar/AvisoTelefonesAcamp
 import AvisoContatoEmergencia from '@/components/gerenciar/AvisoContatoEmergencia';
 import AvisoCamisas from '@/components/gerenciar/AvisoCamisas';
 import AvisoCadastro from '@/components/gerenciar/AvisoCadastro';
+import AvisoNascimento from '@/components/gerenciar/AvisoNascimento';
 import CentralNotificacoes from '@/components/gerenciar/CentralNotificacoes';
 import { useAvisosInscricoes } from '@/hooks/useAvisosInscricoes';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
@@ -379,6 +380,19 @@ const GerenciarInscricoesPage = () => {
               </Button>
             )}
           </div>
+
+          {/* Primeiro: data de nascimento e obrigatoria (09/10/2026). */}
+          <AvisoNascimento
+            aviso={avisosInscricoes.avisos.find((a) => a.chave === 'nascimento')}
+            onRecarregar={avisosInscricoes.recarregar}
+            onOcultar={() => avisosInscricoes.ocultar('nascimento')}
+            onOcultarFicha={(id) => avisosInscricoes.ocultarFicha('nascimento', id)}
+            onCorrigido={fetchAcampantesSupabase}
+            onAbrirFicha={(id) => {
+              const acampante = acampantesList.find((a) => a.id === id);
+              if (acampante) setInscricaoParaEditar(acampante);
+            }}
+          />
 
           <AvisoTelefonesAcampantes
             aviso={avisosInscricoes.avisos.find((a) => a.chave === 'telefones')}

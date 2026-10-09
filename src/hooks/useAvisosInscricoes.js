@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   fetchTelefonesAcampantesPendentes, fetchContatosEmergenciaPendentes, fetchCamisasPendentes,
-  fetchCadastroAcampantesPendentes,
+  fetchCadastroAcampantesPendentes, fetchNascimentosPendentes,
   fetchMeusAvisosOcultos, ocultarAviso
 } from '@/services/acampantesService';
 
@@ -22,6 +22,12 @@ import {
 const INTERVALO = 20 * 1000;
 
 export const AVISOS = [
+  // Primeiro: dado obrigatorio que a equipe de saude usa (09/10/2026).
+  {
+    chave: 'nascimento',
+    buscar: fetchNascimentosPendentes,
+    titulo: (n) => (n === 1 ? '1 acampante sem data de nascimento' : `${n} acampantes sem data de nascimento`),
+  },
   {
     chave: 'telefones',
     buscar: fetchTelefonesAcampantesPendentes,

@@ -198,6 +198,15 @@ export const fetchCadastroAcampantesPendentes = async () => {
   return data || null;
 };
 
+// Acampantes sem data de nascimento (obrigatoria desde 09/10/2026: a idade
+// e o que a equipe de saude e a autorizacao dos menores usam). null = este
+// login nao ve o aviso.
+export const fetchNascimentosPendentes = async () => {
+  const { data, error } = await supabase.rpc('nascimentos_pendentes');
+  if (error) throw error;
+  return data || null;
+};
+
 // Acampantes sem tamanho de camisa (fichas antigas). null = este login nao
 // ve o aviso.
 export const fetchCamisasPendentes = async () => {

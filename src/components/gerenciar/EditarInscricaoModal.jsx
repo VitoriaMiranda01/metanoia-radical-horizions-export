@@ -216,6 +216,12 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
       toast({ title: 'CPF inválido', description: 'Confira os números do CPF.', variant: 'destructive' });
       return;
     }
+    // Acampante: data de nascimento obrigatoria (09/10/2026) -- nao da para
+    // apagar a de quem tem. O banco confere de novo (NASCIMENTO_OBRIGATORIO).
+    if (!isEquipante && 'data_nascimento' in alterados && !form.data_nascimento) {
+      toast({ title: 'Informe a data de nascimento', description: 'A data de nascimento é obrigatória para acampante.', variant: 'destructive' });
+      return;
+    }
     // Demais campos com formato (so os que mudaram), como no formulario de inscricao.
     // Estrangeiro (sem CPF) tem CEP e estado livres, como no formulario e no banco.
     const estrangeiro = !String(form.cpf || '').replace(/\D/g, '');

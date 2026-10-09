@@ -24,7 +24,7 @@ Telefones têm o gatilho próprio `trg_*_telefones` (`_padronizar_telefones`, mi
 | Nomes de outras pessoas (pastor, familiar, quem indicou, conhecido) | só letras, ao menos 2 (`_nome_simples_valido`) |
 | Contato de emergência | só letras; **não pode ser a própria pessoa** nem o próprio WhatsApp |
 | CPF | dígitos verificadores (`_cpf_valido`); sem CPF só estrangeiro, com nacionalidade |
-| Data de nascimento | obrigatória; entre 10 e 100 anos |
+| Data de nascimento | obrigatória; entre 10 e 100 anos. Acampante: o gatilho barra ficha nova sem data e edição que apaga a data (`NASCIMENTO_OBRIGATORIO`, 20261009b) |
 | Sexo | obrigatório: `Masculino` ou `Feminino` |
 | E-mail | formato válido, quando preenchido |
 | CEP / Estado | 8 números / UF da lista (27) — **estrangeiro fica livre** |
@@ -42,6 +42,7 @@ O banco levanta o código (`NOME_INVALIDO`, `CPF_INVALIDO`, `CEP_INVALIDO`...). 
 
 - `20261006m` nome e CPF · `20261006n` demais campos + aviso dos acampantes · `20261006o` estrangeiro
 - `20261006q` contato de emergência ≠ a pessoa · `20261006r` obrigatórios + gatilho `validar_ficha`
+- `20261009b` nascimento obrigatório no acampante (gatilho) + aviso `nascimentos_pendentes`
 
 ## Reinscrição
 

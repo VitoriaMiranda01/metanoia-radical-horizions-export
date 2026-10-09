@@ -90,6 +90,17 @@ const Texto = ({ valor, marcado }) =>
     : marcado ? <span className="text-amber-300/80 italic">marcou “sim”, sem descrever</span>
       : <span className="text-gray-600">—</span>;
 
+// Ficha sem data de nascimento: sem idade. A organizacao ja foi avisada
+// (aviso em Gerenciar Inscricoes) -- a dica explica isso para a lider.
+const SemNascimento = () => (
+  <span
+    className="text-amber-300"
+    data-dica="A ficha deste acampante está sem data de nascimento, por isso não há idade. A organização já foi avisada para corrigir."
+  >
+    sem data de nascimento
+  </span>
+);
+
 const SaudePage = () => {
   const { apoioUser, organizadorUser, user, logout } = useAuth();
   const navigate = useNavigate();
@@ -425,7 +436,7 @@ const SaudePage = () => {
                             <td className="px-3 py-2.5">
                               <p className="font-medium text-white">{p.nome}</p>
                               <p className="text-xs text-gray-500">
-                                {p.idade != null ? `${p.idade} anos` : 'idade —'}
+                                {p.idade != null ? `${p.idade} anos` : <SemNascimento />}
                                 {p.sexo ? ` · ${p.sexo}` : ''}
                                 {p.esta_gravida && <span className="ml-1 text-pink-300">· gestante</span>}
                               </p>
@@ -470,7 +481,7 @@ const SaudePage = () => {
                           <div className="min-w-0 flex-1">
                             <p className="font-medium text-white">{p.nome}</p>
                             <p className="text-xs text-gray-500">
-                              {p.idade != null ? `${p.idade} anos` : 'idade —'}{p.sexo ? ` · ${p.sexo}` : ''}
+                              {p.idade != null ? `${p.idade} anos` : <SemNascimento />}{p.sexo ? ` · ${p.sexo}` : ''}
                               {p.esta_gravida && <span className="text-pink-300"> · gestante</span>}
                             </p>
                           </div>

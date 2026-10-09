@@ -16,6 +16,7 @@ const MENSAGENS = {
   CPF_OBRIGATORIO: 'Informe o CPF (quem é estrangeiro informa a nacionalidade).',
   SEXO_INVALIDO: 'Escolha o sexo.',
   NASCIMENTO_INVALIDO: 'Confira a data de nascimento: a idade que ela dá não parece certa.',
+  NASCIMENTO_OBRIGATORIO: 'A data de nascimento é obrigatória: informe no formato dd/mm/aaaa.',
   EMAIL_INVALIDO: 'E-mail inválido: confira, por exemplo nome@exemplo.com.',
   PROFISSAO_INVALIDA: 'A profissão não leva números.',
   CEP_INVALIDO: 'Confira o CEP: são 8 números.',

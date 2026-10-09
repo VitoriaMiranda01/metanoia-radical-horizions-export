@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, CheckCircle2, ClipboardList, Eye, PhoneOff, ShieldAlert, Shirt } from 'lucide-react';
+import { Bell, CalendarX, CheckCircle2, ClipboardList, Eye, PhoneOff, ShieldAlert, Shirt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -14,9 +14,9 @@ import { cn } from '@/lib/utils';
  * que os avisos estao no perfil da Raquel.
  */
 
-const ICONES = { telefones: PhoneOff, contatos: ShieldAlert, camisas: Shirt, cadastro: ClipboardList };
-const ALVOS = { telefones: 'aviso-telefones', contatos: 'aviso-contatos', camisas: 'aviso-camisas', cadastro: 'aviso-cadastro' };
-const COR_ICONE = { telefones: 'text-amber-400', contatos: 'text-orange-400', camisas: 'text-purple-400', cadastro: 'text-sky-400' };
+const ICONES = { nascimento: CalendarX, telefones: PhoneOff, contatos: ShieldAlert, camisas: Shirt, cadastro: ClipboardList };
+const ALVOS = { nascimento: 'aviso-nascimento', telefones: 'aviso-telefones', contatos: 'aviso-contatos', camisas: 'aviso-camisas', cadastro: 'aviso-cadastro' };
+const COR_ICONE = { nascimento: 'text-red-400', telefones: 'text-amber-400', contatos: 'text-orange-400', camisas: 'text-purple-400', cadastro: 'text-sky-400' };
 
 const CentralNotificacoes = ({ avisos, total, onMostrar, onMostrarFicha, somenteLeitura = false }) => {
   const [aberto, setAberto] = useState(false);

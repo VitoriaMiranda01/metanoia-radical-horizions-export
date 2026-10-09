@@ -126,6 +126,36 @@ export const COLUMN_DEFINITIONS = {
     { key: 'status_pagamento', label: 'Status Pagamento', group: 'Sistema' },
     { key: 'metodo_pagamento', label: 'Método Pagamento', group: 'Sistema' },
     { key: 'data_pagamento', label: 'Data do Pagamento', group: 'Sistema' }
+  ],
+  // Tela de Pagamentos (Patrick, 09/10/2026): mesmo botao "Colunas" de
+  // Gerenciar Inscricoes. As chaves sao as de valorDaColuna em
+  // PagamentosPendentesPage.jsx -- e por elas que cada coluna filtra (funil)
+  // e ordena (seta). `titulo` e o texto curto do cabecalho. A coluna propria de
+  // cada aba (Forma, Motivo, Data combinada, Pagamento...) continua fixa.
+  pagamentos: [
+    { key: 'nome', label: 'Nome', group: 'Pessoal' },
+    { key: 'cpf', label: 'CPF', group: 'Pessoal' },
+    { key: 'tipo', label: 'Tipo (acampante ou equipante)', titulo: 'Tipo', group: 'Pessoal' },
+    { key: 'whatsapp', label: 'WhatsApp', group: 'Pessoal' },
+    { key: 'email', label: 'E-mail (acampante)', titulo: 'E-mail', group: 'Pessoal' },
+    { key: 'data_nascimento', label: 'Data de Nascimento', group: 'Pessoal' },
+    { key: 'idade', label: 'Idade', group: 'Pessoal' },
+    { key: 'sexo', label: 'Gênero', group: 'Pessoal' },
+    { key: 'nacionalidade', label: 'Nacionalidade', group: 'Pessoal' },
+    { key: 'igreja', label: 'Igreja', group: 'Igreja' },
+    { key: 'pastor_nome', label: 'Nome do Pastor', titulo: 'Pastor', group: 'Igreja' },
+    { key: 'situacao_inscricao', label: 'Situação da inscrição (equipante)', titulo: 'Situação da inscrição', group: 'Inscrição' },
+    { key: 'area_escala', label: 'Área na escala (equipante)', titulo: 'Área na escala', group: 'Inscrição' },
+    { key: 'tamanho_camisa', label: 'Camiseta (acampante)', titulo: 'Camiseta', group: 'Inscrição' },
+    { key: 'grupo_trailha', label: 'Grupo de Trilha (acampante)', titulo: 'Grupo de Trilha', group: 'Inscrição' },
+    { key: 'cidade', label: 'Cidade (acampante)', titulo: 'Cidade', group: 'Inscrição' },
+    { key: 'estado', label: 'Estado (acampante)', titulo: 'Estado', group: 'Inscrição' },
+    { key: 'forma', label: 'Forma de pagamento', group: 'Pagamento' },
+    { key: 'pago_em', label: 'Data do pagamento', group: 'Pagamento' },
+    { key: 'valor', label: 'Valor pago', group: 'Pagamento' },
+    { key: 'cupom', label: 'Cupom', group: 'Pagamento' },
+    { key: 'confirmado_por', label: 'Quem confirmou', group: 'Pagamento' },
+    { key: 'observacao_cobranca', label: 'Observação da cobrança (acampante)', titulo: 'Observação da cobrança', group: 'Pagamento' }
   ]
 };
 
@@ -161,7 +191,9 @@ export const formatAreaTrabalho = (item) => {
 // antes disso). Essa lista define a ordem das colunas marcadas por padrao.
 const DEFAULT_VISIBLE_COLUMNS = {
   equipantes: ['nome', 'cpf', 'igreja'],
-  acampantes: ['nome', 'cpf', 'igreja']
+  acampantes: ['nome', 'cpf', 'igreja'],
+  // As mesmas colunas que Pagamentos sempre mostrou.
+  pagamentos: ['nome', 'cpf', 'tipo', 'whatsapp']
 };
 
 // Colunas que o usuario nao pode desmarcar no seletor "Colunas" (Nome, CPF
@@ -170,6 +202,13 @@ const DEFAULT_VISIBLE_COLUMNS = {
 // nao podem ficar desmarcadas/escondidas, mas continuam podendo mudar de
 // posicao entre as outras colunas marcadas.
 export const LOCKED_COLUMNS = ['nome', 'cpf', 'igreja'];
+
+// Em Pagamentos so o Nome e fixo: CPF, Tipo e WhatsApp podem sair.
+const LOCKED_POR_TIPO = {
+  pagamentos: ['nome']
+};
+
+export const colunasTravadas = (type) => LOCKED_POR_TIPO[type] || LOCKED_COLUMNS;
 
 export const getVisibleColumnsFromStorage = (type) => {
   let columns;
@@ -181,10 +220,14 @@ export const getVisibleColumnsFromStorage = (type) => {
     columns = DEFAULT_VISIBLE_COLUMNS[type] || [];
   }
 
-  // Garante que CPF/Igreja estejam sempre presentes, mesmo pra quem tinha
+  // Coluna que deixou de existir (salva antes de uma mudanca) sai da lista.
+  const definidas = (COLUMN_DEFINITIONS[type] || []).map((d) => d.key);
+  if (definidas.length > 0) columns = columns.filter((k) => definidas.includes(k));
+
+  // Garante que as travadas estejam sempre presentes, mesmo pra quem tinha
   // desmarcado uma delas e salvo isso no localStorage antes dessa regra
   // existir.
-  const missingLocked = LOCKED_COLUMNS.filter(k => !columns.includes(k));
+  const missingLocked = colunasTravadas(type).filter(k => !columns.includes(k));
   return missingLocked.length > 0 ? [...columns, ...missingLocked] : columns;
 };
 
@@ -201,19 +244,19 @@ export const selectAllColumns = (type) => {
   return defs.map(d => d.key);
 };
 
-export const clearAllColumns = () => {
-  // CPF/Igreja nao podem ficar desmarcadas -- "Limpar" desmarca todo o
-  // resto, mas mantem as duas.
-  return [...LOCKED_COLUMNS];
+export const clearAllColumns = (type) => {
+  // As travadas (CPF/Igreja; em Pagamentos so o Nome) nao podem ficar
+  // desmarcadas -- "Limpar" desmarca todo o resto, mas mantem essas.
+  return [...colunasTravadas(type)];
 };
 
-export const toggleColumn = (currentColumns, key) => {
+export const toggleColumn = (currentColumns, key, type) => {
   const isCurrentlyVisible = currentColumns.includes(key);
 
-  // Impede desmarcar CPF/Igreja (ver LOCKED_COLUMNS acima). So bloqueia a
+  // Impede desmarcar as travadas (ver colunasTravadas acima). So bloqueia a
   // remocao -- nao ha nada pra bloquear ao "marcar", ja que essas colunas
   // deveriam estar sempre marcadas de qualquer forma.
-  if (isCurrentlyVisible && LOCKED_COLUMNS.includes(key)) {
+  if (isCurrentlyVisible && colunasTravadas(type).includes(key)) {
     return currentColumns;
   }
 

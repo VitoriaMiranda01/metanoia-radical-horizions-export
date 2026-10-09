@@ -16,6 +16,7 @@ import {
   marcarGrupoEnviado,
   desmarcarGrupoEnviado,
   fetchEquipantesComPagamentoAberto,
+  fetchAreasDaEscala,
   definirCobranca,
   removerCobranca
 } from '@/services/paymentService';
@@ -38,6 +39,9 @@ import { linkWhatsApp } from '@/services/liderService';
 import CabecalhoFiltroOrdem from '@/components/common/CabecalhoFiltroOrdem';
 import { ordenarLista } from '@/utils/ordenacao';
 import { normalizarBusca } from '@/utils/busca';
+import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDropdown';
+import { COLUMN_DEFINITIONS, getVisibleColumnsFromStorage, saveVisibleColumnsToStorage } from '@/utils/columnVisibility';
+import { nomeDoPais } from '@/constants/nacionalidades';
 
 const formatarValor = (valor) => {
   const numero = Number(valor);
@@ -87,10 +91,32 @@ const dataHoraBR = (iso) => {
   return `${d.toLocaleDateString('pt-BR', fuso)} às ${d.toLocaleTimeString('pt-BR', { ...fuso, hour: '2-digit', minute: '2-digit' })}`;
 };
 
+const SITUACAO_INSCRICAO = { aprovado: 'Aprovada', pendente: 'Pendente', rejeitado: 'Rejeitada' };
+
+// Campos que so existem num dos dois tipos: no outro a celula fica vazia (e
+// fora do funil); no tipo certo, vazio vira "Não informado" -- assim da para
+// filtrar quem esta sem.
+const SO_ACAMPANTE = ['email', 'tamanho_camisa', 'grupo_trailha', 'cidade', 'estado'];
+
 // Texto de cada coluna, o mesmo da tela: e por ele que o funil filtra e a
-// seta ordena (pedido do Patrick, 06/10/2026).
+// seta ordena (pedido do Patrick, 06/10/2026). As colunas do botao "Colunas"
+// (09/10/2026) estao em COLUMN_DEFINITIONS.pagamentos.
 const valorDaColuna = (item, chave) => {
+  if (SO_ACAMPANTE.includes(chave)) {
+    return item.tipo === 'acampante' ? String(item[chave] || '').trim() || 'Não informado' : '';
+  }
   switch (chave) {
+    case 'cpf': return String(item.cpf || '');
+    case 'data_nascimento': return dataBR(item.data_nascimento);
+    case 'idade': return item.idade === null || item.idade === undefined ? '' : String(item.idade);
+    case 'sexo': return item.sexo || 'Não informado';
+    case 'nacionalidade': return item.nacionalidade ? (nomeDoPais(item.nacionalidade) || item.nacionalidade) : 'Brasil';
+    case 'igreja': return item.igreja || 'Sem igreja';
+    case 'pastor_nome': return String(item.pastor_nome || '').trim() || 'Não informado';
+    case 'situacao_inscricao':
+      return item.tipo === 'equipante' ? (SITUACAO_INSCRICAO[item.status_inscricao] || item.status_inscricao || '') : '';
+    case 'area_escala': return item.tipo === 'equipante' ? (item.area_escala || 'Sem área') : '';
+    case 'observacao_cobranca': return item.cobranca?.observacao || '';
     case 'tipo': return item.tipo === 'acampante' ? 'Acampante' : 'Equipante';
     case 'whatsapp':
       if (!item.whatsapp) return '';
@@ -209,6 +235,10 @@ const PagamentosPendentesPage = () => {
   const [gravandoGrupo, setGravandoGrupo] = useState(false);
   // Equipantes que ja podem pagar (estao na escala lancada).
   const [equipantesLiberados, setEquipantesLiberados] = useState(new Set());
+  // Area(s) de cada equipante na escala (coluna "Área na escala").
+  const [areasDaEscala, setAreasDaEscala] = useState({});
+  // Colunas escolhidas no botao "Colunas" (ficam salvas neste navegador).
+  const [colunasVisiveis, setColunasVisiveis] = useState(() => getVisibleColumnsFromStorage('pagamentos'));
   // Janela de cobranca aberta: { item, status } ou null.
   const [dialogo, setDialogo] = useState(null);
   // Janela de "Confirmar pagamento": { item, forma, valorLote, valorCobrado } ou null.
@@ -237,13 +267,16 @@ const PagamentosPendentesPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const [pixTravados, todos, cobr, liberados, grupos] = await Promise.all([
+      const [pixTravados, todos, cobr, liberados, grupos, areas] = await Promise.all([
         fetchPixTravados(),
         fetchRelacaoDePagamentos(),
         fetchCobrancas(),
         fetchEquipantesComPagamentoAberto(),
-        fetchGruposEnviados()
+        fetchGruposEnviados(),
+        // So alimenta uma coluna opcional: se falhar, a tela abre sem ela.
+        fetchAreasDaEscala().catch(() => ({}))
       ]);
+      setAreasDaEscala(areas);
       setGruposEnviados(grupos);
       setEquipantesLiberados(liberados);
       setTravados(pixTravados);
@@ -353,7 +386,8 @@ const PagamentosPendentesPage = () => {
     ...i,
     ...(i.tipo === 'acampante' && cobrancas[i.id] ? { cobranca: cobrancas[i.id] } : {}),
     ...(gruposEnviados[i.id] ? { grupo: gruposEnviados[i.id] } : {}),
-  })), [relacao, cobrancas, gruposEnviados]);
+    ...(i.tipo === 'equipante' && areasDaEscala[i.id] ? { area_escala: areasDaEscala[i.id] } : {}),
+  })), [relacao, cobrancas, gruposEnviados, areasDaEscala]);
 
   const pagos = useMemo(() => comCobranca.filter((i) => i.quitado), [comCobranca]);
   // Pagou e ainda nao recebeu o convite do grupo.
@@ -443,13 +477,37 @@ const PagamentosPendentesPage = () => {
     }
   };
 
+  // A aba "Precisam de atencao" vem do PIX: junta a ficha da pessoa para as
+  // colunas do botao "Colunas" (igreja, idade...). O que e do PIX (id,
+  // status, valor, motivo) continua valendo por cima.
+  const travadosComFicha = useMemo(() => {
+    const porId = new Map(comCobranca.map((i) => [i.id, i]));
+    return travados.map((t) => ({ ...(porId.get(t.inscricao_id) || {}), ...t }));
+  }, [travados, comCobranca]);
+
   const baseDaAba = {
     nao: naoPagaram,
     cobranca: emCobranca,
     agendado: agendados,
     pagos,
-    travados,
+    travados: travadosComFicha,
   }[aba] || naoPagaram;
+
+  // Colunas do botao "Colunas", na ordem da lista (Nome e sempre a primeira,
+  // fixa). Some a que repete a coluna propria da aba: "Forma de pagamento" em
+  // Nao pagaram e Pagos, "Valor pago" em Pagos.
+  const repetidasNaAba = { nao: ['forma'], pagos: ['forma', 'valor'] }[aba] || [];
+  const colunasExtras = COLUMN_DEFINITIONS.pagamentos.filter((d) =>
+    d.key !== 'nome' && colunasVisiveis.includes(d.key) && !repetidasNaAba.includes(d.key));
+
+  const aplicarColunas = (novas) => {
+    setColunasVisiveis(novas);
+    saveVisibleColumnsToStorage('pagamentos', novas);
+    // Coluna que saiu leva o filtro junto (senao a lista ficaria filtrada por
+    // algo que nao aparece). O cupom fica: o quadro de cupons filtra por ele.
+    setFiltrosColuna((f) => Object.fromEntries(Object.entries(f).filter(([k]) =>
+      novas.includes(k) || k === 'cupom' || !COLUMN_DEFINITIONS.pagamentos.some((d) => d.key === k))));
+  };
 
   const filtrarColuna = (chave, valores) => setFiltrosColuna((f) => ({ ...f, [chave]: valores }));
   const temFiltroColuna = Object.values(filtrosColuna).some((v) => v && v.length > 0);
@@ -486,7 +544,8 @@ const PagamentosPendentesPage = () => {
   // de pendentes — desenhar tudo de uma vez trava celular mais simples.
   const paginacao = usePaginacao(linhas);
 
-  const colunas = aba === 'pagos' ? 7 : 6;
+  // Nome + extras + coluna da aba + (Pagos: valor e grupo | demais: acoes).
+  const colunas = 1 + colunasExtras.length + 1 + (aba === 'pagos' ? 2 : 1);
   const faltamNaLista = aba === 'pagos' ? linhas.filter((i) => !i.grupo) : [];
 
   const marcarLote = async () => {
@@ -779,6 +838,16 @@ const PagamentosPendentesPage = () => {
                       className="pl-9 h-11 bg-white/5 border-white/10 text-white w-full placeholder:text-gray-500 focus-visible:ring-blue-500"
                     />
                   </div>
+                  {/* Colunas extras (igreja, idade, area, cupom...), cada uma com o
+                      seu funil -- o mesmo botao de Gerenciar Inscricoes. */}
+                  <div className="shrink-0 [&_button]:h-11">
+                    <ColumnVisibilityDropdown
+                      type="pagamentos"
+                      currentColumns={colunasVisiveis}
+                      onApply={aplicarColunas}
+                      dica="Escolher quais colunas aparecem na tabela. Cada coluna tem o seu filtro (funil) e a sua ordem (seta)."
+                    />
+                  </div>
                   {/* A planilha que vai para o portao: todo mundo, com
                       PAGOU / NÃO PAGOU numa coluna so. */}
                   <Button
@@ -818,9 +887,9 @@ const PagamentosPendentesPage = () => {
                 <TableHeader className="bg-white/5">
                   <TableRow className="border-white/10 hover:bg-transparent">
                     <TableHead className="min-w-[13rem]">{cabecalho('Nome', 'nome')}</TableHead>
-                    <TableHead>{cabecalho('CPF', 'cpf')}</TableHead>
-                    <TableHead>{cabecalho('Tipo', 'tipo')}</TableHead>
-                    <TableHead>{cabecalho('WhatsApp', 'whatsapp')}</TableHead>
+                    {colunasExtras.map((d) => (
+                      <TableHead key={d.key}>{cabecalho(d.titulo || d.label, d.key)}</TableHead>
+                    ))}
                     <TableHead>
                       {aba === 'pagos'
                         ? cabecalho('Pagamento', 'pagamento')
@@ -888,21 +957,36 @@ const PagamentosPendentesPage = () => {
                             </p>
                           )}
                         </TableCell>
-                        <TableCell className="text-gray-400 whitespace-nowrap">{item.cpf}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={`capitalize border-none ${item.tipo === 'acampante' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}
-                          >
-                            {item.tipo}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          <CelulaWhatsApp
-                            item={item} onCopiar={copiarNumero}
-                            onAbrir={aba === 'pagos' ? () => registrarEnvio(item) : undefined}
-                          />
-                        </TableCell>
+                        {colunasExtras.map((d) => (
+                          d.key === 'tipo' ? (
+                            <TableCell key={d.key}>
+                              <Badge
+                                variant="outline"
+                                className={`capitalize border-none ${item.tipo === 'acampante' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}
+                              >
+                                {item.tipo}
+                              </Badge>
+                            </TableCell>
+                          ) : d.key === 'whatsapp' ? (
+                            <TableCell key={d.key} className="text-sm">
+                              <CelulaWhatsApp
+                                item={item} onCopiar={copiarNumero}
+                                onAbrir={aba === 'pagos' ? () => registrarEnvio(item) : undefined}
+                              />
+                            </TableCell>
+                          ) : d.key === 'cpf' ? (
+                            <TableCell key={d.key} className="text-gray-400 whitespace-nowrap">{item.cpf}</TableCell>
+                          ) : (
+                            <TableCell
+                              key={d.key}
+                              className={d.key === 'observacao_cobranca'
+                                ? 'text-sm text-gray-300 min-w-[12rem] max-w-xs break-words'
+                                : 'text-sm text-gray-300 whitespace-nowrap'}
+                            >
+                              {valorDaColuna(item, d.key) || <span className="text-gray-600">—</span>}
+                            </TableCell>
+                          )
+                        ))}
                         <TableCell className="text-gray-300 text-sm">
                           {aba === 'travados' ? (
                             <div className="flex flex-col">

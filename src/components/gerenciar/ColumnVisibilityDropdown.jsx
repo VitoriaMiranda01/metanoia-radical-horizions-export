@@ -8,7 +8,7 @@ import { SlidersHorizontal, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
   COLUMN_DEFINITIONS, 
-  LOCKED_COLUMNS,
+  colunasTravadas,
   selectAllColumns, 
   clearAllColumns, 
   toggleColumn 
@@ -17,9 +17,12 @@ import {
 const ColumnVisibilityDropdown = ({ 
   type, 
   currentColumns, 
-  onApply 
+  onApply,
+  // Texto da dica do botao (Pagamentos nao leva as colunas para a planilha).
+  dica = 'Escolher quais colunas aparecem na tabela (e vão para a planilha).'
 }) => {
   const definitions = COLUMN_DEFINITIONS[type] || [];
+  const travadas = colunasTravadas(type);
   
   // Group definitions
   const groupedDefinitions = definitions.reduce((acc, def) => {
@@ -29,7 +32,7 @@ const ColumnVisibilityDropdown = ({
   }, {});
 
   const handleToggle = (key) => {
-    const newColumns = toggleColumn(currentColumns, key);
+    const newColumns = toggleColumn(currentColumns, key, type);
     onApply(newColumns);
   };
 
@@ -38,13 +41,13 @@ const ColumnVisibilityDropdown = ({
   };
 
   const handleClearAll = () => {
-    onApply(clearAllColumns());
+    onApply(clearAllColumns(type));
   };
 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button data-dica="Escolher quais colunas aparecem na tabela (e vão para a planilha)." 
+        <Button data-dica={dica} 
           variant="outline" 
           size="sm" 
           className="bg-white/5 text-white hover:bg-white/10 hover:text-white border-white/20"
@@ -86,7 +89,7 @@ const ColumnVisibilityDropdown = ({
                  </h4>
                  <div className="space-y-0.5">
                    {items.map((col) => {
-                     const isLocked = LOCKED_COLUMNS.includes(col.key);
+                     const isLocked = travadas.includes(col.key);
                      return (
                        <div 
                          key={col.key} 

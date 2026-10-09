@@ -272,9 +272,16 @@ export const fetchRelacaoDePagamentos = async () => {
   const [acampantes, equipantes, pixPagos] = await Promise.all([
     // Todas as linhas: os equipantes ja passam de 900 e o corte de 1000
     // linhas do Supabase deixaria gente fora da lista sem avisar.
-    lerTodasAsLinhas(() => supabase.from('acampantes').select(`${colunasComuns}, igreja, admin_responsavel`).order('id'),
+    // Os campos depois de igreja alimentam o botao "Colunas" da tela
+    // (Patrick, 09/10/2026): cada coluna extra ganha o seu funil de filtro.
+    lerTodasAsLinhas(() => supabase.from('acampantes').select(
+      `${colunasComuns}, igreja, admin_responsavel, data_nascimento, idade, sexo, email, pastor_nome, `
+      + 'cidade, estado, tamanho_camisa, grupo_trailha'
+    ).order('id'),
       { rotulo: 'acampantes' }),
-    lerTodasAsLinhas(() => supabase.from('equipantes').select(`${colunasComuns}, igreja, igreja_outra, status`).order('id'),
+    lerTodasAsLinhas(() => supabase.from('equipantes').select(
+      `${colunasComuns}, igreja, igreja_outra, status, data_nascimento, idade, sexo, pastor_nome`
+    ).order('id'),
       { rotulo: 'equipantes' }),
     // Cobrancas PIX pagas: valor, lote, desconto e cupom (os dois ultimos so
     // a partir de 08/10/2026 -- antes nao eram gravados).
@@ -304,6 +311,9 @@ export const fetchRelacaoDePagamentos = async () => {
       // O acampante nao escolhe igreja: quem responde por ele e a igreja que
       // fez a ficha. Para a conferencia no portao, e o mesmo dado.
       igreja: nomeDaIgreja(linha) || linha.admin_responsavel || null,
+      // Situacao da aprovacao (so equipante). Nome proprio porque a aba
+      // "Precisam de atencao" junta a ficha com o PIX, que tem outro status.
+      status_inscricao: tipo === 'equipante' ? linha.status : null,
     }));
 
   return [
@@ -448,6 +458,26 @@ export const fetchEquipantesComPagamentoAberto = async () => {
   );
   if (error) throw error;
   return new Set((data || []).map((e) => e.equipante_id));
+};
+
+/**
+ * Area(s) de cada equipante na escala, lancada ou nao: { equipante_id: 'A, B' }.
+ * Alimenta a coluna "Área na escala" de Pagamentos (filtrar por area para
+ * cobrar). "Não será escalado" aparece como esta.
+ */
+export const fetchAreasDaEscala = async () => {
+  const { data, error } = await lerTodasAsLinhas(
+    () => supabase.from('escalas').select('id, equipante_id, area_alocada').order('id'),
+    { rotulo: 'áreas da escala' }
+  );
+  if (error) throw error;
+  const porPessoa = {};
+  (data || []).forEach((e) => {
+    if (!e.area_alocada) return;
+    const lista = porPessoa[e.equipante_id] || (porPessoa[e.equipante_id] = []);
+    if (!lista.includes(e.area_alocada)) lista.push(e.area_alocada);
+  });
+  return Object.fromEntries(Object.entries(porPessoa).map(([id, areas]) => [id, areas.sort().join(', ')]));
 };
 
 /**

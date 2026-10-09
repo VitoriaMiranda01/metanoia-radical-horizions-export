@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { KeyRound, ShieldCheck, RefreshCw, Copy, Check, MessageSquare, X, AlertTriangle, Eye, EyeOff, DoorOpen } from 'lucide-react';
+import { KeyRound, ShieldCheck, RefreshCw, Copy, Check, MessageSquare, X, AlertTriangle, Eye, EyeOff, DoorOpen, HeartPulse } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,8 @@ import {
   souOrganizadorMaximo,
   listarOrganizadores,
   redefinirSenhaOrganizador,
+  listarContasApoio,
+  redefinirSenhaApoio,
   primeiroAcessoHabilitado,
   definirPrimeiroAcessoParceiros,
   reabrirPrimeiroAcesso,
@@ -30,7 +32,9 @@ import BloqueioLogin from '@/components/organizer/BloqueioLogin';
  *  - "Trocar minha senha": qualquer organizador, provando quem e com a senha
  *    atual;
  *  - "Organizadores": so aparece para a conta de permissao maxima
- *    ("Desenvolvedores"), que gera senha nova para os outros.
+ *    ("Desenvolvedores"), que gera senha nova para os outros;
+ *  - "Contas de apoio" (09/10/2026): idem, para o login "Apoio" (a lider da
+ *    saude). Senha nova e temporaria: ela cria a propria ao entrar.
  *
  * Quem decide o que a pessoa pode fazer e o BANCO (eh_organizador_maximo).
  * Esconder o bloco aqui e so conforto visual -- se alguem forcasse a chamada,
@@ -95,6 +99,8 @@ const SenhasOrganizadoresManager = () => {
   const [confirmando, setConfirmando] = useState(null);
   const [ocupado, setOcupado] = useState(null);
   const [senhaGerada, setSenhaGerada] = useState(null);
+  // Contas de apoio (login "Apoio"): mesma mecanica, chave "apoio:<nome>".
+  const [contasApoio, setContasApoio] = useState([]);
 
   // Interruptor do botao "Primeiro acesso" na tela de login do parceiro.
   const [primeiroAcesso, setPrimeiroAcesso] = useState(false);
@@ -109,6 +115,7 @@ const SenhasOrganizadoresManager = () => {
       setSouMaximo(maximo === true);
       if (maximo === true) {
         setLista((await listarOrganizadores()) || []);
+        setContasApoio((await listarContasApoio().catch(() => [])) || []);
         setBloqueios(await listarLoginsBloqueados().catch(() => ({})));
         setPrimeiroAcesso((await primeiroAcessoHabilitado()) === true);
       }
@@ -207,10 +214,10 @@ const SenhasOrganizadoresManager = () => {
     }
   };
 
-  const liberarAgora = async (nome) => {
-    setLiberando(nome);
+  const liberarAgora = async (nome, tipo = 'organizador') => {
+    setLiberando(`${tipo}:${nome}`);
     try {
-      const r = await liberarLogin('organizador', nome);
+      const r = await liberarLogin(tipo, nome);
       if (!r?.ok) {
         toast({ title: 'Não deu certo', description: r?.erro, variant: 'destructive' });
         return;
@@ -225,16 +232,16 @@ const SenhasOrganizadoresManager = () => {
     }
   };
 
-  const gerarPara = async (nome) => {
+  const gerarPara = async (nome, tipo = 'organizador') => {
     setConfirmando(null);
-    setOcupado(nome);
+    setOcupado(`${tipo}:${nome}`);
     try {
-      const r = await redefinirSenhaOrganizador(nome);
+      const r = tipo === 'apoio' ? await redefinirSenhaApoio(nome) : await redefinirSenhaOrganizador(nome);
       if (!r?.ok) {
         toast({ title: 'Não deu certo', description: r?.erro, variant: 'destructive' });
         return;
       }
-      setSenhaGerada({ nome: r.nome, senha: r.senha, mensagem: r.mensagem });
+      setSenhaGerada({ nome: r.nome, senha: r.senha, mensagem: r.mensagem, tipo });
       carregarLista();
     } catch (err) {
       console.error('SenhasOrganizadoresManager - redefinir', err?.message || err);
@@ -243,6 +250,32 @@ const SenhasOrganizadoresManager = () => {
       setOcupado(null);
     }
   };
+
+  // Senha recem-gerada (aparece uma vez so, no quadro de quem a gerou).
+  const quadroSenhaGerada = senhaGerada && (
+    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+      className="mb-5 bg-emerald-500/10 border border-emerald-500/40 rounded-lg p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-emerald-300 font-semibold">Senha nova para {senhaGerada.nome}</p>
+          <p className="font-mono text-2xl text-white mt-2 tracking-wide break-all">{senhaGerada.senha}</p>
+          <p className="text-sm text-gray-300 mt-2">
+            Anote ou copie agora: esta senha não aparece de novo. Se fechar sem copiar, é só gerar outra.
+          </p>
+        </div>
+        <Button size="sm" variant="ghost" onClick={() => setSenhaGerada(null)}
+          className="text-gray-400 hover:text-white shrink-0">
+          <X className="w-4 h-4" />
+        </Button>
+      </div>
+      <div className="flex flex-wrap gap-2 mt-4">
+        <BotaoCopiar texto={senhaGerada.senha} rotulo="Copiar senha" />
+        {senhaGerada.mensagem && (
+          <BotaoCopiar icone={MessageSquare} rotulo="Copiar mensagem pronta" texto={senhaGerada.mensagem} />
+        )}
+      </div>
+    </motion.div>
+  );
 
   return (
     <div className="space-y-6">
@@ -271,8 +304,8 @@ const SenhasOrganizadoresManager = () => {
                 className="bg-white/5 border-white/20 text-white pr-10" placeholder="Mínimo 8, com letras e números" />
               <Button type="button" variant="ghost" size="sm"
                 className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                onClick={() => setMostrando(!mostrando)}>
-                data-dica="Mostrar ou esconder a senha digitada."
+                onClick={() => setMostrando(!mostrando)}
+                data-dica="Mostrar ou esconder a senha digitada.">
                 {mostrando ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
               </Button>
             </div>
@@ -369,30 +402,7 @@ const SenhasOrganizadoresManager = () => {
             Gere uma senha nova para quem esqueceu. Quem receber será obrigado a criar a própria senha no primeiro acesso.
           </p>
 
-          {senhaGerada && (
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-              className="mb-5 bg-emerald-500/10 border border-emerald-500/40 rounded-lg p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-emerald-300 font-semibold">Senha nova para {senhaGerada.nome}</p>
-                  <p className="font-mono text-2xl text-white mt-2 tracking-wide break-all">{senhaGerada.senha}</p>
-                  <p className="text-sm text-gray-300 mt-2">
-                    Anote ou copie agora: esta senha não aparece de novo. Se fechar sem copiar, é só gerar outra.
-                  </p>
-                </div>
-                <Button size="sm" variant="ghost" onClick={() => setSenhaGerada(null)}
-                  className="text-gray-400 hover:text-white shrink-0">
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-4">
-                <BotaoCopiar texto={senhaGerada.senha} rotulo="Copiar senha" />
-                {senhaGerada.mensagem && (
-                  <BotaoCopiar icone={MessageSquare} rotulo="Copiar mensagem pronta" texto={senhaGerada.mensagem} />
-                )}
-              </div>
-            </motion.div>
-          )}
+          {senhaGerada && senhaGerada.tipo !== 'apoio' && quadroSenhaGerada}
 
           {carregando ? (
             <div className="py-8 text-center text-gray-400">
@@ -429,28 +439,28 @@ const SenhasOrganizadoresManager = () => {
                     </p>
                     <BloqueioLogin
                       bloqueio={bloqueios[chaveBloqueio('organizador', o.nome)]}
-                      liberando={liberando === o.nome}
+                      liberando={liberando === `organizador:${o.nome}`}
                       onLiberar={() => liberarAgora(o.nome)}
                     />
                   </div>
 
                   {o.eh_o_maximo ? (
                     <span className="text-xs text-gray-500">use "Trocar minha senha" acima</span>
-                  ) : confirmando === o.nome ? (
+                  ) : confirmando === `organizador:${o.nome}` ? (
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-400">Gerar nova senha?</span>
-                      <Button size="sm" variant="outline" disabled={ocupado === o.nome}
+                      <Button size="sm" variant="outline" disabled={ocupado === `organizador:${o.nome}`}
                         onClick={() => setConfirmando(null)}
                         className="h-8 px-3 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
                         Cancelar
                       </Button>
-                      <Button size="sm" disabled={ocupado === o.nome} onClick={() => gerarPara(o.nome)}
+                      <Button size="sm" disabled={ocupado === `organizador:${o.nome}`} onClick={() => gerarPara(o.nome)}
                         className="h-8 px-4 bg-emerald-600 hover:bg-emerald-700 text-white">
-                        {ocupado === o.nome ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'OK'}
+                        {ocupado === `organizador:${o.nome}` ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'OK'}
                       </Button>
                     </div>
                   ) : (
-                    <Button data-dica="Gerar uma senha nova para este organizador (a antiga para de funcionar)." size="sm" onClick={() => setConfirmando(o.nome)}
+                    <Button data-dica="Gerar uma senha nova para este organizador (a antiga para de funcionar)." size="sm" onClick={() => setConfirmando(`organizador:${o.nome}`)}
                       className="h-8 bg-blue-600 hover:bg-blue-700 text-white">
                       <KeyRound className="w-4 h-4 mr-1.5" />
                       Nova senha
@@ -468,6 +478,94 @@ const SenhasOrganizadoresManager = () => {
               a proteção nova assim que a senha for alterada — pela própria pessoa ou por aqui.
             </span>
           </div>
+        </div>
+      )}
+
+      {/* ---------------- Contas de apoio (só o login máximo) ---------------- */}
+      {souMaximo && (
+        <div className="bg-black/60 glass-effect rounded-xl border border-white/10 p-6">
+          <div className="flex items-center gap-3 mb-1">
+            <HeartPulse className="w-6 h-6 text-sky-400" />
+            <h2 className="text-xl font-bold text-white">Contas de apoio</h2>
+            <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/15">
+              permissão máxima
+            </Badge>
+          </div>
+          <p className="text-gray-400 text-sm mb-5">
+            Login <strong className="text-gray-200">Apoio</strong> da tela de entrada: a pessoa entra com o primeiro
+            nome e só vê a tela da área dela (saúde dos acampantes). Gere uma senha nova se ela esquecer — ao entrar,
+            ela cria a própria.
+          </p>
+
+          {senhaGerada && senhaGerada.tipo === 'apoio' && quadroSenhaGerada}
+
+          {carregando ? (
+            <div className="py-8 text-center text-gray-400">
+              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+              Carregando...
+            </div>
+          ) : contasApoio.length === 0 ? (
+            <p className="text-sm text-gray-500">Nenhuma conta de apoio.</p>
+          ) : (
+            <div className="space-y-2">
+              {contasApoio.map((c) => {
+                const chave = `apoio:${c.nome}`;
+                return (
+                  <div key={c.nome}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="text-white font-medium flex items-center gap-2 flex-wrap">
+                        {c.nome}
+                        <Badge className="bg-sky-500/15 text-sky-300 border-sky-500/30 hover:bg-sky-500/15">
+                          {c.area === 'saude' ? 'saúde' : c.area}
+                        </Badge>
+                        {!c.tem_senha ? (
+                          <Badge className="bg-red-500/15 text-red-300 border-red-500/30 hover:bg-red-500/15">
+                            sem senha
+                          </Badge>
+                        ) : !c.senha_definida && (
+                          <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/15">
+                            senha temporária
+                          </Badge>
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Último acesso: {formatarData(c.ultimo_acesso)}
+                        {' · '}Senha alterada: {formatarData(c.senha_atualizada_em)}
+                      </p>
+                      <BloqueioLogin
+                        bloqueio={bloqueios[chaveBloqueio('apoio', c.nome)]}
+                        liberando={liberando === chave}
+                        onLiberar={() => liberarAgora(c.nome, 'apoio')}
+                      />
+                    </div>
+
+                    {confirmando === chave ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-400">Gerar nova senha?</span>
+                        <Button size="sm" variant="outline" disabled={ocupado === chave}
+                          onClick={() => setConfirmando(null)}
+                          className="h-8 px-3 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
+                          Cancelar
+                        </Button>
+                        <Button size="sm" disabled={ocupado === chave} onClick={() => gerarPara(c.nome, 'apoio')}
+                          className="h-8 px-4 bg-emerald-600 hover:bg-emerald-700 text-white">
+                          {ocupado === chave ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'OK'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button data-dica="Gerar uma senha nova para esta conta (a antiga para de funcionar)." size="sm"
+                        onClick={() => setConfirmando(chave)}
+                        className="h-8 bg-blue-600 hover:bg-blue-700 text-white">
+                        <KeyRound className="w-4 h-4 mr-1.5" />
+                        Nova senha
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

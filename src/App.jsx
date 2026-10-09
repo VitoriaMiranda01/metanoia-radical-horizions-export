@@ -6,6 +6,7 @@ import FaixaAmbienteTeste from '@/components/common/FaixaAmbienteTeste';
 import DicasMouse from '@/components/common/DicasMouse';
 import OrganizerProtectedRoute from '@/components/route-guards/OrganizerProtectedRoute';
 import IgrejaProtectedRoute from '@/components/route-guards/IgrejaProtectedRoute';
+import ApoioProtectedRoute from '@/components/route-guards/ApoioProtectedRoute';
 import LoginPage from '@/pages/LoginPage';
 import AcampantePage from '@/pages/AcampantePage';
 import EquipantePage from '@/pages/EquipantePage';
@@ -21,6 +22,7 @@ import ManualPaymentPage from '@/pages/ManualPaymentPage';
 import AdminWorkflowsPage from '@/pages/AdminWorkflowsPage';
 import PagamentosPendentesPage from '@/pages/PagamentosPendentesPage';
 import SenhasParceirosPage from '@/pages/SenhasParceirosPage';
+import SaudePage from '@/pages/SaudePage';
 import Layout from '@/components/Layout';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
 
@@ -142,6 +144,15 @@ function App() {
                   <SenhasParceirosPage />
                 </OrganizerProtectedRoute>
               } 
+            />
+
+            <Route
+              path="/saude"
+              element={
+                <ApoioProtectedRoute>
+                  <SaudePage />
+                </ApoioProtectedRoute>
+              }
             />
 
             <Route path="/organizador" element={<Navigate to="/gerenciar" replace />} />

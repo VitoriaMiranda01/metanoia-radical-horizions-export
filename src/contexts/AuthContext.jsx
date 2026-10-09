@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { organizadorLogin, igrejaLogin } from '@/services/authService';
+import { organizadorLogin, igrejaLogin, apoioLogin } from '@/services/authService';
 import { setAuthToken, clearAuthToken, getAuthToken } from '@/services/authToken';
 
 const AuthContext = createContext();
@@ -16,6 +16,9 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [organizadorUser, setOrganizadorUser] = useState(null);
   const [igrejaUser, setIgrejaUser] = useState(null);
+  // Apoio (09/10/2026): lider de uma area -- hoje so a saude --, com uma tela
+  // propria (/saude) e nenhum acesso as telas da organizacao.
+  const [apoioUser, setApoioUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // As chamadas a supabase.auth.* sairam daqui (Passo 2, etapa 6).
@@ -42,10 +45,12 @@ export const AuthProvider = ({ children }) => {
       const savedUser = localStorage.getItem('metanoia_user');
       const savedOrg = localStorage.getItem('metanoia_org_user');
       const savedIgreja = localStorage.getItem('metanoia_igreja_user');
+      const savedApoio = localStorage.getItem('metanoia_apoio_user');
 
       if (savedUser) setUser(JSON.parse(savedUser));
       if (savedOrg) setOrganizadorUser(JSON.parse(savedOrg));
       if (savedIgreja) setIgrejaUser(JSON.parse(savedIgreja));
+      if (savedApoio) setApoioUser(JSON.parse(savedApoio));
     } catch (err) {
       console.error('AuthContext - leitura da sessão salva', err?.message || err);
     } finally {
@@ -122,6 +127,39 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Mesmo fluxo do organizador: com senha temporaria nao abre sessao, a tela
+  // de login pede a senha propria e chama esta funcao de novo.
+  const loginAsApoio = async (nome, senha) => {
+    try {
+      const result = await apoioLogin(nome.trim(), senha);
+      if (result.success) {
+        if (result.precisa_trocar_senha || result.user?.precisa_trocar_senha) {
+          return { ...result, precisa_trocar_senha: true };
+        }
+
+        const sessionUser = { ...result.user, role: 'apoio' };
+        setAuthToken(result.token);
+        setApoioUser(sessionUser);
+        setUser(sessionUser);
+        localStorage.setItem('metanoia_apoio_user', JSON.stringify(sessionUser));
+        localStorage.setItem('metanoia_user', JSON.stringify(sessionUser));
+        return result;
+      }
+      throw new Error(result.error);
+    } catch (err) {
+      console.error('AuthContext - loginAsApoio', err);
+      throw err;
+    }
+  };
+
+  const logoutApoio = () => {
+    setApoioUser(null);
+    if (user?.role === 'apoio') setUser(null);
+    localStorage.removeItem('metanoia_apoio_user');
+    localStorage.removeItem('metanoia_user');
+    clearAuthToken();
+  };
+
   const logoutOrganizador = () => {
     setOrganizadorUser(null);
     if (user?.role === 'organizador') setUser(null);
@@ -141,24 +179,29 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     logoutOrganizador();
     logoutIgreja();
+    logoutApoio();
   };
 
   const value = {
     user,
     organizadorUser,
     igrejaUser,
+    apoioUser,
     organizadorId: organizadorUser?.id || user?.id,
     login,
     loginAsOrganizador,
     loginAsIgreja,
+    loginAsApoio,
     logout,
     logoutOrganizador,
     logoutIgreja,
+    logoutApoio,
     loading,
-    isAuthenticated: !!user || !!organizadorUser || !!igrejaUser,
+    isAuthenticated: !!user || !!organizadorUser || !!igrejaUser || !!apoioUser,
     isOrganizador: !!organizadorUser || user?.role === 'organizador',
     isAprovador: !!organizadorUser || user?.role === 'organizador' || user?.role === 'organizador-aprovador',
-    isParceiro: !!igrejaUser || user?.role === 'parceiro'
+    isParceiro: !!igrejaUser || user?.role === 'parceiro',
+    isApoio: !!apoioUser || user?.role === 'apoio'
   };
 
   return (

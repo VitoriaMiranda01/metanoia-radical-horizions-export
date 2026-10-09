@@ -29,6 +29,7 @@ const CHAVES_DE_SESSAO = [
   'metanoia_user',
   'metanoia_org_user',
   'metanoia_igreja_user',
+  'metanoia_apoio_user',
 ];
 
 // Margem de seguranca: um cracha que vence nos proximos 30 segundos ja e

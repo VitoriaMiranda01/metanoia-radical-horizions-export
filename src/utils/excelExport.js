@@ -346,3 +346,31 @@ export const exportListaIgrejas = (lista, relatorio, contas = [], cadastro = {})
   XLSX.writeFile(wb, `Igrejas_Metanoia_Radical_${hoje}.xlsx`);
   return { igrejas: base.length };
 };
+
+// Planilha da tela da saude (login de apoio, 09/10/2026): aba "Acampantes"
+// com as colunas escolhidas e, se pedido, aba "Resumo" com quantas pessoas
+// por problema de saude, medicamento e restricao alimentar.
+export const exportSaudeToExcel = (linhas, resumo) => {
+  try {
+    if (!linhas || linhas.length === 0) throw new Error('Nada para exportar.');
+    const wb = XLSX.utils.book_new();
+
+    const ws = XLSX.utils.json_to_sheet(linhas);
+    ws['!cols'] = Object.keys(linhas[0]).map((k) => ({
+      wch: Math.min(60, Math.max(k.length, ...linhas.map((l) => String(l[k] ?? '').length)) + 2),
+    }));
+    XLSX.utils.book_append_sheet(wb, ws, 'Acampantes');
+
+    if (resumo && resumo.length > 0) {
+      const wr = XLSX.utils.json_to_sheet(resumo);
+      wr['!cols'] = [{ wch: 22 }, { wch: 40 }, { wch: 12 }, { wch: 90 }];
+      XLSX.utils.book_append_sheet(wb, wr, 'Resumo');
+    }
+
+    XLSX.writeFile(wb, `saude_acampantes_${new Date().toISOString().split('T')[0]}.xlsx`);
+    return { success: true };
+  } catch (error) {
+    console.error('Erro ao exportar:', error);
+    return { success: false, error: error.message };
+  }
+};

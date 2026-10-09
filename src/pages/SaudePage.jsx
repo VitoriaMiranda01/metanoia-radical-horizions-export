@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  Activity, Baby, Download, HeartPulse, Loader2, LogOut, Pill, RefreshCw, Search, Users, UtensilsCrossed, X, Phone
+  Activity, Baby, Download, HeartPulse, Loader2, LogOut, Pill, RefreshCw, Search, Users, UtensilsCrossed, X, Phone, ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -26,8 +26,8 @@ import { agruparTermos, contemTexto, termosDaPessoa } from '@/utils/saude';
  * mesmo problema/remedio (botoes de "Agrupar") e exporta para Excel.
  *
  * Os dados vem de saude_acampantes() -- a conta de apoio nao le nenhuma
- * tabela direto. Organizador tambem abre esta tela, pelo icone "Saude" do
- * menu -- dentro do painel, com a barra de cima.
+ * tabela direto. Organizador tambem abre esta tela, pelo botao "Saude dos
+ * acampantes" de Configuracoes -- dentro do painel, com a barra de cima.
  */
 
 const MOSTRAR = [
@@ -516,12 +516,17 @@ const SaudePage = () => {
         // Organizador (pelo menu): dentro do painel, com a barra de cima.
         <Layout largo>
           <div className="space-y-5 text-white">
+            <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
                 <HeartPulse className="w-6 h-6 text-rose-400" /> Saúde dos acampantes
               </h1>
               <p className="text-sm text-gray-400">A mesma tela que a equipe de saúde vê no login Apoio.</p>
             </div>
+            <Link to="/organizer/configuracoes" className="shrink-0 inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white">
+              <ArrowLeft className="w-4 h-4" />Voltar para Configurações
+            </Link>
+          </div>
             {conteudo}
           </div>
         </Layout>

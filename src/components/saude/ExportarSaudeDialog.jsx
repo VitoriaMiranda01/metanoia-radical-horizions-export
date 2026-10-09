@@ -29,7 +29,9 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
     setErro('');
   }, [aberto]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const pessoas = quem === 'marcados' ? selecionados : visiveis;
+  // Confirmados (pagos) primeiro, depois os so inscritos -- igual a tela.
+  const pessoas = [...(quem === 'marcados' ? selecionados : visiveis)]
+    .sort((a, b) => Number(b.pago) - Number(a.pago) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
 
   const alternar = (chave, v) =>
     setColunas((atual) => (v ? COLUNAS_SAUDE.map((c) => c.chave).filter((k) => k === chave || atual.includes(k))
@@ -39,13 +41,15 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
     if (colunas.length === 0) { setErro('Marque pelo menos uma coluna.'); return; }
     const escolhidas = COLUNAS_SAUDE.filter((c) => colunas.includes(c.chave));
     const linhas = pessoas.map((p) => Object.fromEntries(escolhidas.map((c) => [c.rotulo, c.valor(p)])));
-    const nomes = new Map(pessoas.map((p) => [p.id, p.nome]));
+    const porId = new Map(pessoas.map((p) => [p.id, p]));
     const abaResumo = resumo
       ? TIPOS_RESUMO.flatMap(([tipo, rotulo]) => agruparTermos(pessoas, tipo).map((g) => ({
         Tipo: rotulo,
         Item: g.rotulo,
         Quantidade: g.ids.size,
-        Pessoas: [...g.ids].map((id) => nomes.get(id)).join(', '),
+        Confirmados: [...g.ids].filter((id) => porId.get(id).pago).length,
+        'Só inscritos': [...g.ids].filter((id) => !porId.get(id).pago).length,
+        Pessoas: [...g.ids].map((id) => porId.get(id).nome).join(', '),
       })))
       : null;
     const r = exportSaudeToExcel(linhas, abaResumo);
@@ -99,7 +103,7 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
             <span>
               Incluir aba <strong>Resumo</strong>
               <span className="block text-xs text-gray-400">
-                Quantas pessoas por problema de saúde, medicamento e restrição alimentar, com os nomes.
+                Quantas pessoas por problema de saúde, medicamento e restrição alimentar (confirmados e só inscritos), com os nomes.
               </span>
             </span>
           </label>

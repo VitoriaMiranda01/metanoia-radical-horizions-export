@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganizerAuth } from '@/hooks/useOrganizerAuth';
 import { Button } from '@/components/ui/button';
-import { LogOut, Users, UserCheck, Tent, Wrench, Settings, Grid, HeartHandshake, Banknote, KeyRound } from 'lucide-react';
+import { LogOut, Users, UserCheck, Tent, Wrench, Settings, Grid, HeartHandshake, HeartPulse, Banknote, KeyRound } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { fetchContadoresDoMenu } from '@/services/menuContadoresService';
@@ -96,6 +96,9 @@ const Layout = ({ children, largo = false }) => {
       dica: 'Montar a escala: distribuir os equipantes aprovados pelas áreas e lançar para eles verem.' },
     { path: '/pagamentos-pendentes', label: 'Pagamentos Pendentes', icon: Banknote, contador: 'pagamentos',
       dica: 'Confirmar pagamentos em dinheiro/isentos, liberar PIX travado e ver a relação de quem pagou.' },
+    // A mesma tela que a lider da saude (login Apoio) ve -- 09/10/2026.
+    { path: '/saude', label: 'Saúde dos acampantes', icon: HeartPulse,
+      dica: 'A tela da equipe de saúde: problemas de saúde, medicamentos e restrições alimentares dos acampantes.' },
     { path: '/senhas-parceiros', label: 'Senhas dos Parceiros', icon: KeyRound, contador: 'senhas',
       dica: 'Senhas das igrejas parceiras: primeiro acesso, pedidos de nova senha e logins bloqueados.' },
     { path: '/organizer/configuracoes', label: 'Configurações', icon: Settings,

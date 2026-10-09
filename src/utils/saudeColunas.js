@@ -8,6 +8,7 @@ const descrito = (texto, marcado) => texto || (marcado ? 'Sim (não descreveu)' 
 
 export const COLUNAS_SAUDE = [
   { chave: 'nome', rotulo: 'Nome', valor: (p) => p.nome || '' },
+  { chave: 'inscricao', rotulo: 'Situação', valor: (p) => (p.pago ? 'Confirmado (pago)' : 'Só inscrito (aguardando pagamento)') },
   { chave: 'idade', rotulo: 'Idade', valor: (p) => (p.idade ?? '') },
   { chave: 'sexo', rotulo: 'Sexo', valor: (p) => p.sexo || '' },
   { chave: 'igreja', rotulo: 'Igreja', valor: (p) => p.igreja || '' },
@@ -19,7 +20,6 @@ export const COLUNAS_SAUDE = [
   { chave: 'emergencia_nome', rotulo: 'Contato de emergência', valor: (p) => p.contato_emergencia_nome || '' },
   { chave: 'emergencia_tel', rotulo: 'Telefone de emergência', valor: (p) => formatarTelefone(p.contato_emergencia_telefone) || p.contato_emergencia_telefone || '' },
   { chave: 'whatsapp', rotulo: 'WhatsApp do acampante', valor: (p) => formatarTelefone(p.whatsapp) || p.whatsapp || '' },
-  { chave: 'inscricao', rotulo: 'Inscrição', valor: (p) => (p.pago ? 'Paga' : 'Aguardando pagamento') },
 ];
 
 // Marcadas de saida: tudo menos o WhatsApp do proprio acampante.

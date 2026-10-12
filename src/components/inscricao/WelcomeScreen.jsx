@@ -80,7 +80,7 @@ const WelcomeScreen = ({
       <Card className="glass-effect border-white/10 overflow-hidden bg-black/40">
         <div className="bg-neutral-900 p-4 text-center border-b border-white/10">
            <div className="flex justify-center mb-2">
-              <img src="https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/ea6fe427e17542cbf0e791fb09fba6dc.png" className="h-16 w-auto" alt="Logo Metanoia Radical" />
+              <img src="/images/logo.png" className="h-16 w-auto" alt="Logo Metanoia Radical" />
            </div>
            <h1 className="text-xl md:text-2xl font-bold text-white uppercase tracking-wider">
              Projeto Metanoia <span className="text-red-600">RADICAL</span> <span className="text-green-600">SERRA</span>

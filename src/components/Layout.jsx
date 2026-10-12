@@ -134,7 +134,7 @@ const Layout = ({ children, largo = false }) => {
             >
               <Link to="/" className="flex items-center gap-3 cursor-pointer">
                  <img 
-                    src="https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/ea6fe427e17542cbf0e791fb09fba6dc.png" 
+                    src="/images/logo.png" 
                     alt="Metanoia Radical Logo" 
                     className="h-12 w-auto object-contain"
                   />

@@ -393,7 +393,7 @@ const LoginPage = () => {
           <div className="text-center mb-8 flex flex-col items-center">
             <Link to="/" className="cursor-pointer group">
               <motion.div className="mb-6 p-2 bg-white/5 rounded-2xl border border-white/10 pulse-glow group-hover:bg-white/10 transition-all duration-300">
-                <img src="https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/ea6fe427e17542cbf0e791fb09fba6dc.png" alt="Logo" className="h-24 w-auto object-contain" />
+                <img src="/images/logo.png" alt="Logo" className="h-24 w-auto object-contain" />
               </motion.div>
             </Link>
             <h1 className="text-3xl font-bold text-white mb-2 tracking-wide uppercase">Metanoia <span className="text-red-600">Radical</span> <span className="text-green-600">SERRA</span></h1>

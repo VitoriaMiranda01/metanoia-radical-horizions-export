@@ -546,7 +546,7 @@ const SaudePage = () => {
         <header className="sticky top-0 z-30 border-b border-white/10 bg-black/90 backdrop-blur">
           <div className="max-w-[1500px] mx-auto px-4 py-3 flex items-center gap-3">
             <img
-              src="https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/ea6fe427e17542cbf0e791fb09fba6dc.png"
+              src="/images/logo.png"
               alt="Metanoia Radical" className="hidden sm:block h-9 w-auto object-contain"
             />
             <div className="min-w-0">

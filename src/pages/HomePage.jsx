@@ -149,7 +149,7 @@ const HomePage = () => {
 
         <section className="relative h-screen flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0 z-0">
-            <img src="https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/whatsapp-image-2026-03-02-at-20.34.03-Tff86.jpeg" alt="Metanoia Radical Background" className="w-full h-full object-cover" />
+            <img src="/images/background.jpg" alt="Metanoia Radical Background" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/60" />
             <div className="absolute inset-0 bg-red-900/10 mix-blend-overlay" />
           </div>
@@ -260,8 +260,8 @@ const HomePage = () => {
 
               <FadeIn delay={0.3} className="relative">
                 <div className="relative z-10 grid grid-cols-2 gap-4">
-                  <img src="https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/whatsapp-image-2026-07-26-at-16.20.51-qYEwA.jpeg" alt="Serving Hands with Bracelets" className="rounded-2xl shadow-2xl object-cover h-64 w-full transform translate-y-8" />
-                  <img src="https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/whatsapp-image-2026-03-02-at-20.20.58-TLPmn.jpeg" alt="Serving 2" className="rounded-2xl shadow-2xl object-cover h-64 w-full" />
+                  <img src="/images/serving-hands-bracelets.jpg" alt="Serving Hands with Bracelets" className="rounded-2xl shadow-2xl object-cover h-64 w-full transform translate-y-8" />
+                  <img src="/images/serving-2.jpg" alt="Serving 2" className="rounded-2xl shadow-2xl object-cover h-64 w-full" />
                 </div>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-green-600/20 rounded-full blur-3xl z-0"></div>
               </FadeIn>
@@ -274,7 +274,7 @@ const HomePage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn>
               <div className="relative group rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black">
-                <img src="https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/agenda-XjS5a.jpg" alt="Agenda 2026 Metanoia Radical" className="w-full h-auto object-contain transform transition-transform duration-500 group-hover:scale-[1.01]" />
+                <img src="/images/agenda-2026.jpg" alt="Agenda 2026 Metanoia Radical" className="w-full h-auto object-contain transform transition-transform duration-500 group-hover:scale-[1.01]" />
               </div>
             </FadeIn>
           </div>
@@ -287,12 +287,12 @@ const HomePage = () => {
               <FadeIn className="order-2 lg:order-1">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-4 mt-8">
-                    <img src="https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/whatsapp-image-2026-03-02-at-20.20.58-2-3IyKI.jpeg" alt="Gallery 1" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-48 w-full" />
-                    <img src="https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/whatsapp-image-2026-03-02-at-20.24.50-1-CUbB0.jpeg" alt="Gallery 2" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-64 w-full" />
+                    <img src="/images/gallery-1.jpg" alt="Gallery 1" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-48 w-full" />
+                    <img src="/images/gallery-2.jpg" alt="Gallery 2" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-64 w-full" />
                   </div>
                   <div className="space-y-4">
-                    <img src="https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/whatsapp-image-2026-03-02-at-20.20.58-3-MCQ2p.jpeg" alt="Gallery 3" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-64 w-full" />
-                    <img src="https://horizons-cdn.hostinger.com/13c6e949-152b-4918-9648-ee8b27e5e2cf/whatsapp-image-2026-03-02-at-20.24.49-bSyQe.jpeg" alt="Gallery 4" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-48 w-full" />
+                    <img src="/images/gallery-3.jpg" alt="Gallery 3" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-64 w-full" />
+                    <img src="/images/gallery-4.jpg" alt="Gallery 4" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-48 w-full" />
                   </div>
                 </div>
               </FadeIn>

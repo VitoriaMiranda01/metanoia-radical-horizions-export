@@ -21,6 +21,7 @@ import { validateCPF } from '@/utils/validation';
 import { useAuth } from '@/contexts/AuthContext';
 import { GROUPS } from '@/utils/gruposTrailha';
 import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
+import VinculosDoAcampante from '@/components/gerenciar/VinculosAcampante';
 
 /**
  * Edicao dos dados cadastrais de uma inscricao (acampante ou equipante),
@@ -152,7 +153,9 @@ const ESTADOS_CIVIS = ['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)',
 
 // avisoDoGrupo(id, grupo) -> [{ nome, rotulo }]: quem, vinculado a este
 // acampante (conjuge, amigo, parente), ja esta no grupo. So aviso (12/10/2026).
-const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo }) => {
+// vinc + onRealocar: a mesma parte de vinculos do card do grupo de trilha
+// (lista, sugestao da inscricao, "+ Vinculo", mover o outro).
+const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, onRealocar }) => {
   const { toast } = useToast();
   const isEquipante = inscricao?.tipo === 'equipante';
   const [salvando, setSalvando] = useState(false);
@@ -343,7 +346,10 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo }) => {
                     <p className="text-xs text-amber-300">Sai do grupo {inscricao.grupo_trailha} ao salvar.</p>
                   )}
                   {(() => {
-                    const avisos = avisoDoGrupo && form.grupo_trailha ? avisoDoGrupo(inscricao.id, form.grupo_trailha) : [];
+                    // So ao trocar de grupo: no grupo atual, a parte "Vinculos"
+                    // abaixo ja marca quem esta junto.
+                    const trocou = form.grupo_trailha && form.grupo_trailha !== inscricao.grupo_trailha;
+                    const avisos = avisoDoGrupo && trocou ? avisoDoGrupo(inscricao.id, form.grupo_trailha) : [];
                     if (!avisos.length) return null;
                     return (
                       <p className="text-xs text-amber-200 flex gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
@@ -361,6 +367,20 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo }) => {
                   onChange={set('observacoes_organizador')}
                 />
               </div>
+              {vinc?.carregado && (
+                <div className="space-y-1.5">
+                  <Label className="text-white text-sm">Vínculos</Label>
+                  <p className="text-xs text-gray-400">
+                    Quem não deveria ficar no mesmo grupo que {String(inscricao.nome || '').split(' ')[0] || 'este acampante'} (cônjuge, amigo, parente).
+                    O "mesmo grupo" compara com o grupo escolhido acima. Vínculos são salvos na hora, sem precisar de "Salvar Alterações".
+                  </p>
+                  <VinculosDoAcampante
+                    acampante={{ ...(vinc.porId.get(inscricao.id) || inscricao), grupo_trailha: form.grupo_trailha || null }}
+                    vinc={vinc}
+                    onRealocar={onRealocar}
+                  />
+                </div>
+              )}
             </div>
           )}
 

@@ -564,6 +564,8 @@ const GerenciarInscricoesPage = () => {
               onClose={() => setInscricaoParaEditar(null)}
               onSave={handleSalvarEdicaoInscricao}
               avisoDoGrupo={avisoDoGrupo}
+              vinc={vinc}
+              onRealocar={handleRealocarGrupoTrailha}
             />
           )}
 

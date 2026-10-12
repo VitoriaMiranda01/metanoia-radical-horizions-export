@@ -258,12 +258,15 @@ export const SugestaoVinculo = ({ sugestao, vinc, onProcurar }) => {
           {salvando === 'ignorar' ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <X className="w-3 h-3 mr-1" />}Ignorar
         </Button>
         {onProcurar && (
-          <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs bg-white/5 border-white/10 text-gray-200 hover:bg-white/10" onClick={() => onProcurar(sugestao.texto)} disabled={!!salvando}>
-            <Search className="w-3 h-3 mr-1" />Procurar outro
+          <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs bg-white/5 border-white/10 text-gray-200 hover:bg-white/10 hover:text-white" onClick={() => onProcurar(sugestao.texto)} disabled={!!salvando}
+            data-dica="Quando o nome sugerido não é a pessoa certa (ou ninguém foi achado): abre a busca em todos os acampantes, de qualquer grupo, para escolher com quem ligar este acampante.">
+            <Search className="w-3 h-3 mr-1" />Procurar outro acampante
           </Button>
         )}
         {sugestao.candidatos.length > 0 && (
-          <Button type="button" size="sm" className="h-7 px-2 text-xs bg-sky-600 hover:bg-sky-700 text-white" onClick={confirmar} disabled={!escolhido || !!salvando}>
+          <Button type="button" size="sm" className="h-7 px-2 text-xs bg-sky-600 hover:bg-sky-700 text-white" onClick={confirmar} disabled={!escolhido || !!salvando}
+            data-dica="Ligar este acampante à pessoa marcada acima, com o tipo escolhido. O vínculo vale para os dois.">
+
             {salvando === 'confirmar' ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Check className="w-3 h-3 mr-1" />}Confirmar
           </Button>
         )}

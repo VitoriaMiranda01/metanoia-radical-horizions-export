@@ -188,7 +188,8 @@ export const confirmarPagamentoManual = async (tipo, id, valor, cupom) =>
 
 const STATUS_QUITADOS = ['confirmado', 'pago', 'completed'];
 
-const estaQuitada = (status) =>
+// Exportada tambem para as listas dos onibus (so quem pagou, 12/10/2026).
+export const estaQuitada = (status) =>
   STATUS_QUITADOS.includes(String(status || '').toLowerCase());
 
 /**

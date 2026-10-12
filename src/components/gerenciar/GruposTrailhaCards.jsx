@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, UserCheck, AlertTriangle, Link2 } from 'lucide-react';
+import { Users, UserCheck, AlertTriangle, Link2, Bus } from 'lucide-react';
 import { getGroupColor, getGroupStats, GROUPS } from '@/utils/gruposTrailha';
 import { motion } from 'framer-motion';
 
@@ -65,7 +65,8 @@ const GroupCard = ({ name, data, onClick, conflitos = 0 }) => {
 
 // Vinculos (12/10/2026): cada cor mostra quantos pares vinculados estao
 // juntos nela, e o botao abre a visao geral (sugestoes da inscricao etc.).
-const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, resumoVinculos = null, onAbrirVinculos }) => {
+// Ao lado, as listas dos onibus (OnibusDialog).
+const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, resumoVinculos = null, onAbrirVinculos, onAbrirOnibus }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-4">
@@ -74,8 +75,9 @@ const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, 
         <div className="h-px bg-white/10 flex-1" />
       </div>
 
-      {onAbrirVinculos && (
-        <div className="flex justify-center">
+      {(onAbrirVinculos || onAbrirOnibus) && (
+        <div className="flex flex-wrap justify-center gap-2">
+          {onAbrirVinculos && (
           <button
             type="button" onClick={onAbrirVinculos}
             data-dica="Ver quem não deveria ficar no mesmo grupo (cônjuge, amigo, parente), confirmar as sugestões da inscrição e resolver quem está junto."
@@ -91,6 +93,16 @@ const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, 
               </>
             )}
           </button>
+          )}
+          {onAbrirOnibus && (
+            <button
+              type="button" onClick={onAbrirOnibus}
+              data-dica="Dividir os acampantes que pagaram pelos ônibus, por grupo, e imprimir uma lista por ônibus (ou baixar em Excel)."
+              className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
+            >
+              <Bus className="w-4 h-4" />Listas dos ônibus
+            </button>
+          )}
         </div>
       )}
 

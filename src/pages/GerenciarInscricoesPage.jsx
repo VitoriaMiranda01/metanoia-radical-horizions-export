@@ -23,6 +23,7 @@ import AcampantesTable from '@/components/gerenciar/AcampantesTable';
 import GruposTrailhaCards from '@/components/gerenciar/GruposTrailhaCards';
 import GruposTrailhaModal from '@/components/gerenciar/GruposTrailhaModal';
 import VinculosAcampantesDialog from '@/components/gerenciar/VinculosAcampantesDialog';
+import OnibusDialog from '@/components/gerenciar/OnibusDialog';
 import { useVinculosAcampantes } from '@/hooks/useVinculosAcampantes';
 import { textoDosVinculos } from '@/utils/vinculosAcampantes';
 import AcampantesStatsCards from '@/components/gerenciar/AcampantesStatsCards';
@@ -91,6 +92,8 @@ const GerenciarInscricoesPage = () => {
   // deveria ficar no mesmo grupo. Esta tela e so de organizador.
   const vinc = useVinculosAcampantes(acampantesList);
   const [vinculosAberto, setVinculosAberto] = useState(false);
+  // Listas dos onibus (12/10/2026).
+  const [onibusAberto, setOnibusAberto] = useState(false);
 
   useEffect(() => {
     carregarEquipantes();
@@ -509,6 +512,7 @@ const GerenciarInscricoesPage = () => {
                       conflitosPorGrupo={vinc.conflitosPorGrupo}
                       resumoVinculos={vinc.carregado ? { sugestoes: vinc.sugestoes.length, conflitos: vinc.conflitos.length } : null}
                       onAbrirVinculos={() => setVinculosAberto(true)}
+                      onAbrirOnibus={() => setOnibusAberto(true)}
                     />
                   </div>
 
@@ -587,6 +591,12 @@ const GerenciarInscricoesPage = () => {
               vinc={vinc}
             />
           )}
+
+          <OnibusDialog
+            isOpen={onibusAberto}
+            onClose={() => setOnibusAberto(false)}
+            acampantes={acampantesList}
+          />
 
           <VinculosAcampantesDialog
             isOpen={vinculosAberto}

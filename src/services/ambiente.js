@@ -53,6 +53,15 @@ export const emTeste = () => {
   }
 };
 
+// Botao "Ir para o ambiente de teste" das Configuracoes (12/10/2026): o mesmo
+// que abrir o link ?ambiente=teste. A sessao cai e a pessoa entra de novo, ja
+// no banco de teste.
+export const irParaTeste = () => {
+  limparSessao();
+  try { localStorage.setItem(CHAVE, 'teste'); } catch (_) { return; }
+  window.location.href = '/login';
+};
+
 export const sairDoTeste = () => {
   limparSessao();
   try { localStorage.removeItem(CHAVE); } catch (_) { /* ignora */ }

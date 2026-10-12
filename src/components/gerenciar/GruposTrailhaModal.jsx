@@ -6,11 +6,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { getGroupColor, GROUPS } from '@/utils/gruposTrailha';
-import { User, Users, Fingerprint, Phone, Loader2, ArrowRightLeft, Save, Search, X } from 'lucide-react';
+import { getGroupColor } from '@/utils/gruposTrailha';
+import { User, Users, Fingerprint, Phone, Loader2, Save, Search, X, AlertTriangle } from 'lucide-react';
+import VinculosDoAcampante, { SeletorMoverGrupo } from '@/components/gerenciar/VinculosAcampante';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { normalizarBusca } from '@/utils/busca';
@@ -18,15 +18,13 @@ import { nomeDaIgreja } from '@/constants/igrejas';
 import { formatarTelefone } from '@/utils/telefone';
 import { cn } from '@/lib/utils';
 
-// Realocacao manual de grupo de trilha (organizador corrige quem ja esta
-// alocado -- ex: juntar amigos/familia no mesmo grupo). Mesmo padrao de UI
-// usado pra realocacao de area de trabalho de equipante (tela de Geracao
-// de Escalas, acao "Mover"): seleciona o novo valor e
-// confirma com um botao dedicado, sem precisar sair do card.
-const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao }) => {
+// Realocacao manual de grupo de trilha: a troca e estrategica -- quem vem
+// junto (conjuge, amigo, parente) fica em grupos DIFERENTES (Patrick,
+// 12/10/2026). Os vinculos de cada um aparecem no card (VinculosAcampante.jsx)
+// e mover para um grupo onde ja tem alguem vinculado pede confirmacao -- so
+// aviso, nao bloqueia.
+const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao, vinc }) => {
   const isMale = acampante.sexo?.toLowerCase() === 'masculino';
-  const [novoGrupo, setNovoGrupo] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
   // Observacao breve do organizador sobre este acampante (coluna
   // acampantes.observacoes_organizador). lastSavedObs guarda o valor que
@@ -49,25 +47,10 @@ const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao }) => {
     }
   }, [observacao]);
 
-  const outrosGrupos = GROUPS.filter(g => g !== acampante.grupo_trailha);
-
-  // "Vai com": quem o acampante indicou como conhecido/familiar já no
-  // projeto, respondido na inscrição (QuemIndicou.jsx) e nunca editável
-  // aqui -- é só leitura, pra organizador saber que existe alguém pra tentar
-  // juntar no mesmo grupo. Fica separado da Observação (que é texto livre
-  // do próprio organizador) mesmo quando os dois existem.
+  // "Vai com": quem o acampante indicou como conhecido/familiar na inscricao
+  // (QuemIndicou.jsx). Com os vinculos carregados, vira sugestao para o
+  // organizador confirmar; sem eles (erro ao carregar), fica so o texto.
   const temConhecido = acampante.conhecido_no_projeto && acampante.conhecido_no_projeto !== 'NÃO TENHO';
-
-  const handleRealocar = async () => {
-    if (!novoGrupo || !onRealocar) return;
-    setIsSaving(true);
-    try {
-      await onRealocar(acampante, novoGrupo);
-      setNovoGrupo('');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleSalvarObservacao = async () => {
     if (!onSalvarObservacao || observacao === lastSavedObs) return;
@@ -101,7 +84,7 @@ const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao }) => {
                 </span>
               )}
             </div>
-            {temConhecido && (
+            {temConhecido && !vinc?.carregado && (
               <div className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
                 <Users className="w-3 h-3 shrink-0" />
                 <span className="truncate">
@@ -116,8 +99,14 @@ const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao }) => {
         </Badge>
       </div>
 
+      {vinc?.carregado && (
+        <div className="pl-11">
+          <VinculosDoAcampante acampante={acampante} vinc={vinc} onRealocar={onRealocar} />
+        </div>
+      )}
+
       {(onSalvarObservacao || onRealocar) && (
-        <div className="flex items-start gap-1.5 pl-11">
+        <div className="flex flex-wrap items-start gap-1.5 pl-11">
           {onSalvarObservacao && (
             <>
               <Textarea
@@ -127,7 +116,7 @@ const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao }) => {
                 disabled={isSavingObs}
                 rows={1}
                 placeholder="Observações..."
-                className="min-h-[32px] h-8 resize-none overflow-hidden bg-white/5 border-white/10 text-white placeholder:text-gray-500 text-xs flex-1 min-w-0 py-1.5 leading-tight"
+                className="min-h-[32px] h-8 resize-none overflow-hidden bg-white/5 border-white/10 text-white placeholder:text-gray-500 text-xs flex-1 min-w-[9rem] py-1.5 leading-tight"
               />
               <Button
                 type="button"
@@ -145,30 +134,7 @@ const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao }) => {
           )}
 
           {onRealocar && (
-            <>
-              <Select value={novoGrupo} onValueChange={setNovoGrupo} disabled={isSaving}>
-                <SelectTrigger className="h-8 w-[130px] shrink-0 bg-white/5 border-white/10 text-white text-xs">
-                  <SelectValue placeholder="Novo grupo..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {outrosGrupos.map(grupo => (
-                    <SelectItem key={grupo} value={grupo}>{grupo}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                type="button"
-                size="icon"
-                variant="outline"
-                onClick={handleRealocar}
-                data-dica="Mudar o acampante para o grupo escolhido ao lado."
-                disabled={!novoGrupo || isSaving}
-                className="h-8 w-8 shrink-0 bg-white/5 border-white/10 text-gray-300 hover:bg-white/15 hover:text-white"
-                aria-label="Realocar"
-              >
-                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRightLeft className="w-3.5 h-3.5" />}
-              </Button>
-            </>
+            <SeletorMoverGrupo acampante={acampante} avisoPara={vinc?.carregado ? vinc.avisoParaGrupo : null} onMover={onRealocar} />
           )}
         </div>
       )}
@@ -184,16 +150,24 @@ const SEXOS = [
   { chave: 'feminino', rotulo: 'Feminino' },
 ];
 
-const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onRealocar, onSalvarObservacao }) => {
+const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onRealocar, onSalvarObservacao, vinc }) => {
   const colors = getGroupColor(groupName);
   const [busca, setBusca] = useState('');
   const [sexo, setSexo] = useState('todos');
+  // "Vinculos": so quem tem vinculo com alguem deste mesmo grupo.
+  const [soConflitos, setSoConflitos] = useState(false);
   const buscaRef = useRef(null);
 
   // Cada grupo abre com a busca limpa.
   useEffect(() => {
-    if (isOpen) { setBusca(''); setSexo('todos'); }
+    if (isOpen) { setBusca(''); setSexo('todos'); setSoConflitos(false); }
   }, [isOpen, groupName]);
+
+  const idsEmConflito = vinc?.idsEmConflito;
+  const totalConflitos = useMemo(
+    () => (idsEmConflito ? groupData.filter((a) => idsEmConflito.has(a.id)).length : 0),
+    [groupData, idsEmConflito]
+  );
 
   const contagem = useMemo(() => ({
     todos: groupData.length,
@@ -206,6 +180,7 @@ const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onReal
     const digitos = termo.replace(/\D/g, '');
     return groupData.filter((a) => {
       if (sexo !== 'todos' && a.sexo?.toLowerCase() !== sexo) return false;
+      if (soConflitos && !idsEmConflito?.has(a.id)) return false;
       if (!termo) return true;
       const texto = normalizarBusca([
         a.nome, nomeDaIgreja(a), a.admin_responsavel, a.nome_familiar_conhecido, a.observacoes_organizador,
@@ -214,7 +189,7 @@ const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onReal
       return digitos.length >= 3
         && (`${a.cpf || ''}`.replace(/\D/g, '').includes(digitos) || `${a.whatsapp || ''}`.replace(/\D/g, '').includes(digitos));
     });
-  }, [groupData, busca, sexo]);
+  }, [groupData, busca, sexo, soConflitos, idsEmConflito]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -232,6 +207,11 @@ const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onReal
           </DialogTitle>
           <DialogDescription className="text-gray-400">
             Lista de membros alocados ({groupData.length} participantes)
+            {totalConflitos > 0 && (
+              <span className="ml-2 inline-flex items-center gap-1 text-amber-300">
+                <AlertTriangle className="w-3.5 h-3.5" />{totalConflitos} com vínculo no mesmo grupo
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -269,9 +249,23 @@ const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onReal
                 {x.rotulo} <span className="text-gray-500 tabular-nums">{contagem[x.chave]}</span>
               </button>
             ))}
+            {totalConflitos > 0 && (
+              <button
+                type="button" onClick={() => setSoConflitos((v) => !v)} aria-pressed={soConflitos}
+                data-dica="Mostrar só quem tem vínculo (cônjuge, amigo, parente) com alguém deste mesmo grupo."
+                className={cn(
+                  'h-9 px-3 rounded-md border text-xs whitespace-nowrap transition-colors inline-flex items-center gap-1',
+                  soConflitos
+                    ? 'border-amber-400/60 bg-amber-500/20 text-amber-100'
+                    : 'border-amber-500/30 bg-amber-500/5 text-amber-300 hover:bg-amber-500/10'
+                )}
+              >
+                <AlertTriangle className="w-3.5 h-3.5" /> Vínculos <span className="tabular-nums">{totalConflitos}</span>
+              </button>
+            )}
           </div>
         </div>
-        {(busca || sexo !== 'todos') && (
+        {(busca || sexo !== 'todos' || soConflitos) && (
           <p className="-mt-1 text-xs text-gray-500">{filtrados.length} de {groupData.length} no filtro</p>
         )}
 
@@ -279,7 +273,7 @@ const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onReal
           <div className="space-y-2">
             {filtrados.length > 0 ? (
               filtrados.map((acampante, idx) => (
-                <AcampanteItem key={acampante.id || idx} acampante={acampante} onRealocar={onRealocar} onSalvarObservacao={onSalvarObservacao} />
+                <AcampanteItem key={acampante.id || idx} acampante={acampante} onRealocar={onRealocar} onSalvarObservacao={onSalvarObservacao} vinc={vinc} />
               ))
             ) : (
               <div className="text-center py-10 text-gray-500">

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -150,7 +150,9 @@ const SEXO_OPCOES = ['Masculino', 'Feminino'];
 const TAMANHOS_CAMISA = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'XXG'];
 const ESTADOS_CIVIS = ['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União Estável'];
 
-const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
+// avisoDoGrupo(id, grupo) -> [{ nome, rotulo }]: quem, vinculado a este
+// acampante (conjuge, amigo, parente), ja esta no grupo. So aviso (12/10/2026).
+const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo }) => {
   const { toast } = useToast();
   const isEquipante = inscricao?.tipo === 'equipante';
   const [salvando, setSalvando] = useState(false);
@@ -340,6 +342,18 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave }) => {
                   {form.grupo_trailha !== inscricao.grupo_trailha && inscricao.grupo_trailha && (
                     <p className="text-xs text-amber-300">Sai do grupo {inscricao.grupo_trailha} ao salvar.</p>
                   )}
+                  {(() => {
+                    const avisos = avisoDoGrupo && form.grupo_trailha ? avisoDoGrupo(inscricao.id, form.grupo_trailha) : [];
+                    if (!avisos.length) return null;
+                    return (
+                      <p className="text-xs text-amber-200 flex gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />
+                        <span>
+                          Não deveria ficar no grupo {form.grupo_trailha}: {avisos.map((a) => `${a.nome} (${a.rotulo.toLowerCase()})`).join(', ')} {avisos.length > 1 ? 'estão' : 'está'} nele. Dá para salvar assim mesmo.
+                        </span>
+                      </p>
+                    );
+                  })()}
                 </div>
                 <CampoArea
                   label="Observações (as mesmas do card no grupo de trilha)"

@@ -25,6 +25,7 @@ import PastoresParceirosManager from '@/components/organizer/PastoresParceirosMa
 import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizadoresManager';
 import BackupStatusCard from '@/components/organizer/BackupStatusCard';
 import AuditoriaCard from '@/components/organizer/AuditoriaCard';
+import AmbienteTesteCard from '@/components/organizer/AmbienteTesteCard';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
@@ -797,6 +798,11 @@ const OrganizerConfigPage = () => {
           {/* Auditoria: tambem so a conta Desenvolvedores ve. */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
             <AuditoriaCard />
+          </motion.div>
+
+          {/* Atalho para o ambiente de teste (12/10/2026). */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.495 }}>
+            <AmbienteTesteCard />
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>

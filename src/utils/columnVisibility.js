@@ -100,6 +100,9 @@ export const COLUMN_DEFINITIONS = {
     { key: 'admin_responsavel', label: 'Igreja Responsável pela Inscrição', group: 'Igreja' },
     { key: 'grupo_trailha', label: 'Grupo de Trilha', group: 'Acampamento' },
     { key: 'tamanho_camisa', label: 'Camiseta', group: 'Acampamento' },
+    // Vinculos do grupo de trilha (12/10/2026): preenchida pela tela de
+    // Gerenciar Inscricoes (so organizador), vai junto na planilha.
+    { key: 'vinculos_grupo', label: 'Não pode ficar com (vínculos)', group: 'Acampamento' },
 
     // Saúde
     { key: 'tem_problema_saude', label: 'Tem Problema de Saúde', group: 'Saúde' },

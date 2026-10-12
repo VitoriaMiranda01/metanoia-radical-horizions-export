@@ -22,6 +22,9 @@ import TotalEdicaoTable from '@/components/gerenciar/TotalEdicaoTable';
 import AcampantesTable from '@/components/gerenciar/AcampantesTable';
 import GruposTrailhaCards from '@/components/gerenciar/GruposTrailhaCards';
 import GruposTrailhaModal from '@/components/gerenciar/GruposTrailhaModal';
+import VinculosAcampantesDialog from '@/components/gerenciar/VinculosAcampantesDialog';
+import { useVinculosAcampantes } from '@/hooks/useVinculosAcampantes';
+import { textoDosVinculos } from '@/utils/vinculosAcampantes';
 import AcampantesStatsCards from '@/components/gerenciar/AcampantesStatsCards';
 import AcampantesDetailModal from '@/components/gerenciar/AcampantesDetailModal';
 import EditarInscricaoModal from '@/components/gerenciar/EditarInscricaoModal';
@@ -84,6 +87,10 @@ const GerenciarInscricoesPage = () => {
   const [acampanteSalvoEm, setAcampanteSalvoEm] = useState(0);
   // Avisos de fichas com problema (Raquel e Desenvolvedores) + o sino.
   const avisosInscricoes = useAvisosInscricoes(acampanteSalvoEm);
+  // Vinculos entre acampantes nos grupos de trilha (12/10/2026): quem nao
+  // deveria ficar no mesmo grupo. Esta tela e so de organizador.
+  const vinc = useVinculosAcampantes(acampantesList);
+  const [vinculosAberto, setVinculosAberto] = useState(false);
 
   useEffect(() => {
     carregarEquipantes();
@@ -221,6 +228,18 @@ const GerenciarInscricoesPage = () => {
   const allocatedGroups = useMemo(() => {
     return groupAcampantesByTrilha(acampantesList);
   }, [acampantesList]);
+
+  // Coluna "Não pode ficar com" da tabela/planilha de acampantes.
+  const acampantesDaTabela = useMemo(() => {
+    if (!vinc.vinculos.length) return acampantesList;
+    return acampantesList.map((a) => {
+      const texto = textoDosVinculos(vinc.porAcampante.get(a.id), vinc.porId);
+      return texto ? { ...a, vinculos_grupo: texto } : a;
+    });
+  }, [acampantesList, vinc.vinculos, vinc.porAcampante, vinc.porId]);
+
+  // Aviso do Editar inscricao ao trocar o grupo.
+  const avisoDoGrupo = (acampanteId, grupo) => (vinc.carregado ? vinc.avisoParaGrupo(acampanteId, grupo) : []);
 
   const handleViewDetails = (acampante) => {
     const adapted = {
@@ -486,12 +505,15 @@ const GerenciarInscricoesPage = () => {
                   <div className="mb-8">
                     <GruposTrailhaCards 
                       groupsData={allocatedGroups} 
-                      onGroupClick={handleGroupClick} 
+                      onGroupClick={handleGroupClick}
+                      conflitosPorGrupo={vinc.conflitosPorGrupo}
+                      resumoVinculos={vinc.carregado ? { sugestoes: vinc.sugestoes.length, conflitos: vinc.conflitos.length } : null}
+                      onAbrirVinculos={() => setVinculosAberto(true)}
                     />
                   </div>
 
-                  <AcampantesTable 
-                    data={acampantesList}
+                  <AcampantesTable
+                    data={acampantesDaTabela}
                     loading={loadingAcampantes}
                     onViewDetails={handleViewDetails}
                     onDelete={handleDeleteAcampante}
@@ -541,6 +563,7 @@ const GerenciarInscricoesPage = () => {
               inscricao={inscricaoParaEditar}
               onClose={() => setInscricaoParaEditar(null)}
               onSave={handleSalvarEdicaoInscricao}
+              avisoDoGrupo={avisoDoGrupo}
             />
           )}
 
@@ -559,8 +582,16 @@ const GerenciarInscricoesPage = () => {
               groupData={selectedGroup.data}
               onRealocar={handleRealocarGrupoTrailha}
               onSalvarObservacao={handleSalvarObservacaoAcampante}
+              vinc={vinc}
             />
           )}
+
+          <VinculosAcampantesDialog
+            isOpen={vinculosAberto}
+            onClose={() => setVinculosAberto(false)}
+            vinc={vinc}
+            onRealocar={handleRealocarGrupoTrailha}
+          />
 
           <AcampantesDetailModal
             isOpen={isStatsModalOpen}

@@ -65,9 +65,10 @@ export const getAcampantes = async () => {
 export const countAcampantes = async () =>
   comReenvio(() => supabase.from('acampantes').select('*', { count: 'exact', head: true }), { rotulo: 'contagem de acampantes' });
 
-// Realoca um acampante ja aprovado pra outro grupo de trilha (organizador
-// corrige manualmente pela tela de Gerenciar Inscricoes -- ex: quer colocar
-// amigos/familia no mesmo grupo). Diferente da alocacao de equipante em
+// Realoca um acampante ja aprovado pra outro grupo de trilha (organizador,
+// pela tela de Gerenciar Inscricoes). A troca e estrategica: quem vem junto
+// (conjuge, amigo, parente) fica em grupos DIFERENTES -- os vinculos e o aviso
+// estao em components/gerenciar/VinculosAcampante.jsx (12/10/2026). Diferente da alocacao de equipante em
 // area de trabalho, os grupos de trilha nao tem capacidade maxima fixa
 // (o sorteio no servidor so tenta balancear por sexo no momento do
 // cadastro) -- por isso aqui e so um UPDATE direto na coluna

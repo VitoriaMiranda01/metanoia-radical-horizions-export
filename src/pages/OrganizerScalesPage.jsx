@@ -395,46 +395,57 @@ const OrganizerScalesPage = () => {
   const previousAllocationsRef = useRef([]);
   const saveTimeoutRef = useRef(null);
   const isFetchingRef = useRef(false);
-  
+  // Pedido de recarga que chegou com outra em andamento (13/10/2026). Antes
+  // ele era descartado: se a atualizacao automatica de 30s ja tinha lido a
+  // escala e o organizador alocava alguem nesse meio-tempo, a tela ficava
+  // com o retrato velho por ate 30s -- e o segundo clique dava "já está em".
+  // Agora a recarga roda de novo assim que a atual termina.
+  const recargaPendenteRef = useRef(false);
+
   const { toast } = useToast();
 
   const fetchBackgroundData = async (showLoading = false) => {
-    if (isFetchingRef.current) return;
+    if (isFetchingRef.current) { recargaPendenteRef.current = true; return; }
     isFetchingRef.current = true;
     if (showLoading) setLoadingLimits(true);
-    
+
     try {
       const [limitsData, existingAllocations, equipantes] = await Promise.all([
-        fetchLimitesAreas(), 
-        fetchAllAllocations(), 
+        fetchLimitesAreas(),
+        fetchAllAllocations(),
         fetchApprovedEquipantes()
       ]);
-      
+
       setLimitsMap(limitsData);
       setEquipantesAprovados(equipantes || []);
 
+      // Fila e tabelas das areas mudam juntas (antes a fila mudava e as
+      // tabelas so depois de mais 4 consultas). Compara com o ref, e nao com
+      // `allocations`: esta funcao roda tambem pelo intervalo de 30s, criado
+      // no primeiro desenho, e la `allocations` e a lista daquele momento.
       const idsAlocados = new Set((existingAllocations || []).map(a => a.id));
       setWaitlist((equipantes || []).filter(eq => !idsAlocados.has(eq.id)));
+      if (existingAllocations) {
+        const changed = detectAllocationChanges(existingAllocations, previousAllocationsRef.current);
+        if (changed.length > 0 || previousAllocationsRef.current.length !== existingAllocations.length) {
+          setAllocations(existingAllocations);
+          previousAllocationsRef.current = [...existingAllocations];
+        }
+      }
+
       setAguardandoAprovacao(await contarAguardandoAprovacao());
       setEscala(await fetchSituacaoEscala());
       setAutoSituacao(await fetchSituacaoAlocacaoAutomatica());
       setFixas(await fetchAreasFixas());
-
-      if (existingAllocations && existingAllocations.length > 0) {
-        const changed = detectAllocationChanges(existingAllocations, previousAllocationsRef.current);
-        if (changed.length > 0 || allocations.length !== existingAllocations.length) {
-          setAllocations(existingAllocations);
-          previousAllocationsRef.current = [...existingAllocations];
-        }
-      } else if (existingAllocations?.length === 0 && allocations.length > 0) {
-        setAllocations([]);
-        previousAllocationsRef.current = [];
-      }
     } catch (error) {
       console.error("Background fetch error:", error);
     } finally {
       isFetchingRef.current = false;
       if (showLoading) setLoadingLimits(false);
+      if (recargaPendenteRef.current) {
+        recargaPendenteRef.current = false;
+        fetchBackgroundData(false);
+      }
     }
   };
 
@@ -970,6 +981,8 @@ const OrganizerScalesPage = () => {
       fetchBackgroundData(false);
     } else if (r.erros.length) {
       toast({ title: 'Não foi possível alocar', description: `${nome}: ${r.erros[0].erro}`, variant: 'destructive' });
+      // "Já está em ..." quer dizer que a tela estava atrasada: recarrega.
+      fetchBackgroundData(false);
     } else {
       toast({ title: 'Nada a fazer', description: `${nome} já está em ${label}.` });
     }

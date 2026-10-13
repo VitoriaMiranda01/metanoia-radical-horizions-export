@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import { formatCPF, calcularIdade } from '@/utils/formatters';
 import { formatarTelefone, digitosTelefone } from '@/utils/telefone';
 import { nomeDaIgreja } from '@/constants/igrejas';
+import { ehPastorTexto } from '@/utils/pastor';
 
 /**
  * Exportacao da tela de Aprovacao de Equipantes, por igreja (Patrick,
@@ -53,15 +54,6 @@ const idadeDe = (item) => {
   return idade === null || idade === undefined || idade === '' ? '-' : Number(idade);
 };
 
-// "E pastor?" vem da funcao na igreja (cargo_igreja): a coluna e_pastor do
-// banco nao e preenchida pelo formulario atual (12/10/2026).
-const ehPastor = (item) => {
-  const cargo = String(item.cargo_igreja || '').toUpperCase();
-  if (cargo === 'PASTOR(A) AUXILIAR') return 'Sim (pastor auxiliar)';
-  if (cargo === 'PASTOR(A)' || item.e_pastor === true) return 'Sim';
-  return 'Não';
-};
-
 // Colunas e larguras andam juntas (Patrick, 12/10/2026: + idade, se e pastor
 // e as 3 opcoes de area da inscricao).
 const COLUNAS = [
@@ -70,8 +62,8 @@ const COLUNAS = [
   ['Idade', 7, idadeDe],
   ['WhatsApp', 18, (i) => telefoneLegivel(i.whatsapp)],
   ['Igreja', 45, igrejaDaLinha],
-  ['É pastor?', 20, ehPastor],
-  ['Pastor', 30, (i) => i.pastor_nome || '-'],
+  ['É pastor?', 20, ehPastorTexto],
+  ['Pastor Responsável da igreja', 32, (i) => i.pastor_nome || '-'],
   ['1ª opção de área', 28, (i) => i.area_trabalho_opcao1 || '-'],
   ['2ª opção de área', 28, (i) => i.area_trabalho_opcao2 || '-'],
   ['3ª opção de área', 28, (i) => i.area_trabalho_opcao3 || '-'],

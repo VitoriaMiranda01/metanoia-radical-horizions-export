@@ -8,6 +8,7 @@ import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { bandeiraENome } from '@/constants/nacionalidades';
 import { getEquipanteStageLabel } from '@/utils/equipanteWorkflow';
+import { ehPastorTexto } from '@/utils/pastor';
 
 const getStatusBadge = (status) => {
   const variants = {
@@ -313,7 +314,8 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
               {isEquipante && (
                 <div className="bg-white/5 p-3 rounded-md">
                   <span className="text-sm text-gray-400 block mb-1">É Pastor?</span>
-                  <p className="text-white font-medium">{formatBoolean(inscricao.e_pastor)}</p>
+                  {/* Vem do Cargo na Igreja (o formulario nao pergunta a parte). */}
+                  <p className="text-white font-medium">{ehPastorTexto(inscricao)}</p>
                 </div>
               )}
               {isEquipante && (

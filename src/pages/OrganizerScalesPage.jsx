@@ -16,7 +16,7 @@ import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
 import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf, fetchAreasFixas, limparArea, marcarAreaFixa } from '@/services/equipanteAllocationService';
 import { fetchConfiguracoes, updateCpfsAreaEspecial } from '@/services/organizerConfigService';
 import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
-import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus, ChevronDown, ChevronUp, Pin, ArrowUpDown } from 'lucide-react';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus, ChevronDown, ChevronUp, Pin, ArrowUpDown, Plus } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -213,6 +213,10 @@ const OrganizerScalesPage = () => {
     return prox;
   });
   const [removendo, setRemovendo] = useState(false);
+  // "Escalar tambem em outra area" a partir da busca (13/10/2026): area
+  // escolhida e "salvando", por equipante.
+  const [tambemArea, setTambemArea] = useState({});
+  const [tambemSalvando, setTambemSalvando] = useState({});
   // Na fila: alocar ja marcando como fixo 📌 (por pessoa).
   const [fixarNaFila, setFixarNaFila] = useState({});
   // Fila "A escalar" minimizada: fica so a linha do titulo, para ver a
@@ -420,6 +424,20 @@ const OrganizerScalesPage = () => {
     p.areas.some(x => semAcento(x.area).includes(termoEscalados))
   ).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
   
+  // Quem bate com a busca da FILA mas ja esta escalado (a fila so lista quem
+  // nao tem area): em vez de "ninguem", mostra onde a pessoa esta e deixa
+  // acrescentar outra area ali mesmo.
+  const jaEscaladosDaBuscaFila = !termoBusca ? [] : Object.values(
+    allocations.reduce((acc, a) => {
+      (acc[a.id] = acc[a.id] || { id: a.id, nome: a.nome, igreja: nomeDaIgreja(a), cpf: a.cpf, areas: [] })
+        .areas.push({ area: a.allocatedArea, atuacao: a.atuacao, escalaId: a.escalaId });
+      return acc;
+    }, {})
+  ).filter(x =>
+    semAcento(x.nome).includes(termoBusca) ||
+    (digitosBusca !== '' && (x.cpf || '').replace(/\D/g, '').includes(digitosBusca))
+  ).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).slice(0, 5);
+
   const previousAllocationsRef = useRef([]);
   const saveTimeoutRef = useRef(null);
   const isFetchingRef = useRef(false);
@@ -736,6 +754,87 @@ const OrganizerScalesPage = () => {
       `${area}: ${r.error}.\n\nAlocar ${nome} mesmo assim? Na alocação manual o limite é só aviso.`
     );
     return ok ? tentar(true) : { ...r, cancelado: true };
+  };
+
+  // Acrescenta uma area a quem JA esta escalado, sem tirar das atuais.
+  const handleEscalarTambem = async (pessoa) => {
+    const area = tambemArea[pessoa.id];
+    if (!area) {
+      toast({ title: 'Escolha a área', variant: 'destructive' });
+      return;
+    }
+    const nome = formatNomeExibicao(pessoa.nome);
+    setTambemSalvando(prev => ({ ...prev, [pessoa.id]: true }));
+    try {
+      const r = await comAvisoDeLimite((forcar) => alocarEquipanteManualmente(pessoa.id, area, forcar), area, nome);
+      if (r.success) {
+        toast({
+          title: `Escalado também em ${area}`,
+          description: `${nome} agora está em ${[...pessoa.areas.map(x => x.area), area].join(' + ')}.`,
+          className: 'bg-green-600 text-white'
+        });
+        setTambemArea(prev => { const n = { ...prev }; delete n[pessoa.id]; return n; });
+        await fetchBackgroundData(false);
+      } else if (!r.cancelado) {
+        toast({ title: 'Não foi possível escalar', description: r.error, variant: 'destructive' });
+      }
+    } finally {
+      setTambemSalvando(prev => ({ ...prev, [pessoa.id]: false }));
+    }
+  };
+
+  // A linha "onde esta + escalar tambem em outra area". Usada na busca "Onde
+  // alguem esta escalado" e no aviso da fila quando a pessoa ja tem area.
+  const renderEscaladoComAcao = (pessoa) => {
+    const jaEspecial = pessoa.areas.some(x => NOMES_ESPECIAIS.includes(x.area));
+    const estaEmNaoSera = pessoa.areas.some(x => x.area === 'Não será escalado');
+    const opcoes = WORK_AREAS.filter(a =>
+      a !== 'Não será escalado' && !pessoa.areas.some(x => x.area === a) && !(jaEspecial && NOMES_ESPECIAIS.includes(a)));
+    return (
+      <div key={pessoa.id} className="bg-white/5 border border-white/10 rounded-md p-3 flex flex-col gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-sm font-medium truncate flex items-center gap-1.5">
+              <span className="truncate">{pessoa.nome}</span>
+              {pessoa.areas.length > 1 && (
+                <span className="shrink-0 text-[10px] px-1 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                  {pessoa.areas.length} áreas
+                </span>
+              )}
+            </p>
+            <p className="text-[11px] text-gray-500 truncate">{pessoa.igreja || '—'}</p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {pessoa.areas.map(x => (
+              <span key={x.escalaId} className="text-[11px] px-2 py-1 rounded border border-green-500/30 bg-green-500/10 text-green-200">
+                {x.area}
+                {x.atuacao && <span className="text-green-400/70"> · {x.atuacao}</span>}
+              </span>
+            ))}
+          </div>
+        </div>
+        {podeGerir && !estaEmNaoSera && (
+          <div className="flex items-center gap-2 flex-wrap border-t border-white/10 pt-2">
+            <span className="text-[11px] uppercase tracking-wider text-gray-500 shrink-0">Escalar também em</span>
+            <Select value={tambemArea[pessoa.id] || ''} onValueChange={(v) => setTambemArea(prev => ({ ...prev, [pessoa.id]: v }))}>
+              <SelectTrigger className="h-8 w-[210px] bg-black/40 border-white/20 text-white text-xs">
+                <SelectValue placeholder="Escolher a outra área..." />
+              </SelectTrigger>
+              <SelectContent>
+                {opcoes.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={() => handleEscalarTambem(pessoa)}
+              disabled={!tambemArea[pessoa.id] || tambemSalvando[pessoa.id]}
+              data-dica={`Acrescentar a área escolhida sem tirar ${formatNomeExibicao(pessoa.nome)} de ${pessoa.areas.map(x => x.area).join(' e ')}.`}
+              className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs">
+              {tambemSalvando[pessoa.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Plus className="h-3.5 w-3.5 mr-1" />Escalar também</>}
+            </Button>
+            {jaEspecial && <span className="text-[11px] text-gray-500">Já está numa área especial: só áreas comuns aqui.</span>}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const alternarAreaDaFila = (equipanteId, area) => {
@@ -1666,6 +1765,14 @@ const OrganizerScalesPage = () => {
                   {buscaFila.trim() ? <>Ninguém na fila corresponde a “{buscaFila}”.</> : 'Ninguém na fila com esse filtro.'}
                 </p>
               )}
+              {filaFiltrada.length === 0 && jaEscaladosDaBuscaFila.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-300">
+                    A fila só mostra quem ainda <strong className="text-white">não tem área</strong>. Quem bate com a busca e já está escalado:
+                  </p>
+                  {jaEscaladosDaBuscaFila.map(renderEscaladoComAcao)}
+                </div>
+              )}
               {/* Renderiza no maximo 100 de uma vez: com ~900 na fila, montar
                   900 blocos com 2 menus cada trava a tela sem necessidade.
                   Quem procura alguem especifico usa a busca. */}
@@ -1832,29 +1939,7 @@ const OrganizerScalesPage = () => {
                     Ninguém escalado corresponde a “{buscaEscalados}”.
                   </p>
                 )}
-                {escaladosEncontrados.slice(0, 40).map(p => (
-                  <div key={p.id} className="bg-white/5 border border-white/10 rounded-md p-3 flex flex-col sm:flex-row sm:items-center gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">
-                        {p.nome}
-                        {p.areas.length > 1 && (
-                          <span className="ml-2 text-[10px] px-1 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                            {p.areas.length} áreas
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-[11px] text-gray-500 truncate">{p.igreja || '—'}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {p.areas.map(x => (
-                        <span key={x.escalaId} className="text-[11px] px-2 py-1 rounded border border-green-500/30 bg-green-500/10 text-green-200">
-                          {x.area}
-                          {x.atuacao && <span className="text-green-400/70"> · {x.atuacao}</span>}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                {escaladosEncontrados.slice(0, 40).map(renderEscaladoComAcao)}
                 {escaladosEncontrados.length > 40 && (
                   <p className="text-xs text-gray-500 text-center">
                     Mostrando 40 de {escaladosEncontrados.length}. Refine a busca.

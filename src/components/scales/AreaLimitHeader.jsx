@@ -216,8 +216,10 @@ const AreaLimitHeader = ({
             )}
             <div className="flex items-center gap-1 shrink-0">
               {onAlocarEmLote && <Button
-                data-dica={isFull ? 'A área está cheia.' : 'Escolher várias pessoas da fila "A escalar" e colocar todas nesta área de uma vez, sem passar do limite.'}
-                variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10" onClick={onAlocarEmLote} disabled={isFull}>
+                data-dica={isFull
+                  ? 'A área está cheia, mas dá para alocar mais gente com aviso: escolher várias pessoas da fila "A escalar" de uma vez.'
+                  : 'Escolher várias pessoas da fila "A escalar" e colocar todas nesta área de uma vez (passar do limite pede confirmação).'}
+                variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10" onClick={onAlocarEmLote}>
                 <Users className="w-3 h-3 mr-1" />
                 <span className="text-[10px]">Alocar em lote</span>
               </Button>}

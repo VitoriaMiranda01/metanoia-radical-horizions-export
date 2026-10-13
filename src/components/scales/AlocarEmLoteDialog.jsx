@@ -13,12 +13,13 @@ import { cn } from '@/lib/utils';
 
 /**
  * "Alocar em lote" de uma area (Patrick, 12/10/2026): marca varias pessoas da
- * fila "A escalar" e coloca todas na area de uma vez, sem passar do limite.
+ * fila "A escalar" e coloca todas na area de uma vez.
  *
- * A tela ja trava a escolha no numero de vagas (total e por sexo, a mesma
- * regra do banco: com limite so de homens, mulher nao entra, e vice-versa);
- * o banco confere de novo pessoa a pessoa (alocar_em_lote_na_area) e devolve
- * quem nao coube.
+ * Limite so avisa (13/10/2026): da para marcar alem das vagas (total e por
+ * sexo, a mesma regra do banco: com limite so de homens, mulher conta como
+ * acima do limite, e vice-versa). A tela mostra o aviso e confirma; ai manda
+ * forcar = true. Sem passar das vagas, o banco confere de novo pessoa a
+ * pessoa (alocar_em_lote_na_area) e devolve quem nao coube.
  */
 
 const OPCAO = ['1ª opção', '2ª opção', '3ª opção'];
@@ -68,15 +69,26 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
   const mulheresMarcadas = escolhidos.filter(ehMulher).length;
   const homensMarcados = escolhidos.length - mulheresMarcadas;
 
-  // Ainda cabe esta pessoa na selecao?
+  // Ainda cabe esta pessoa dentro do limite? (Nao trava mais: so avisa.)
   const cabe = (p) => {
     if (escolhidos.length >= vagas) return false;
     return ehMulher(p) ? mulheresMarcadas < porSexo.mulheres : homensMarcados < porSexo.homens;
   };
 
+  // Quanto a selecao passa do limite (total e por sexo).
+  const acimaTotal = Math.max(0, escolhidos.length - vagas);
+  const acimaMulheres = porSexo.mulheres === Infinity ? 0 : Math.max(0, mulheresMarcadas - porSexo.mulheres);
+  const acimaHomens = porSexo.homens === Infinity ? 0 : Math.max(0, homensMarcados - porSexo.homens);
+  const passaDoLimite = acimaTotal > 0 || acimaMulheres > 0 || acimaHomens > 0;
+  const textoAcima = [
+    acimaTotal > 0 && `${acimaTotal} acima do limite da área`,
+    acimaMulheres > 0 && `${acimaMulheres} ${acimaMulheres === 1 ? 'mulher' : 'mulheres'} acima do limite`,
+    acimaHomens > 0 && `${acimaHomens} ${acimaHomens === 1 ? 'homem' : 'homens'} acima do limite`,
+  ].filter(Boolean).join(' · ');
+
   const alternar = (p) => setMarcados((s) => {
     const n = new Set(s);
-    if (n.has(p.id)) n.delete(p.id); else if (cabe(p)) n.add(p.id);
+    if (n.has(p.id)) n.delete(p.id); else n.add(p.id);
     return n;
   });
 
@@ -95,11 +107,14 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
 
   const alocar = async () => {
     if (!escolhidos.length) return;
+    if (passaDoLimite && !window.confirm(
+      `${area}: ${textoAcima}.\n\nAlocar as ${escolhidos.length} pessoas mesmo assim? Na alocação manual o limite é só aviso.`
+    )) return;
     setSalvando(true);
     // Na ordem da lista (quem escolheu a area como 1ª opcao primeiro).
     const ordem = lista.filter((p) => marcados.has(p.id)).map((p) => p.id);
     const resto = escolhidos.map((p) => p.id).filter((id) => !ordem.includes(id));
-    const r = await alocarEmLoteNaArea(area, [...ordem, ...resto], comCor ? cor : null);
+    const r = await alocarEmLoteNaArea(area, [...ordem, ...resto], comCor ? cor : null, passaDoLimite);
     setSalvando(false);
     if (!r.success) {
       toast({ title: 'Não foi possível alocar', description: r.error, variant: 'destructive' });
@@ -129,7 +144,7 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
           <DialogTitle className="flex items-center gap-2"><Users className="w-5 h-5" />Alocar em lote — {area}</DialogTitle>
           <DialogDescription className="text-gray-400">
             {ocupados}/{limitObj?.limiteMaximo} ocupados · <span className={cn('font-medium', vagas ? 'text-emerald-300' : 'text-red-300')}>{vagas} {vagas === 1 ? 'vaga' : 'vagas'}</span>
-            {textoSexo && <> ({textoSexo})</>}. Marque quem vem da fila “A escalar”; a seleção para no limite da área.
+            {textoSexo && <> ({textoSexo})</>}. Marque quem vem da fila “A escalar”. Passar do limite é permitido, com aviso.
           </DialogDescription>
         </DialogHeader>
 
@@ -182,7 +197,7 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
         )}
 
         <div className="flex items-center justify-between gap-2 text-xs text-gray-400">
-          <span>{escolhidos.length} de {vagas} {vagas === 1 ? 'vaga' : 'vagas'} marcadas</span>
+          <span className={cn(passaDoLimite && 'text-amber-300')}>{escolhidos.length} de {vagas} {vagas === 1 ? 'vaga' : 'vagas'} marcadas</span>
           <div className="flex gap-3">
             <button type="button" onClick={marcarAteEncher} disabled={!vagas || !lista.length}
               data-dica="Marcar os primeiros da lista (quem escolheu esta área como 1ª opção vem antes) até completar as vagas."
@@ -190,6 +205,13 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
             {escolhidos.length > 0 && <button type="button" onClick={() => setMarcados(new Set())} className="hover:text-white">Limpar</button>}
           </div>
         </div>
+
+        {passaDoLimite && (
+          <p className="flex items-start gap-1.5 text-xs text-amber-300 rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-2">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <span>{textoAcima}. Dá para alocar assim mesmo — vai pedir confirmação.</span>
+          </p>
+        )}
 
         <div className="flex-1 min-h-0 max-h-[50vh] overflow-y-auto pr-1 space-y-1">
           {!lista.length && (
@@ -199,14 +221,16 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
           )}
           {lista.map((p) => {
             const marcado = marcados.has(p.id);
-            const bloqueado = !marcado && !cabe(p);
+            // Marcar esta pessoa passaria do limite: so um aviso no item.
+            const acima = !marcado && !cabe(p);
             const op = opcaoDe(p);
             return (
               <button
-                key={p.id} type="button" onClick={() => alternar(p)} disabled={bloqueado}
+                key={p.id} type="button" onClick={() => alternar(p)}
+                data-dica={acima ? 'Marcar esta pessoa passa do limite da área (é permitido, com aviso).' : undefined}
                 className={cn('w-full flex items-center gap-3 rounded-md px-3 py-2 text-left border',
                   marcado ? 'border-blue-500/50 bg-blue-500/10' : 'border-white/5 bg-white/5 hover:bg-white/10',
-                  bloqueado && 'opacity-40 cursor-not-allowed')}
+                  acima && 'opacity-60')}
               >
                 {marcado ? <CheckSquare className="w-4 h-4 text-blue-400 shrink-0" /> : <Square className="w-4 h-4 text-gray-500 shrink-0" />}
                 <span className="flex-1 min-w-0">
@@ -222,8 +246,10 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
 
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="ghost" onClick={onClose} className="text-gray-300 hover:text-white hover:bg-white/10">Cancelar</Button>
-          <Button onClick={alocar} disabled={!escolhidos.length || salvando} className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Button onClick={alocar} disabled={!escolhidos.length || salvando}
+            className={cn('text-white', passaDoLimite ? 'bg-amber-600 hover:bg-amber-700' : 'bg-blue-600 hover:bg-blue-700')}>
             {salvando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            {passaDoLimite && <AlertTriangle className="w-4 h-4 mr-1.5" />}
             Alocar {escolhidos.length || ''} {escolhidos.length === 1 ? 'pessoa' : 'pessoas'}
           </Button>
         </div>

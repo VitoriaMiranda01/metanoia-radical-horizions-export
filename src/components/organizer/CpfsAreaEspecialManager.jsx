@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { formatCPF } from '@/utils/formatters';
 import { validateCPF } from '@/utils/validation';
 import { normalizarBusca } from '@/utils/busca';
-import { AREAS_ESPECIAIS } from '@/constants/workAreas';
+import { AREAS_ESPECIAIS, AREA_GUIA, GUIA_TAMBEM_EM } from '@/constants/workAreas';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 /**
@@ -267,7 +267,10 @@ const CpfsAreaEspecialManager = ({
                     <Check className="w-3 h-3" />escalado
                   </span>
                 )}
-                {situacao === 'na_area' && areasComunsDoCpf && areasComunsDoCpf(cpf).map((a) => (
+                {situacao === 'na_area' && areasComunsDoCpf && areasComunsDoCpf(cpf)
+                  // Guia na Recepção Sítio é regra (todo Guia fica lá): não precisa etiqueta.
+                  .filter((a) => !(areaLabel === AREA_GUIA && a === GUIA_TAMBEM_EM))
+                  .map((a) => (
                   <span key={a} className="text-[11px] px-1.5 py-0.5 rounded-full border border-sky-500/40 bg-sky-500/10 text-sky-200"
                     data-dica={`Também está escalado em ${a}.`}>
                     + {a}

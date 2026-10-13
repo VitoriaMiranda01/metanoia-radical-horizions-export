@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { formatCPF } from '@/utils/formatters';
+import { formatCPF, calcularIdade } from '@/utils/formatters';
 import { formatarTelefone, digitosTelefone } from '@/utils/telefone';
 import { nomeDaIgreja } from '@/constants/igrejas';
 
@@ -47,15 +47,42 @@ const telefoneLegivel = (valor) => {
 
 const SITUACAO = { pendente: 'Pendente', aprovado: 'Aprovado', rejeitado: 'Rejeitado' };
 
-const linhaDaPlanilha = (item) => ({
-  'Nome': item.nome || '-',
-  'CPF': item.cpf ? formatCPF(item.cpf) : '(sem CPF)',
-  'WhatsApp': telefoneLegivel(item.whatsapp),
-  'Igreja': igrejaDaLinha(item),
-  'Pastor': item.pastor_nome || '-',
-  'Inscrito em': dataBR(item.created_at),
-  'Situação': SITUACAO[item.status] || item.status || '-',
-});
+// Idade de hoje (coluna calculada idade; sem ela, pela data de nascimento).
+const idadeDe = (item) => {
+  const idade = item.idade ?? calcularIdade(item.data_nascimento);
+  return idade === null || idade === undefined || idade === '' ? '-' : Number(idade);
+};
+
+// "E pastor?" vem da funcao na igreja (cargo_igreja): a coluna e_pastor do
+// banco nao e preenchida pelo formulario atual (12/10/2026).
+const ehPastor = (item) => {
+  const cargo = String(item.cargo_igreja || '').toUpperCase();
+  if (cargo === 'PASTOR(A) AUXILIAR') return 'Sim (pastor auxiliar)';
+  if (cargo === 'PASTOR(A)' || item.e_pastor === true) return 'Sim';
+  return 'Não';
+};
+
+// Colunas e larguras andam juntas (Patrick, 12/10/2026: + idade, se e pastor
+// e as 3 opcoes de area da inscricao).
+const COLUNAS = [
+  ['Nome', 40, (i) => i.nome || '-'],
+  ['CPF', 16, (i) => (i.cpf ? formatCPF(i.cpf) : '(sem CPF)')],
+  ['Idade', 7, idadeDe],
+  ['WhatsApp', 18, (i) => telefoneLegivel(i.whatsapp)],
+  ['Igreja', 45, igrejaDaLinha],
+  ['É pastor?', 20, ehPastor],
+  ['Pastor', 30, (i) => i.pastor_nome || '-'],
+  ['1ª opção de área', 28, (i) => i.area_trabalho_opcao1 || '-'],
+  ['2ª opção de área', 28, (i) => i.area_trabalho_opcao2 || '-'],
+  ['3ª opção de área', 28, (i) => i.area_trabalho_opcao3 || '-'],
+  ['Inscrito em', 12, (i) => dataBR(i.created_at)],
+  ['Situação', 12, (i) => SITUACAO[i.status] || i.status || '-'],
+];
+
+const linhaDaPlanilha = (item) => Object.fromEntries(COLUNAS.map(([titulo, , valor]) => [titulo, valor(item)]));
+
+// Letra da ultima coluna (para o filtro do cabecalho).
+const ULTIMA_COLUNA = String.fromCharCode('A'.charCodeAt(0) + COLUNAS.length - 1);
 
 const nomeDoArquivo = (prefixo, igrejas, todas) => {
   const hoje = new Date().toISOString().split('T')[0];
@@ -81,8 +108,8 @@ const planilhaDe = (linhas) => {
     .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'))
     .map(linhaDaPlanilha);
   const ws = XLSX.utils.json_to_sheet(dados);
-  ws['!cols'] = [{ wch: 40 }, { wch: 16 }, { wch: 18 }, { wch: 45 }, { wch: 30 }, { wch: 12 }, { wch: 12 }];
-  ws['!autofilter'] = { ref: `A1:G${dados.length + 1}` };
+  ws['!cols'] = COLUNAS.map(([, wch]) => ({ wch }));
+  ws['!autofilter'] = { ref: `A1:${ULTIMA_COLUNA}${dados.length + 1}` };
   return ws;
 };
 

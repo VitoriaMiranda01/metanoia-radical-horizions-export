@@ -190,6 +190,9 @@ const OrganizerScalesPage = () => {
   const [fixarAberto, setFixarAberto] = useState(null); // null | { eq, area }
   const [limparAreaAberta, setLimparAreaAberta] = useState(null); // nome da area
   const [limpandoArea, setLimpandoArea] = useState(false);
+  // Tirar de uma area: { escalaId, nome, area, outras: [{escalaId, area}], fixas }
+  const [remocao, setRemocao] = useState(null);
+  const [removendo, setRemovendo] = useState(false);
   // Na fila: alocar ja marcando como fixo 📌 (por pessoa).
   const [fixarNaFila, setFixarNaFila] = useState({});
   // Fila "A escalar" minimizada: fica so a linha do titulo, para ver a
@@ -689,40 +692,47 @@ const OrganizerScalesPage = () => {
     }
   };
 
-  // Tira a pessoa de UMA area. Se for a unica dela, volta para a fila -- e
-  // por isso pede confirmacao nesse caso.
-  const handleRemover = async (escalaId, nomeEquipante, areaAtual, quantasAreas) => {
+  // Tirar de uma area SEMPRE pergunta (13/10/2026): antes, quem estava em
+  // duas areas saia com um clique so, sem confirmacao -- e o X aparece nas
+  // duas tabelas. Agora a janela diz em que outras areas a pessoa esta e
+  // pergunta se tira de la tambem (Sim / Não).
+  const handleRemover = (escalaId, nomeEquipante, areaAtual) => {
     const idDaPessoa = allocations.find(a => a.escalaId === escalaId)?.id;
-    if (ehFixoEm(idDaPessoa, areaAtual)) {
-      const ok = window.confirm(
-        `${nomeEquipante} é fixo(a) 📌 em ${areaAtual}.\n\nTirar mesmo assim?` +
-        (quantasAreas <= 1 ? ' É a única área dela, então volta para a fila "A escalar".' : '') +
-        '\n\nA marca de fixo continua: o próximo Alocar automático coloca de volta. Para tirar a marca, use o alfinete.'
-      );
-      if (!ok) return;
-    } else if (quantasAreas <= 1) {
-      const ok = window.confirm(
-        `Tirar ${nomeEquipante} de ${areaAtual}?\n\n` +
-        'É a única área dela, então volta para a fila "A escalar".'
-      );
-      if (!ok) return;
+    const outras = allocations
+      .filter(a => a.id === idDaPessoa && a.escalaId !== escalaId)
+      .map(a => ({ escalaId: a.escalaId, area: a.allocatedArea }));
+    setRemocao({
+      escalaId, nome: formatNomeExibicao(nomeEquipante), area: areaAtual, outras,
+      fixas: (fixasPorEquipante[idDaPessoa] || []).filter(a => a === areaAtual || outras.some(o => o.area === a))
+    });
+  };
+
+  const executarRemocao = async (tambemOutras) => {
+    const r0 = remocao;
+    if (!r0) return;
+    const alvos = [{ escalaId: r0.escalaId, area: r0.area }, ...(tambemOutras ? r0.outras : [])];
+    setRemovendo(true);
+    const saiu = [];
+    const falhas = [];
+    let restam = r0.outras.length;
+    for (const alvo of alvos) {
+      const r = await removerAlocacao(alvo.escalaId);
+      if (r.success) { saiu.push(alvo.area); restam = r.restam; } else falhas.push(`${alvo.area}: ${r.error}`);
     }
-    setManualAllocating(prev => ({ ...prev, [escalaId]: true }));
-    try {
-      const resultado = await removerAlocacao(escalaId);
-      if (resultado.success) {
-        toast({
-          title: `Removido de ${areaAtual}`,
-          description: resultado.restam > 0
-            ? `${nomeEquipante} continua em ${resultado.restam} área(s).`
-            : `${nomeEquipante} voltou para a fila "A escalar".`
-        });
-        fetchBackgroundData(false);
-      } else {
-        toast({ title: "Não foi possível remover", description: resultado.error, variant: "destructive" });
-      }
-    } finally {
-      setManualAllocating(prev => ({ ...prev, [escalaId]: false }));
+    setRemovendo(false);
+    setRemocao(null);
+    if (saiu.length > 0) {
+      toast({
+        title: `Removido de ${saiu.join(', ')}`,
+        description: (restam > 0
+          ? `${r0.nome} continua em ${r0.outras.filter(o => !saiu.includes(o.area)).map(o => o.area).join(', ')}.`
+          : `${r0.nome} voltou para a fila "A escalar".`) +
+          (falhas.length ? ` Não saiu de: ${falhas.join(' · ')}` : ''),
+        variant: falhas.length ? 'destructive' : undefined
+      });
+      fetchBackgroundData(false);
+    } else {
+      toast({ title: "Não foi possível remover", description: falhas.join(' · '), variant: "destructive" });
     }
   };
 
@@ -1773,6 +1783,55 @@ const OrganizerScalesPage = () => {
             onSalvo={() => fetchBackgroundData(false)}
           />
         )}
+
+        <AlertDialog open={!!remocao} onOpenChange={(v) => { if (!v && !removendo) setRemocao(null); }}>
+          <AlertDialogContent className="bg-gray-900 border-gray-700">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Tirar {remocao?.nome} de {remocao?.area}?</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="text-gray-400 text-sm space-y-3">
+                  {remocao?.outras.length > 0 ? (
+                    <p>
+                      <strong className="text-white">{remocao.nome}</strong> está escalado(a) também em{' '}
+                      <strong className="text-amber-300">{remocao.outras.map(o => o.area).join(', ')}</strong>.
+                      {' '}Deseja retirar de lá também?
+                    </p>
+                  ) : (
+                    <p>É a única área dessa pessoa, então ela volta para a fila “A escalar”.</p>
+                  )}
+                  {remocao?.fixas.length > 0 && (
+                    <p className="text-amber-200/90">
+                      📌 É fixo(a) em {remocao.fixas.join(', ')}. A marca continua: o próximo Alocar
+                      automático coloca de volta. Para tirar a marca, use o alfinete.
+                    </p>
+                  )}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-2 sm:gap-2">
+              <AlertDialogCancel className="bg-transparent border-gray-700 text-white hover:bg-gray-800" disabled={removendo}>
+                Cancelar
+              </AlertDialogCancel>
+              {remocao?.outras.length > 0 ? (
+                <>
+                  <Button variant="outline" onClick={() => executarRemocao(false)} disabled={removendo}
+                    className="bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white">
+                    Não, só de {remocao.area}
+                  </Button>
+                  <Button onClick={() => executarRemocao(true)} disabled={removendo}
+                    className="bg-red-600 hover:bg-red-700 text-white">
+                    {removendo ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sim, de todas'}
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={() => executarRemocao(false)} disabled={removendo}
+                  className="bg-red-600 hover:bg-red-700 text-white">
+                  {removendo ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Tirar'}
+                </Button>
+              )}
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <AlertDialog open={!!limparAreaAberta} onOpenChange={(v) => { if (!v && !limpandoArea) setLimparAreaAberta(null); }}>
           <AlertDialogContent className="bg-gray-900 border-gray-700">

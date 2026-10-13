@@ -1192,10 +1192,19 @@ const OrganizerScalesPage = () => {
   };
 
   // Em ordem alfabetica (13/10/2026) -- na tela e na planilha da area.
+  // Lider sempre no topo (13/10/2026, Patrick). Nas areas por cor ha um lider
+  // por cor: ficam todos no topo, na ordem das cores. Depois, todo mundo em
+  // ordem alfabetica.
   const getEquipantesByArea = areaName => {
+    const lideres = (atuacoesPorArea[areaName] || []).filter(a => a.ehLider).map(a => a.atuacao);
+    const ehLider = (eq) => lideres.includes(eq.atuacao);
+    const ordemCor = (eq) => { const i = CORES_GRUPO.indexOf(eq.cor); return i < 0 ? CORES_GRUPO.length : i; };
     return allocations
       .filter(a => a.allocatedArea === areaName)
-      .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' }));
+      .sort((a, b) =>
+        (Number(ehLider(b)) - Number(ehLider(a))) ||
+        (ehLider(a) ? ordemCor(a) - ordemCor(b) : 0) ||
+        String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' }));
   };
 
   // Sem cor numa area dividida por cor (13/10/2026): so aviso -- no topo, no

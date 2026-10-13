@@ -59,7 +59,16 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
   const trocar = async () => {
     if (!escolhido || !destino) return;
     setSalvando(true);
-    const r = await trocarAreaEscala(escolhido.escalaId, destino, destinoTemCor ? cor : null);
+    let r = await trocarAreaEscala(escolhido.escalaId, destino, destinoTemCor ? cor : null);
+    // Area cheia (13/10/2026): no manual o limite so avisa.
+    if (!r.success && r.data?.sem_vaga && window.confirm(
+      `${destino}: ${r.error}.\n\nTrocar ${escolhido.nome} para lá mesmo assim? Na alocação manual o limite é só aviso.`
+    )) {
+      r = await trocarAreaEscala(escolhido.escalaId, destino, destinoTemCor ? cor : null, true);
+    } else if (!r.success && r.data?.sem_vaga) {
+      setSalvando(false);
+      return;
+    }
     setSalvando(false);
     if (!r.success) {
       toast({ title: 'Não foi possível trocar', description: r.error, variant: 'destructive' });

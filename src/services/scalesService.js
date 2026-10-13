@@ -333,8 +333,10 @@ export const separarTodosAusentes = () => rpcOrganizador('separar_ausentes', {},
 // cor: a cor do grupo na area nova (so nas areas com cor; obrigatoria para
 // Infiltrados). Sem ela a pessoa fica sem cor -- a antiga nao vai junto
 // (migration 20261012c).
-export const trocarAreaEscala = (escalaId, novaArea, cor = null) =>
-  rpcOrganizador('trocar_area_escala', { p_escala_id: escalaId, p_nova_area: novaArea, p_cor: cor || null }, 'trocar de área');
+// forcar (13/10/2026, migration 20261013c): area cheia so avisa -- a tela
+// pergunta e chama de novo com forcar = true. r.data.sem_vaga marca o caso.
+export const trocarAreaEscala = (escalaId, novaArea, cor = null, forcar = false) =>
+  rpcOrganizador('trocar_area_escala', { p_escala_id: escalaId, p_nova_area: novaArea, p_cor: cor || null, p_forcar: !!forcar }, 'trocar de área');
 
 // ---------------------------------------------------------------------------
 // Areas de Trabalho Extra

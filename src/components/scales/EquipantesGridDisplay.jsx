@@ -251,8 +251,8 @@ const EquipantesGridDisplay = ({
                             onClick={() => onFixar(eq, areaName)}
                             disabled={realocando[eq.escalaId]}
                             data-dica={fixo
-                              ? 'Fixo nesta área: entra primeiro no Alocar automático, todo ano. Clique para mudar.'
-                              : 'Marcar como fixo nesta área (o "core"): entra primeiro no Alocar automático, todo ano.'}
+                              ? 'Fixo nesta área: entra primeiro no Alocar automático, toda edição. Clique para mudar.'
+                              : 'Marcar como fixo nesta área: entra primeiro no Alocar automático, toda edição.'}
                             className={cn('h-8 w-8 p-0 shrink-0 hover:bg-amber-500/10',
                               fixo ? 'text-amber-400 hover:text-amber-300' : 'text-gray-500 hover:text-amber-400')}
                           >

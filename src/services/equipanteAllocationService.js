@@ -43,7 +43,14 @@ export const alocarEquipanteAutomaticamente = async (equipanteId) => {
 // ainda existe (capacidade total + limite do sexo) antes de gravar — por
 // isso o retorno pode vir com sucesso=false mesmo que a tela achasse que
 // havia vaga (ex: outro organizador ocupou a vaga um instante antes).
-export const alocarEquipanteManualmente = async (equipanteId, area) => {
+//
+// Limite no manual e so aviso (13/10/2026, migration 20261013c): sem vaga, o
+// retorno vem com semVaga = true; a tela pergunta "alocar mesmo assim?" e
+// chama de novo com forcar = true (pula SO a checagem de vaga).
+// Os dois motivos de "sem vaga" que _equipante_area_tem_vaga devolve.
+export const ehSemVaga = (mensagem) => /capacidade total da área atingida|limite para o sexo atingido/i.test(mensagem || '');
+
+export const alocarEquipanteManualmente = async (equipanteId, area, forcar = false) => {
   if (!equipanteId || !area) {
     return { success: false, error: 'Equipante ou área não informados' };
   }
@@ -51,7 +58,8 @@ export const alocarEquipanteManualmente = async (equipanteId, area) => {
   try {
     const { data, error } = await supabase.rpc('alocar_equipante_manualmente', {
       p_equipante_id: equipanteId,
-      p_area: area
+      p_area: area,
+      p_forcar: !!forcar
     });
 
     if (error) throw error;
@@ -59,7 +67,7 @@ export const alocarEquipanteManualmente = async (equipanteId, area) => {
     const resultado = Array.isArray(data) ? data[0] : data;
 
     if (!resultado?.sucesso) {
-      return { success: false, error: resultado?.mensagem || 'Não foi possível alocar' };
+      return { success: false, error: resultado?.mensagem || 'Não foi possível alocar', semVaga: ehSemVaga(resultado?.mensagem) };
     }
 
     return { success: true };
@@ -112,17 +120,18 @@ export const liberarVagaERealocar = async (equipanteId) => {
 // Move UMA participacao de area. Endereçada pelo id da LINHA em escalas
 // (escalaId), nao pela pessoa: desde 12/09/2026 a mesma pessoa pode estar em
 // mais de uma area, entao "realocar o fulano" deixou de ser sem ambiguidade.
-export const realocarAlocacao = async (escalaId, novaArea) => {
+export const realocarAlocacao = async (escalaId, novaArea, forcar = false) => {
   if (!escalaId || !novaArea) {
     return { success: false, error: 'Alocação ou área não informadas' };
   }
   try {
     const { data, error } = await supabase.rpc('realocar_alocacao', {
       p_escala_id: escalaId,
-      p_nova_area: novaArea
+      p_nova_area: novaArea,
+      p_forcar: !!forcar
     });
     if (error) throw error;
-    if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível realocar' };
+    if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível realocar', semVaga: !!data?.sem_vaga };
     return { success: true, areaAnterior: data.area_anterior };
   } catch (error) {
     console.error('equipanteAllocationApi - realocarAlocacao', error, { escalaId, novaArea });
@@ -160,12 +169,14 @@ export const fetchAreasFixas = async () => {
 };
 
 // Fixar numa area em que a pessoa ainda nao esta ja coloca ela la (alocado).
-export const marcarAreaFixa = async (equipanteId, area, fixo) => {
+// Area cheia: fica marcado, mas nao entra (semVaga) -- a tela pergunta e
+// chama de novo com forcar.
+export const marcarAreaFixa = async (equipanteId, area, fixo, forcar = false) => {
   try {
-    const { data, error } = await supabase.rpc('marcar_area_fixa', { p_equipante_id: equipanteId, p_area: area, p_fixo: !!fixo });
+    const { data, error } = await supabase.rpc('marcar_area_fixa', { p_equipante_id: equipanteId, p_area: area, p_fixo: !!fixo, p_forcar: !!forcar });
     if (error) throw error;
     if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível marcar' };
-    return { success: true, alocado: !!data.alocado, aviso: data.aviso || null };
+    return { success: true, alocado: !!data.alocado, aviso: data.aviso || null, semVaga: !!data.sem_vaga, motivo: data.motivo || null };
   } catch (error) {
     console.error('equipanteAllocationApi - marcarAreaFixa', error, { equipanteId, area, fixo });
     return { success: false, error: error.message || 'Erro ao marcar fixo' };

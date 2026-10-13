@@ -13,10 +13,10 @@ import { fetchLimitesAreas, saveLimiteAreaComGenero, getLimiteAreaComGenero } fr
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { exportEquipantesByArea, exportAllEquipantes } from '@/utils/excelExport';
 import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
-import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf, fetchAreasFixas, limparArea } from '@/services/equipanteAllocationService';
+import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf, fetchAreasFixas, limparArea, marcarAreaFixa } from '@/services/equipanteAllocationService';
 import { fetchConfiguracoes, updateCpfsAreaEspecial } from '@/services/organizerConfigService';
 import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
-import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus } from 'lucide-react';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus, ChevronDown, ChevronUp, Pin } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -190,6 +190,17 @@ const OrganizerScalesPage = () => {
   const [fixarAberto, setFixarAberto] = useState(null); // null | { eq, area }
   const [limparAreaAberta, setLimparAreaAberta] = useState(null); // nome da area
   const [limpandoArea, setLimpandoArea] = useState(false);
+  // Na fila: alocar ja marcando como fixo 📌 (por pessoa).
+  const [fixarNaFila, setFixarNaFila] = useState({});
+  // Fila "A escalar" minimizada: fica so a linha do titulo, para ver a
+  // escala enquanto monta. Lembrado neste navegador.
+  const [filaMinimizada, setFilaMinimizada] = useState(() => {
+    try { return localStorage.getItem('escala_fila_minimizada') === '1'; } catch { return false; }
+  });
+  const alternarFilaMinimizada = () => setFilaMinimizada(v => {
+    try { localStorage.setItem('escala_fila_minimizada', v ? '0' : '1'); } catch { /* sem storage */ }
+    return !v;
+  });
   // Filtro das areas (13/10/2026): mostrar uma area so e/ou buscar quem esta
   // escalado (nome, CPF, igreja).
   const [areaFiltro, setAreaFiltro] = useState('todas');
@@ -546,21 +557,32 @@ const OrganizerScalesPage = () => {
       const feitas = [];
       const falhas = [];
       for (const area of areas) {
-        const r = await alocarEquipanteManualmente(equipanteId, area);
-        if (r.success) feitas.push(area); else falhas.push(`${area}: ${r.error}`);
+        const r = await comAvisoDeLimite((forcar) => alocarEquipanteManualmente(equipanteId, area, forcar), area, nomeEquipante);
+        if (r.success) feitas.push(area); else if (!r.cancelado) falhas.push(`${area}: ${r.error}`);
+      }
+
+      // "Alocar como fixo 📌": a pessoa ja esta na area, entao so marca.
+      const fixou = [];
+      if (fixarNaFila[equipanteId]) {
+        for (const area of feitas) {
+          const r = await marcarAreaFixa(equipanteId, area, true);
+          if (r.success) fixou.push(area); else falhas.push(`fixo em ${area}: ${r.error}`);
+        }
+        setFixarNaFila(prev => { const n = { ...prev }; delete n[equipanteId]; return n; });
       }
 
       if (feitas.length > 0) {
         toast({
           title: feitas.length === 1 ? "Alocado" : `Alocado em ${feitas.length} áreas`,
           description: `${nomeEquipante} → ${feitas.join(' + ')}.` +
+            (fixou.length ? ` 📌 Fixo em ${fixou.join(', ')}.` : '') +
             (falhas.length ? ` Não coube em: ${falhas.join(' · ')}` : ''),
           className: falhas.length ? undefined : "bg-green-600 text-white",
           variant: falhas.length ? "destructive" : undefined
         });
         setAreasDaFila(prev => { const n = { ...prev }; delete n[equipanteId]; return n; });
         fetchBackgroundData(false);
-      } else {
+      } else if (falhas.length > 0) {
         toast({
           title: "Não foi possível alocar",
           description: falhas.join(' · '),
@@ -570,6 +592,17 @@ const OrganizerScalesPage = () => {
     } finally {
       setManualAllocating(prev => ({ ...prev, [equipanteId]: false }));
     }
+  };
+
+  // Alocacao manual com area cheia (13/10/2026): o limite so avisa. tentar(forcar)
+  // faz a chamada; sem vaga, pergunta e repete com forcar = true.
+  const comAvisoDeLimite = async (tentar, area, nome) => {
+    const r = await tentar(false);
+    if (r.success || !r.semVaga) return r;
+    const ok = window.confirm(
+      `${area}: ${r.error}.\n\nAlocar ${nome} mesmo assim? Na alocação manual o limite é só aviso.`
+    );
+    return ok ? tentar(true) : { ...r, cancelado: true };
   };
 
   const alternarAreaDaFila = (equipanteId, area) => {
@@ -612,7 +645,7 @@ const OrganizerScalesPage = () => {
     )) return;
     setManualAllocating(prev => ({ ...prev, [escalaId]: true }));
     try {
-      const resultado = await realocarAlocacao(escalaId, novaArea);
+      const resultado = await comAvisoDeLimite((forcar) => realocarAlocacao(escalaId, novaArea, forcar), novaArea, nomeEquipante);
       if (resultado.success) {
         toast({
           title: "Movido",
@@ -621,7 +654,7 @@ const OrganizerScalesPage = () => {
         });
         setManualAreaChoice(prev => { const n = { ...prev }; delete n[escalaId]; return n; });
         fetchBackgroundData(false);
-      } else {
+      } else if (!resultado.cancelado) {
         toast({ title: "Não foi possível mover", description: resultado.error, variant: "destructive" });
       }
     } finally {
@@ -639,7 +672,7 @@ const OrganizerScalesPage = () => {
     }
     setManualAllocating(prev => ({ ...prev, [escalaId]: true }));
     try {
-      const resultado = await alocarEquipanteManualmente(equipanteId, novaArea);
+      const resultado = await comAvisoDeLimite((forcar) => alocarEquipanteManualmente(equipanteId, novaArea, forcar), novaArea, nomeEquipante);
       if (resultado.success) {
         toast({
           title: `Escalado também em ${novaArea}`,
@@ -648,7 +681,7 @@ const OrganizerScalesPage = () => {
         });
         setManualAreaChoice(prev => { const n = { ...prev }; delete n[escalaId]; return n; });
         fetchBackgroundData(false);
-      } else {
+      } else if (!resultado.cancelado) {
         toast({ title: "Não foi possível escalar", description: resultado.error, variant: "destructive" });
       }
     } finally {
@@ -1384,7 +1417,7 @@ const OrganizerScalesPage = () => {
             automatica nao tinha conseguido encaixar. Agora a aprovacao nao
             aloca mais ninguem, entao TODO aprovado passa por aqui. */}
         {waitlist.length > 0 && <Card ref={filaRef} className="bg-red-900/10 border-red-900/30 scroll-mt-24">
-            <div className="p-4 border-b border-red-900/30 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className={cn("p-4 flex flex-col sm:flex-row sm:items-center gap-3", !filaMinimizada && "border-b border-red-900/30")}>
               <div className="flex items-center gap-2 flex-1">
                 <AlertTriangle className="text-red-400 h-5 w-5 shrink-0" />
                 <h3 className="font-semibold text-white">
@@ -1393,8 +1426,14 @@ const OrganizerScalesPage = () => {
                     <span className="font-normal text-red-200/70 text-sm"> · {filaFiltrada.length} na busca</span>
                   )}
                 </h3>
+                <Button type="button" variant="ghost" size="sm" onClick={alternarFilaMinimizada}
+                  data-dica={filaMinimizada ? 'Mostrar a lista de quem está a escalar.' : 'Esconder a lista (fica só esta linha) para ver melhor a escala enquanto monta.'}
+                  className="ml-auto sm:ml-2 h-8 px-2 text-red-200 hover:text-white hover:bg-white/10">
+                  {filaMinimizada ? <ChevronDown className="h-4 w-4 mr-1" /> : <ChevronUp className="h-4 w-4 mr-1" />}
+                  <span className="text-xs">{filaMinimizada ? 'Mostrar' : 'Minimizar'}</span>
+                </Button>
               </div>
-              <div className="relative w-full sm:w-72">
+              {!filaMinimizada && <div className="relative w-full sm:w-72">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
                 <Input
                   value={buscaFila}
@@ -1402,9 +1441,9 @@ const OrganizerScalesPage = () => {
                   placeholder="Buscar por nome, igreja, CPF ou área..."
                   className="h-9 pl-8 bg-black/40 border-white/20 text-white"
                 />
-              </div>
+              </div>}
             </div>
-            <div className="p-4 space-y-3 max-h-[32rem] overflow-y-auto">
+            {!filaMinimizada && <div className="p-4 space-y-3 max-h-[32rem] overflow-y-auto">
               {filaFiltrada.length === 0 && (
                 <p className="text-sm text-red-200/60 text-center py-4">Ninguém na fila corresponde a “{buscaFila}”.</p>
               )}
@@ -1499,6 +1538,21 @@ const OrganizerScalesPage = () => {
                         </SelectGroup>
                       </SelectContent>
                     </Select>
+                    {podeGerir && (
+                      <Button
+                        type="button" size="sm" variant="ghost"
+                        onClick={() => setFixarNaFila(prev => ({ ...prev, [eq.id]: !prev[eq.id] }))}
+                        data-dica={fixarNaFila[eq.id]
+                          ? 'Vai alocar já como fixo 📌 na(s) área(s) escolhida(s). Clique para desligar.'
+                          : 'Alocar já como fixo 📌 na(s) área(s) escolhida(s): entra primeiro no Alocar automático, toda edição.'}
+                        className={cn('h-9 w-9 p-0 shrink-0 border',
+                          fixarNaFila[eq.id]
+                            ? 'border-amber-500/60 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 hover:text-amber-200'
+                            : 'border-white/15 text-gray-400 hover:text-amber-300 hover:bg-amber-500/10')}
+                      >
+                        <Pin className="h-4 w-4" fill={fixarNaFila[eq.id] ? 'currentColor' : 'none'} />
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       onClick={() => handleManualAllocate(eq.id, eq.nome)}
@@ -1508,7 +1562,7 @@ const OrganizerScalesPage = () => {
                     >
                       {manualAllocating[eq.id]
                         ? <Loader2 className="h-4 w-4 animate-spin" />
-                        : `Alocar${(areasDaFila[eq.id] || []).length > 1 ? ` (${areasDaFila[eq.id].length})` : ''}`}
+                        : `${fixarNaFila[eq.id] ? '📌 ' : ''}Alocar${(areasDaFila[eq.id] || []).length > 1 ? ` (${areasDaFila[eq.id].length})` : ''}`}
                     </Button>
                     </div>
                   </div>
@@ -1519,7 +1573,7 @@ const OrganizerScalesPage = () => {
                   Mostrando {LIMITE_FILA_VISIVEL} de {filaFiltrada.length}. Use a busca para chegar em alguém específico.
                 </p>
               )}
-            </div>
+            </div>}
           </Card>}
 
         {/* Onde cada pessoa esta escalada. Sem isto, achar alguem exigia
@@ -1640,7 +1694,7 @@ const OrganizerScalesPage = () => {
                 área e o limite por sexo.
                 <br /><br />
                 <strong className="text-white">Antes de tudo, os fixos 📌</strong> vão para as suas
-                áreas fixas, mesmo passando do limite.
+                áreas fixas.
                 <br /><br />
                 <strong className="text-white">Depois todo mundo na 1ª opção</strong>, depois
                 quem sobrou na 2ª, depois na 3ª — assim ninguém perde a 1ª opção para a 3ª de

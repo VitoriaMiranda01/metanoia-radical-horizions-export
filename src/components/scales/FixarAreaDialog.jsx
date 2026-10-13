@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 /**
  * 📌 Fixo na área (Patrick, 13/10/2026): o "core" de cada área. A marca fica
  * na ficha do equipante e vale para as próximas edições; o "Alocar
- * automático" coloca os fixos antes de todo mundo, mesmo passando do limite.
+ * automático" coloca os fixos antes de todo mundo (respeitando o limite).
  * A mesma pessoa pode ser fixa em mais de uma área.
  *
  * Fixar numa área em que a pessoa ainda não está já coloca ela lá (o banco
@@ -52,11 +52,18 @@ const FixarAreaDialog = ({ equipante, area, fixasAtuais = [], onClose, onSalvo }
       if (!r.success) erros.push(`${a}: ${r.error}`);
     }
     for (const a of marcar) {
-      const r = await marcarAreaFixa(equipante.id, a, true);
+      let r = await marcarAreaFixa(equipante.id, a, true);
+      // Area cheia: ficou marcado, mas nao entrou. Manual = limite so avisa.
+      if (r.success && r.semVaga && window.confirm(
+        `${a}: ${r.motivo || 'área cheia'}.\n\nColocar ${nome} lá mesmo assim? Na alocação manual o limite é só aviso.`
+      )) {
+        r = await marcarAreaFixa(equipante.id, a, true, true);
+      }
       if (!r.success) erros.push(`${a}: ${r.error}`);
       else {
         if (r.alocado) entrou.push(a);
         if (r.aviso) avisos.push(r.aviso);
+        if (r.semVaga) avisos.push(`Ficou fixo em ${a}, mas não foi escalado lá agora (área cheia).`);
       }
     }
     setSalvando(false);
@@ -89,8 +96,7 @@ const FixarAreaDialog = ({ equipante, area, fixasAtuais = [], onClose, onSalvo }
           </DialogTitle>
           <DialogDescription className="text-gray-400">
             <strong className="text-white">{nome}</strong> entra primeiro no “Alocar automático”
-            nas áreas marcadas, todo ano, mesmo passando do limite. A marca continua de uma
-            edição para a outra.
+            nas áreas marcadas, toda edição. A marca continua de uma edição para a outra.
           </DialogDescription>
         </DialogHeader>
 

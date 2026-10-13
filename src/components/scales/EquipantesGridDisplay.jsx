@@ -99,7 +99,12 @@ const EquipantesGridDisplay = ({
     cpf: (eq) => !texto(eq.cpf), igreja: (eq) => !texto(nomeDaIgreja(eq)),
     atuacao: (eq) => !texto(eq.atuacao), cor: (eq) => !eq.cor,
   };
+  // Lider fica SEMPRE no topo, qualquer que seja a ordenacao (13/10/2026,
+  // Patrick). Nas areas por cor, os lideres seguem a ordem das cores.
   const linhas = !ordem.campo ? equipantes : [...equipantes].sort((a, b) => {
+    const lider = Number(ehLider(b.atuacao)) - Number(ehLider(a.atuacao));
+    if (lider) return lider;
+    if (ehLider(a.atuacao)) return (posCor(a) - posCor(b)) || porNome(a, b);
     const ehVazio = vazio[ordem.campo];
     if (ehVazio && ehVazio(a) !== ehVazio(b)) return ehVazio(a) ? 1 : -1;
     const d = COMPARAR[ordem.campo](a, b);

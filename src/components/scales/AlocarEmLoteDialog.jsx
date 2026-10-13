@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { AlertTriangle, CheckSquare, ChevronDown, Loader2, Search, Square, Users, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
+import SeloPastor from '@/components/common/SeloPastor';
 import { CORES_GRUPO, areaTemCor } from '@/constants/workAreas';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -272,7 +273,7 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
               >
                 {marcado ? <CheckSquare className="w-4 h-4 text-blue-400 shrink-0" /> : <Square className="w-4 h-4 text-gray-500 shrink-0" />}
                 <span className="flex-1 min-w-0">
-                  <span className="block text-sm text-white truncate">{p.nome}</span>
+                  <span className="flex items-center gap-1.5 text-sm text-white min-w-0"><span className="truncate">{p.nome}</span><SeloPastor pessoa={p} /></span>
                   <span className="block text-[11px] text-gray-500 truncate">{nomeDaIgreja(p) || '—'}</span>
                 </span>
                 {op >= 0 && <span className="text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/30 text-emerald-300 shrink-0">{OPCAO[op]}</span>}

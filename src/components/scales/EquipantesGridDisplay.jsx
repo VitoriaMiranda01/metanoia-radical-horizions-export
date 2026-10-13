@@ -14,6 +14,7 @@ import { formatCPF, formatNomeExibicao } from '@/utils/formatters';
 import { User, Download, Loader2, Star, X, Plus, Pin, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { WORK_AREAS, CORES_GRUPO } from '@/constants/workAreas';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
+import SeloPastor from '@/components/common/SeloPastor';
 import { cn } from '@/lib/utils';
 
 const EquipantesGridDisplay = ({
@@ -167,6 +168,7 @@ const EquipantesGridDisplay = ({
                   <div className="flex flex-col">
                     <span className="flex items-center gap-1.5">
                       <NomeComBandeira nome={formatNomeExibicao(eq.nome)} nacionalidade={eq.nacionalidade} />
+                      <SeloPastor pessoa={eq} />
                       {ehLider(eq.atuacao) && (
                         <Star
                           className="h-3 w-3 text-amber-400 shrink-0"

@@ -31,6 +31,7 @@ import TrocarAreaDialog from '@/components/scales/TrocarAreaDialog';
 import ChamadaQuadro from '@/components/scales/ChamadaQuadro';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
+import SeloPastor from '@/components/common/SeloPastor';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { casaBusca } from '@/utils/busca';
 import { emTeste } from '@/services/ambiente';
@@ -1660,7 +1661,7 @@ const OrganizerScalesPage = () => {
                 <div key={eq.id} className="bg-red-900/20 border border-red-700/30 rounded-md p-3 flex flex-col sm:flex-row sm:items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-medium truncate">
-                      {eq.nome} <span className="text-xs text-red-300/70">({eq.sexo || 'sexo não informado'})</span>
+                      {eq.nome} <SeloPastor pessoa={eq} className="align-[-2px] mx-0.5" /> <span className="text-xs text-red-300/70">({eq.sexo || 'sexo não informado'})</span>
                       {semVagaPorPessoa[eq.id] && (
                         <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded border border-amber-500/50 bg-amber-500/15 text-amber-200"
                           title={'Todas as áreas que pediu estão sem vaga:\n' + semVagaPorPessoa[eq.id].map(m => `• ${m.area}: ${m.motivo}`).join('\n') + '\n\nColoque à mão (na alocação manual o limite é só aviso).'}>

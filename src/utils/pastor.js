@@ -7,6 +7,16 @@
  *
  * Usado na ficha (InscricaoDetalhesModal) e na planilha da Aprovacao.
  */
+// "Pastor" / "Pastora" (com " auxiliar" quando for o caso), ou null. Usado no
+// selo ao lado do nome (13/10/2026). O genero vem do sexo da ficha.
+export const tituloPastor = (item) => {
+  const cargo = String(item?.cargo_igreja || '').toUpperCase().trim();
+  const auxiliar = cargo === 'PASTOR(A) AUXILIAR';
+  if (!auxiliar && cargo !== 'PASTOR(A)' && item?.e_pastor !== true) return null;
+  const titulo = item?.sexo === 'Feminino' ? 'Pastora' : 'Pastor';
+  return auxiliar ? `${titulo} auxiliar` : titulo;
+};
+
 export const ehPastorTexto = (item) => {
   const cargo = String(item?.cargo_igreja || '').toUpperCase().trim();
   if (cargo === 'PASTOR(A) AUXILIAR') return 'Sim (pastor auxiliar)';

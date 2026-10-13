@@ -6,6 +6,7 @@ import MenuFiltroColuna from '@/components/common/MenuFiltroColuna';
 import { ordenarLista } from '@/utils/ordenacao';
 import { Badge } from '@/components/ui/badge';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
+import SeloPastor from '@/components/common/SeloPastor';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { casaBusca } from '@/utils/busca';
 import { Button } from '@/components/ui/button';
@@ -358,6 +359,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                   <div className="flex justify-between items-start gap-3">
                     <h3 className="font-semibold text-white text-lg leading-tight break-words">
                       <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} />
+                      <SeloPastor pessoa={item} className="ml-1.5 align-[-1px]" />
                     </h3>
                     <div className="shrink-0 mt-0.5">
                       {getStatusBadge(item.status)}
@@ -441,7 +443,10 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                   {paginacao.itensDaPagina.map((item) => (
                     <TableRow key={item.id} className="hover:bg-white/5 transition-colors border-white/10 group">
                       <TableCell className="text-white font-medium sticky left-0 z-10 bg-black group-hover:bg-neutral-900">
-                          <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} />
+                          <span className="inline-flex items-center gap-1.5">
+                            <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} />
+                            <SeloPastor pessoa={item} />
+                          </span>
                       </TableCell>
 
                       {visibleColumns.map(colKey => {

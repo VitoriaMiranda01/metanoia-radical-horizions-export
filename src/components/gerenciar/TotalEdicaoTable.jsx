@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Users, Eye, Search } from 'lucide-react';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
+import SeloPastor from '@/components/common/SeloPastor';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { casaBusca } from '@/utils/busca';
 import { cn } from '@/lib/utils';
@@ -121,7 +122,7 @@ const TotalEdicaoTable = ({ acampantes, equipantesConfirmados, confirmadosDispon
                 <TableBody>
                   {paginacao.itensDaPagina.map((p) => (
                     <TableRow key={`${p.tipoNaEdicao}-${p.id}`} className="border-white/10 hover:bg-white/5">
-                      <TableCell className="text-white font-medium"><NomeComBandeira nome={p.nome} nacionalidade={p.nacionalidade} /></TableCell>
+                      <TableCell className="text-white font-medium"><span className="inline-flex items-center gap-1.5"><NomeComBandeira nome={p.nome} nacionalidade={p.nacionalidade} /><SeloPastor pessoa={p} /></span></TableCell>
                       <TableCell>
                         {p.tipoNaEdicao === 'equipante'
                           ? <Badge variant="outline" className="border bg-red-500/15 text-red-300 border-red-500/50">Equipante</Badge>

@@ -4,7 +4,7 @@ import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { WORK_AREAS, AREAS_ESPECIAIS, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor } from '@/constants/workAreas';
+import { WORK_AREAS, AREAS_ESPECIAIS, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor, AREA_DISPONIVEL_QUALQUER, AREAS_SO_PREFERENCIA } from '@/constants/workAreas';
 import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges, fetchAtuacoesPorArea, definirAtuacao,
   definirCor, contarAguardandoAprovacao, fetchSituacaoEscala, lancarEscala, desfazerLancamentoEscala,
   alocarFilaAutomaticamente, fetchEscalaOrdem, lancarEscalaOficial, desfazerEscalaOficial,
@@ -192,6 +192,8 @@ const OrganizerScalesPage = () => {
   const [limpandoArea, setLimpandoArea] = useState(false);
   // Tirar de uma area: { escalaId, nome, area, outras: [{escalaId, area}], fixas }
   const [remocao, setRemocao] = useState(null);
+  // Fila: mostrar so quem ficou sem vaga em todas as sugestoes.
+  const [soSugestoesCheias, setSoSugestoesCheias] = useState(false);
   const [removendo, setRemovendo] = useState(false);
   // Na fila: alocar ja marcando como fixo 📌 (por pessoa).
   const [fixarNaFila, setFixarNaFila] = useState({});
@@ -230,10 +232,65 @@ const OrganizerScalesPage = () => {
   const semAcento = (texto) => (texto || '')
     .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
+  // Ocupacao de cada area (total e por sexo), para saber se as sugestoes de
+  // quem esta na fila ainda tem vaga.
+  const ocupacaoPorArea = {};
+  allocations.forEach(a => {
+    const o = (ocupacaoPorArea[a.allocatedArea] ||= { total: 0, Feminino: 0, Masculino: 0 });
+    o.total += 1;
+    if (a.sexo in o) o[a.sexo] += 1;
+  });
+
+  // Inscricao manual que nao completou o cadastro: sem nenhuma das 3 opcoes.
+  // Vai sempre a mao e fica no fim da fila (13/10/2026).
+  const ehManualSemOpcao = (eq) => !!eq.inscricao_manual_em &&
+    ![eq.area_trabalho_opcao1, eq.area_trabalho_opcao2, eq.area_trabalho_opcao3].some(a => (a || '').trim());
+
+  // Por que cada sugestao nao serve hoje -- mesma regra do Alocar automatico
+  // (vaga total, limite por sexo, areas so da diretoria, opcoes que sao so
+  // preferencia). Devolve a lista de motivos SO quando nenhuma sugestao serve;
+  // se alguma ainda tem vaga (ou a pessoa topa qualquer area), null.
+  const sugestoesSemVaga = (eq) => {
+    const opcoes = [eq.area_trabalho_opcao1, eq.area_trabalho_opcao2, eq.area_trabalho_opcao3]
+      .map(a => (a || '').trim()).filter((a, i, t) => a && t.indexOf(a) === i);
+    if (opcoes.length === 0) return null;
+    const motivos = [];
+    for (const area of opcoes) {
+      if (area === AREA_DISPONIVEL_QUALQUER) return null;
+      const lim = limitsMap[area];
+      if (!lim) { motivos.push({ area, motivo: AREAS_SO_PREFERENCIA.includes(area) ? 'só preferência, não é área' : 'não é área da escala' }); continue; }
+      if (lim.somenteOrganizador) { motivos.push({ area, motivo: 'só a diretoria preenche' }); continue; }
+      const o = ocupacaoPorArea[area] || { total: 0, Feminino: 0, Masculino: 0 };
+      if (o.total >= lim.limiteMaximo) { motivos.push({ area, motivo: `cheia (${o.total}/${lim.limiteMaximo})` }); continue; }
+      const mulher = eq.sexo === 'Feminino';
+      const limSexo = mulher
+        ? (lim.limiteMulheres == null && lim.limiteHomens != null ? 0 : lim.limiteMulheres)
+        : (lim.limiteHomens == null && lim.limiteMulheres != null ? 0 : lim.limiteHomens);
+      if (limSexo != null && (o[eq.sexo] || 0) >= limSexo) {
+        motivos.push({ area, motivo: `sem vaga para ${mulher ? 'mulheres' : 'homens'}` });
+        continue;
+      }
+      return null; // esta sugestao ainda tem vaga
+    }
+    return motivos;
+  };
+  const semVagaPorPessoa = {};
+  waitlist.forEach(eq => { const m = sugestoesSemVaga(eq); if (m) semVagaPorPessoa[eq.id] = m; });
+  const totalSugestoesCheias = Object.keys(semVagaPorPessoa).length;
+
+  // Ordem da fila: primeiro quem ficou sem vaga nas sugestoes (precisa de
+  // decisao), depois as inscricoes normais, e no fim as manuais sem opcao.
+  const pesoNaFila = (eq) => (semVagaPorPessoa[eq.id] ? 0 : ehManualSemOpcao(eq) ? 2 : 1);
+  const filaOrdenada = waitlist
+    .map((eq, i) => ({ eq, i }))
+    .sort((a, b) => pesoNaFila(a.eq) - pesoNaFila(b.eq) || a.i - b.i)
+    .map(x => x.eq)
+    .filter(eq => !soSugestoesCheias || semVagaPorPessoa[eq.id]);
+
   const termoBusca = semAcento(buscaFila.trim());
   const digitosBusca = termoBusca.replace(/\D/g, '');
   const filaFiltrada = termoBusca
-    ? waitlist.filter(eq =>
+    ? filaOrdenada.filter(eq =>
         semAcento(eq.nome).includes(termoBusca) ||
         semAcento(nomeDaIgreja(eq)).includes(termoBusca) ||
         (digitosBusca !== '' && (eq.cpf || '').replace(/\D/g, '').includes(digitosBusca)) ||
@@ -241,7 +298,7 @@ const OrganizerScalesPage = () => {
         semAcento(eq.area_trabalho_opcao2).includes(termoBusca) ||
         semAcento(eq.area_trabalho_opcao3).includes(termoBusca)
       )
-    : waitlist;
+    : filaOrdenada;
 
   // As 3 preferencias da pessoa, sem repeticao e so as que existem hoje
   // como area de verdade (uma preferencia antiga pode ter sido renomeada).
@@ -761,12 +818,15 @@ const OrganizerScalesPage = () => {
       title: r.alocados === 0 ? 'Ninguém foi alocado' : `${r.alocados} alocado(s)`,
       description: [
         detalhe,
-        r.sobraram > 0 && `${r.sobraram} ${r.sobraram === 1 ? 'continua' : 'continuam'} na fila — sem vaga nas opções escolhidas. Coloque à mão.`,
+        r.opcoesCheias > 0 && `⚠ ${r.opcoesCheias} ${r.opcoesCheias === 1 ? 'pessoa não foi escalada' : 'pessoas não foram escaladas'}: todas as áreas que ${r.opcoesCheias === 1 ? 'pediu' : 'pediram'} já estavam cheias. ${r.opcoesCheias === 1 ? 'Está marcada' : 'Estão marcadas'} em "A escalar" — coloque à mão`,
+        r.semOpcao > 0 && `${r.semOpcao} ${r.semOpcao === 1 ? 'inscrição manual sem as opções de área fica' : 'inscrições manuais sem as opções de área ficam'} para colocar à mão`,
         r.acimaDoLimite?.length > 0 && `Passaram do limite por causa dos fixos: ${r.acimaDoLimite.join(', ')}`
       ].filter(Boolean).join('. ') || 'A fila já estava vazia.',
-      className: r.alocados > 0 ? 'bg-green-600 text-white' : undefined
+      className: r.alocados > 0 && !r.opcoesCheias ? 'bg-green-600 text-white' : undefined,
+      duration: r.opcoesCheias > 0 ? 15000 : undefined
     });
 
+    if (r.opcoesCheias > 0) setSoSugestoesCheias(true);
     fetchBackgroundData(false);
   };
 
@@ -1442,6 +1502,21 @@ const OrganizerScalesPage = () => {
                   {filaMinimizada ? <ChevronDown className="h-4 w-4 mr-1" /> : <ChevronUp className="h-4 w-4 mr-1" />}
                   <span className="text-xs">{filaMinimizada ? 'Mostrar' : 'Minimizar'}</span>
                 </Button>
+                {totalSugestoesCheias > 0 && (
+                  <button type="button"
+                    onClick={() => { setSoSugestoesCheias(v => !v); if (filaMinimizada) alternarFilaMinimizada(); }}
+                    aria-pressed={soSugestoesCheias}
+                    data-dica={soSugestoesCheias
+                      ? 'Voltar a mostrar a fila inteira.'
+                      : 'Pessoas que pediram áreas, mas todas as que pediram estão sem vaga: o Alocar automático não consegue colocar. Clique para ver só elas.'}
+                    className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]',
+                      soSugestoesCheias
+                        ? 'border-amber-400 bg-amber-500/25 text-amber-100'
+                        : 'border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20')}>
+                    <AlertTriangle className="h-3 w-3" />
+                    {totalSugestoesCheias} com as sugestões cheias{soSugestoesCheias ? ' · ver todos' : ''}
+                  </button>
+                )}
               </div>
               {!filaMinimizada && <div className="relative w-full sm:w-72">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
@@ -1465,6 +1540,18 @@ const OrganizerScalesPage = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-medium truncate">
                       {eq.nome} <span className="text-xs text-red-300/70">({eq.sexo})</span>
+                      {semVagaPorPessoa[eq.id] && (
+                        <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded border border-amber-500/50 bg-amber-500/15 text-amber-200"
+                          title={'Todas as áreas que pediu estão sem vaga:\n' + semVagaPorPessoa[eq.id].map(m => `• ${m.area}: ${m.motivo}`).join('\n') + '\n\nColoque à mão (na alocação manual o limite é só aviso).'}>
+                          ⚠ Sugestões cheias
+                        </span>
+                      )}
+                      {ehManualSemOpcao(eq) && (
+                        <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded border border-white/15 bg-white/5 text-gray-400"
+                          title="Inscrição manual que ainda não completou o cadastro: sem as opções de área (e às vezes sem sexo). Vai à mão.">
+                          Inscrição manual
+                        </span>
+                      )}
                       {(fixasPorEquipante[eq.id] || []).length > 0 && (
                         <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-200"
                           title="Fixo: o Alocar automático coloca primeiro nesta(s) área(s).">

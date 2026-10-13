@@ -3,7 +3,7 @@ import { validateEscala } from '@/utils/validation';
 import { comReenvio } from '@/services/serviceHelpers';
 
 const COLUNAS_EQUIPANTE =
-  'id, nome, whatsapp, sexo, igreja, igreja_outra, nacionalidade, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, numero_edicao, status, status_pagamento, cpf, area_vista_em';
+  'id, nome, whatsapp, sexo, igreja, igreja_outra, nacionalidade, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, numero_edicao, status, status_pagamento, cpf, area_vista_em, inscricao_manual_em';
 
 // O PostgREST corta a resposta num teto de linhas (padrao 1000 no Supabase) e
 // NAO avisa: devolve as primeiras N como se fossem todas. As edicoes reais
@@ -240,6 +240,10 @@ export const alocarFilaAutomaticamente = async () => {
     sobraram: data.sobraram ?? 0,
     // Fixos 📌 (migration 20261013b): entram antes e podem passar do limite.
     fixos: data.fixos ?? 0,
+    // Por que sobrou (migration 20261013e): manual sem as 3 opcoes, ou pediu
+    // areas que estavam todas sem vaga.
+    semOpcao: data.sem_opcao ?? 0,
+    opcoesCheias: data.opcoes_cheias ?? 0,
     acimaDoLimite: Array.isArray(data.acima_do_limite) ? data.acima_do_limite : []
   };
 };

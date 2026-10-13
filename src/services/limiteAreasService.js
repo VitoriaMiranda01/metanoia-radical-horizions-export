@@ -10,7 +10,7 @@ export const fetchLimitesAreas = async () => {
   try {
     const { data, error } = await supabase
       .from('limites_areas')
-      .select('area_nome, limite_maximo, limite_mulheres, limite_homens, updated_at');
+      .select('area_nome, limite_maximo, limite_mulheres, limite_homens, somente_organizador, updated_at');
     
     if (error) {
       if (error.code === '42P01') {
@@ -26,7 +26,9 @@ export const fetchLimitesAreas = async () => {
         limitsMap[item.area_nome] = {
           limiteMaximo: item.limite_maximo,
           limiteMulheres: item.limite_mulheres || null,
-          limiteHomens: item.limite_homens || null
+          limiteHomens: item.limite_homens || null,
+          // So a diretoria preenche: o Alocar automatico nao manda ninguem.
+          somenteOrganizador: !!item.somente_organizador
         };
       });
     }

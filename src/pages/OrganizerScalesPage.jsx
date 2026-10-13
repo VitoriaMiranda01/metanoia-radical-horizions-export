@@ -16,7 +16,7 @@ import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
 import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf, fetchAreasFixas, limparArea, marcarAreaFixa } from '@/services/equipanteAllocationService';
 import { fetchConfiguracoes, updateCpfsAreaEspecial } from '@/services/organizerConfigService';
 import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
-import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus, ChevronDown, ChevronUp, Pin } from 'lucide-react';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus, ChevronDown, ChevronUp, Pin, ArrowUpDown } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -194,6 +194,17 @@ const OrganizerScalesPage = () => {
   const [remocao, setRemocao] = useState(null);
   // Fila: mostrar so quem ficou sem vaga em todas as sugestoes.
   const [soSugestoesCheias, setSoSugestoesCheias] = useState(false);
+  // Ordenar a fila (13/10/2026): 'padrao' | 'nome' | 'igreja' | 'area' | 'sexo',
+  // crescente ou decrescente. Lembrado neste navegador.
+  const [ordemFila, setOrdemFila] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('escala_fila_ordem')) || { campo: 'padrao', desc: false }; }
+    catch { return { campo: 'padrao', desc: false }; }
+  });
+  const mudarOrdemFila = (nova) => setOrdemFila(atual => {
+    const prox = { ...atual, ...nova };
+    try { localStorage.setItem('escala_fila_ordem', JSON.stringify(prox)); } catch { /* sem storage */ }
+    return prox;
+  });
   const [removendo, setRemovendo] = useState(false);
   // Na fila: alocar ja marcando como fixo 📌 (por pessoa).
   const [fixarNaFila, setFixarNaFila] = useState({});
@@ -280,10 +291,33 @@ const OrganizerScalesPage = () => {
 
   // Ordem da fila: primeiro quem ficou sem vaga nas sugestoes (precisa de
   // decisao), depois as inscricoes normais, e no fim as manuais sem opcao.
+  // Com outro ordenador escolhido, as manuais sem opcao continuam no fim
+  // (a prioridade de visualizacao e de quem se inscreveu normalmente); o resto
+  // segue o campo escolhido. Vazio sempre vai para o fim do seu grupo.
   const pesoNaFila = (eq) => (semVagaPorPessoa[eq.id] ? 0 : ehManualSemOpcao(eq) ? 2 : 1);
+  const chaveDaFila = {
+    nome: (eq) => eq.nome,
+    igreja: (eq) => nomeDaIgreja(eq),
+    area: (eq) => eq.area_trabalho_opcao1,
+    sexo: (eq) => eq.sexo,
+  };
+  const compararFila = (a, b) => {
+    if (ordemFila.campo === 'padrao') {
+      const d = pesoNaFila(a.eq) - pesoNaFila(b.eq);
+      return (ordemFila.desc ? -d : d) || a.i - b.i;
+    }
+    const manual = Number(ehManualSemOpcao(a.eq)) - Number(ehManualSemOpcao(b.eq));
+    if (manual) return manual;
+    const pega = chaveDaFila[ordemFila.campo];
+    const va = (pega(a.eq) || '').trim();
+    const vb = (pega(b.eq) || '').trim();
+    if (!va !== !vb) return va ? -1 : 1;
+    const d = va.localeCompare(vb, 'pt-BR', { sensitivity: 'base' });
+    return (ordemFila.desc ? -d : d) || (a.eq.nome || '').localeCompare(b.eq.nome || '', 'pt-BR');
+  };
   const filaOrdenada = waitlist
     .map((eq, i) => ({ eq, i }))
-    .sort((a, b) => pesoNaFila(a.eq) - pesoNaFila(b.eq) || a.i - b.i)
+    .sort(compararFila)
     .map(x => x.eq)
     .filter(eq => !soSugestoesCheias || semVagaPorPessoa[eq.id]);
 
@@ -1487,8 +1521,8 @@ const OrganizerScalesPage = () => {
             automatica nao tinha conseguido encaixar. Agora a aprovacao nao
             aloca mais ninguem, entao TODO aprovado passa por aqui. */}
         {waitlist.length > 0 && <Card ref={filaRef} className="bg-red-900/10 border-red-900/30 scroll-mt-24">
-            <div className={cn("p-4 flex flex-col sm:flex-row sm:items-center gap-3", !filaMinimizada && "border-b border-red-900/30")}>
-              <div className="flex items-center gap-2 flex-1">
+            <div className={cn("p-3 sm:p-4 flex flex-wrap items-center gap-x-3 gap-y-2", !filaMinimizada && "border-b border-red-900/30")}>
+              <div className="flex items-center gap-x-2 gap-y-1 flex-wrap flex-1 min-w-0">
                 <AlertTriangle className="text-red-400 h-5 w-5 shrink-0" />
                 <h3 className="font-semibold text-white">
                   A escalar ({waitlist.length})
@@ -1498,7 +1532,7 @@ const OrganizerScalesPage = () => {
                 </h3>
                 <Button type="button" variant="ghost" size="sm" onClick={alternarFilaMinimizada}
                   data-dica={filaMinimizada ? 'Mostrar a lista de quem está a escalar.' : 'Esconder a lista (fica só esta linha) para ver melhor a escala enquanto monta.'}
-                  className="ml-auto sm:ml-2 h-8 px-2 text-red-200 hover:text-white hover:bg-white/10">
+                  className="h-8 px-2 text-red-200 hover:text-white hover:bg-white/10">
                   {filaMinimizada ? <ChevronDown className="h-4 w-4 mr-1" /> : <ChevronUp className="h-4 w-4 mr-1" />}
                   <span className="text-xs">{filaMinimizada ? 'Mostrar' : 'Minimizar'}</span>
                 </Button>
@@ -1518,14 +1552,35 @@ const OrganizerScalesPage = () => {
                   </button>
                 )}
               </div>
-              {!filaMinimizada && <div className="relative w-full sm:w-72">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
-                <Input
-                  value={buscaFila}
-                  onChange={(e) => setBuscaFila(e.target.value)}
-                  placeholder="Buscar por nome, igreja, CPF ou área..."
-                  className="h-9 pl-8 bg-black/40 border-white/20 text-white"
-                />
+              {!filaMinimizada && <div className="flex flex-wrap items-center gap-1.5 w-full xl:w-auto">
+                <Select value={ordemFila.campo} onValueChange={(v) => mudarOrdemFila({ campo: v })}>
+                  <SelectTrigger className="h-9 w-[9.5rem] shrink-0 bg-black/40 border-white/20 text-white text-xs"
+                    data-dica="Ordenar a lista de quem está a escalar.">
+                    <ArrowUpDown className="h-3.5 w-3.5 mr-1 text-gray-400 shrink-0" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="padrao">Padrão</SelectItem>
+                    <SelectItem value="nome">Nome</SelectItem>
+                    <SelectItem value="igreja">Igreja</SelectItem>
+                    <SelectItem value="area">Área sugerida (1ª)</SelectItem>
+                    <SelectItem value="sexo">Sexo</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button type="button" variant="outline" size="sm" onClick={() => mudarOrdemFila({ desc: !ordemFila.desc })}
+                  data-dica={ordemFila.desc ? 'Ordem decrescente (Z→A). Clique para inverter.' : 'Ordem crescente (A→Z). Clique para inverter.'}
+                  className="h-9 w-12 shrink-0 px-0 bg-black/40 border-white/20 text-white text-[11px] hover:bg-white/10 hover:text-white">
+                  {ordemFila.desc ? 'Z→A' : 'A→Z'}
+                </Button>
+                <div className="relative flex-1 min-w-[12rem] xl:w-72 xl:flex-none">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+                  <Input
+                    value={buscaFila}
+                    onChange={(e) => setBuscaFila(e.target.value)}
+                    placeholder="Buscar por nome, igreja, CPF ou área..."
+                    className="h-9 pl-8 bg-black/40 border-white/20 text-white"
+                  />
+                </div>
               </div>}
             </div>
             {!filaMinimizada && <div className="p-4 space-y-3 max-h-[32rem] overflow-y-auto">

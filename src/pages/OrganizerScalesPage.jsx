@@ -761,6 +761,32 @@ const OrganizerScalesPage = () => {
     return mapa;
   };
 
+  // Alocar com um clique, no pre-cadastro de cada area especial (13/10/2026).
+  const soDigitosCpf = (v) => String(v || '').replace(/\D/g, '');
+  const situacaoDoCpfNaArea = (label) => (cpf) => {
+    if (allocations.some(a => a.allocatedArea === label && soDigitosCpf(a.cpf) === cpf)) return 'na_area';
+    if ((equipantesAprovados || []).some(eq => soDigitosCpf(eq.cpf) === cpf)) return 'pode';
+    if ((equipantesParaSelecao || []).some(eq => soDigitosCpf(eq.cpf) === cpf)) return 'nao_aprovado';
+    return 'sem_inscricao';
+  };
+
+  const handleAlocarUmPorCpf = async (key, label, cpf) => {
+    const r = await alocarAreasEspeciaisPorCpf({ [key]: [cpf] }, equipantesAprovados, allocations);
+    const nome = (equipantesAprovados || []).find(eq => soDigitosCpf(eq.cpf) === cpf)?.nome || cpf;
+    if (r.alocados + r.realocados > 0) {
+      toast({
+        title: 'Alocado',
+        description: `${nome} → ${label}${r.realocados ? ' (saiu da área em que estava)' : ''}.`,
+        className: 'bg-green-600 text-white'
+      });
+      fetchBackgroundData(false);
+    } else if (r.erros.length) {
+      toast({ title: 'Não foi possível alocar', description: `${nome}: ${r.erros[0].erro}`, variant: 'destructive' });
+    } else {
+      toast({ title: 'Nada a fazer', description: `${nome} já está em ${label}.` });
+    }
+  };
+
   const handleSaveCpfsAreaEspecial = async (areaKey, novaLista) => {
     await updateCpfsAreaEspecial(areaKey, novaLista);
     setCpfsAreaEspecial(prev => ({ ...prev, [areaKey]: novaLista }));
@@ -1481,6 +1507,8 @@ const OrganizerScalesPage = () => {
                       carregandoEquipantes={carregandoEquipantesParaSelecao}
                       areaPorCpf={cpfsDosOutrosPapeis(key)}
                       onSave={(novaLista) => handleSaveCpfsAreaEspecial(key, novaLista)}
+                      situacaoDoCpf={situacaoDoCpfNaArea(label)}
+                      onAlocar={(cpf) => handleAlocarUmPorCpf(key, label, cpf)}
                     />
                   </div>
                   {renderCartaoArea(label)}

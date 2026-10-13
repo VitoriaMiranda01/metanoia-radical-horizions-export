@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, X, Loader2, Search, AlertTriangle } from 'lucide-react';
+import { Plus, X, Loader2, Search, AlertTriangle, UserPlus, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -48,13 +48,20 @@ const CpfsAreaEspecialManager = ({
   equipantes = [],
   carregandoEquipantes = false,
   areaPorCpf = {},
-  onSave
+  onSave,
+  // Alocar com um clique (13/10/2026): situacaoDoCpf(cpf) -> 'na_area' (ja
+  // esta escalado nesta area), 'pode' (aprovado, da para alocar agora),
+  // 'nao_aprovado' ou 'sem_inscricao'; onAlocar(cpf) aloca so essa pessoa,
+  // com a mesma regra do "Aplicar CPFs cadastrados". Sem eles, nada muda.
+  situacaoDoCpf,
+  onAlocar
 }) => {
   const [busca, setBusca] = useState('');
   const [aberto, setAberto] = useState(false);
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [removendo, setRemovendo] = useState(null);
+  const [alocando, setAlocando] = useState(null);
   const containerRef = useRef(null);
   const { toast } = useToast();
 
@@ -206,12 +213,26 @@ const CpfsAreaEspecialManager = ({
 
   const buscaEhCpfValido = validateCPF(soDigitos(busca));
 
+  // Em ordem alfabetica (13/10/2026); quem ainda nao se inscreveu vai no fim.
+  const cpfsOrdenados = useMemo(() => [...cpfs].sort((a, b) => {
+    const na = equipantePorCpf.get(a)?.nome; const nb = equipantePorCpf.get(b)?.nome;
+    if (!na || !nb) return na ? -1 : nb ? 1 : 0;
+    return na.localeCompare(nb, 'pt-BR', { sensitivity: 'base' });
+  }), [cpfs, equipantePorCpf]);
+
+  const alocar = async (cpf) => {
+    if (!onAlocar) return;
+    setAlocando(cpf);
+    try { await onAlocar(cpf); } finally { setAlocando(null); }
+  };
+
   return (
     <div className="space-y-3" ref={containerRef}>
       {cpfs.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          {cpfs.map((cpf) => {
+          {cpfsOrdenados.map((cpf) => {
             const pessoa = equipantePorCpf.get(cpf);
+            const situacao = situacaoDoCpf ? situacaoDoCpf(cpf) : null;
             return (
               <Badge
                 key={cpf}
@@ -226,6 +247,28 @@ const CpfsAreaEspecialManager = ({
                     {pessoa ? formatCPF(cpf) : 'ainda não se inscreveu'}
                   </span>
                 </span>
+                {situacao === 'na_area' && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-emerald-300 px-1" data-dica={`Já está escalado em ${areaLabel}.`}>
+                    <Check className="w-3 h-3" />escalado
+                  </span>
+                )}
+                {situacao === 'pode' && onAlocar && (
+                  <button
+                    type="button"
+                    onClick={() => alocar(cpf)}
+                    disabled={!!alocando}
+                    data-dica={`Colocar esta pessoa em ${areaLabel} agora (sai da fila ou da área em que estava).`}
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-indigo-600/30 text-indigo-200 hover:bg-indigo-600/50 disabled:opacity-50"
+                  >
+                    {alocando === cpf ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}
+                    Alocar
+                  </button>
+                )}
+                {situacao === 'nao_aprovado' && (
+                  <span className="text-[11px] text-amber-300 px-1" data-dica="A inscrição ainda não foi aprovada. Depois de aprovada, o botão Alocar aparece aqui.">
+                    aguardando aprovação
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={() => remover(cpf)}

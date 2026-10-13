@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import {
   Table,
@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCPF, formatNomeExibicao } from '@/utils/formatters';
-import { User, Download, Loader2, Star, X, Plus, Pin } from 'lucide-react';
+import { User, Download, Loader2, Star, X, Plus, Pin, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { WORK_AREAS, CORES_GRUPO } from '@/constants/workAreas';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { cn } from '@/lib/utils';
@@ -45,6 +45,14 @@ const EquipantesGridDisplay = ({
   fixasPorEquipante = {},
   onFixar
 }) => {
+  // Ordenar pelos cabecalhos (13/10/2026). campo null = ordem padrao (lider no
+  // topo e o resto em ordem alfabetica, como vem da pagina). Clicar no mesmo
+  // cabecalho: crescente -> decrescente -> volta ao padrao.
+  const [ordem, setOrdem] = useState({ campo: null, desc: false });
+  const clicarCabecalho = (campo) => setOrdem((o) => (
+    o.campo !== campo ? { campo, desc: false } : !o.desc ? { campo, desc: true } : { campo: null, desc: false }
+  ));
+
   if (!equipantes || equipantes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-gray-500 bg-white/5 rounded-md border border-white/5 border-dashed">
@@ -73,6 +81,46 @@ const EquipantesGridDisplay = ({
     <span className={cn('inline-block w-2.5 h-2.5 rounded-full shrink-0 border border-black/40', TINTA[cor] || 'bg-transparent')} />
   );
 
+  const ehFixo = (eq) => (fixasPorEquipante[eq.id] || []).includes(areaName);
+  const posCor = (eq) => { const i = CORES_GRUPO.indexOf(eq.cor); return i < 0 ? CORES_GRUPO.length : i; };
+  const porNome = (a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' });
+  const texto = (v) => String(v || '').trim();
+  // Em cada campo, vazio vai sempre para o fim; o nome desempata.
+  const COMPARAR = {
+    nome: porNome,
+    cpf: (a, b) => texto(a.cpf).replace(/\D/g, '').localeCompare(texto(b.cpf).replace(/\D/g, '')),
+    igreja: (a, b) => texto(nomeDaIgreja(a)).localeCompare(texto(nomeDaIgreja(b)), 'pt-BR', { sensitivity: 'base' }),
+    atuacao: (a, b) => (Number(ehLider(b.atuacao)) - Number(ehLider(a.atuacao))) ||
+      texto(a.atuacao).localeCompare(texto(b.atuacao), 'pt-BR', { sensitivity: 'base' }),
+    cor: (a, b) => posCor(a) - posCor(b),
+    fixo: (a, b) => Number(ehFixo(b)) - Number(ehFixo(a)),
+  };
+  const vazio = {
+    cpf: (eq) => !texto(eq.cpf), igreja: (eq) => !texto(nomeDaIgreja(eq)),
+    atuacao: (eq) => !texto(eq.atuacao), cor: (eq) => !eq.cor,
+  };
+  const linhas = !ordem.campo ? equipantes : [...equipantes].sort((a, b) => {
+    const ehVazio = vazio[ordem.campo];
+    if (ehVazio && ehVazio(a) !== ehVazio(b)) return ehVazio(a) ? 1 : -1;
+    const d = COMPARAR[ordem.campo](a, b);
+    return (ordem.desc ? -d : d) || porNome(a, b);
+  });
+
+  const Cabecalho = ({ campo, children, className, dica }) => {
+    const ativo = ordem.campo === campo;
+    const Seta = !ativo ? ArrowUpDown : ordem.desc ? ArrowDown : ArrowUp;
+    return (
+      <TableHead className={cn('text-[11px] uppercase tracking-wider font-semibold text-gray-400', className)}>
+        <button type="button" onClick={() => clicarCabecalho(campo)}
+          data-dica={dica || 'Ordenar por esta coluna (clique de novo para inverter; a terceira vez volta ao padrão: líder no topo).'}
+          className={cn('inline-flex items-center gap-1 uppercase tracking-wider hover:text-white', ativo && 'text-white')}>
+          {children}
+          <Seta className={cn('h-3 w-3 shrink-0', ativo ? 'opacity-100' : 'opacity-40')} />
+        </button>
+      </TableHead>
+    );
+  };
+
   return (
     <div className="space-y-3">
       {onExport && (
@@ -94,16 +142,18 @@ const EquipantesGridDisplay = ({
         <Table>
           <TableHeader className="bg-white/5 hover:bg-white/5">
             <TableRow className="border-white/10 hover:bg-transparent">
-              <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[24%]">Nome</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[14%] hidden sm:table-cell">CPF</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[22%] hidden md:table-cell">Igreja</TableHead>
-              {mostrarAtuacao && <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[18%]">Atuação</TableHead>}
-              {colunaCor && <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[13%]">Cor</TableHead>}
+              <Cabecalho campo="nome" className="w-[24%]">Nome</Cabecalho>
+              <Cabecalho campo="cpf" className="w-[14%] hidden sm:table-cell">CPF</Cabecalho>
+              <Cabecalho campo="igreja" className="w-[22%] hidden md:table-cell">Igreja</Cabecalho>
+              {mostrarAtuacao && <Cabecalho campo="atuacao" className="w-[18%]">Atuação</Cabecalho>}
+              {colunaCor && <Cabecalho campo="cor" className="w-[13%]">Cor</Cabecalho>}
+              <Cabecalho campo="fixo" className="w-[1%] whitespace-nowrap"
+                dica="Ordenar por quem é fixo 📌 nesta área (clique de novo para inverter).">📌</Cabecalho>
               {onRealocar && <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[22%]">Ação</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {equipantes.map((eq, index) => (
+            {linhas.map((eq, index) => (
               <TableRow
                 key={eq.escalaId || eq.id || index}
                 className="border-white/10 hover:bg-white/5 transition-colors"
@@ -118,9 +168,6 @@ const EquipantesGridDisplay = ({
                           fill="currentColor"
                           title={eq.cor ? `Líder do ${eq.cor}` : 'Líder da área'}
                         />
-                      )}
-                      {(fixasPorEquipante[eq.id] || []).includes(areaName) && (
-                        <span className="shrink-0 text-[11px] leading-none" title={`Fixo em ${(fixasPorEquipante[eq.id] || []).join(', ')}: entra primeiro no Alocar automático.`}>📌</span>
                       )}
                       {areasPorEquipante[eq.id] > 1 && (
                         <span
@@ -201,6 +248,24 @@ const EquipantesGridDisplay = ({
                     </Select>
                   </TableCell>
                 )}
+                <TableCell className="text-center">
+                  {onFixar ? (
+                    <Button
+                      size="sm" variant="ghost"
+                      onClick={() => onFixar(eq, areaName)}
+                      disabled={realocando[eq.escalaId]}
+                      data-dica={ehFixo(eq)
+                        ? `Fixo em ${(fixasPorEquipante[eq.id] || []).join(', ')}: entra primeiro no Alocar automático, toda edição. Clique para mudar.`
+                        : 'Marcar como fixo nesta área: entra primeiro no Alocar automático, toda edição.'}
+                      className={cn('h-8 w-8 p-0 shrink-0 hover:bg-amber-500/10',
+                        ehFixo(eq) ? 'text-amber-400 hover:text-amber-300' : 'text-gray-600 hover:text-amber-400')}
+                    >
+                      <Pin className="h-4 w-4" fill={ehFixo(eq) ? 'currentColor' : 'none'} />
+                    </Button>
+                  ) : ehFixo(eq) ? (
+                    <span className="text-[13px]" title={`Fixo em ${(fixasPorEquipante[eq.id] || []).join(', ')}: entra primeiro no Alocar automático.`}>📌</span>
+                  ) : null}
+                </TableCell>
                 {onRealocar && (
                   <TableCell>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -243,23 +308,6 @@ const EquipantesGridDisplay = ({
                           <Plus className="h-4 w-4" />
                         </Button>
                       )}
-                      {onFixar && (() => {
-                        const fixo = (fixasPorEquipante[eq.id] || []).includes(areaName);
-                        return (
-                          <Button
-                            size="sm" variant="ghost"
-                            onClick={() => onFixar(eq, areaName)}
-                            disabled={realocando[eq.escalaId]}
-                            data-dica={fixo
-                              ? 'Fixo nesta área: entra primeiro no Alocar automático, toda edição. Clique para mudar.'
-                              : 'Marcar como fixo nesta área: entra primeiro no Alocar automático, toda edição.'}
-                            className={cn('h-8 w-8 p-0 shrink-0 hover:bg-amber-500/10',
-                              fixo ? 'text-amber-400 hover:text-amber-300' : 'text-gray-500 hover:text-amber-400')}
-                          >
-                            <Pin className="h-4 w-4" fill={fixo ? 'currentColor' : 'none'} />
-                          </Button>
-                        );
-                      })()}
                       {onRemover && (
                         <Button
                           size="sm" variant="ghost"

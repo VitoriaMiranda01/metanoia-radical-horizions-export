@@ -1780,7 +1780,7 @@ const OrganizerScalesPage = () => {
         </AnimatePresence>
 
         <AlertDialog open={confirmandoAuto} onOpenChange={setConfirmandoAuto}>
-          <AlertDialogContent className="bg-gray-900 border-gray-700">
+          <AlertDialogContent className="bg-gray-900 border-gray-700 text-white">
             <AlertDialogHeader>
               <AlertDialogTitle>Alocar pelas preferências?</AlertDialogTitle>
               <AlertDialogDescription className="text-gray-400">
@@ -1833,7 +1833,7 @@ const OrganizerScalesPage = () => {
         })()}
 
         <AlertDialog open={confirmandoDesfazerAuto} onOpenChange={setConfirmandoDesfazerAuto}>
-          <AlertDialogContent className="bg-gray-900 border-gray-700">
+          <AlertDialogContent className="bg-gray-900 border-gray-700 text-white">
             <AlertDialogHeader>
               <AlertDialogTitle>Desfazer a alocação automática?</AlertDialogTitle>
               <AlertDialogDescription className="text-gray-400">
@@ -1872,7 +1872,7 @@ const OrganizerScalesPage = () => {
         )}
 
         <AlertDialog open={!!remocao} onOpenChange={(v) => { if (!v && !removendo) setRemocao(null); }}>
-          <AlertDialogContent className="bg-gray-900 border-gray-700">
+          <AlertDialogContent className="bg-gray-900 border-gray-700 text-white">
             <AlertDialogHeader>
               <AlertDialogTitle>Tirar {remocao?.nome} de {remocao?.area}?</AlertDialogTitle>
               <AlertDialogDescription asChild>
@@ -1921,7 +1921,7 @@ const OrganizerScalesPage = () => {
         </AlertDialog>
 
         <AlertDialog open={!!limparAreaAberta} onOpenChange={(v) => { if (!v && !limpandoArea) setLimparAreaAberta(null); }}>
-          <AlertDialogContent className="bg-gray-900 border-gray-700">
+          <AlertDialogContent className="bg-gray-900 border-gray-700 text-white">
             <AlertDialogHeader>
               <AlertDialogTitle>Limpar {limparAreaAberta}?</AlertDialogTitle>
               <AlertDialogDescription className="text-gray-400">

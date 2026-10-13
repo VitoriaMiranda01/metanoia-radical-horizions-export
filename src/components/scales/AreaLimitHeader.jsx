@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, AlertCircle, Edit2, X, Users, Trash2 } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle2, Edit2, X, Users, Trash2 } from 'lucide-react';
 import { getOcupacaoArea } from '@/services/limiteAreasService';
 import { cn } from '@/lib/utils';
 
@@ -75,6 +75,10 @@ const AreaLimitHeader = ({
   }, [limitObj, isEditing]);
   const occupancy = getOcupacaoArea(currentCount, limitObj.limiteMaximo);
   const isFull = occupancy.isFull;
+  // Completa (2/2) e BOM: verde com ✓. Vermelho com alerta so quando passa do
+  // limite (13/10/2026, Patrick: a area completa ficava vermelha, parecendo erro).
+  const estourou = occupancy.isOverloaded;
+  const completa = isFull && !estourou;
   const handleSave = async () => {
     const numericLimit = parseInt(localLimit);
     const numMulheres = localMulheres !== '' ? parseInt(localMulheres) : null;
@@ -138,7 +142,7 @@ const AreaLimitHeader = ({
     setLocalHomens(limitObj.limiteHomens || '');
     setIsEditing(false);
   };
-  return <div className={cn("p-3 rounded-t-lg transition-colors duration-300", isFull ? "bg-red-900/60 text-red-100" : "bg-gray-800 text-gray-200")}>
+  return <div className={cn("p-3 rounded-t-lg transition-colors duration-300", estourou ? "bg-red-900/60 text-red-100" : completa ? "bg-emerald-900/40 text-emerald-100" : "bg-gray-800 text-gray-200")}>
       <div className="flex justify-between items-start mb-2">
         <span className="font-semibold text-sm truncate mr-2 flex-1 flex items-center gap-2" title={areaName}>
           <span className="truncate">{areaName}</span>
@@ -175,8 +179,11 @@ const AreaLimitHeader = ({
             </span>
           )}
         </span>
-        <div className={cn("text-xs px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1", isFull ? "bg-red-950/50 text-red-200" : "bg-black/30 text-gray-300")}>
-          {isFull && <AlertCircle className="w-3 h-3" />}
+        <div
+          data-dica={estourou ? `Acima do limite: ${currentCount - limitObj.limiteMaximo} a mais que o previsto (na alocação manual o limite é só aviso).` : completa ? 'Área completa.' : undefined}
+          className={cn("text-xs px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1", estourou ? "bg-red-950/50 text-red-200" : completa ? "bg-emerald-950/60 text-emerald-300" : "bg-black/30 text-gray-300")}>
+          {estourou && <AlertCircle className="w-3 h-3" />}
+          {completa && <CheckCircle2 className="w-3 h-3" />}
           <span>{currentCount}/{limitObj.limiteMaximo}</span>
         </div>
       </div>

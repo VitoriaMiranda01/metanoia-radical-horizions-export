@@ -44,7 +44,13 @@ const listaDosLabels = AREAS_ESPECIAIS.map(a => a.label).reduce((frase, label, i
  */
 const AreasEspeciaisDialog = ({ onClose, total = 0, children, onAplicarCpfs, aplicandoPorCpf = false }) => {
   useEffect(() => {
-    const aoTeclar = (e) => { if (e.key === 'Escape') onClose(); };
+    // Com outra janela aberta por cima (ex.: "Alocar em lote"), o Esc fecha
+    // so ela, nao este modulo junto.
+    const aoTeclar = (e) => {
+      if (e.key !== 'Escape') return;
+      if (document.querySelector('[role="dialog"][data-state="open"]')) return;
+      onClose();
+    };
     window.addEventListener('keydown', aoTeclar);
     return () => window.removeEventListener('keydown', aoTeclar);
   }, [onClose]);

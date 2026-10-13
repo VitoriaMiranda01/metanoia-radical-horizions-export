@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, AlertCircle, Edit2, X } from 'lucide-react';
+import { Save, AlertCircle, Edit2, X, Users } from 'lucide-react';
 import { getOcupacaoArea } from '@/services/limiteAreasService';
 import { cn } from '@/lib/utils';
 
@@ -45,7 +45,10 @@ const AreaLimitHeader = ({
   faltaLider = false,
   // Nas areas divididas por cor, QUAIS cores estao sem lider. Dizer "falta
   // lider" numa area com 40 pessoas e cinco cores nao ajuda ninguem.
-  coresSemLider = []
+  coresSemLider = [],
+  // "Alocar em lote" (12/10/2026): abre a escolha de varias pessoas da fila
+  // para esta area. Sem a funcao, o botao nao aparece.
+  onAlocarEmLote
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [localLimit, setLocalLimit] = useState(limitObj.limiteMaximo);
@@ -182,10 +185,18 @@ const AreaLimitHeader = ({
               // sumiu informacao.
               <span className="italic text-gray-500">Sem limite por gênero</span>
             )}
-            {isOrganizer && <Button data-dica="Mudar quantas pessoas cabem nesta área (total, homens e mulheres)." variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10 shrink-0" onClick={() => setIsEditing(true)}>
+            <div className="flex items-center gap-1 shrink-0">
+              {onAlocarEmLote && <Button
+                data-dica={isFull ? 'A área está cheia.' : 'Escolher várias pessoas da fila "A escalar" e colocar todas nesta área de uma vez, sem passar do limite.'}
+                variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10" onClick={onAlocarEmLote} disabled={isFull}>
+                <Users className="w-3 h-3 mr-1" />
+                <span className="text-[10px]">Alocar em lote</span>
+              </Button>}
+              {isOrganizer && <Button data-dica="Mudar quantas pessoas cabem nesta área (total, homens e mulheres)." variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10 shrink-0" onClick={() => setIsEditing(true)}>
                 <Edit2 className="w-3 h-3 mr-1" />
                 <span className="text-[10px]">Alterar</span>
               </Button>}
+            </div>
           </div>}
       </div>
     </div>;

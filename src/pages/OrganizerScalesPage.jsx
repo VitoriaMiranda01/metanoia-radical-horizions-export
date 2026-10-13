@@ -21,6 +21,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
+import AlocarEmLoteDialog from '@/components/scales/AlocarEmLoteDialog';
 import EquipantesGridDisplay from '@/components/scales/EquipantesGridDisplay';
 import AreasExtraDialog from '@/components/scales/AreasExtraDialog';
 import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
@@ -179,6 +180,8 @@ const OrganizerScalesPage = () => {
   // "Desfazer alocação automática".
   const [autoSituacao, setAutoSituacao] = useState({ ativo: false });
   const [confirmandoDesfazerAuto, setConfirmandoDesfazerAuto] = useState(false);
+  // "Alocar em lote" de uma area (12/10/2026): o nome da area aberta.
+  const [loteArea, setLoteArea] = useState(null);
   const [desfazendoAuto, setDesfazendoAuto] = useState(false);
   const [escalaOrdem, setEscalaOrdem] = useState('aprovacao');
 
@@ -961,7 +964,7 @@ const OrganizerScalesPage = () => {
 
     return <div key={area} className="bg-black/40 border border-white/10 rounded-lg overflow-hidden shadow-md backdrop-blur-sm">
           <div className="sticky top-0 z-10 bg-gray-900 border-b border-white/10">
-            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} />
+            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} />
           </div>
 
           <div className="p-4 max-h-[400px] overflow-y-auto">
@@ -1506,6 +1509,22 @@ const OrganizerScalesPage = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {loteArea && (() => {
+          const naArea = getEquipantesByArea(loteArea);
+          return (
+            <AlocarEmLoteDialog
+              area={loteArea}
+              limitObj={getLimiteAreaComGenero(loteArea, limitsMap, DEFAULT_AREA_CAPACITY)}
+              ocupados={naArea.length}
+              mulheres={getGenderCount(naArea, 'feminino')}
+              homens={getGenderCount(naArea, 'masculino')}
+              fila={waitlist}
+              onClose={() => setLoteArea(null)}
+              onAlocado={() => fetchBackgroundData(false)}
+            />
+          );
+        })()}
 
         <AlertDialog open={confirmandoDesfazerAuto} onOpenChange={setConfirmandoDesfazerAuto}>
           <AlertDialogContent className="bg-gray-900 border-gray-700">

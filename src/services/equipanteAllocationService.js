@@ -130,6 +130,21 @@ export const realocarAlocacao = async (escalaId, novaArea) => {
   }
 };
 
+// Alocacao em lote numa area (12/10/2026, migration 20261012e): cada pessoa
+// passa pela mesma regra da alocacao manual (vaga, limite por sexo, papel
+// especial). Quem nao couber volta em `recusados` com o motivo.
+export const alocarEmLoteNaArea = async (area, ids) => {
+  try {
+    const { data, error } = await supabase.rpc('alocar_em_lote_na_area', { p_area: area, p_ids: ids });
+    if (error) throw error;
+    if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível alocar' };
+    return { success: true, alocados: data.alocados ?? 0, recusados: Array.isArray(data.recusados) ? data.recusados : [] };
+  } catch (error) {
+    console.error('equipanteAllocationApi - alocarEmLoteNaArea', error, { area, total: ids?.length });
+    return { success: false, error: error.message || 'Erro ao alocar em lote' };
+  }
+};
+
 // Tira a pessoa de UMA area. Se era a unica, ela volta para a fila "A
 // escalar" -- e por isso o botao pede confirmacao na tela.
 export const removerAlocacao = async (escalaId) => {

@@ -244,15 +244,17 @@ const EquipantesGridDisplay = ({
                       disabled={!!salvandoCor[eq.escalaId]}
                     >
                       <SelectTrigger
-                        title={eq.cor ? undefined : 'Sem cor: esta área é dividida por cor. Escolha a cor do grupo.'}
+                        data-dica={eq.cor ? undefined : ehLider(eq.atuacao)
+                          ? 'Líder sem cor = líder da área inteira. Escolha uma cor só se ele for líder apenas daquela cor.'
+                          : 'Sem cor: esta área é dividida por cor. Escolha a cor do grupo.'}
                         className={cn('h-8 w-full sm:w-[130px] bg-black/40 text-xs',
-                          eq.cor ? 'border-white/20 text-white' : 'border-amber-500/60 text-amber-300')}>
+                          eq.cor || ehLider(eq.atuacao) ? 'border-white/20 text-white' : 'border-amber-500/60 text-amber-300')}>
                         {salvandoCor[eq.escalaId]
                           ? <Loader2 className="h-3 w-3 animate-spin" />
                           : (
                             <span className="flex items-center gap-1.5 truncate">
                               <Bolinha cor={eq.cor} />
-                              <span className="truncate">{eq.cor || '⚠ Sem cor'}</span>
+                              <span className="truncate">{eq.cor || (ehLider(eq.atuacao) ? 'Toda a área' : '⚠ Sem cor')}</span>
                             </span>
                           )}
                       </SelectTrigger>

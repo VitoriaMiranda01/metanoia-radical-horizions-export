@@ -1368,9 +1368,13 @@ const OrganizerScalesPage = () => {
   // Atuacao que nao usa cor (Celular / Mesa na Recepção Sítio) nao conta.
   const usaCor = (area, atuacao) => areaTemCor(area) &&
     !(atuacoesPorArea[area] || []).some(x => x.atuacao === atuacao && x.semCor);
+  // Lider sem cor = lider da area inteira (ex.: Fotografia tem um lider so,
+  // com o pessoal espalhado pelas cores). Nao conta como "sem cor".
+  const ehLiderDaArea = (area, atuacao) => (atuacoesPorArea[area] || []).some(x => x.atuacao === atuacao && x.ehLider);
+  const faltaCor = (area, pessoa) => usaCor(area, pessoa.atuacao) && !pessoa.cor && !ehLiderDaArea(area, pessoa.atuacao);
   const semCorPorArea = {};
   allocations.forEach(a => {
-    if (usaCor(a.allocatedArea, a.atuacao) && !a.cor) semCorPorArea[a.allocatedArea] = (semCorPorArea[a.allocatedArea] || 0) + 1;
+    if (faltaCor(a.allocatedArea, a)) semCorPorArea[a.allocatedArea] = (semCorPorArea[a.allocatedArea] || 0) + 1;
   });
   const totalSemCor = Object.values(semCorPorArea).reduce((t, n) => t + n, 0);
   const avisoSemCorLancamento = totalSemCor > 0 && (
@@ -1436,7 +1440,9 @@ const OrganizerScalesPage = () => {
     const coresEmUso = temCor
       ? CORES_GRUPO.filter(cor => areaEquipantes.some(eq => eq.cor === cor))
       : [];
-    const coresSemLider = coresEmUso.filter(cor =>
+    // Um lider sem cor e o lider da area inteira: cobre todas as cores.
+    const temLiderGeral = areaEquipantes.some(eq => !eq.cor && atuacoesDeLider.includes(eq.atuacao));
+    const coresSemLider = temLiderGeral ? [] : coresEmUso.filter(cor =>
       !areaEquipantes.some(eq => eq.cor === cor && atuacoesDeLider.includes(eq.atuacao)));
 
     const faltaLider = atuacoesDeLider.length > 0 && areaEquipantes.length > 0 && (
@@ -1447,7 +1453,7 @@ const OrganizerScalesPage = () => {
 
     return <div key={area} className="bg-black/40 border border-white/10 rounded-lg overflow-hidden shadow-md backdrop-blur-sm">
           <div className="sticky top-0 z-10 bg-gray-900 border-b border-white/10">
-            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => usaCor(area, eq.atuacao) && !eq.cor).length : 0} fixos={fixosHeader} onLimpar={podeGerir && !escala?.lancada_em ? () => setLimparAreaAberta(area) : undefined} />
+            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => faltaCor(area, eq)).length : 0} fixos={fixosHeader} onLimpar={podeGerir && !escala?.lancada_em ? () => setLimparAreaAberta(area) : undefined} />
           </div>
 
           <div className={cn("p-4 overflow-y-auto", noModulo ? "max-h-[65vh]" : "max-h-[400px]")}>

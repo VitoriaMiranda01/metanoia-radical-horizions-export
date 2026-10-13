@@ -241,6 +241,23 @@ export const alocarFilaAutomaticamente = async () => {
   };
 };
 
+// Desfazer a alocacao automatica (12/10/2026, migration 20261012d). O
+// automatico guarda quem colocou; o desfazer tira so quem ainda esta na area
+// em que ele colocou (quem foi mexido a mao fica). So antes de lancar a
+// provisoria.
+export const fetchSituacaoAlocacaoAutomatica = async () => {
+  const { data, error } = await supabase.rpc('situacao_alocacao_automatica');
+  if (error || !data) return { ativo: false };
+  return data;
+};
+
+export const desfazerAlocacaoAutomatica = async () => {
+  const { data, error } = await supabase.rpc('desfazer_alocacao_automatica');
+  if (error) return { success: false, error: error.message || 'Erro ao desfazer a alocação automática' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível desfazer' };
+  return { success: true, desfeitos: data.desfeitos ?? 0, mantidos: data.mantidos ?? 0 };
+};
+
 // ---------------------------------------------------------------------------
 // Lancamento da escala
 //

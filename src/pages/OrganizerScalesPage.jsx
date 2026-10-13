@@ -7,7 +7,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { WORK_AREAS, AREAS_ESPECIAIS, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor } from '@/constants/workAreas';
 import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges, fetchAtuacoesPorArea, definirAtuacao,
   definirCor, contarAguardandoAprovacao, fetchSituacaoEscala, lancarEscala, desfazerLancamentoEscala,
-  alocarFilaAutomaticamente, fetchEscalaOrdem, lancarEscalaOficial, desfazerEscalaOficial } from '@/services/scalesService';
+  alocarFilaAutomaticamente, fetchEscalaOrdem, lancarEscalaOficial, desfazerEscalaOficial,
+  fetchSituacaoAlocacaoAutomatica, desfazerAlocacaoAutomatica } from '@/services/scalesService';
 import { fetchLimitesAreas, saveLimiteAreaComGenero, getLimiteAreaComGenero } from '@/services/limiteAreasService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { exportEquipantesByArea, exportAllEquipantes } from '@/utils/excelExport';
@@ -173,6 +174,12 @@ const OrganizerScalesPage = () => {
   // em scalesService.alocarFilaAutomaticamente.
   const [confirmandoAuto, setConfirmandoAuto] = useState(false);
   const [alocandoAuto, setAlocandoAuto] = useState(false);
+  // Desfazer a alocacao automatica (12/10/2026): enquanto houver alocacao
+  // automatica ativa (e a provisoria nao foi lancada), o botao vira
+  // "Desfazer alocação automática".
+  const [autoSituacao, setAutoSituacao] = useState({ ativo: false });
+  const [confirmandoDesfazerAuto, setConfirmandoDesfazerAuto] = useState(false);
+  const [desfazendoAuto, setDesfazendoAuto] = useState(false);
   const [escalaOrdem, setEscalaOrdem] = useState('aprovacao');
 
   // Aplicacao das listas de CPF pre-cadastradas -- ver handleAlocarPorCpf,
@@ -280,6 +287,7 @@ const OrganizerScalesPage = () => {
       setWaitlist((equipantes || []).filter(eq => !idsAlocados.has(eq.id)));
       setAguardandoAprovacao(await contarAguardandoAprovacao());
       setEscala(await fetchSituacaoEscala());
+      setAutoSituacao(await fetchSituacaoAlocacaoAutomatica());
 
       if (existingAllocations && existingAllocations.length > 0) {
         const changed = detectAllocationChanges(existingAllocations, previousAllocationsRef.current);
@@ -675,6 +683,27 @@ const OrganizerScalesPage = () => {
       className: r.alocados > 0 ? 'bg-green-600 text-white' : undefined
     });
 
+    fetchBackgroundData(false);
+  };
+
+  const autoAtivo = !!(autoSituacao?.ativo && autoSituacao?.pode_desfazer);
+
+  const handleDesfazerAutomatico = async () => {
+    setDesfazendoAuto(true);
+    const r = await desfazerAlocacaoAutomatica();
+    setDesfazendoAuto(false);
+    setConfirmandoDesfazerAuto(false);
+    if (!r.success) {
+      toast({ title: 'Não foi possível desfazer', description: r.error, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: 'Alocação automática desfeita',
+      description: [
+        `${r.desfeitos} ${r.desfeitos === 1 ? 'voltou' : 'voltaram'} para a fila "A escalar"`,
+        r.mantidos > 0 && `${r.mantidos} ${r.mantidos === 1 ? 'ficou onde está (foi mexido' : 'ficaram onde estão (foram mexidos'} à mão depois)`,
+      ].filter(Boolean).join('. ') + '.',
+    });
     fetchBackgroundData(false);
   };
 
@@ -1100,8 +1129,25 @@ const OrganizerScalesPage = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 flex-wrap sm:justify-end w-full">
+              {/* Depois de um "Alocar automático", o botao vira "Desfazer" --
+                  ate lancar a provisoria. Se ainda sobrou gente na fila, o
+                  "Alocar automático" continua ao lado. */}
+              {autoAtivo && (
+                <Button onClick={() => setConfirmandoDesfazerAuto(true)}
+                  disabled={desfazendoAuto}
+                  variant="outline"
+                  data-dica="Tirar da escala quem o Alocar automático colocou (e ainda está na mesma área). Quem foi mexido ou alocado à mão fica. Pede confirmação."
+                  className="bg-amber-600/20 text-amber-300 border-amber-600/50 hover:bg-amber-600/40 hover:text-amber-200">
+                  {desfazendoAuto
+                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    : <Undo2 className="mr-2 h-4 w-4" />}
+                  Desfazer alocação automática{autoSituacao.no_lugar ? ` (${autoSituacao.no_lugar})` : ''}
+                </Button>
+              )}
+
               {/* Distribui a fila pelas preferencias da inscricao. So aparece
                   habilitado quando ha alguem esperando. */}
+              {(!autoAtivo || waitlist.length > 0) && (
               <Button onClick={() => setConfirmandoAuto(true)}
                 disabled={waitlist.length === 0 || alocandoAuto}
                 variant="outline"
@@ -1114,6 +1160,7 @@ const OrganizerScalesPage = () => {
                   : <Wand2 className="mr-2 h-4 w-4" />}
                 Alocar automático{waitlist.length > 0 ? ` (${waitlist.length})` : ''}
               </Button>
+              )}
 
               {/* Lancar a escala e o que faz o equipante ver a etapa concluida
                   e poder pagar. So libera com a fila zerada -- todo aprovado
@@ -1455,6 +1502,34 @@ const OrganizerScalesPage = () => {
               <AlertDialogAction onClick={handleAlocarAutomatico} disabled={alocandoAuto}
                 className="bg-purple-600 hover:bg-purple-700 text-white">
                 {alocandoAuto ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Alocar'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={confirmandoDesfazerAuto} onOpenChange={setConfirmandoDesfazerAuto}>
+          <AlertDialogContent className="bg-gray-900 border-gray-700">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Desfazer a alocação automática?</AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-400">
+                {autoSituacao.no_lugar === 1
+                  ? 'A pessoa que o Alocar automático colocou volta '
+                  : `As ${autoSituacao.no_lugar || 0} pessoas que o Alocar automático colocou voltam `}
+                para a fila “A escalar”.
+                <br /><br />
+                Quem foi <strong className="text-white">mexido à mão depois</strong> fica onde está
+                {autoSituacao.total > autoSituacao.no_lugar ? ` (${autoSituacao.total - autoSituacao.no_lugar} hoje)` : ''},
+                e quem foi <strong className="text-white">alocado à mão</strong> não é tocado.
+                {autoSituacao.feito_por ? <><br /><br />Última alocação automática feita por {autoSituacao.feito_por}.</> : null}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-transparent border-gray-700 text-white hover:bg-gray-800">
+                Voltar
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleDesfazerAutomatico} disabled={desfazendoAuto}
+                className="bg-amber-600 hover:bg-amber-700 text-white">
+                {desfazendoAuto ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Desfazer'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

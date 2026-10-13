@@ -237,7 +237,10 @@ export const alocarFilaAutomaticamente = async () => {
     opcao2: data.opcao2 ?? 0,
     opcao3: data.opcao3 ?? 0,
     coringa: data.coringa ?? 0,
-    sobraram: data.sobraram ?? 0
+    sobraram: data.sobraram ?? 0,
+    // Fixos 📌 (migration 20261013b): entram antes e podem passar do limite.
+    fixos: data.fixos ?? 0,
+    acimaDoLimite: Array.isArray(data.acima_do_limite) ? data.acima_do_limite : []
   };
 };
 

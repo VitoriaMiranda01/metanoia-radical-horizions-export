@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, AlertCircle, Edit2, X, Users } from 'lucide-react';
+import { Save, AlertCircle, Edit2, X, Users, Trash2 } from 'lucide-react';
 import { getOcupacaoArea } from '@/services/limiteAreasService';
 import { cn } from '@/lib/utils';
 
@@ -50,7 +50,13 @@ const AreaLimitHeader = ({
   // para esta area. Sem a funcao, o botao nao aparece.
   onAlocarEmLote,
   // Quantos estao sem cor numa area dividida por cor (13/10/2026). So aviso.
-  semCor = 0
+  semCor = 0,
+  // Fixos 📌 (13/10/2026): { aqui: [nomes], fora: [textos] } -- "fora" sao
+  // os fixos desta area que ainda nao estao nela (nao se inscreveram, nao
+  // foram aprovados...).
+  fixos = null,
+  // "Limpar área": tira todo mundo. Sem a funcao, o botao nao aparece.
+  onLimpar
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [localLimit, setLocalLimit] = useState(limitObj.limiteMaximo);
@@ -138,6 +144,18 @@ const AreaLimitHeader = ({
               {semCor} sem cor
             </span>
           )}
+          {fixos && (fixos.aqui.length + fixos.fora.length) > 0 && (
+            <span
+              className="shrink-0 inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-200 border border-amber-500/30 font-medium"
+              title={[
+                `Fixos (📌) desta área: entram primeiro no Alocar automático.`,
+                fixos.aqui.length > 0 && `Aqui: ${fixos.aqui.join(', ')}.`,
+                fixos.fora.length > 0 && `Ainda fora: ${fixos.fora.join(', ')}.`
+              ].filter(Boolean).join('\n')}
+            >
+              📌 {fixos.aqui.length}{fixos.fora.length > 0 ? <span className="text-amber-200/60">+{fixos.fora.length} fora</span> : null}
+            </span>
+          )}
         </span>
         <div className={cn("text-xs px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1", isFull ? "bg-red-950/50 text-red-200" : "bg-black/30 text-gray-300")}>
           {isFull && <AlertCircle className="w-3 h-3" />}
@@ -202,6 +220,12 @@ const AreaLimitHeader = ({
                 variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10" onClick={onAlocarEmLote} disabled={isFull}>
                 <Users className="w-3 h-3 mr-1" />
                 <span className="text-[10px]">Alocar em lote</span>
+              </Button>}
+              {onLimpar && <Button
+                data-dica={currentCount === 0 ? 'A área já está vazia.' : 'Tirar todo mundo desta área de uma vez (fixos inclusive). Quem não tem outra área volta para a fila "A escalar".'}
+                variant="ghost" size="sm" className="h-6 px-2 hover:text-red-300 hover:bg-red-500/10" onClick={onLimpar} disabled={currentCount === 0}>
+                <Trash2 className="w-3 h-3 mr-1" />
+                <span className="text-[10px]">Limpar</span>
               </Button>}
               {isOrganizer && <Button data-dica="Mudar quantas pessoas cabem nesta área (total, homens e mulheres)." variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10 shrink-0" onClick={() => setIsEditing(true)}>
                 <Edit2 className="w-3 h-3 mr-1" />

@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCPF, formatNomeExibicao } from '@/utils/formatters';
-import { User, Download, Loader2, Star, X, Plus } from 'lucide-react';
+import { User, Download, Loader2, Star, X, Plus, Pin } from 'lucide-react';
 import { WORK_AREAS, CORES_GRUPO } from '@/constants/workAreas';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { cn } from '@/lib/utils';
@@ -39,7 +39,11 @@ const EquipantesGridDisplay = ({
   // cor -- nas outras a coluna nem existe.
   mostrarCor = false,
   onDefinirCor,
-  salvandoCor = {}
+  salvandoCor = {},
+  // Fixos na area (13/10/2026): { equipanteId: [areas fixas] }. O 📌 aparece
+  // para qualquer organizador; o botao de marcar so com onFixar.
+  fixasPorEquipante = {},
+  onFixar
 }) => {
   if (!equipantes || equipantes.length === 0) {
     return (
@@ -114,6 +118,9 @@ const EquipantesGridDisplay = ({
                           fill="currentColor"
                           title={eq.cor ? `Líder do ${eq.cor}` : 'Líder da área'}
                         />
+                      )}
+                      {(fixasPorEquipante[eq.id] || []).includes(areaName) && (
+                        <span className="shrink-0 text-[11px] leading-none" title={`Fixo em ${(fixasPorEquipante[eq.id] || []).join(', ')}: entra primeiro no Alocar automático.`}>📌</span>
                       )}
                       {areasPorEquipante[eq.id] > 1 && (
                         <span
@@ -236,6 +243,23 @@ const EquipantesGridDisplay = ({
                           <Plus className="h-4 w-4" />
                         </Button>
                       )}
+                      {onFixar && (() => {
+                        const fixo = (fixasPorEquipante[eq.id] || []).includes(areaName);
+                        return (
+                          <Button
+                            size="sm" variant="ghost"
+                            onClick={() => onFixar(eq, areaName)}
+                            disabled={realocando[eq.escalaId]}
+                            data-dica={fixo
+                              ? 'Fixo nesta área: entra primeiro no Alocar automático, todo ano. Clique para mudar.'
+                              : 'Marcar como fixo nesta área (o "core"): entra primeiro no Alocar automático, todo ano.'}
+                            className={cn('h-8 w-8 p-0 shrink-0 hover:bg-amber-500/10',
+                              fixo ? 'text-amber-400 hover:text-amber-300' : 'text-gray-500 hover:text-amber-400')}
+                          >
+                            <Pin className="h-4 w-4" fill={fixo ? 'currentColor' : 'none'} />
+                          </Button>
+                        );
+                      })()}
                       {onRemover && (
                         <Button
                           size="sm" variant="ghost"

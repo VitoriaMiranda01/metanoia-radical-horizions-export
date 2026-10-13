@@ -146,6 +146,46 @@ export const alocarEmLoteNaArea = async (area, ids, cor = null) => {
   }
 };
 
+// Fixos na area (13/10/2026, migration 20261013b): o "core" de cada area,
+// marcado com 📌 na ficha do equipante (atravessa as edicoes). O "Alocar
+// automático" coloca os fixos antes de todo mundo. Marcar/desmarcar e
+// "Limpar área" so Raquel, Dudu e Desenvolvedores (o banco confere).
+export const fetchAreasFixas = async () => {
+  const { data, error } = await supabase.rpc('areas_fixas');
+  if (error) {
+    console.error('equipanteAllocationApi - fetchAreasFixas', error);
+    return [];
+  }
+  return Array.isArray(data) ? data : [];
+};
+
+// Fixar numa area em que a pessoa ainda nao esta ja coloca ela la (alocado).
+export const marcarAreaFixa = async (equipanteId, area, fixo) => {
+  try {
+    const { data, error } = await supabase.rpc('marcar_area_fixa', { p_equipante_id: equipanteId, p_area: area, p_fixo: !!fixo });
+    if (error) throw error;
+    if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível marcar' };
+    return { success: true, alocado: !!data.alocado, aviso: data.aviso || null };
+  } catch (error) {
+    console.error('equipanteAllocationApi - marcarAreaFixa', error, { equipanteId, area, fixo });
+    return { success: false, error: error.message || 'Erro ao marcar fixo' };
+  }
+};
+
+// Tira todo mundo de uma area (fixos inclusive -- a marca fica). So antes de
+// lancar a escala provisoria.
+export const limparArea = async (area) => {
+  try {
+    const { data, error } = await supabase.rpc('limpar_area', { p_area: area });
+    if (error) throw error;
+    if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível limpar a área' };
+    return { success: true, removidos: data.removidos ?? 0, voltaramFila: data.voltaram_fila ?? 0 };
+  } catch (error) {
+    console.error('equipanteAllocationApi - limparArea', error, { area });
+    return { success: false, error: error.message || 'Erro ao limpar a área' };
+  }
+};
+
 // Tira a pessoa de UMA area. Se era a unica, ela volta para a fila "A
 // escalar" -- e por isso o botao pede confirmacao na tela.
 export const removerAlocacao = async (escalaId) => {

@@ -13,7 +13,7 @@ import { fetchLimitesAreas, saveLimiteAreaComGenero, getLimiteAreaComGenero } fr
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { exportEquipantesByArea, exportAllEquipantes } from '@/utils/excelExport';
 import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
-import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf } from '@/services/equipanteAllocationService';
+import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf, fetchAreasFixas, limparArea } from '@/services/equipanteAllocationService';
 import { fetchConfiguracoes, updateCpfsAreaEspecial } from '@/services/organizerConfigService';
 import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
 import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus } from 'lucide-react';
@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
 import AlocarEmLoteDialog from '@/components/scales/AlocarEmLoteDialog';
+import FixarAreaDialog from '@/components/scales/FixarAreaDialog';
 import EquipantesGridDisplay from '@/components/scales/EquipantesGridDisplay';
 import AreasExtraDialog from '@/components/scales/AreasExtraDialog';
 import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
@@ -35,6 +36,7 @@ import { casaBusca } from '@/utils/busca';
 import { emTeste } from '@/services/ambiente';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { formatNomeExibicao } from '@/utils/formatters';
 
 // Os tres numeros do caminho de um equipante ate a escala. As cores foram
 // pedidas pelo Patrick: amarelo = ainda depende do parceiro, vermelho =
@@ -183,6 +185,11 @@ const OrganizerScalesPage = () => {
   const [confirmandoDesfazerAuto, setConfirmandoDesfazerAuto] = useState(false);
   // "Alocar em lote" de uma area (12/10/2026): o nome da area aberta.
   const [loteArea, setLoteArea] = useState(null);
+  // Fixos na area 📌 (13/10/2026, migration 20261013b): o "core" de cada area.
+  const [fixas, setFixas] = useState([]);
+  const [fixarAberto, setFixarAberto] = useState(null); // null | { eq, area }
+  const [limparAreaAberta, setLimparAreaAberta] = useState(null); // nome da area
+  const [limpandoArea, setLimpandoArea] = useState(false);
   // Filtro das areas (13/10/2026): mostrar uma area so e/ou buscar quem esta
   // escalado (nome, CPF, igreja).
   const [areaFiltro, setAreaFiltro] = useState('todas');
@@ -236,6 +243,15 @@ const OrganizerScalesPage = () => {
     acc[a.id] = (acc[a.id] || 0) + 1;
     return acc;
   }, {});
+
+  // { equipanteId: [areas fixas] } e { area: [fixos] }.
+  const fixasPorEquipante = {};
+  const fixosPorArea = {};
+  fixas.forEach(f => {
+    (fixasPorEquipante[f.equipante_id] ||= []).push(f.area);
+    (fixosPorArea[f.area] ||= []).push(f);
+  });
+  const ehFixoEm = (equipanteId, area) => (fixasPorEquipante[equipanteId] || []).includes(area);
 
   // Contagem de PESSOAS, nao de participacoes: quem esta em duas areas tem
   // duas linhas em `allocations`, mas e uma pessoa so.
@@ -297,6 +313,7 @@ const OrganizerScalesPage = () => {
       setAguardandoAprovacao(await contarAguardandoAprovacao());
       setEscala(await fetchSituacaoEscala());
       setAutoSituacao(await fetchSituacaoAlocacaoAutomatica());
+      setFixas(await fetchAreasFixas());
 
       if (existingAllocations && existingAllocations.length > 0) {
         const changed = detectAllocationChanges(existingAllocations, previousAllocationsRef.current);
@@ -588,6 +605,11 @@ const OrganizerScalesPage = () => {
       toast({ title: "Escolha a área de destino", variant: "destructive" });
       return;
     }
+    const idDaPessoa = allocations.find(a => a.escalaId === escalaId)?.id;
+    if (ehFixoEm(idDaPessoa, areaAtual) && !window.confirm(
+      `${nomeEquipante} é fixo(a) 📌 em ${areaAtual}.\n\nMover para ${novaArea} mesmo assim? ` +
+      'A marca de fixo continua (dá para mudar no alfinete).'
+    )) return;
     setManualAllocating(prev => ({ ...prev, [escalaId]: true }));
     try {
       const resultado = await realocarAlocacao(escalaId, novaArea);
@@ -637,7 +659,15 @@ const OrganizerScalesPage = () => {
   // Tira a pessoa de UMA area. Se for a unica dela, volta para a fila -- e
   // por isso pede confirmacao nesse caso.
   const handleRemover = async (escalaId, nomeEquipante, areaAtual, quantasAreas) => {
-    if (quantasAreas <= 1) {
+    const idDaPessoa = allocations.find(a => a.escalaId === escalaId)?.id;
+    if (ehFixoEm(idDaPessoa, areaAtual)) {
+      const ok = window.confirm(
+        `${nomeEquipante} é fixo(a) 📌 em ${areaAtual}.\n\nTirar mesmo assim?` +
+        (quantasAreas <= 1 ? ' É a única área dela, então volta para a fila "A escalar".' : '') +
+        '\n\nA marca de fixo continua: o próximo Alocar automático coloca de volta. Para tirar a marca, use o alfinete.'
+      );
+      if (!ok) return;
+    } else if (quantasAreas <= 1) {
       const ok = window.confirm(
         `Tirar ${nomeEquipante} de ${areaAtual}?\n\n` +
         'É a única área dela, então volta para a fila "A escalar".'
@@ -677,6 +707,7 @@ const OrganizerScalesPage = () => {
     }
 
     const detalhe = [
+      r.fixos > 0 && `📌 ${r.fixos} ${r.fixos === 1 ? 'fixo' : 'fixos'} nas suas áreas`,
       r.opcao1 > 0 && `${r.opcao1} na 1ª opção`,
       r.opcao2 > 0 && `${r.opcao2} na 2ª`,
       r.opcao3 > 0 && `${r.opcao3} na 3ª`,
@@ -687,7 +718,8 @@ const OrganizerScalesPage = () => {
       title: r.alocados === 0 ? 'Ninguém foi alocado' : `${r.alocados} alocado(s)`,
       description: [
         detalhe,
-        r.sobraram > 0 && `${r.sobraram} ${r.sobraram === 1 ? 'continua' : 'continuam'} na fila — sem vaga nas opções escolhidas. Coloque à mão.`
+        r.sobraram > 0 && `${r.sobraram} ${r.sobraram === 1 ? 'continua' : 'continuam'} na fila — sem vaga nas opções escolhidas. Coloque à mão.`,
+        r.acimaDoLimite?.length > 0 && `Passaram do limite por causa dos fixos: ${r.acimaDoLimite.join(', ')}`
       ].filter(Boolean).join('. ') || 'A fila já estava vazia.',
       className: r.alocados > 0 ? 'bg-green-600 text-white' : undefined
     });
@@ -696,6 +728,24 @@ const OrganizerScalesPage = () => {
   };
 
   const autoAtivo = !!(autoSituacao?.ativo && autoSituacao?.pode_desfazer);
+
+  const handleLimparArea = async () => {
+    const area = limparAreaAberta;
+    setLimpandoArea(true);
+    const r = await limparArea(area);
+    setLimpandoArea(false);
+    setLimparAreaAberta(null);
+    if (!r.success) {
+      toast({ title: 'Não foi possível limpar a área', description: r.error, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: `${area} limpa`,
+      description: `${r.removidos} ${r.removidos === 1 ? 'pessoa saiu' : 'pessoas saíram'}` +
+        (r.voltaramFila > 0 ? `; ${r.voltaramFila} ${r.voltaramFila === 1 ? 'voltou' : 'voltaram'} para a fila "A escalar".` : '.')
+    });
+    fetchBackgroundData(false);
+  };
 
   const handleDesfazerAutomatico = async () => {
     setDesfazendoAuto(true);
@@ -1010,6 +1060,15 @@ const OrganizerScalesPage = () => {
     const atuacoesDeLider = atuacoesDaArea.filter(a => a.ehLider).map(a => a.atuacao);
     const temCor = areaTemCor(area);
 
+    // Fixos 📌 desta area: quem ja esta nela e quem ainda esta fora (e por que).
+    const idsNaArea = new Set(areaEquipantes.map(eq => eq.id));
+    const fixosDaArea = fixosPorArea[area] || [];
+    const fixosHeader = {
+      aqui: fixosDaArea.filter(f => idsNaArea.has(f.equipante_id)).map(f => formatNomeExibicao(f.nome)),
+      fora: fixosDaArea.filter(f => !idsNaArea.has(f.equipante_id)).map(f => `${formatNomeExibicao(f.nome)} (${
+        !f.inscrito ? 'não inscrito' : f.status !== 'aprovado' ? 'aguardando aprovação' : 'na fila ou em outra área'})`)
+    };
+
     // Nas areas divididas por cor, um lider por area nao basta: cada
     // cor tem o seu (5 guias no vermelho, um deles e o lider do
     // vermelho). Entao o aviso olha cor a cor, e so para as cores que
@@ -1028,11 +1087,11 @@ const OrganizerScalesPage = () => {
 
     return <div key={area} className="bg-black/40 border border-white/10 rounded-lg overflow-hidden shadow-md backdrop-blur-sm">
           <div className="sticky top-0 z-10 bg-gray-900 border-b border-white/10">
-            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => !eq.cor).length : 0} />
+            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => !eq.cor).length : 0} fixos={fixosHeader} onLimpar={podeGerir && !escala?.lancada_em ? () => setLimparAreaAberta(area) : undefined} />
           </div>
 
           <div className="p-4 max-h-[400px] overflow-y-auto">
-            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={mostrados} areaName={area} onExport={() => handleExportArea(area, areaEquipantes)} onRealocar={podeGerir ? handleRealocar : undefined} onAdicionarArea={podeGerir ? handleAdicionarArea : undefined} onRemover={podeGerir ? handleRemover : undefined} areasPorEquipante={areasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={(id, val) => setManualAreaChoice(prev => ({ ...prev, [id]: val }))} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={handleDefinirAtuacao} salvandoAtuacao={salvandoAtuacao} mostrarCor={temCor} onDefinirCor={handleDefinirCor} salvandoCor={salvandoCor} />}
+            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={mostrados} areaName={area} onExport={() => handleExportArea(area, areaEquipantes)} onRealocar={podeGerir ? handleRealocar : undefined} onAdicionarArea={podeGerir ? handleAdicionarArea : undefined} onRemover={podeGerir ? handleRemover : undefined} areasPorEquipante={areasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={(id, val) => setManualAreaChoice(prev => ({ ...prev, [id]: val }))} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={handleDefinirAtuacao} salvandoAtuacao={salvandoAtuacao} mostrarCor={temCor} onDefinirCor={handleDefinirCor} salvandoCor={salvandoCor} fixasPorEquipante={fixasPorEquipante} onFixar={podeGerir ? (eq, a) => setFixarAberto({ eq, area: a }) : undefined} />}
           </div>
         </div>;
   };
@@ -1357,6 +1416,12 @@ const OrganizerScalesPage = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-medium truncate">
                       {eq.nome} <span className="text-xs text-red-300/70">({eq.sexo})</span>
+                      {(fixasPorEquipante[eq.id] || []).length > 0 && (
+                        <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-200"
+                          title="Fixo: o Alocar automático coloca primeiro nesta(s) área(s).">
+                          📌 {(fixasPorEquipante[eq.id] || []).join(', ')}
+                        </span>
+                      )}
                     </p>
                     <p className="text-[11px] text-gray-500 truncate mb-1.5" title={nomeDaIgreja(eq) || ''}>{nomeDaIgreja(eq) || '—'}</p>
 
@@ -1574,7 +1639,10 @@ const OrganizerScalesPage = () => {
                 para as áreas que escolheram na inscrição, respeitando o teto de cada
                 área e o limite por sexo.
                 <br /><br />
-                <strong className="text-white">Primeiro todo mundo na 1ª opção</strong>, depois
+                <strong className="text-white">Antes de tudo, os fixos 📌</strong> vão para as suas
+                áreas fixas, mesmo passando do limite.
+                <br /><br />
+                <strong className="text-white">Depois todo mundo na 1ª opção</strong>, depois
                 quem sobrou na 2ª, depois na 3ª — assim ninguém perde a 1ª opção para a 3ª de
                 outra pessoa. Dentro de cada opção, escolhe primeiro quem{' '}
                 {escalaOrdem === 'cadastro' ? 'se cadastrou' : 'foi aprovado'} antes.
@@ -1625,7 +1693,8 @@ const OrganizerScalesPage = () => {
                 <br /><br />
                 Quem foi <strong className="text-white">mexido à mão depois</strong> fica onde está
                 {autoSituacao.total > autoSituacao.no_lugar ? ` (${autoSituacao.total - autoSituacao.no_lugar} hoje)` : ''},
-                e quem foi <strong className="text-white">alocado à mão</strong> não é tocado.
+                e quem foi <strong className="text-white">alocado à mão</strong> não é tocado. Os fixos 📌
+                ficam nas suas áreas fixas.
                 {autoSituacao.feito_por ? <><br /><br />Última alocação automática feita por {autoSituacao.feito_por}.</> : null}
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -1636,6 +1705,44 @@ const OrganizerScalesPage = () => {
               <AlertDialogAction onClick={handleDesfazerAutomatico} disabled={desfazendoAuto}
                 className="bg-amber-600 hover:bg-amber-700 text-white">
                 {desfazendoAuto ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Desfazer'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {fixarAberto && (
+          <FixarAreaDialog
+            equipante={fixarAberto.eq}
+            area={fixarAberto.area}
+            fixasAtuais={fixasPorEquipante[fixarAberto.eq.id] || []}
+            onClose={() => setFixarAberto(null)}
+            onSalvo={() => fetchBackgroundData(false)}
+          />
+        )}
+
+        <AlertDialog open={!!limparAreaAberta} onOpenChange={(v) => { if (!v && !limpandoArea) setLimparAreaAberta(null); }}>
+          <AlertDialogContent className="bg-gray-900 border-gray-700">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Limpar {limparAreaAberta}?</AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-400">
+                {(() => {
+                  const n = limparAreaAberta ? getEquipantesByArea(limparAreaAberta).length : 0;
+                  return n === 1 ? 'A pessoa desta área sai dela' : `As ${n} pessoas desta área saem dela`;
+                })()}{' '}
+                (fixos 📌 inclusive). Quem não tem outra área volta para a fila “A escalar”; quem
+                está em mais de uma área continua nas outras.
+                <br /><br />
+                A marca de fixo não se perde: o próximo “Alocar automático” coloca os fixos de volta.
+                Atuação (líder) e cor de quem sair se perdem.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-transparent border-gray-700 text-white hover:bg-gray-800" disabled={limpandoArea}>
+                Voltar
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={(e) => { e.preventDefault(); handleLimparArea(); }} disabled={limpandoArea}
+                className="bg-red-600 hover:bg-red-700 text-white">
+                {limpandoArea ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Limpar área'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

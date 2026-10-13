@@ -100,7 +100,12 @@ export { AREA_DISPONIVEL_QUALQUER };
 // (vindas de AREAS_SOMENTE_ORGANIZADOR, pelo mesmo motivo de Depressao e
 // Infiltrados acima).
 //
-// Uma pessoa so pode ter UM destes dez (roteiros simultaneos, ninguem
+// Perseguidos SAIU daqui em 13/10/2026 (Patrick): e complementar a Selva e
+// fica na tela logo abaixo dela, como area comum da diretoria (ver
+// AREAS_SOMENTE_ORGANIZADOR e AREAS_COMPLEMENTARES abaixo; banco: migration
+// 20261013f).
+//
+// Uma pessoa so pode ter UM destes nove (roteiros simultaneos, ninguem
 // cumpre dois). A regra e do banco -- _area_especial(), migration 20260912t
 // (as 3 originais), schema-update-20260916-mais-3-areas-especiais.sql (mais
 // 3) e schema-update-20260916b-mais-4-areas-especiais.sql (mais 4) --, e
@@ -114,7 +119,6 @@ export const AREAS_ESPECIAIS = [
   { key: 'inimigo', label: 'Inimigo' },
   { key: 'espirito_santo', label: 'Espírito Santo' },
   { key: 'depressao', label: 'Depressão' },
-  { key: 'perseguidos', label: 'Perseguidos' },
   { key: 'infiltrados', label: 'Infiltrados' },
   { key: 'familia_muculmana', label: 'Família muçulmana' },
   { key: 'apresentadores', label: 'Apresentadores' },
@@ -137,6 +141,8 @@ export const AREAS_ESPECIAIS = [
 // Sao ~60 pessoas por edicao (6,6% da escala) que ate agora nao cabiam no
 // sistema.
 export const AREAS_SOMENTE_ORGANIZADOR = [
+  // Perseguidos voltou para ca em 13/10/2026 (deixou de ser area especial).
+  'Perseguidos',
   // Apresentadores, Depressao, Equipe de Manutencao, Infiltrados e Pastor
   // Invisivel sairam daqui em 16/09/2026: viraram areas especiais (ver
   // AREAS_ESPECIAIS acima), exclusivas entre si.
@@ -208,6 +214,24 @@ export const areaTemCor = (area) => AREAS_COM_COR.includes(area);
 // formulario ("me ponha onde precisar", "prefiro cena teatral", "quero
 // tocar em cena"), nao lugares de trabalho. Ninguem e alocado nelas -- o
 // organizador ve a escolha na fila "A escalar" e decide o destino.
+// Areas que andam juntas e aparecem uma logo depois da outra na tela de
+// escalas, fora da ordem alfabetica (13/10/2026: Perseguidos complementa a
+// Selva). [ancora, a que vem logo abaixo]
+export const AREAS_COMPLEMENTARES = [
+  ['Selva', 'Perseguidos'],
+];
+
+// Ordem alfabetica, com cada complementar puxada para logo abaixo da ancora.
+export const ordenarComComplementares = (areas) => {
+  const resultado = areas.filter(a => !AREAS_COMPLEMENTARES.some(([, depois]) => depois === a));
+  AREAS_COMPLEMENTARES.forEach(([ancora, depois]) => {
+    if (!areas.includes(depois)) return;
+    const i = resultado.indexOf(ancora);
+    if (i < 0) resultado.push(depois); else resultado.splice(i + 1, 0, depois);
+  });
+  return resultado;
+};
+
 export const WORK_AREAS = [
   ...AREAS_INSCRICAO.map(a => a.valor).filter(v => !AREAS_SO_PREFERENCIA.includes(v)),
   ...AREAS_ESPECIAIS.map(a => a.label),

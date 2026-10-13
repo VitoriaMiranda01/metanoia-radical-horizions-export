@@ -10,8 +10,8 @@ import { AREAS_ESPECIAIS } from '@/constants/workAreas';
 const NUMERO_POR_EXTENSO = ['zero', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez'];
 const porExtenso = (n) => NUMERO_POR_EXTENSO[n] ?? String(n);
 
-// Guia, Inimigo, Espírito Santo, Depressão, Perseguidos e Infiltrados,
-// nesta ordem: "Guia, Inimigo, Espírito Santo, Depressão, Perseguidos e
+// Guia, Inimigo, Espírito Santo, Depressão e Infiltrados,
+// nesta ordem: "Guia, Inimigo, Espírito Santo, Depressão e
 // Infiltrados".
 const listaDosLabels = AREAS_ESPECIAIS.map(a => a.label).reduce((frase, label, i, arr) => {
   if (i === 0) return label;
@@ -26,7 +26,7 @@ const listaDosLabels = AREAS_ESPECIAIS.map(a => a.label).reduce((frase, label, i
  * Guia, Inimigo e Espírito Santo saíram do corpo da Geração de Escalas a
  * pedido do Patrick: são papéis fixos, mudam pouco de uma edição para a
  * outra, e ficavam no meio das ~30 áreas disputando atenção com o que
- * realmente muda toda edição. Depressão, Perseguidos e Infiltrados
+ * realmente muda toda edição. Depressão e Infiltrados
  * entraram depois (16/09/2026), vindos de outras duas famílias de área --
  * ver o comentário em AREAS_ESPECIAIS.
  *

@@ -11,7 +11,7 @@ import { AREAS_ESPECIAIS } from '@/constants/workAreas';
 
 /**
  * Escolha dos equipantes de UMA area especial (Guia, Inimigo, Espirito
- * Santo, Depressao, Perseguidos, Infiltrados, Familia muculmana,
+ * Santo, Depressao, Infiltrados, Familia muculmana,
  * Apresentadores, Equipe de Manutencao ou Pastor Invisivel -- ver
  * AREAS_ESPECIAIS em constants/workAreas.js).
  *

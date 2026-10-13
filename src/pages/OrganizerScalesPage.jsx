@@ -4,7 +4,7 @@ import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { WORK_AREAS, AREAS_ESPECIAIS, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor, AREA_DISPONIVEL_QUALQUER, AREAS_SO_PREFERENCIA } from '@/constants/workAreas';
+import { WORK_AREAS, AREAS_ESPECIAIS, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor, AREA_DISPONIVEL_QUALQUER, AREAS_SO_PREFERENCIA, ordenarComComplementares } from '@/constants/workAreas';
 import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges, fetchAtuacoesPorArea, definirAtuacao,
   definirCor, contarAguardandoAprovacao, fetchSituacaoEscala, lancarEscala, desfazerLancamentoEscala,
   alocarFilaAutomaticamente, fetchEscalaOrdem, lancarEscalaOficial, desfazerEscalaOficial,
@@ -79,7 +79,8 @@ const MAX_AREAS_DE_UMA_VEZ = 5;
 // proprios. Continuam sendo areas normais em todo o resto -- aparecem no
 // menu da fila, recebem Realocar, contam nos totais.
 const NOMES_ESPECIAIS = AREAS_ESPECIAIS.map(a => a.label);
-const AREAS_NO_CORPO = WORK_AREAS.filter(area => !NOMES_ESPECIAIS.includes(area));
+// Alfabetica, com as complementares logo abaixo da sua (Perseguidos depois da Selva).
+const AREAS_NO_CORPO = ordenarComComplementares(WORK_AREAS.filter(area => !NOMES_ESPECIAIS.includes(area)));
 
 const OrganizerScalesPage = () => {
   const [loading, setLoading] = useState(false);

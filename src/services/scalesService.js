@@ -140,7 +140,7 @@ export const fetchAtuacoesPorArea = async () => {
   const { data, error } = await comReenvio(
     () => supabase
       .from('atuacoes_areas')
-      .select('area_nome, atuacao, ordem, eh_padrao, eh_lider')
+      .select('area_nome, atuacao, ordem, eh_padrao, eh_lider, sem_cor')
       .order('area_nome')
       .order('ordem'),
     { rotulo: 'atuações das áreas' }
@@ -155,7 +155,10 @@ export const fetchAtuacoesPorArea = async () => {
     (acc[linha.area_nome] = acc[linha.area_nome] || []).push({
       atuacao: linha.atuacao,
       ehPadrao: linha.eh_padrao,
-      ehLider: linha.eh_lider
+      ehLider: linha.eh_lider,
+      // Atuacao que nao usa cor numa area com cor (ex.: Celular / Mesa na
+      // Recepção Sítio; migration 20261013g).
+      semCor: !!linha.sem_cor
     });
     return acc;
   }, {});

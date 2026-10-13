@@ -39,7 +39,7 @@ const vagasPorSexo = (limitObj, mulheres, homens) => {
   };
 };
 
-const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila = [], onClose, onAlocado }) => {
+const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila = [], atuacoes = [], onClose, onAlocado }) => {
   const { toast } = useToast();
   const [modo, setModo] = useState('escolheram');
   const [busca, setBusca] = useState('');
@@ -47,7 +47,12 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
   const [salvando, setSalvando] = useState(false);
   // Area dividida por cor (13/10/2026): a cor pode ir para todos de uma vez.
   // Sem cor e permitido, mas fica o aviso.
-  const comCor = areaTemCor(area);
+  // Atuacao de todos (13/10/2026): so aparece quando a area tem mais de uma.
+  // Na Recepção Sítio, "Celular / Mesa" nao usa cor -- ai a escolha da cor some.
+  const padrao = atuacoes.find((a) => a.ehPadrao)?.atuacao || atuacoes[0]?.atuacao || '';
+  const [atuacao, setAtuacao] = useState(padrao);
+  const atuacaoSemCor = atuacoes.some((a) => a.atuacao === atuacao && a.semCor);
+  const comCor = areaTemCor(area) && !atuacaoSemCor;
   const [cor, setCor] = useState('');
 
   const vagas = Math.max(0, (limitObj?.limiteMaximo || 0) - ocupados);
@@ -126,7 +131,7 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
     // Na ordem da lista (quem escolheu a area como 1ª opcao primeiro).
     const ordem = lista.filter((p) => marcados.has(p.id)).map((p) => p.id);
     const resto = escolhidos.map((p) => p.id).filter((id) => !ordem.includes(id));
-    const r = await alocarEmLoteNaArea(area, [...ordem, ...resto], comCor ? cor : null, passaDoLimite);
+    const r = await alocarEmLoteNaArea(area, [...ordem, ...resto], comCor ? cor : null, passaDoLimite, atuacoes.length > 1 ? atuacao : null);
     setSalvando(false);
     if (!r.success) {
       toast({ title: 'Não foi possível alocar', description: r.error, variant: 'destructive' });
@@ -183,6 +188,21 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
             )}
           </div>
         </div>
+
+        {atuacoes.length > 1 && (
+          <div className="space-y-1.5">
+            <p className="text-xs text-gray-400">Atuação para todos que entrarem</p>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Atuação">
+              {atuacoes.map((a) => (
+                <button key={a.atuacao} type="button" role="radio" aria-checked={atuacao === a.atuacao} onClick={() => setAtuacao(a.atuacao)}
+                  className={cn('rounded-full px-2.5 py-0.5 text-xs border-2',
+                    atuacao === a.atuacao ? 'border-white text-white bg-white/10' : 'border-white/10 text-gray-400 hover:border-white/30')}>
+                  {a.ehLider ? `★ ${a.atuacao}` : a.atuacao}{a.semCor ? ' (sem cor)' : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {comCor && (
           <div className="space-y-1.5">

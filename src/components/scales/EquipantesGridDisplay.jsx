@@ -68,6 +68,8 @@ const EquipantesGridDisplay = ({
   const mostrarAtuacao = onDefinirAtuacao && atuacoes.length > 1;
   const ehLider = (valor) => atuacoes.some(a => a.atuacao === valor && a.ehLider);
   const colunaCor = mostrarCor && !!onDefinirCor;
+  // Atuacao que nao usa cor (ex.: Celular / Mesa na Recepção Sítio).
+  const atuacaoSemCor = (valor) => atuacoes.some(a => a.atuacao === valor && a.semCor);
 
   // Bolinha da cor, para o organizador achar a pessoa correndo o olho pela
   // coluna em vez de ler palavra por palavra.
@@ -221,7 +223,12 @@ const EquipantesGridDisplay = ({
                     </Select>
                   </TableCell>
                 )}
-                {colunaCor && (
+                {colunaCor && atuacaoSemCor(eq.atuacao) && (
+                  <TableCell>
+                    <span className="text-xs text-gray-500" data-dica={`${eq.atuacao} não usa cor de grupo.`}>Não usa cor</span>
+                  </TableCell>
+                )}
+                {colunaCor && !atuacaoSemCor(eq.atuacao) && (
                   <TableCell>
                     <Select
                       value={eq.cor || 'sem'}

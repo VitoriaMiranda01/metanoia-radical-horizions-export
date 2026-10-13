@@ -145,9 +145,11 @@ export const realocarAlocacao = async (escalaId, novaArea, forcar = false) => {
 // cor (13/10/2026): opcional, vai para todos que entraram numa area com cor.
 // forcar (13/10/2026, migration 20261013d): o limite e so aviso -- a tela
 // confirma e manda forcar = true quando a selecao passa das vagas.
-export const alocarEmLoteNaArea = async (area, ids, cor = null, forcar = false) => {
+// atuacao (13/10/2026, migration 20261013g): a atuacao de todos; sem ela fica a
+// padrao da area. A cor so e gravada se a atuacao usa cor.
+export const alocarEmLoteNaArea = async (area, ids, cor = null, forcar = false, atuacao = null) => {
   try {
-    const { data, error } = await supabase.rpc('alocar_em_lote_na_area', { p_area: area, p_ids: ids, p_cor: cor || null, p_forcar: !!forcar });
+    const { data, error } = await supabase.rpc('alocar_em_lote_na_area', { p_area: area, p_ids: ids, p_cor: cor || null, p_forcar: !!forcar, p_atuacao: atuacao || null });
     if (error) throw error;
     if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível alocar' };
     return { success: true, alocados: data.alocados ?? 0, recusados: Array.isArray(data.recusados) ? data.recusados : [] };

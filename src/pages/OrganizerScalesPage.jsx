@@ -83,6 +83,8 @@ const MAX_AREAS_DE_UMA_VEZ = 5;
 const NOMES_ESPECIAIS = AREAS_ESPECIAIS.map(a => a.label);
 // Alfabetica, com as complementares logo abaixo da sua (Perseguidos depois da Selva).
 const AREAS_NO_CORPO = ordenarComComplementares(WORK_AREAS.filter(area => !NOMES_ESPECIAIS.includes(area)));
+// Areas comuns que da para acrescentar a alguem ("Não será escalado" nao e area de trabalho).
+const AREAS_COMUNS = AREAS_NO_CORPO.filter(area => area !== 'Não será escalado');
 
 const OrganizerScalesPage = () => {
   const [loading, setLoading] = useState(false);
@@ -519,10 +521,13 @@ const OrganizerScalesPage = () => {
   // o banco -- se o banco recusar, volta ao que era e avisa.
   const handleDefinirAtuacao = async (escalaId, novaAtuacao) => {
     const anterior = allocations.find(a => a.escalaId === escalaId)?.atuacao ?? null;
+    const corAnterior = allocations.find(a => a.escalaId === escalaId)?.cor ?? null;
     if (anterior === novaAtuacao) return;
 
     setSalvandoAtuacao(prev => ({ ...prev, [escalaId]: true }));
-    setAllocations(prev => prev.map(a => (a.escalaId === escalaId ? { ...a, atuacao: novaAtuacao } : a)));
+    const areaDaLinha = allocations.find(a => a.escalaId === escalaId)?.allocatedArea;
+    const apagaCor = (atuacoesPorArea[areaDaLinha] || []).some(x => x.atuacao === novaAtuacao && x.semCor);
+    setAllocations(prev => prev.map(a => (a.escalaId === escalaId ? { ...a, atuacao: novaAtuacao, ...(apagaCor ? { cor: null } : {}) } : a)));
     // Mantém o "antes" alinhado com o "agora": sem isso o efeito de
     // auto-save enxergaria uma diferença e tentaria regravar a escala.
     previousAllocationsRef.current = previousAllocationsRef.current.map(
@@ -532,7 +537,7 @@ const OrganizerScalesPage = () => {
     const resultado = await definirAtuacao(escalaId, novaAtuacao);
 
     if (!resultado.success) {
-      setAllocations(prev => prev.map(a => (a.escalaId === escalaId ? { ...a, atuacao: anterior } : a)));
+      setAllocations(prev => prev.map(a => (a.escalaId === escalaId ? { ...a, atuacao: anterior, cor: corAnterior } : a)));
       previousAllocationsRef.current = previousAllocationsRef.current.map(
         a => (a.escalaId === escalaId ? { ...a, atuacao: anterior } : a)
       );
@@ -757,30 +762,48 @@ const OrganizerScalesPage = () => {
   };
 
   // Acrescenta uma area a quem JA esta escalado, sem tirar das atuais.
+  // Acrescenta uma area sem tirar das atuais. Usado pela busca e pelo chip
+  // do pre-cadastro das Areas Especiais.
+  const acrescentarArea = async (equipanteId, nomeBruto, area, areasAtuais) => {
+    const nome = formatNomeExibicao(nomeBruto);
+    const r = await comAvisoDeLimite((forcar) => alocarEquipanteManualmente(equipanteId, area, forcar), area, nome);
+    if (r.success) {
+      toast({
+        title: `Escalado também em ${area}`,
+        description: `${nome} agora está em ${[...areasAtuais, area].join(' + ')}.`,
+        className: 'bg-green-600 text-white'
+      });
+      await fetchBackgroundData(false);
+    } else if (!r.cancelado) {
+      toast({ title: 'Não foi possível escalar', description: r.error, variant: 'destructive' });
+    }
+    return r.success;
+  };
+
   const handleEscalarTambem = async (pessoa) => {
     const area = tambemArea[pessoa.id];
     if (!area) {
       toast({ title: 'Escolha a área', variant: 'destructive' });
       return;
     }
-    const nome = formatNomeExibicao(pessoa.nome);
     setTambemSalvando(prev => ({ ...prev, [pessoa.id]: true }));
     try {
-      const r = await comAvisoDeLimite((forcar) => alocarEquipanteManualmente(pessoa.id, area, forcar), area, nome);
-      if (r.success) {
-        toast({
-          title: `Escalado também em ${area}`,
-          description: `${nome} agora está em ${[...pessoa.areas.map(x => x.area), area].join(' + ')}.`,
-          className: 'bg-green-600 text-white'
-        });
+      if (await acrescentarArea(pessoa.id, pessoa.nome, area, pessoa.areas.map(x => x.area))) {
         setTambemArea(prev => { const n = { ...prev }; delete n[pessoa.id]; return n; });
-        await fetchBackgroundData(false);
-      } else if (!r.cancelado) {
-        toast({ title: 'Não foi possível escalar', description: r.error, variant: 'destructive' });
       }
     } finally {
       setTambemSalvando(prev => ({ ...prev, [pessoa.id]: false }));
     }
+  };
+
+  // Chip do pre-cadastro (Areas Especiais): areas comuns da pessoa e o acrescimo.
+  const areasComunsDoCpf = (cpf) => allocations
+    .filter(a => soDigitosCpf(a.cpf) === cpf && !NOMES_ESPECIAIS.includes(a.allocatedArea) && a.allocatedArea !== 'Não será escalado')
+    .map(a => a.allocatedArea);
+  const handleEscalarTambemPorCpf = async (cpf, area) => {
+    const eq = (equipantesAprovados || []).find(e => soDigitosCpf(e.cpf) === cpf);
+    if (!eq) { toast({ title: 'Equipante não encontrado', variant: 'destructive' }); return; }
+    await acrescentarArea(eq.id, eq.nome, area, allocations.filter(a => a.id === eq.id).map(a => a.allocatedArea));
   };
 
   // A linha "onde esta + escalar tambem em outra area". Usada na busca "Onde
@@ -1321,9 +1344,12 @@ const OrganizerScalesPage = () => {
 
   // Sem cor numa area dividida por cor (13/10/2026): so aviso -- no topo, no
   // cabecalho da area, na coluna Cor e na confirmacao de lancamento.
+  // Atuacao que nao usa cor (Celular / Mesa na Recepção Sítio) nao conta.
+  const usaCor = (area, atuacao) => areaTemCor(area) &&
+    !(atuacoesPorArea[area] || []).some(x => x.atuacao === atuacao && x.semCor);
   const semCorPorArea = {};
   allocations.forEach(a => {
-    if (areaTemCor(a.allocatedArea) && !a.cor) semCorPorArea[a.allocatedArea] = (semCorPorArea[a.allocatedArea] || 0) + 1;
+    if (usaCor(a.allocatedArea, a.atuacao) && !a.cor) semCorPorArea[a.allocatedArea] = (semCorPorArea[a.allocatedArea] || 0) + 1;
   });
   const totalSemCor = Object.values(semCorPorArea).reduce((t, n) => t + n, 0);
   const avisoSemCorLancamento = totalSemCor > 0 && (
@@ -1400,7 +1426,7 @@ const OrganizerScalesPage = () => {
 
     return <div key={area} className="bg-black/40 border border-white/10 rounded-lg overflow-hidden shadow-md backdrop-blur-sm">
           <div className="sticky top-0 z-10 bg-gray-900 border-b border-white/10">
-            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => !eq.cor).length : 0} fixos={fixosHeader} onLimpar={podeGerir && !escala?.lancada_em ? () => setLimparAreaAberta(area) : undefined} />
+            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => usaCor(area, eq.atuacao) && !eq.cor).length : 0} fixos={fixosHeader} onLimpar={podeGerir && !escala?.lancada_em ? () => setLimparAreaAberta(area) : undefined} />
           </div>
 
           <div className={cn("p-4 overflow-y-auto", noModulo ? "max-h-[65vh]" : "max-h-[400px]")}>
@@ -1989,6 +2015,9 @@ const OrganizerScalesPage = () => {
                       onSave={(novaLista) => handleSaveCpfsAreaEspecial(key, novaLista)}
                       situacaoDoCpf={situacaoDoCpfNaArea(label)}
                       onAlocar={(cpf) => handleAlocarUmPorCpf(key, label, cpf)}
+                      areasComunsDoCpf={areasComunsDoCpf}
+                      areasComunsDisponiveis={AREAS_COMUNS}
+                      onEscalarTambem={podeGerir ? handleEscalarTambemPorCpf : undefined}
                     />
                   </div>
                   {renderCartaoArea(label, false, true)}
@@ -2045,6 +2074,7 @@ const OrganizerScalesPage = () => {
               mulheres={getGenderCount(naArea, 'feminino')}
               homens={getGenderCount(naArea, 'masculino')}
               fila={waitlist}
+              atuacoes={atuacoesPorArea[loteArea] || []}
               onClose={() => setLoteArea(null)}
               onAlocado={() => fetchBackgroundData(false)}
             />

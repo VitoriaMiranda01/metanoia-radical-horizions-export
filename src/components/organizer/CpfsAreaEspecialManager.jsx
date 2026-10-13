@@ -8,6 +8,7 @@ import { formatCPF } from '@/utils/formatters';
 import { validateCPF } from '@/utils/validation';
 import { normalizarBusca } from '@/utils/busca';
 import { AREAS_ESPECIAIS } from '@/constants/workAreas';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 /**
  * Escolha dos equipantes de UMA area especial (Guia, Inimigo, Espirito
@@ -54,7 +55,14 @@ const CpfsAreaEspecialManager = ({
   // 'nao_aprovado' ou 'sem_inscricao'; onAlocar(cpf) aloca so essa pessoa,
   // com a mesma regra do "Aplicar CPFs cadastrados". Sem eles, nada muda.
   situacaoDoCpf,
-  onAlocar
+  onAlocar,
+  // Areas comuns no proprio chip (13/10/2026): a pessoa da area especial pode
+  // estar tambem em areas comuns. areasComunsDoCpf(cpf) -> [areas comuns em
+  // que ela ja esta]; areasComunsDisponiveis -> todas as comuns;
+  // onEscalarTambem(cpf, area) acrescenta sem tirar de nada.
+  areasComunsDoCpf,
+  areasComunsDisponiveis = [],
+  onEscalarTambem
 }) => {
   const [busca, setBusca] = useState('');
   const [aberto, setAberto] = useState(false);
@@ -62,6 +70,7 @@ const CpfsAreaEspecialManager = ({
   const [isSaving, setIsSaving] = useState(false);
   const [removendo, setRemovendo] = useState(null);
   const [alocando, setAlocando] = useState(null);
+  const [acrescentando, setAcrescentando] = useState(null);
   const containerRef = useRef(null);
   const { toast } = useToast();
 
@@ -220,6 +229,12 @@ const CpfsAreaEspecialManager = ({
     return na.localeCompare(nb, 'pt-BR', { sensitivity: 'base' });
   }), [cpfs, equipantePorCpf]);
 
+  const acrescentar = async (cpf, area) => {
+    if (!onEscalarTambem) return;
+    setAcrescentando(cpf);
+    try { await onEscalarTambem(cpf, area); } finally { setAcrescentando(null); }
+  };
+
   const alocar = async (cpf) => {
     if (!onAlocar) return;
     setAlocando(cpf);
@@ -252,12 +267,39 @@ const CpfsAreaEspecialManager = ({
                     <Check className="w-3 h-3" />escalado
                   </span>
                 )}
+                {situacao === 'na_area' && areasComunsDoCpf && areasComunsDoCpf(cpf).map((a) => (
+                  <span key={a} className="text-[11px] px-1.5 py-0.5 rounded-full border border-sky-500/40 bg-sky-500/10 text-sky-200"
+                    data-dica={`Também está escalado em ${a}.`}>
+                    + {a}
+                  </span>
+                ))}
+                {situacao === 'na_area' && onEscalarTambem && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button type="button" disabled={!!acrescentando}
+                        data-dica={`Escalar esta pessoa também numa área comum, sem tirar de ${areaLabel}.`}
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-sky-600/25 text-sky-200 hover:bg-sky-600/45 disabled:opacity-50">
+                        {acrescentando === cpf ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                        área comum
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="bg-neutral-900 border-white/10 text-white max-h-72 overflow-y-auto">
+                      <DropdownMenuLabel className="text-xs text-gray-400 font-normal">Escalar também em:</DropdownMenuLabel>
+                      {areasComunsDisponiveis
+                        .filter((a) => !(areasComunsDoCpf ? areasComunsDoCpf(cpf) : []).includes(a))
+                        .map((a) => (
+                          <DropdownMenuItem key={a} onSelect={() => acrescentar(cpf, a)}
+                            className="cursor-pointer focus:bg-white/10 focus:text-white">{a}</DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
                 {situacao === 'pode' && onAlocar && (
                   <button
                     type="button"
                     onClick={() => alocar(cpf)}
                     disabled={!!alocando}
-                    data-dica={`Colocar esta pessoa em ${areaLabel} agora (sai da fila ou da área em que estava).`}
+                    data-dica={`Colocar esta pessoa em ${areaLabel} agora (as áreas comuns dela continuam; só sai de outra área especial).`}
                     className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-indigo-600/30 text-indigo-200 hover:bg-indigo-600/50 disabled:opacity-50"
                   >
                     {alocando === cpf ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}

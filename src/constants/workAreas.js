@@ -217,6 +217,12 @@ export const areaTemCor = (area) => AREAS_COM_COR.includes(area);
 // Areas que andam juntas e aparecem uma logo depois da outra na tela de
 // escalas, fora da ordem alfabetica (13/10/2026: Perseguidos complementa a
 // Selva). [ancora, a que vem logo abaixo]
+// Regra dos Guias (13/10/2026, migration 20261013h): todo Guia tambem fica
+// na Recepção Sítio (Fila / Confronto), e a cor anda junto nas duas areas.
+// Quem faz isso e o banco (gatilho regra_guia_recepcao); a tela so explica.
+export const AREA_GUIA = 'Guia';
+export const GUIA_TAMBEM_EM = 'Recepção Sítio';
+
 export const AREAS_COMPLEMENTARES = [
   ['Selva', 'Perseguidos'],
 ];

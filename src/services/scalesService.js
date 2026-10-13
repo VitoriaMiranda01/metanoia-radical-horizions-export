@@ -104,7 +104,7 @@ export const saveScales = async (allocations) => {
 
 export const fetchAllAllocations = async () => {
   const linhas = await lerTudoPaginado(
-    () => supabase.from('escalas').select(`id, equipante_id, area_alocada, atuacao, cor, separado_de, equipantes!inner (${COLUNAS_EQUIPANTE})`),
+    () => supabase.from('escalas').select(`id, equipante_id, area_alocada, atuacao, cor, separado_de, incluido_por, equipantes!inner (${COLUNAS_EQUIPANTE})`),
     'alocações'
   );
 
@@ -123,6 +123,8 @@ export const fetchAllAllocations = async () => {
     cor: item.cor || null,
     // Area de onde saiu por ausencia na chamada (agora em "Não será escalado").
     separadoDe: item.separado_de || null,
+    // Linha criada pela regra dos Guias (Recepção Sítio; migration 20261013h).
+    regraGuia: item.incluido_por === 'Regra: Guia',
     statusAllocation: 'Alocado'
   }));
 };

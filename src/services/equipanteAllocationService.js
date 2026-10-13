@@ -194,7 +194,7 @@ export const limparArea = async (area) => {
     const { data, error } = await supabase.rpc('limpar_area', { p_area: area });
     if (error) throw error;
     if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível limpar a área' };
-    return { success: true, removidos: data.removidos ?? 0, voltaramFila: data.voltaram_fila ?? 0 };
+    return { success: true, removidos: data.removidos ?? 0, voltaramFila: data.voltaram_fila ?? 0, guiasMantidos: data.guias_mantidos ?? 0 };
   } catch (error) {
     console.error('equipanteAllocationApi - limparArea', error, { area });
     return { success: false, error: error.message || 'Erro ao limpar a área' };

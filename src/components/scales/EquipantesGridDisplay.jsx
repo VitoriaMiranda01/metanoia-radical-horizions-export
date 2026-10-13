@@ -178,6 +178,14 @@ const EquipantesGridDisplay = ({
                           title={eq.cor ? `Líder do ${eq.cor}` : 'Líder da área'}
                         />
                       )}
+                      {eq.regraGuia && (
+                        <span
+                          className="shrink-0 text-[9px] px-1 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30"
+                          data-dica="É Guia: pela regra, todo Guia também fica na Recepção Sítio (Fila / Confronto). A cor é a mesma nas duas áreas."
+                        >
+                          Guia
+                        </span>
+                      )}
                       {areasPorEquipante[eq.id] > 1 && (
                         <span
                           className="shrink-0 text-[9px] px-1 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30"

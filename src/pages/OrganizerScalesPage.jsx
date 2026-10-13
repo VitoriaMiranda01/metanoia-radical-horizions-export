@@ -4,7 +4,7 @@ import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { WORK_AREAS, AREAS_ESPECIAIS, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor, AREA_DISPONIVEL_QUALQUER, AREAS_SO_PREFERENCIA, ordenarComComplementares } from '@/constants/workAreas';
+import { WORK_AREAS, AREAS_ESPECIAIS, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor, AREA_DISPONIVEL_QUALQUER, AREAS_SO_PREFERENCIA, ordenarComComplementares, AREA_GUIA, GUIA_TAMBEM_EM } from '@/constants/workAreas';
 import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges, fetchAtuacoesPorArea, definirAtuacao,
   definirCor, contarAguardandoAprovacao, fetchSituacaoEscala, lancarEscala, desfazerLancamentoEscala,
   alocarFilaAutomaticamente, fetchEscalaOrdem, lancarEscalaOficial, desfazerEscalaOficial,
@@ -546,6 +546,10 @@ const OrganizerScalesPage = () => {
         description: resultado.error,
         variant: "destructive"
       });
+    } else if (areaDaLinha === GUIA_TAMBEM_EM) {
+      // Regra dos Guias: voltando para uma atuacao com cor, a Recepção
+      // herda a cor do Guia (o banco faz; a tela busca de novo).
+      fetchBackgroundData(false);
     }
 
     setSalvandoAtuacao(prev => ({ ...prev, [escalaId]: false }));
@@ -561,8 +565,15 @@ const OrganizerScalesPage = () => {
         toast({ title: 'Não deu certo', description: r?.erro, variant: 'destructive' });
         return;
       }
+      // Regra dos Guias: o banco ja mudou a cor do outro lado (Guia <->
+      // Recepção Sítio); aqui a tela acompanha na hora.
+      const linha = allocations.find(a => a.escalaId === escalaId);
+      const semCorNaRecepcao = (a) => (atuacoesPorArea[GUIA_TAMBEM_EM] || []).some(x => x.atuacao === a.atuacao && x.semCor);
+      const ehPar = (a) => !!linha && a.id === linha.id && a.escalaId !== escalaId && (
+        (linha.allocatedArea === AREA_GUIA && a.allocatedArea === GUIA_TAMBEM_EM && !semCorNaRecepcao(a)) ||
+        (linha.allocatedArea === GUIA_TAMBEM_EM && a.allocatedArea === AREA_GUIA && !semCorNaRecepcao(linha)));
       setAllocations(prev => prev.map(a =>
-        a.escalaId === escalaId ? { ...a, cor: novaCor || null } : a));
+        a.escalaId === escalaId || ehPar(a) ? { ...a, cor: novaCor || null } : a));
     } catch (error) {
       toast({
         title: 'Erro ao definir a cor',
@@ -950,11 +961,16 @@ const OrganizerScalesPage = () => {
   // pergunta se tira de la tambem (Sim / Não).
   const handleRemover = (escalaId, nomeEquipante, areaAtual) => {
     const idDaPessoa = allocations.find(a => a.escalaId === escalaId)?.id;
-    const outras = allocations
+    const todasOutras = allocations
       .filter(a => a.id === idDaPessoa && a.escalaId !== escalaId)
-      .map(a => ({ escalaId: a.escalaId, area: a.allocatedArea }));
+      .map(a => ({ escalaId: a.escalaId, area: a.allocatedArea, regraGuia: !!a.regraGuia }));
+    // Regra dos Guias: saindo do Guia, a Recepção Sítio que a regra criou
+    // sai junto (o banco faz) -- nao entra na pergunta "tirar de la tambem?".
+    const juntoRegra = areaAtual === AREA_GUIA ? todasOutras.filter(o => o.regraGuia).map(o => o.area) : [];
+    const outras = todasOutras.filter(o => !juntoRegra.includes(o.area));
     setRemocao({
-      escalaId, nome: formatNomeExibicao(nomeEquipante), area: areaAtual, outras,
+      escalaId, nome: formatNomeExibicao(nomeEquipante), area: areaAtual, outras, juntoRegra,
+      avisoGuia: areaAtual === GUIA_TAMBEM_EM && outras.some(o => o.area === AREA_GUIA),
       fixas: (fixasPorEquipante[idDaPessoa] || []).filter(a => a === areaAtual || outras.some(o => o.area === a))
     });
   };
@@ -969,7 +985,11 @@ const OrganizerScalesPage = () => {
     let restam = r0.outras.length;
     for (const alvo of alvos) {
       const r = await removerAlocacao(alvo.escalaId);
-      if (r.success) { saiu.push(alvo.area); restam = r.restam; } else falhas.push(`${alvo.area}: ${r.error}`);
+      if (r.success) {
+        saiu.push(alvo.area);
+        if (alvo.area === AREA_GUIA) saiu.push(...(r0.juntoRegra || []));
+        restam = r.restam;
+      } else falhas.push(`${alvo.area}: ${r.error}`);
     }
     setRemovendo(false);
     setRemocao(null);
@@ -1042,7 +1062,8 @@ const OrganizerScalesPage = () => {
     toast({
       title: `${area} limpa`,
       description: `${r.removidos} ${r.removidos === 1 ? 'pessoa saiu' : 'pessoas saíram'}` +
-        (r.voltaramFila > 0 ? `; ${r.voltaramFila} ${r.voltaramFila === 1 ? 'voltou' : 'voltaram'} para a fila "A escalar".` : '.')
+        (r.voltaramFila > 0 ? `; ${r.voltaramFila} ${r.voltaramFila === 1 ? 'voltou' : 'voltaram'} para a fila "A escalar".` : '.') +
+        (r.guiasMantidos > 0 ? ` ${r.guiasMantidos} ${r.guiasMantidos === 1 ? 'Guia continua' : 'Guias continuam'} (regra).` : '')
     });
     fetchBackgroundData(false);
   };
@@ -2132,8 +2153,22 @@ const OrganizerScalesPage = () => {
                       <strong className="text-amber-300">{remocao.outras.map(o => o.area).join(', ')}</strong>.
                       {' '}Deseja retirar de lá também?
                     </p>
+                  ) : remocao?.juntoRegra?.length > 0 ? (
+                    <p>Sem outras áreas, ela volta para a fila “A escalar”.</p>
                   ) : (
                     <p>É a única área dessa pessoa, então ela volta para a fila “A escalar”.</p>
+                  )}
+                  {remocao?.juntoRegra?.length > 0 && (
+                    <p className="text-sky-200/90">
+                      Sai junto da {remocao.juntoRegra.join(', ')}: todo Guia fica lá pela regra, e quem
+                      deixa de ser Guia sai de lá também.
+                    </p>
+                  )}
+                  {remocao?.avisoGuia && (
+                    <p className="text-amber-200/90">
+                      ⚠ {remocao.nome} é Guia, e pela regra todo Guia fica na {GUIA_TAMBEM_EM}. Se tirar
+                      só daqui, só volta com “+ área” ou saindo e voltando ao Guia.
+                    </p>
                   )}
                   {remocao?.fixas.length > 0 && (
                     <p className="text-amber-200/90">
@@ -2175,8 +2210,13 @@ const OrganizerScalesPage = () => {
               <AlertDialogTitle>Limpar {limparAreaAberta}?</AlertDialogTitle>
               <AlertDialogDescription className="text-gray-400">
                 {(() => {
-                  const n = limparAreaAberta ? getEquipantesByArea(limparAreaAberta).length : 0;
-                  return n === 1 ? 'A pessoa desta área sai dela' : `As ${n} pessoas desta área saem dela`;
+                  const todos = limparAreaAberta ? getEquipantesByArea(limparAreaAberta) : [];
+                  const guias = limparAreaAberta === GUIA_TAMBEM_EM
+                    ? todos.filter(p => allocations.some(a => a.id === p.id && a.allocatedArea === AREA_GUIA)).length : 0;
+                  const n = todos.length - guias;
+                  return (n === 1 ? 'A pessoa desta área sai dela' : `As ${n} pessoas desta área saem dela`) +
+                    (guias > 0 ? ` — ${guias === 1 ? 'o Guia continua' : `os ${guias} Guias continuam`} (regra: todo Guia fica na ${GUIA_TAMBEM_EM})` : '') +
+                    (limparAreaAberta === AREA_GUIA ? ` e também da ${GUIA_TAMBEM_EM} que a regra dos Guias criou` : '');
                 })()}{' '}
                 (fixos 📌 inclusive). Quem não tem outra área volta para a fila “A escalar”; quem
                 está em mais de uma área continua nas outras.

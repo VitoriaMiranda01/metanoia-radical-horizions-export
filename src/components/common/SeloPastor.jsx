@@ -14,7 +14,7 @@ const SeloPastor = ({ pessoa, className }) => {
   if (!titulo) return null;
   return (
     <span data-dica={titulo} aria-label={titulo} role="img"
-      className={cn('inline-flex shrink-0 text-violet-300', className)}>
+      className={cn('inline-flex shrink-0 text-sky-400', className)}>
       <Church className="h-3.5 w-3.5" />
     </span>
   );

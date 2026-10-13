@@ -166,7 +166,7 @@ const EquipantesGridDisplay = ({
                 key={eq.escalaId || eq.id || index}
                 className="border-white/10 hover:bg-white/5 transition-colors"
               >
-                <TableCell className="font-semibold text-white">
+                <TableCell className="font-semibold text-white min-w-[230px]">
                   <div className="flex flex-col">
                     <span className="flex items-center gap-1.5">
                       <NomeComBandeira nome={formatNomeExibicao(eq.nome)} nacionalidade={eq.nacionalidade} />
@@ -198,10 +198,10 @@ const EquipantesGridDisplay = ({
                     <span className="text-xs text-gray-500 sm:hidden">{formatCPF(eq.cpf)}</span>
                   </div>
                 </TableCell>
-                <TableCell className="text-gray-400 hidden sm:table-cell font-mono text-xs">
+                <TableCell className="text-gray-400 hidden sm:table-cell font-mono text-xs whitespace-nowrap">
                   {formatCPF(eq.cpf)}
                 </TableCell>
-                <TableCell className="text-gray-400 hidden md:table-cell text-[12.5px] max-w-[220px] truncate" title={nomeDaIgreja(eq) || '-'}>
+                <TableCell className="text-gray-400 hidden md:table-cell text-[12.5px] max-w-[200px] truncate" title={nomeDaIgreja(eq) || '-'}>
                   {nomeDaIgreja(eq) || '-'}
                 </TableCell>
                 {mostrarAtuacao && (

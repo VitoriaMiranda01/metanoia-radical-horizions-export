@@ -1456,7 +1456,7 @@ const OrganizerScalesPage = () => {
         </div>;
   };
 
-  return <Layout>
+  return <Layout largo>
       <Helmet>
         <title>Geração de Escalas - Organizador</title>
       </Helmet>

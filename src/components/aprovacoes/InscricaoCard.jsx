@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { naoCongrega, nomeDaIgreja } from '@/constants/igrejas';
 import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
+import SeloPastor from '@/components/common/SeloPastor';
 
 const InscricaoCard = ({ 
   inscricao, 
@@ -22,6 +23,7 @@ const InscricaoCard = ({
       <div className="flex justify-between items-start gap-3">
         <h3 className="font-semibold text-white text-lg leading-tight break-words">
           <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} />
+          <SeloPastor pessoa={inscricao} className="ml-1.5 align-[-1px]" />
         </h3>
         <div className="shrink-0 mt-0.5">
           {statusBadge}

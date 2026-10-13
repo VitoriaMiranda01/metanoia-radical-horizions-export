@@ -22,6 +22,7 @@ import InscricaoCard from '@/components/aprovacoes/InscricaoCard';
 import { naoCongrega, nomeDaIgreja } from '@/constants/igrejas';
 import { casaBusca } from '@/utils/busca';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
+import SeloPastor from '@/components/common/SeloPastor';
 import { 
   getVisibleColumnsFromStorage, 
   saveVisibleColumnsToStorage,
@@ -385,6 +386,7 @@ const AprovacoesTable = ({
                               />
                             )}
                             <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} />
+                            <SeloPastor pessoa={inscricao} />
                           </span>
                         </TableCell>
                         

@@ -32,6 +32,7 @@ import ChamadaQuadro from '@/components/scales/ChamadaQuadro';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import SeloPastor from '@/components/common/SeloPastor';
+import { tituloPastor } from '@/utils/pastor';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { casaBusca } from '@/utils/busca';
 import { emTeste } from '@/services/ambiente';
@@ -196,11 +197,15 @@ const OrganizerScalesPage = () => {
   const [remocao, setRemocao] = useState(null);
   // Fila: mostrar so quem ficou sem vaga em todas as sugestoes.
   const [soSugestoesCheias, setSoSugestoesCheias] = useState(false);
-  // Ordenar a fila (13/10/2026): 'padrao' | 'nome' | 'igreja' | 'area' | 'sexo',
+  // Ordenar a fila (13/10/2026): 'padrao' | 'nome' | 'igreja' | 'area' | 'pastor',
   // crescente ou decrescente. Lembrado neste navegador.
   const [ordemFila, setOrdemFila] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('escala_fila_ordem')) || { campo: 'padrao', desc: false }; }
-    catch { return { campo: 'padrao', desc: false }; }
+    try {
+      const salvo = JSON.parse(localStorage.getItem('escala_fila_ordem'));
+      // Opcao que saiu do menu (ex.: 'sexo') volta para o padrao.
+      return salvo && ['padrao', 'nome', 'igreja', 'area', 'pastor'].includes(salvo.campo)
+        ? salvo : { campo: 'padrao', desc: false };
+    } catch { return { campo: 'padrao', desc: false }; }
   });
   const mudarOrdemFila = (nova) => setOrdemFila(atual => {
     const prox = { ...atual, ...nova };
@@ -315,16 +320,23 @@ const OrganizerScalesPage = () => {
     nome: (eq) => eq.nome,
     igreja: (eq) => nomeDaIgreja(eq),
     area: (eq) => eq.area_trabalho_opcao1,
-    sexo: (eq) => eq.sexo,
   };
   const compararFila = (a, b) => {
-    if (ordemFila.campo === 'padrao') {
+    // 'sexo' saiu do menu (13/10/2026, virou "Pastores"): quem tinha ele
+    // guardado no navegador cai no padrao.
+    const campo = ordemFila.campo === 'pastor' || chaveDaFila[ordemFila.campo] ? ordemFila.campo : 'padrao';
+    if (campo === 'padrao') {
       const d = pesoNaFila(a.eq) - pesoNaFila(b.eq);
       return (ordemFila.desc ? -d : d) || a.i - b.i;
     }
     const manual = Number(ehManualSemOpcao(a.eq)) - Number(ehManualSemOpcao(b.eq));
     if (manual) return manual;
-    const pega = chaveDaFila[ordemFila.campo];
+    // Pastores (e auxiliares) primeiro; Z→A inverte (pastores por ultimo).
+    if (campo === 'pastor') {
+      const d = Number(!!tituloPastor(b.eq)) - Number(!!tituloPastor(a.eq));
+      return (ordemFila.desc ? -d : d) || (a.eq.nome || '').localeCompare(b.eq.nome || '', 'pt-BR');
+    }
+    const pega = chaveDaFila[campo];
     const va = (pega(a.eq) || '').trim();
     const vb = (pega(b.eq) || '').trim();
     if (!va !== !vb) return va ? -1 : 1;
@@ -1629,7 +1641,7 @@ const OrganizerScalesPage = () => {
                     <SelectItem value="nome">Nome</SelectItem>
                     <SelectItem value="igreja">Igreja</SelectItem>
                     <SelectItem value="area">Área sugerida (1ª)</SelectItem>
-                    <SelectItem value="sexo">Sexo</SelectItem>
+                    <SelectItem value="pastor">Pastores</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button type="button" variant="outline" size="sm" onClick={() => mudarOrdemFila({ desc: !ordemFila.desc })}

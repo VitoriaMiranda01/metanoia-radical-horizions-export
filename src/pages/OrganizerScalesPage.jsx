@@ -261,33 +261,47 @@ const OrganizerScalesPage = () => {
   // (vaga total, limite por sexo, areas so da diretoria, opcoes que sao so
   // preferencia). Devolve a lista de motivos SO quando nenhuma sugestao serve;
   // se alguma ainda tem vaga (ou a pessoa topa qualquer area), null.
+  // Por que esta area nao recebe esta pessoa no automatico (null = recebe).
+  // Espelha _equipante_area_tem_vaga: com limite so de um sexo, o outro nao
+  // entra.
+  const motivoSemVaga = (area, sexo) => {
+    const lim = limitsMap[area];
+    if (!lim) return AREAS_SO_PREFERENCIA.includes(area) ? 'só preferência, não é área' : 'não é área da escala';
+    if (lim.somenteOrganizador) return 'só a diretoria preenche';
+    const o = ocupacaoPorArea[area] || { total: 0, Feminino: 0, Masculino: 0 };
+    if (o.total >= lim.limiteMaximo) return `cheia (${o.total}/${lim.limiteMaximo})`;
+    const mulher = sexo === 'Feminino';
+    const limSexo = mulher
+      ? (lim.limiteMulheres == null && lim.limiteHomens != null ? 0 : lim.limiteMulheres)
+      : (lim.limiteHomens == null && lim.limiteMulheres != null ? 0 : lim.limiteHomens);
+    if (limSexo != null && (o[sexo] || 0) >= limSexo) return `sem vaga para ${mulher ? 'mulheres' : 'homens'}`;
+    return null;
+  };
   const sugestoesSemVaga = (eq) => {
     const opcoes = [eq.area_trabalho_opcao1, eq.area_trabalho_opcao2, eq.area_trabalho_opcao3]
       .map(a => (a || '').trim()).filter((a, i, t) => a && t.indexOf(a) === i);
     if (opcoes.length === 0) return null;
     const motivos = [];
     for (const area of opcoes) {
-      if (area === AREA_DISPONIVEL_QUALQUER) return null;
-      const lim = limitsMap[area];
-      if (!lim) { motivos.push({ area, motivo: AREAS_SO_PREFERENCIA.includes(area) ? 'só preferência, não é área' : 'não é área da escala' }); continue; }
-      if (lim.somenteOrganizador) { motivos.push({ area, motivo: 'só a diretoria preenche' }); continue; }
-      const o = ocupacaoPorArea[area] || { total: 0, Feminino: 0, Masculino: 0 };
-      if (o.total >= lim.limiteMaximo) { motivos.push({ area, motivo: `cheia (${o.total}/${lim.limiteMaximo})` }); continue; }
-      const mulher = eq.sexo === 'Feminino';
-      const limSexo = mulher
-        ? (lim.limiteMulheres == null && lim.limiteHomens != null ? 0 : lim.limiteMulheres)
-        : (lim.limiteHomens == null && lim.limiteMulheres != null ? 0 : lim.limiteHomens);
-      if (limSexo != null && (o[eq.sexo] || 0) >= limSexo) {
-        motivos.push({ area, motivo: `sem vaga para ${mulher ? 'mulheres' : 'homens'}` });
+      if (area === AREA_DISPONIVEL_QUALQUER) {
+        // O coringa manda para qualquer area (fora as da diretoria) com vaga.
+        if (Object.keys(limitsMap).some(a => !motivoSemVaga(a, eq.sexo))) return null;
+        motivos.push({ area, motivo: 'todas as áreas estão sem vaga' });
         continue;
       }
-      return null; // esta sugestao ainda tem vaga
+      const motivo = motivoSemVaga(area, eq.sexo);
+      if (!motivo) return null; // esta sugestao ainda tem vaga
+      motivos.push({ area, motivo });
     }
     return motivos;
   };
   const semVagaPorPessoa = {};
   waitlist.forEach(eq => { const m = sugestoesSemVaga(eq); if (m) semVagaPorPessoa[eq.id] = m; });
   const totalSugestoesCheias = Object.keys(semVagaPorPessoa).length;
+  // O filtro so vale enquanto houver alguem nessa situacao: senao, quando a
+  // ultima pessoa marcada fosse alocada, o botao sumiria com o filtro ligado
+  // e a fila ficaria vazia sem jeito de desligar.
+  const filtroSugestoesCheias = soSugestoesCheias && totalSugestoesCheias > 0;
 
   // Ordem da fila: primeiro quem ficou sem vaga nas sugestoes (precisa de
   // decisao), depois as inscricoes normais, e no fim as manuais sem opcao.
@@ -319,7 +333,7 @@ const OrganizerScalesPage = () => {
     .map((eq, i) => ({ eq, i }))
     .sort(compararFila)
     .map(x => x.eq)
-    .filter(eq => !soSugestoesCheias || semVagaPorPessoa[eq.id]);
+    .filter(eq => !filtroSugestoesCheias || semVagaPorPessoa[eq.id]);
 
   const termoBusca = semAcento(buscaFila.trim());
   const digitosBusca = termoBusca.replace(/\D/g, '');
@@ -669,7 +683,7 @@ const OrganizerScalesPage = () => {
       // "Alocar como fixo 📌": a pessoa ja esta na area, entao so marca.
       const fixou = [];
       if (fixarNaFila[equipanteId]) {
-        for (const area of feitas) {
+        for (const area of feitas.filter(a => a !== 'Não será escalado')) {
           const r = await marcarAreaFixa(equipanteId, area, true);
           if (r.success) fixou.push(area); else falhas.push(`fixo em ${area}: ${r.error}`);
         }
@@ -875,7 +889,9 @@ const OrganizerScalesPage = () => {
     fetchBackgroundData(false);
   };
 
-  const autoAtivo = !!(autoSituacao?.ativo && autoSituacao?.pode_desfazer);
+  // So quando ainda ha alguem para desfazer: se todos foram mexidos a mao (ou
+  // a area foi limpa), o botao nao faria nada.
+  const autoAtivo = !!(autoSituacao?.ativo && autoSituacao?.pode_desfazer && autoSituacao?.no_lugar > 0);
 
   const handleLimparArea = async () => {
     const area = limparAreaAberta;
@@ -970,15 +986,25 @@ const OrganizerScalesPage = () => {
   };
 
   const handleAlocarUmPorCpf = async (key, label, cpf) => {
-    const r = await alocarAreasEspeciaisPorCpf({ [key]: [cpf] }, equipantesAprovados, allocations);
     const nome = (equipantesAprovados || []).find(eq => soDigitosCpf(eq.cpf) === cpf)?.nome || cpf;
+    let r = await alocarAreasEspeciaisPorCpf({ [key]: [cpf] }, equipantesAprovados, allocations);
+    // Area cheia: na alocacao manual o limite e so aviso.
+    if (r.erros[0]?.semVaga && window.confirm(
+      `${label}: ${r.erros[0].erro}.\n\nAlocar ${nome} mesmo assim? Na alocação manual o limite é só aviso.`
+    )) {
+      r = await alocarAreasEspeciaisPorCpf({ [key]: [cpf] }, equipantesAprovados, allocations, true);
+    } else if (r.erros[0]?.semVaga) {
+      return;
+    }
     if (r.alocados + r.realocados > 0) {
       toast({
         title: 'Alocado',
         description: `${nome} → ${label}${r.realocados ? ' (saiu da área em que estava)' : ''}.`,
         className: 'bg-green-600 text-white'
       });
-      fetchBackgroundData(false);
+      // Espera a tela atualizar: o botao do chip so volta a ficar ativo
+      // depois, e assim nao da para clicar de novo e levar "já está em".
+      await fetchBackgroundData(false);
     } else if (r.erros.length) {
       toast({ title: 'Não foi possível alocar', description: `${nome}: ${r.erros[0].erro}`, variant: 'destructive' });
       // "Já está em ..." quer dizer que a tela estava atrasada: recarrega.
@@ -1018,6 +1044,20 @@ const OrganizerScalesPage = () => {
       }
 
       const r = await alocarAreasEspeciaisPorCpf(cpfsPorArea, equipantesAprovados, allocations);
+      // Quem nao coube pelo limite: pergunta uma vez e tenta de novo so esses.
+      const semVaga = r.erros.filter(e => e.semVaga);
+      if (semVaga.length > 0 && window.confirm(
+        `${semVaga.length === 1 ? 'Uma pessoa não coube' : `${semVaga.length} pessoas não couberam`} pelo limite da área:\n` +
+        semVaga.map(e => `• ${e.nome} → ${e.area} (${e.erro})`).join('\n') +
+        '\n\nAlocar mesmo assim? Na alocação manual o limite é só aviso.'
+      )) {
+        const deNovo = {};
+        semVaga.forEach(e => { (deNovo[e.key] ||= []).push(e.cpf); });
+        const r2 = await alocarAreasEspeciaisPorCpf(deNovo, equipantesAprovados, allocations, true);
+        r.alocados += r2.alocados;
+        r.realocados += r2.realocados;
+        r.erros = [...r.erros.filter(e => !e.semVaga), ...r2.erros];
+      }
       const aplicados = r.alocados + r.realocados;
 
       const detalhe = [
@@ -1552,16 +1592,16 @@ const OrganizerScalesPage = () => {
                 {totalSugestoesCheias > 0 && (
                   <button type="button"
                     onClick={() => { setSoSugestoesCheias(v => !v); if (filaMinimizada) alternarFilaMinimizada(); }}
-                    aria-pressed={soSugestoesCheias}
-                    data-dica={soSugestoesCheias
+                    aria-pressed={filtroSugestoesCheias}
+                    data-dica={filtroSugestoesCheias
                       ? 'Voltar a mostrar a fila inteira.'
                       : 'Pessoas que pediram áreas, mas todas as que pediram estão sem vaga: o Alocar automático não consegue colocar. Clique para ver só elas.'}
                     className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]',
-                      soSugestoesCheias
+                      filtroSugestoesCheias
                         ? 'border-amber-400 bg-amber-500/25 text-amber-100'
                         : 'border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20')}>
                     <AlertTriangle className="h-3 w-3" />
-                    {totalSugestoesCheias} com as sugestões cheias{soSugestoesCheias ? ' · ver todos' : ''}
+                    {totalSugestoesCheias} com as sugestões cheias{filtroSugestoesCheias ? ' · ver todos' : ''}
                   </button>
                 )}
               </div>
@@ -1598,7 +1638,9 @@ const OrganizerScalesPage = () => {
             </div>
             {!filaMinimizada && <div className="p-4 space-y-3 max-h-[32rem] overflow-y-auto">
               {filaFiltrada.length === 0 && (
-                <p className="text-sm text-red-200/60 text-center py-4">Ninguém na fila corresponde a “{buscaFila}”.</p>
+                <p className="text-sm text-red-200/60 text-center py-4">
+                  {buscaFila.trim() ? <>Ninguém na fila corresponde a “{buscaFila}”.</> : 'Ninguém na fila com esse filtro.'}
+                </p>
               )}
               {/* Renderiza no maximo 100 de uma vez: com ~900 na fila, montar
                   900 blocos com 2 menus cada trava a tela sem necessidade.
@@ -1607,7 +1649,7 @@ const OrganizerScalesPage = () => {
                 <div key={eq.id} className="bg-red-900/20 border border-red-700/30 rounded-md p-3 flex flex-col sm:flex-row sm:items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-medium truncate">
-                      {eq.nome} <span className="text-xs text-red-300/70">({eq.sexo})</span>
+                      {eq.nome} <span className="text-xs text-red-300/70">({eq.sexo || 'sexo não informado'})</span>
                       {semVagaPorPessoa[eq.id] && (
                         <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded border border-amber-500/50 bg-amber-500/15 text-amber-200"
                           title={'Todas as áreas que pediu estão sem vaga:\n' + semVagaPorPessoa[eq.id].map(m => `• ${m.area}: ${m.motivo}`).join('\n') + '\n\nColoque à mão (na alocação manual o limite é só aviso).'}>
@@ -1868,7 +1910,7 @@ const OrganizerScalesPage = () => {
                 Quem marcou “Disponível para qualquer área” fica para o fim.
                 <br /><br />
                 Guia, Inimigo, Espírito Santo e as demais áreas que só a diretoria preenche
-                <strong className="text-white"> não recebem ninguém</strong> por aqui. Quem já
+                <strong className="text-white"> só recebem os fixos 📌</strong> por aqui. Quem já
                 está escalado não sai do lugar, e você pode mudar tudo depois.
               </AlertDialogDescription>
             </AlertDialogHeader>

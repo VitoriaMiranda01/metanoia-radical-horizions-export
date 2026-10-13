@@ -244,7 +244,11 @@ export const fetchListaEspera = async (equipantesAprovados, alocacoesAtuais) => 
 // Geracao de Escalas ja mantem em memoria (fetchApprovedEquipantes /
 // fetchAllAllocations, em scalesService.js) -- esta funcao nao faz
 // nenhuma consulta nova, so orquestra chamadas de alocacao/realocacao.
-export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovados, allocations) => {
+//
+// forcar (13/10/2026): o limite da area e so aviso na alocacao manual. Sem
+// vaga, o erro volta com semVaga = true; a tela pergunta e chama de novo so
+// com esses CPFs e forcar = true.
+export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovados, allocations, forcar = false) => {
   const resultado = { alocados: 0, realocados: 0, semCorrespondencia: [], erros: [] };
 
   const soDigitos = (v) => (v || '').replace(/\D/g, '');
@@ -285,13 +289,13 @@ export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovado
 
       const alocacaoExistente = primeiraAlocacaoPorEquipante.get(equipante.id);
       const r = alocacaoExistente
-        ? await realocarAlocacao(alocacaoExistente.escalaId, areaInfo.label)
-        : await alocarEquipanteManualmente(equipante.id, areaInfo.label);
+        ? await realocarAlocacao(alocacaoExistente.escalaId, areaInfo.label, forcar)
+        : await alocarEquipanteManualmente(equipante.id, areaInfo.label, forcar);
 
       if (r.success) {
         if (alocacaoExistente) resultado.realocados += 1; else resultado.alocados += 1;
       } else {
-        resultado.erros.push({ cpf, nome: equipante.nome, area: areaInfo.label, erro: r.error });
+        resultado.erros.push({ cpf, key: areaInfo.key, nome: equipante.nome, area: areaInfo.label, erro: r.error, semVaga: !!r.semVaga });
       }
     }
   }

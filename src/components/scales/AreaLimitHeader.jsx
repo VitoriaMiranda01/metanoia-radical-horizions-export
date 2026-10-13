@@ -87,6 +87,24 @@ const AreaLimitHeader = ({
       });
       return;
     }
+    // 0 era gravado como "sem limite" (o contrario do que a pessoa quis). Para
+    // uma area sem mulheres (ou sem homens), a regra do banco e preencher SO o
+    // limite do outro sexo -- como no Presidio.
+    if (numMulheres === 0 || numHomens === 0) {
+      toast({
+        title: "Valor inválido",
+        description: numMulheres === 0
+          ? 'Para a área não receber mulheres, deixe "Mulheres" em branco e preencha só "Homens".'
+          : 'Para a área não receber homens, deixe "Homens" em branco e preencha só "Mulheres".',
+        variant: "destructive"
+      });
+      return;
+    }
+    if ((numMulheres !== null && isNaN(numMulheres)) || (numHomens !== null && isNaN(numHomens)) ||
+        numMulheres < 0 || numHomens < 0) {
+      toast({ title: "Valor inválido", description: "Use números inteiros nos limites.", variant: "destructive" });
+      return;
+    }
     if (numMulheres !== null && numHomens !== null && numMulheres + numHomens > numericLimit) {
       toast({
         title: "Valor inválido",
@@ -172,11 +190,11 @@ const AreaLimitHeader = ({
               </div>
               <div className="flex flex-col gap-1 w-16">
                 <span className="text-[11px] text-gray-400">Mulheres</span>
-                <Input type="number" min="0" value={localMulheres} onChange={e => setLocalMulheres(e.target.value)} placeholder="Opcional" className="h-7 text-base md:text-xs bg-black/40 text-white w-full [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                <Input type="number" min="1" value={localMulheres} onChange={e => setLocalMulheres(e.target.value)} placeholder="Opcional" className="h-7 text-base md:text-xs bg-black/40 text-white w-full [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
               </div>
               <div className="flex flex-col gap-1 w-16">
                 <span className="text-[11px] text-gray-400">Homens</span>
-                <Input type="number" min="0" value={localHomens} onChange={e => setLocalHomens(e.target.value)} placeholder="Opcional" className="h-7 text-base md:text-xs bg-black/40 text-white w-full [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                <Input type="number" min="1" value={localHomens} onChange={e => setLocalHomens(e.target.value)} placeholder="Opcional" className="h-7 text-base md:text-xs bg-black/40 text-white w-full [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-1">

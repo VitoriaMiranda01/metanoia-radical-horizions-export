@@ -260,15 +260,19 @@ export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovado
   });
 
   // allocations tem uma linha por PARTICIPACAO (a mesma pessoa pode estar
-  // em mais de uma area desde 12/09/2026) -- por isso guardamos as duas
-  // coisas que precisamos separadamente: se a pessoa ja esta EXATAMENTE
-  // nesta area (nada a fazer) e, se nao esta, qual e a primeira alocacao
-  // dela em qualquer area (para decidir entre "alocar" e "realocar").
+  // em mais de uma area desde 12/09/2026). A area especial e ACRESCENTADA
+  // (13/10/2026, Patrick: a pessoa pode estar numa especial e numa comum ao
+  // mesmo tempo). So MOVE quando a pessoa ja esta em OUTRA especial (uma
+  // especial por pessoa) ou em "Não será escalado" (nao faz sentido ficar
+  // nas duas). Antes movia a primeira area que achasse -- tirava a pessoa da
+  // area comum.
+  const nomesEspeciais = AREAS_ESPECIAIS.map(a => a.label);
   const alocacaoPorEquipanteEArea = new Map();
-  const primeiraAlocacaoPorEquipante = new Map();
+  const aMoverPorEquipante = new Map();
   (allocations || []).forEach(a => {
     alocacaoPorEquipanteEArea.set(`${a.id}::${a.allocatedArea}`, a);
-    if (!primeiraAlocacaoPorEquipante.has(a.id)) primeiraAlocacaoPorEquipante.set(a.id, a);
+    if (nomesEspeciais.includes(a.allocatedArea)) aMoverPorEquipante.set(a.id, a);
+    else if (a.allocatedArea === 'Não será escalado' && !aMoverPorEquipante.has(a.id)) aMoverPorEquipante.set(a.id, a);
   });
 
   for (const areaInfo of AREAS_ESPECIAIS) {
@@ -287,13 +291,18 @@ export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovado
         continue; // ja esta exatamente onde deveria -- nada a fazer
       }
 
-      const alocacaoExistente = primeiraAlocacaoPorEquipante.get(equipante.id);
-      const r = alocacaoExistente
-        ? await realocarAlocacao(alocacaoExistente.escalaId, areaInfo.label, forcar)
+      const aMover = aMoverPorEquipante.get(equipante.id);
+      const r = aMover
+        ? await realocarAlocacao(aMover.escalaId, areaInfo.label, forcar)
         : await alocarEquipanteManualmente(equipante.id, areaInfo.label, forcar);
 
       if (r.success) {
-        if (alocacaoExistente) resultado.realocados += 1; else resultado.alocados += 1;
+        if (aMover) {
+          resultado.realocados += 1;
+          resultado.saiuDe = aMover.allocatedArea;
+        } else {
+          resultado.alocados += 1;
+        }
       } else {
         resultado.erros.push({ cpf, key: areaInfo.key, nome: equipante.nome, area: areaInfo.label, erro: r.error, semVaga: !!r.semVaga });
       }

@@ -74,13 +74,14 @@ const AreasEspeciaisDialog = ({ onClose, total = 0, children, onAplicarCpfs, apl
               Áreas Especiais
             </h3>
             <p className="text-sm text-gray-400 mt-1">
-              {listaDosLabels}. Uma pessoa só pode ter um dos {porExtenso(AREAS_ESPECIAIS.length)}.
+              {listaDosLabels}. Uma pessoa só pode ter um dos {porExtenso(AREAS_ESPECIAIS.length)}, mas pode
+              estar também numa área comum (o “Alocar” acrescenta, não tira da área comum).
             </p>
             <p className="text-xs text-gray-500 mt-1">
               {total === 0
                 ? `Ninguém escalado nestes ${porExtenso(AREAS_ESPECIAIS.length)} papéis ainda.`
                 : `${total} ${total === 1 ? 'pessoa escalada' : 'pessoas escaladas'} nos ${porExtenso(AREAS_ESPECIAIS.length)}.`}
-              {' '}Para colocar alguém, use a fila “A escalar” ou o botão Realocar de outra área.
+              {' '}Para colocar alguém, use o “Alocar” do pré-cadastro, a fila “A escalar” ou o “+” (escalar também) na tabela de outra área.
             </p>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-400 hover:text-white shrink-0">

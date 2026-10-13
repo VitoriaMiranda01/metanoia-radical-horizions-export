@@ -999,7 +999,7 @@ const OrganizerScalesPage = () => {
     if (r.alocados + r.realocados > 0) {
       toast({
         title: 'Alocado',
-        description: `${nome} → ${label}${r.realocados ? ' (saiu da área em que estava)' : ''}.`,
+        description: `${nome} → ${label}${r.realocados && r.saiuDe ? ` (saiu de ${r.saiuDe})` : ''}.`,
         className: 'bg-green-600 text-white'
       });
       // Espera a tela atualizar: o botao do chip so volta a ficar ativo
@@ -1062,7 +1062,7 @@ const OrganizerScalesPage = () => {
 
       const detalhe = [
         r.alocados > 0 && `${r.alocados} alocado(s)`,
-        r.realocados > 0 && `${r.realocados} realocado(s)`,
+        r.realocados > 0 && `${r.realocados} trocado(s) de outra área especial ou de “Não será escalado”`,
         r.semCorrespondencia.length > 0 && `${r.semCorrespondencia.length} CPF(s) sem equipante aprovado correspondente`,
         r.erros.length > 0 && `${r.erros.length} erro(s): ${r.erros.map(e => `${e.nome || e.cpf} (${e.erro})`).join('; ')}`
       ].filter(Boolean).join('. ');

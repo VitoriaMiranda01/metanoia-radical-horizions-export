@@ -310,8 +310,11 @@ export const fetchChamadaDaEscala = () => rpcOrganizador('chamada_da_escala', {}
 export const decidirAusente = (escalaId, acao) =>
   rpcOrganizador('decidir_ausente', { p_escala_id: escalaId, p_acao: acao }, 'decidir o ausente');
 export const separarTodosAusentes = () => rpcOrganizador('separar_ausentes', {}, 'separar os ausentes');
-export const trocarAreaEscala = (escalaId, novaArea) =>
-  rpcOrganizador('trocar_area_escala', { p_escala_id: escalaId, p_nova_area: novaArea }, 'trocar de área');
+// cor: a cor do grupo na area nova (so nas areas com cor; obrigatoria para
+// Infiltrados). Sem ela a pessoa fica sem cor -- a antiga nao vai junto
+// (migration 20261012c).
+export const trocarAreaEscala = (escalaId, novaArea, cor = null) =>
+  rpcOrganizador('trocar_area_escala', { p_escala_id: escalaId, p_nova_area: novaArea, p_cor: cor || null }, 'trocar de área');
 
 // ---------------------------------------------------------------------------
 // Areas de Trabalho Extra

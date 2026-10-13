@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { WORK_AREAS } from '@/constants/workAreas';
+import { WORK_AREAS, CORES_GRUPO, areaTemCor } from '@/constants/workAreas';
+import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { casaBusca } from '@/utils/busca';
 import { trocarAreaEscala } from '@/services/scalesService';
@@ -22,6 +23,11 @@ import { cn } from '@/lib/utils';
  *
  * Quem esta em duas areas aparece duas vezes -- troca-se uma participacao
  * de cada vez.
+ *
+ * Cor do grupo (12/10/2026): se a area nova trabalha por cor, a cor e
+ * escolhida aqui, na mesma troca -- a da area antiga nao vai junto. Para
+ * Infiltrados e obrigatoria: o substituto entra direto no grupo de trilha
+ * certo (e nas listas dos onibus).
  */
 const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) => {
   const { toast } = useToast();
@@ -30,7 +36,11 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
   // Quem foi separado por ausencia ja vem com a area de onde saiu sugerida.
   const sugestao = (a) => (a?.separadoDe && WORK_AREAS.includes(a.separadoDe) ? a.separadoDe : '');
   const [destino, setDestino] = useState(() => sugestao(inicial));
+  const [cor, setCor] = useState('');
   const [salvando, setSalvando] = useState(false);
+  const destinoTemCor = areaTemCor(destino);
+  const corObrigatoria = destino === 'Infiltrados';
+  const mudarDestino = (area) => { setDestino(area); setCor(''); };
 
   useEffect(() => {
     const aoTeclar = (e) => { if (e.key === 'Escape') onClose(); };
@@ -47,9 +57,9 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
   }, [busca, allocations]);
 
   const trocar = async () => {
-    if (!escolhido || !destino) return;
+    if (!escolhido || !destino || (corObrigatoria && !cor)) return;
     setSalvando(true);
-    const r = await trocarAreaEscala(escolhido.escalaId, destino);
+    const r = await trocarAreaEscala(escolhido.escalaId, destino, destinoTemCor ? cor : null);
     setSalvando(false);
     if (!r.success) {
       toast({ title: 'Não foi possível trocar', description: r.error, variant: 'destructive' });
@@ -57,11 +67,12 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
     }
     toast({
       title: 'Área trocada',
-      description: `${escolhido.nome}: ${escolhido.allocatedArea} → ${destino}. Já está na relação do líder.`,
+      description: `${escolhido.nome}: ${escolhido.allocatedArea} → ${destino}${destinoTemCor && cor ? ` (${cor})` : ''}. Já está na relação do líder.`,
       className: 'bg-green-600 text-white'
     });
     setEscolhido(null);
     setDestino('');
+    setCor('');
     setBusca('');
     onTrocado?.();
   };
@@ -95,7 +106,7 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
                   <p className="text-sm text-gray-500 text-center py-4">Ninguém escalado corresponde a “{busca}”.</p>
                 )}
                 {encontrados.map((a) => (
-                  <button key={a.escalaId} type="button" onClick={() => { setEscolhido(a); setDestino(sugestao(a)); }}
+                  <button key={a.escalaId} type="button" onClick={() => { setEscolhido(a); setDestino(sugestao(a)); setCor(''); }}
                     className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 rounded-md p-3 flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">{a.nome}</p>
@@ -124,7 +135,7 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
                 <ArrowRight className="hidden sm:block w-5 h-5 text-gray-500 mt-5" />
                 <div className="flex-1">
                   <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">Para</p>
-                  <Select value={destino} onValueChange={setDestino}>
+                  <Select value={destino} onValueChange={mudarDestino}>
                     <SelectTrigger className="h-10 bg-black/40 border-white/20 text-white">
                       <SelectValue placeholder="Escolher a nova área" />
                     </SelectTrigger>
@@ -136,17 +147,45 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
                   </Select>
                 </div>
               </div>
+              {destinoTemCor && (
+                <div className="space-y-1.5">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500">
+                    Cor do grupo {corObrigatoria ? <span className="text-amber-300 normal-case tracking-normal">(obrigatória para infiltrado)</span> : <span className="normal-case tracking-normal">(opcional)</span>}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Cor do grupo">
+                    {CORES_GRUPO.map((c) => (
+                      <button
+                        key={c} type="button" role="radio" aria-checked={cor === c} onClick={() => setCor(c)}
+                        className={cn('rounded-full p-0.5 border-2 transition-colors', cor === c ? 'border-white' : 'border-transparent hover:border-white/30')}
+                      >
+                        <GrupoTrilhaTag grupo={c} />
+                      </button>
+                    ))}
+                    {!corObrigatoria && (
+                      <button
+                        type="button" role="radio" aria-checked={!cor} onClick={() => setCor('')}
+                        className={cn('rounded-full px-2.5 py-0.5 text-xs border-2', !cor ? 'border-white text-white' : 'border-white/10 text-gray-400 hover:border-white/30')}
+                      >
+                        Sem cor
+                      </button>
+                    )}
+                  </div>
+                  {corObrigatoria && (
+                    <p className="text-xs text-gray-500">O infiltrado entra nesse grupo de trilha e no ônibus dele, como acampante.</p>
+                  )}
+                </div>
+              )}
               <p className="text-xs text-gray-500">
                 {escolhido.allocatedArea === 'Não será escalado'
                   ? <>A pessoa volta para a escala e entra na relação do líder da nova área.{escolhido.separadoDe ? ` Ela saiu de ${escolhido.separadoDe} por ausência na chamada.` : ''}</>
                   : `A pessoa sai da relação do líder de ${escolhido.allocatedArea} e entra na do líder da nova área.`}
-                {' '}A atuação volta para a padrão da área nova.
+                {' '}A atuação volta para a padrão da área nova{destinoTemCor ? ' e a cor é a escolhida acima (a da área antiga não vai junto)' : ''}.
               </p>
               <div className="flex justify-end gap-2">
                 <Button variant="ghost" onClick={() => setEscolhido(null)} className="text-gray-400 hover:text-white hover:bg-white/10">
                   Escolher outra pessoa
                 </Button>
-                <Button onClick={trocar} disabled={!destino || salvando}
+                <Button onClick={trocar} disabled={!destino || salvando || (corObrigatoria && !cor)}
                   className={cn('bg-cyan-600 hover:bg-cyan-700 text-white')}>
                   {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Trocar'}
                 </Button>

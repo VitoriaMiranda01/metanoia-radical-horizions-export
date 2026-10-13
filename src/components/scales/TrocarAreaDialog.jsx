@@ -25,9 +25,9 @@ import { cn } from '@/lib/utils';
  * de cada vez.
  *
  * Cor do grupo (12/10/2026): se a area nova trabalha por cor, a cor e
- * escolhida aqui, na mesma troca -- a da area antiga nao vai junto. Para
- * Infiltrados e obrigatoria: o substituto entra direto no grupo de trilha
- * certo (e nas listas dos onibus).
+ * escolhida aqui, na mesma troca -- a da area antiga nao vai junto. Sem cor
+ * e permitido (13/10/2026: aviso, nao bloqueio), mas a tela avisa -- e no
+ * Infiltrados a pessoa so entra nos grupos de trilha e nos onibus com cor.
  */
 const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) => {
   const { toast } = useToast();
@@ -39,7 +39,7 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
   const [cor, setCor] = useState('');
   const [salvando, setSalvando] = useState(false);
   const destinoTemCor = areaTemCor(destino);
-  const corObrigatoria = destino === 'Infiltrados';
+  const ehInfiltrados = destino === 'Infiltrados';
   const mudarDestino = (area) => { setDestino(area); setCor(''); };
 
   useEffect(() => {
@@ -57,7 +57,7 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
   }, [busca, allocations]);
 
   const trocar = async () => {
-    if (!escolhido || !destino || (corObrigatoria && !cor)) return;
+    if (!escolhido || !destino) return;
     setSalvando(true);
     const r = await trocarAreaEscala(escolhido.escalaId, destino, destinoTemCor ? cor : null);
     setSalvando(false);
@@ -150,7 +150,7 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
               {destinoTemCor && (
                 <div className="space-y-1.5">
                   <p className="text-[11px] uppercase tracking-wider text-gray-500">
-                    Cor do grupo {corObrigatoria ? <span className="text-amber-300 normal-case tracking-normal">(obrigatória para infiltrado)</span> : <span className="normal-case tracking-normal">(opcional)</span>}
+                    Cor do grupo
                   </p>
                   <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Cor do grupo">
                     {CORES_GRUPO.map((c) => (
@@ -161,16 +161,19 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
                         <GrupoTrilhaTag grupo={c} />
                       </button>
                     ))}
-                    {!corObrigatoria && (
-                      <button
-                        type="button" role="radio" aria-checked={!cor} onClick={() => setCor('')}
-                        className={cn('rounded-full px-2.5 py-0.5 text-xs border-2', !cor ? 'border-white text-white' : 'border-white/10 text-gray-400 hover:border-white/30')}
-                      >
-                        Sem cor
-                      </button>
-                    )}
+                    <button
+                      type="button" role="radio" aria-checked={!cor} onClick={() => setCor('')}
+                      className={cn('rounded-full px-2.5 py-0.5 text-xs border-2', !cor ? 'border-white text-white' : 'border-white/10 text-gray-400 hover:border-white/30')}
+                    >
+                      Sem cor
+                    </button>
                   </div>
-                  {corObrigatoria && (
+                  {!cor ? (
+                    <p className="text-xs text-amber-300">
+                      ⚠ {destino} é dividida por cor. Sem cor, a pessoa fica com aviso até alguém escolher a cor na coluna Cor
+                      {ehInfiltrados ? ' — e o infiltrado não aparece nos grupos de trilha nem nos ônibus.' : '.'}
+                    </p>
+                  ) : ehInfiltrados && (
                     <p className="text-xs text-gray-500">O infiltrado entra nesse grupo de trilha e no ônibus dele, como acampante.</p>
                   )}
                 </div>
@@ -185,7 +188,7 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
                 <Button variant="ghost" onClick={() => setEscolhido(null)} className="text-gray-400 hover:text-white hover:bg-white/10">
                   Escolher outra pessoa
                 </Button>
-                <Button onClick={trocar} disabled={!destino || salvando || (corObrigatoria && !cor)}
+                <Button onClick={trocar} disabled={!destino || salvando}
                   className={cn('bg-cyan-600 hover:bg-cyan-700 text-white')}>
                   {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Trocar'}
                 </Button>

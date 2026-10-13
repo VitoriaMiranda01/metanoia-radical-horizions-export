@@ -48,7 +48,9 @@ const AreaLimitHeader = ({
   coresSemLider = [],
   // "Alocar em lote" (12/10/2026): abre a escolha de varias pessoas da fila
   // para esta area. Sem a funcao, o botao nao aparece.
-  onAlocarEmLote
+  onAlocarEmLote,
+  // Quantos estao sem cor numa area dividida por cor (13/10/2026). So aviso.
+  semCor = 0
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [localLimit, setLocalLimit] = useState(limitObj.limiteMaximo);
@@ -125,6 +127,15 @@ const AreaLimitHeader = ({
             >
               <AlertCircle className="w-2.5 h-2.5" />
               Sem líder
+            </span>
+          )}
+          {semCor > 0 && (
+            <span
+              className="shrink-0 inline-flex items-center gap-1 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-medium"
+              title={`${semCor} ${semCor === 1 ? 'pessoa está' : 'pessoas estão'} sem cor de grupo nesta área dividida por cor. Escolha na coluna Cor.`}
+            >
+              <AlertCircle className="w-2.5 h-2.5" />
+              {semCor} sem cor
             </span>
           )}
         </span>

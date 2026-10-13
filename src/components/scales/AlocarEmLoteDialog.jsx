@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { CheckSquare, Loader2, Search, Square, Users, X } from 'lucide-react';
+import { AlertTriangle, CheckSquare, Loader2, Search, Square, Users, X } from 'lucide-react';
+import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
+import { CORES_GRUPO, areaTemCor } from '@/constants/workAreas';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +42,10 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
   const [busca, setBusca] = useState('');
   const [marcados, setMarcados] = useState(() => new Set());
   const [salvando, setSalvando] = useState(false);
+  // Area dividida por cor (13/10/2026): a cor pode ir para todos de uma vez.
+  // Sem cor e permitido, mas fica o aviso.
+  const comCor = areaTemCor(area);
+  const [cor, setCor] = useState('');
 
   const vagas = Math.max(0, (limitObj?.limiteMaximo || 0) - ocupados);
   const porSexo = vagasPorSexo(limitObj || {}, mulheres, homens);
@@ -93,14 +99,14 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
     // Na ordem da lista (quem escolheu a area como 1ª opcao primeiro).
     const ordem = lista.filter((p) => marcados.has(p.id)).map((p) => p.id);
     const resto = escolhidos.map((p) => p.id).filter((id) => !ordem.includes(id));
-    const r = await alocarEmLoteNaArea(area, [...ordem, ...resto]);
+    const r = await alocarEmLoteNaArea(area, [...ordem, ...resto], comCor ? cor : null);
     setSalvando(false);
     if (!r.success) {
       toast({ title: 'Não foi possível alocar', description: r.error, variant: 'destructive' });
       return;
     }
     toast({
-      title: `${r.alocados} ${r.alocados === 1 ? 'pessoa alocada' : 'pessoas alocadas'} em ${area}`,
+      title: `${r.alocados} ${r.alocados === 1 ? 'pessoa alocada' : 'pessoas alocadas'} em ${area}${comCor && cor ? ` (${cor})` : ''}`,
       description: r.recusados.length
         ? `Não couberam: ${r.recusados.map((x) => `${x.nome} (${x.motivo})`).join(' · ')}`
         : undefined,
@@ -150,6 +156,30 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
             )}
           </div>
         </div>
+
+        {comCor && (
+          <div className="space-y-1.5">
+            <p className="text-xs text-gray-400">Cor do grupo para todos que entrarem</p>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Cor do grupo">
+              {CORES_GRUPO.map((c) => (
+                <button key={c} type="button" role="radio" aria-checked={cor === c} onClick={() => setCor(c)}
+                  className={cn('rounded-full p-0.5 border-2', cor === c ? 'border-white' : 'border-transparent hover:border-white/30')}>
+                  <GrupoTrilhaTag grupo={c} />
+                </button>
+              ))}
+              <button type="button" role="radio" aria-checked={!cor} onClick={() => setCor('')}
+                className={cn('rounded-full px-2.5 py-0.5 text-xs border-2', !cor ? 'border-white text-white' : 'border-white/10 text-gray-400 hover:border-white/30')}>
+                Sem cor
+              </button>
+            </div>
+            {!cor && (
+              <p className="flex items-start gap-1.5 text-xs text-amber-300">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                {area} é dividida por cor. Sem cor, as pessoas ficam com aviso até alguém escolher a cor de cada uma na coluna Cor.
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center justify-between gap-2 text-xs text-gray-400">
           <span>{escolhidos.length} de {vagas} {vagas === 1 ? 'vaga' : 'vagas'} marcadas</span>

@@ -187,6 +187,7 @@ const OrganizerScalesPage = () => {
   // escalado (nome, CPF, igreja).
   const [areaFiltro, setAreaFiltro] = useState('todas');
   const [buscaNasAreas, setBuscaNasAreas] = useState('');
+  const filtroAreasRef = useRef(null);
   const [desfazendoAuto, setDesfazendoAuto] = useState(false);
   const [escalaOrdem, setEscalaOrdem] = useState('aprovacao');
 
@@ -956,6 +957,29 @@ const OrganizerScalesPage = () => {
       .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' }));
   };
 
+  // Sem cor numa area dividida por cor (13/10/2026): so aviso -- no topo, no
+  // cabecalho da area, na coluna Cor e na confirmacao de lancamento.
+  const semCorPorArea = {};
+  allocations.forEach(a => {
+    if (areaTemCor(a.allocatedArea) && !a.cor) semCorPorArea[a.allocatedArea] = (semCorPorArea[a.allocatedArea] || 0) + 1;
+  });
+  const totalSemCor = Object.values(semCorPorArea).reduce((t, n) => t + n, 0);
+  const avisoSemCorLancamento = totalSemCor > 0 && (
+    <>
+      <br /><br />
+      <span className="text-amber-300">
+        ⚠ {totalSemCor === 1 ? '1 pessoa está' : `${totalSemCor} pessoas estão`} sem cor de grupo em áreas divididas por cor
+        ({Object.entries(semCorPorArea).map(([area, n]) => `${area} ${n}`).join(', ')}). Dá para lançar assim mesmo e escolher a cor depois na coluna Cor.
+      </span>
+    </>
+  );
+  const irParaArea = (area) => {
+    if (NOMES_ESPECIAIS.includes(area)) { setVerAreasEspeciais(true); return; }
+    setAreaFiltro(area);
+    setBuscaNasAreas('');
+    requestAnimationFrame(() => filtroAreasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
+
   const casaBuscaEscalado = (eq) =>
     casaBusca(buscaNasAreas, [eq.nome, nomeDaIgreja(eq), eq.igreja_outra, eq.cpf]);
 
@@ -1004,7 +1028,7 @@ const OrganizerScalesPage = () => {
 
     return <div key={area} className="bg-black/40 border border-white/10 rounded-lg overflow-hidden shadow-md backdrop-blur-sm">
           <div className="sticky top-0 z-10 bg-gray-900 border-b border-white/10">
-            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} />
+            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => !eq.cor).length : 0} />
           </div>
 
           <div className="p-4 max-h-[400px] overflow-y-auto">
@@ -1091,6 +1115,27 @@ const OrganizerScalesPage = () => {
                 {escala.nao_serao_escalados > 0 && ` · ${escala.nao_serao_escalados === 1
                   ? '1 não será escalado' : `${escala.nao_serao_escalados} não serão escalados`}.`}
               </p>
+            )}
+
+            {totalSemCor > 0 && (
+              <div className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-100 space-y-1.5">
+                <p className="flex items-start gap-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-400" />
+                  <span>
+                    {totalSemCor === 1 ? '1 pessoa está' : `${totalSemCor} pessoas estão`} sem cor de grupo em áreas divididas por cor.
+                    Escolha a cor na coluna Cor de cada área (não impede nada, é só aviso).
+                  </span>
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(semCorPorArea).sort(([a], [b]) => a.localeCompare(b, 'pt-BR')).map(([area, n]) => (
+                    <button key={area} type="button" onClick={() => irParaArea(area)}
+                      data-dica={`Ir para ${area}.`}
+                      className="rounded-full border border-amber-500/40 px-2 py-0.5 text-[11px] text-amber-200 hover:bg-amber-500/20">
+                      {area} <span className="tabular-nums">{n}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             {escala?.lancada_em && naoViramArea.length > 0 && (
@@ -1621,6 +1666,7 @@ const OrganizerScalesPage = () => {
                     {escala.nao_serao_escalados === 1 ? ' conseguirá' : ' conseguirão'} pagar.
                   </>
                 )}
+                {avisoSemCorLancamento}
                 <br /><br />
                 Você ainda pode realocar pessoas depois, e dá para desfazer o lançamento.
               </AlertDialogDescription>
@@ -1662,6 +1708,7 @@ const OrganizerScalesPage = () => {
                 <strong className="text-white">
                   {escala?.escalados === 1 ? '1 equipante escalado' : `os ${escala?.escalados ?? 0} equipantes escalados`}
                 </strong>, e a etapa “Escala de trabalho” fica concluída no site de cada um.
+                {avisoSemCorLancamento}
                 <br /><br />
                 Dá para desfazer depois.
               </AlertDialogDescription>
@@ -1703,7 +1750,7 @@ const OrganizerScalesPage = () => {
             : null;
           return (
             <>
-              <div className="mt-8 mb-4 flex flex-col sm:flex-row gap-2 sm:items-center">
+              <div ref={filtroAreasRef} className="mt-8 mb-4 flex flex-col sm:flex-row gap-2 sm:items-center scroll-mt-4">
                 <Select value={areaFiltro} onValueChange={setAreaFiltro}>
                   <SelectTrigger className="h-10 sm:w-[260px] bg-black/40 border-white/20 text-white">
                     <SelectValue placeholder="Área" />

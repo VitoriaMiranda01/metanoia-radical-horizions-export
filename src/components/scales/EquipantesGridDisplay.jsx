@@ -167,13 +167,16 @@ const EquipantesGridDisplay = ({
                       onValueChange={(val) => onDefinirCor(eq.escalaId, val === 'sem' ? '' : val)}
                       disabled={!!salvandoCor[eq.escalaId]}
                     >
-                      <SelectTrigger className="h-8 w-full sm:w-[130px] bg-black/40 border-white/20 text-white text-xs">
+                      <SelectTrigger
+                        title={eq.cor ? undefined : 'Sem cor: esta área é dividida por cor. Escolha a cor do grupo.'}
+                        className={cn('h-8 w-full sm:w-[130px] bg-black/40 text-xs',
+                          eq.cor ? 'border-white/20 text-white' : 'border-amber-500/60 text-amber-300')}>
                         {salvandoCor[eq.escalaId]
                           ? <Loader2 className="h-3 w-3 animate-spin" />
                           : (
                             <span className="flex items-center gap-1.5 truncate">
                               <Bolinha cor={eq.cor} />
-                              <span className="truncate">{eq.cor || 'Sem cor'}</span>
+                              <span className="truncate">{eq.cor || '⚠ Sem cor'}</span>
                             </span>
                           )}
                       </SelectTrigger>

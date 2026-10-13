@@ -28,8 +28,14 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
 
   useEffect(() => { if (isOpen) { setAberto(null); setGeradaEm(agoraTexto()); } }, [isOpen]);
 
-  const pagos = useMemo(() => acampantes.filter((a) => estaQuitada(a.status_pagamento)), [acampantes]);
-  const naoPagos = acampantes.length - pagos.length;
+  // Infiltrados (equipantes da escala oficial, com cor) viajam disfarcados:
+  // entram sempre, no grupo deles, sem nenhuma marca na folha nem no Excel.
+  const pagos = useMemo(
+    () => acampantes.filter((a) => a.infiltrado || estaQuitada(a.status_pagamento)),
+    [acampantes]
+  );
+  const qtdInfiltrados = pagos.filter((a) => a.infiltrado).length;
+  const naoPagos = acampantes.filter((a) => !a.infiltrado).length - (pagos.length - qtdInfiltrados);
 
   const { onibus, semLugar } = useMemo(
     () => dividirEmOnibus(pagos, numero, lugares.slice(0, numero)),
@@ -67,8 +73,9 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl"><Bus className="w-5 h-5" />Listas dos ônibus</DialogTitle>
           <DialogDescription className="text-gray-400">
-            Só acampantes que pagaram: <span className="text-white font-medium">{pagos.length}</span>
-            {naoPagos > 0 && <> · {naoPagos} ainda não pagaram e ficam de fora</>}.
+            Só acampantes que pagaram: <span className="text-white font-medium">{pagos.length - qtdInfiltrados}</span>
+            {qtdInfiltrados > 0 && <> + {qtdInfiltrados} {qtdInfiltrados === 1 ? 'infiltrado' : 'infiltrados'} (saem na lista como acampantes)</>}
+            {naoPagos > 0 && <> · {naoPagos} {naoPagos === 1 ? 'ainda não pagou e fica' : 'ainda não pagaram e ficam'} de fora</>}.
             Os grupos entram na ordem das cores (Vermelho, Amarelo, Verde, Azul, Roxo) e, dentro do grupo, por nome.
             A divisão é refeita sempre que algo muda.
           </DialogDescription>

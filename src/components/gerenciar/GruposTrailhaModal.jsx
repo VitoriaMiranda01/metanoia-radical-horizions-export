@@ -52,6 +52,12 @@ const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao, vinc }) => {
   // organizador confirmar; sem eles (erro ao carregar), fica so o texto.
   const temConhecido = acampante.conhecido_no_projeto && acampante.conhecido_no_projeto !== 'NÃO TENHO';
 
+  // Infiltrado (equipante escalado nesta cor, 12/10/2026): so a tela do
+  // organizador marca; nao tem observacao de acampante, e mudar o grupo muda
+  // a cor dele na escala.
+  const ehInfiltrado = !!acampante.infiltrado;
+  const podeObservar = !!onSalvarObservacao && !ehInfiltrado;
+
   const handleSalvarObservacao = async () => {
     if (!onSalvarObservacao || observacao === lastSavedObs) return;
     setIsSavingObs(true);
@@ -71,7 +77,17 @@ const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao, vinc }) => {
             <User className="w-4 h-4" />
           </div>
           <div className="flex flex-col overflow-hidden">
-            <span className="text-white font-medium truncate">{acampante.nome}</span>
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="text-white font-medium truncate">{acampante.nome}</span>
+              {ehInfiltrado && (
+                <span
+                  className="shrink-0 rounded-full border border-white/15 px-2 py-0.5 text-[10px] text-gray-400"
+                  data-dica="Equipante escalado como infiltrado nesta cor (escala oficial). Só aparece assim aqui; nas listas e impressões sai como acampante. Mudar o grupo muda a cor na escala."
+                >
+                  infiltrado
+                </span>
+              )}
+            </span>
             <div className="flex items-center gap-2 text-xs text-gray-400">
               {acampante.cpf && (
                 <span className="flex items-center gap-1">
@@ -105,9 +121,9 @@ const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao, vinc }) => {
         </div>
       )}
 
-      {(onSalvarObservacao || onRealocar) && (
+      {(podeObservar || onRealocar) && (
         <div className="flex flex-wrap items-start gap-1.5 pl-11">
-          {onSalvarObservacao && (
+          {podeObservar && (
             <>
               <Textarea
                 ref={observacaoRef}

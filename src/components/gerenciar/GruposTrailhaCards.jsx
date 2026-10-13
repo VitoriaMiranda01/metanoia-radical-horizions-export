@@ -5,7 +5,10 @@ import { getGroupColor, getGroupStats, GROUPS } from '@/utils/gruposTrailha';
 import { motion } from 'framer-motion';
 
 const GroupCard = ({ name, data, onClick, conflitos = 0 }) => {
-  const stats = getGroupStats(data);
+  // Total, homens e mulheres sao dos acampantes; os infiltrados (equipantes
+  // escalados nesta cor, depois da escala oficial) aparecem a parte.
+  const stats = getGroupStats(data.filter((a) => !a.infiltrado));
+  const infiltrados = data.filter((a) => a.infiltrado).length;
   const colors = getGroupColor(name);
 
   return (
@@ -15,7 +18,7 @@ const GroupCard = ({ name, data, onClick, conflitos = 0 }) => {
     >
       <Card 
         className={`cursor-pointer overflow-hidden backdrop-blur-sm transition-all duration-300 ${colors.bg} border ${colors.border} ${colors.hoverBorder}`}
-        onClick={() => onClick(name, data)}
+        onClick={() => onClick(name)}
         data-dica="Ver os acampantes deste grupo de trilha, realocar e anotar observações."
       >
         <CardContent className="p-6">
@@ -43,6 +46,11 @@ const GroupCard = ({ name, data, onClick, conflitos = 0 }) => {
               </span>
               <span className="text-white font-bold text-lg">{stats.total}</span>
             </div>
+            {infiltrados > 0 && (
+              <div className="-mt-2 text-right text-xs text-gray-400" data-dica="Equipantes escalados como infiltrados nesta cor (escala oficial). Entram no grupo e no ônibus como acampantes.">
+                + {infiltrados} {infiltrados === 1 ? 'infiltrado' : 'infiltrados'}
+              </div>
+            )}
             
             <div className="h-px bg-black/10 w-full" />
             
@@ -66,7 +74,7 @@ const GroupCard = ({ name, data, onClick, conflitos = 0 }) => {
 // Vinculos (12/10/2026): cada cor mostra quantos pares vinculados estao
 // juntos nela, e o botao abre a visao geral (sugestoes da inscricao etc.).
 // Ao lado, as listas dos onibus (OnibusDialog).
-const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, resumoVinculos = null, onAbrirVinculos, onAbrirOnibus }) => {
+const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, resumoVinculos = null, onAbrirVinculos, onAbrirOnibus, infiltradosSemCor = 0 }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-4">
@@ -104,6 +112,14 @@ const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, 
             </button>
           )}
         </div>
+      )}
+
+
+      {infiltradosSemCor > 0 && (
+        <p className="flex items-center justify-center gap-1.5 text-xs text-amber-300">
+          <AlertTriangle className="w-3.5 h-3.5" />
+          {infiltradosSemCor} {infiltradosSemCor === 1 ? 'infiltrado da escala oficial está' : 'infiltrados da escala oficial estão'} sem cor de grupo e não {infiltradosSemCor === 1 ? 'aparece' : 'aparecem'} nos grupos nem nos ônibus. Defina a cor na Geração de Escalas.
+        </p>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">

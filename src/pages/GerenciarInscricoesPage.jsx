@@ -39,6 +39,8 @@ import { useAvisosInscricoes } from '@/hooks/useAvisosInscricoes';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import { deleteAcampante, getAcampantes, countAcampantes, realocarGrupoTrailha, salvarObservacaoAcampante, updateAcampante } from '@/services/acampantesService';
 import { fetchEquipantesDaEdicao, fetchIdsEquipantesConfirmados, updateEquipante, podeInscreverManual } from '@/services/equipantesService';
+import { fetchInfiltradosNosGrupos } from '@/services/infiltradosService';
+import { definirCor } from '@/services/scalesService';
 import { groupAcampantesByTrilha } from '@/utils/gruposTrailha';
 
 const GerenciarInscricoesPage = () => {
@@ -88,9 +90,21 @@ const GerenciarInscricoesPage = () => {
   const [acampanteSalvoEm, setAcampanteSalvoEm] = useState(0);
   // Avisos de fichas com problema (Raquel e Desenvolvedores) + o sino.
   const avisosInscricoes = useAvisosInscricoes(acampanteSalvoEm);
+  // Infiltrados (12/10/2026): equipantes escalados em "Infiltrados" com a cor
+  // do grupo. Depois da escala oficial entram nos grupos de trilha e nos
+  // onibus como se fossem acampantes (sigilo), mas continuam equipantes --
+  // nao entram na tabela, nos quadros nem nas contagens de acampantes.
+  const [infiltrados, setInfiltrados] = useState({ oficial: false, lista: [], semCor: 0 });
+  const carregarInfiltrados = async () => {
+    const r = await fetchInfiltradosNosGrupos();
+    if (r.success) setInfiltrados({ oficial: r.oficial, lista: r.infiltrados, semCor: r.semCor });
+  };
+  // Quem esta nos grupos de trilha: acampantes + infiltrados.
+  const participantes = useMemo(() => [...acampantesList, ...infiltrados.lista], [acampantesList, infiltrados.lista]);
   // Vinculos entre acampantes nos grupos de trilha (12/10/2026): quem nao
-  // deveria ficar no mesmo grupo. Esta tela e so de organizador.
-  const vinc = useVinculosAcampantes(acampantesList);
+  // deveria ficar no mesmo grupo. Esta tela e so de organizador. Vale
+  // tambem com infiltrado.
+  const vinc = useVinculosAcampantes(participantes);
   const [vinculosAberto, setVinculosAberto] = useState(false);
   // Listas dos onibus (12/10/2026).
   const [onibusAberto, setOnibusAberto] = useState(false);
@@ -98,6 +112,7 @@ const GerenciarInscricoesPage = () => {
   useEffect(() => {
     carregarEquipantes();
     fetchAcampantesSupabase();
+    carregarInfiltrados();
     buscarTotais();
     podeInscreverManual().then(setPodeManual);
   }, []);
@@ -229,8 +244,11 @@ const GerenciarInscricoesPage = () => {
   };
 
   const allocatedGroups = useMemo(() => {
-    return groupAcampantesByTrilha(acampantesList);
-  }, [acampantesList]);
+    return groupAcampantesByTrilha(participantes);
+  }, [participantes]);
+  // O grupo aberto e sempre lido da lista atual (antes era uma copia tirada
+  // no clique, que precisava ser refeita a cada mudanca).
+  const grupoAberto = selectedGroup ? (allocatedGroups[selectedGroup.name] || []) : [];
 
   // Coluna "Não pode ficar com" da tabela/planilha de acampantes.
   const acampantesDaTabela = useMemo(() => {
@@ -258,34 +276,41 @@ const GerenciarInscricoesPage = () => {
     setSelectedInscricao(adapted);
   };
 
-  const handleGroupClick = (groupName, data) => {
-    setSelectedGroup({ name: groupName, data });
+  const handleGroupClick = (groupName) => {
+    setSelectedGroup({ name: groupName });
     setIsGroupModalOpen(true);
   };
 
   // Realocacao manual de grupo de trilha, chamada pelo botao "Realocar" no
   // modal de um grupo (GruposTrailhaModal.jsx). Depois de salvar, busca a
-  // lista de acampantes de novo (mesmo padrao ja usado em
-  // confirmarDesativacaoAcampante) e atualiza o snapshot do grupo aberto no
-  // modal -- selectedGroup.data e uma copia tirada no momento do clique no
-  // card, entao nao acompanha sozinha as mudancas em acampantesList.
+  // lista de novo; o grupo aberto (grupoAberto) e recalculado sozinho.
   const handleRealocarGrupoTrailha = async (acampante, novoGrupo) => {
-    const result = await realocarGrupoTrailha(acampante.id, novoGrupo);
+    // Infiltrado: o grupo dele e a cor na escala -- muda la (a tela de
+    // Geracao de Escalas mostra a mesma coisa).
+    let result;
+    if (acampante.infiltrado) {
+      try {
+        const r = await definirCor(acampante.escala_id, novoGrupo);
+        result = r?.ok ? { success: true } : { success: false, error: r?.erro };
+      } catch (e) {
+        result = { success: false, error: e.message };
+      }
+    } else {
+      result = await realocarGrupoTrailha(acampante.id, novoGrupo);
+    }
 
     if (result.success) {
       toast({
-        title: "Acampante realocado",
+        title: acampante.infiltrado ? "Infiltrado realocado" : "Acampante realocado",
         description: `${acampante.nome} foi movido para o grupo ${novoGrupo}.`,
       });
 
-      const data = await getAcampantes();
-      setAcampantesList(data || []);
-
-      setSelectedGroup(prev => {
-        if (!prev) return prev;
-        const gruposAtualizados = groupAcampantesByTrilha(data || []);
-        return { name: prev.name, data: gruposAtualizados[prev.name] || [] };
-      });
+      if (acampante.infiltrado) {
+        await carregarInfiltrados();
+      } else {
+        const data = await getAcampantes();
+        setAcampantesList(data || []);
+      }
     } else {
       toast({
         title: "Erro ao realocar",
@@ -298,11 +323,8 @@ const GerenciarInscricoesPage = () => {
   };
 
   // Salva a observacao breve escrita pelo organizador sobre um acampante,
-  // direto no card dele dentro do modal de um grupo de trilha. Atualiza os
-  // dois lugares que guardam uma copia do acampante em memoria
-  // (acampantesList e selectedGroup.data) na hora, sem refetch -- e so um
-  // campo de texto, diferente de handleRealocarGrupoTrailha (que muda o
-  // agrupamento em si e por isso precisa buscar tudo de novo).
+  // direto no card dele dentro do modal de um grupo de trilha. Atualiza
+  // acampantesList na hora, sem refetch -- e so um campo de texto.
   const handleSalvarObservacaoAcampante = async (acampante, observacao) => {
     const result = await salvarObservacaoAcampante(acampante.id, observacao);
 
@@ -315,16 +337,6 @@ const GerenciarInscricoesPage = () => {
       setAcampantesList(prev =>
         prev.map(a => (a.id === acampante.id ? { ...a, observacoes_organizador: observacao } : a))
       );
-
-      setSelectedGroup(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          data: prev.data.map(a =>
-            a.id === acampante.id ? { ...a, observacoes_organizador: observacao } : a
-          ),
-        };
-      });
     } else {
       toast({
         title: "Erro ao salvar observação",
@@ -513,6 +525,7 @@ const GerenciarInscricoesPage = () => {
                       resumoVinculos={vinc.carregado ? { sugestoes: vinc.sugestoes.length, conflitos: vinc.conflitos.length } : null}
                       onAbrirVinculos={() => setVinculosAberto(true)}
                       onAbrirOnibus={() => setOnibusAberto(true)}
+                      infiltradosSemCor={infiltrados.oficial ? infiltrados.semCor : 0}
                     />
                   </div>
 
@@ -585,7 +598,7 @@ const GerenciarInscricoesPage = () => {
               isOpen={isGroupModalOpen}
               onClose={() => setIsGroupModalOpen(false)}
               groupName={selectedGroup.name}
-              groupData={selectedGroup.data}
+              groupData={grupoAberto}
               onRealocar={handleRealocarGrupoTrailha}
               onSalvarObservacao={handleSalvarObservacaoAcampante}
               vinc={vinc}
@@ -595,7 +608,7 @@ const GerenciarInscricoesPage = () => {
           <OnibusDialog
             isOpen={onibusAberto}
             onClose={() => setOnibusAberto(false)}
-            acampantes={acampantesList}
+            acampantes={participantes}
           />
 
           <VinculosAcampantesDialog

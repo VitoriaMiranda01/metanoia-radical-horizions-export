@@ -31,6 +31,7 @@ import ChamadaQuadro from '@/components/scales/ChamadaQuadro';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import { nomeDaIgreja } from '@/constants/igrejas';
+import { casaBusca } from '@/utils/busca';
 import { emTeste } from '@/services/ambiente';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
@@ -182,6 +183,10 @@ const OrganizerScalesPage = () => {
   const [confirmandoDesfazerAuto, setConfirmandoDesfazerAuto] = useState(false);
   // "Alocar em lote" de uma area (12/10/2026): o nome da area aberta.
   const [loteArea, setLoteArea] = useState(null);
+  // Filtro das areas (13/10/2026): mostrar uma area so e/ou buscar quem esta
+  // escalado (nome, CPF, igreja).
+  const [areaFiltro, setAreaFiltro] = useState('todas');
+  const [buscaNasAreas, setBuscaNasAreas] = useState('');
   const [desfazendoAuto, setDesfazendoAuto] = useState(false);
   const [escalaOrdem, setEscalaOrdem] = useState('aprovacao');
 
@@ -918,9 +923,15 @@ const OrganizerScalesPage = () => {
     }
   };
 
+  // Em ordem alfabetica (13/10/2026) -- na tela e na planilha da area.
   const getEquipantesByArea = areaName => {
-    return allocations.filter(a => a.allocatedArea === areaName);
+    return allocations
+      .filter(a => a.allocatedArea === areaName)
+      .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' }));
   };
+
+  const casaBuscaEscalado = (eq) =>
+    casaBusca(buscaNasAreas, [eq.nome, nomeDaIgreja(eq), eq.igreja_outra, eq.cpf]);
 
   const getGenderCount = (equipantes, targetGender) => {
     return equipantes.filter(e => {
@@ -933,8 +944,11 @@ const OrganizerScalesPage = () => {
   // nela. Virou funcao porque agora e desenhado em DOIS lugares -- no corpo
   // da pagina e dentro do modulo das Areas Especiais. Duplicar o JSX faria
   // uma das duas copias envelhecer sozinha.
-  const renderCartaoArea = (area) => {
+  // filtrar: so no corpo da pagina (a busca da barra de filtro). O cabecalho
+  // continua contando a area inteira.
+  const renderCartaoArea = (area, filtrar = false) => {
     const areaEquipantes = getEquipantesByArea(area);
+    const mostrados = filtrar && buscaNasAreas.trim() ? areaEquipantes.filter(casaBuscaEscalado) : areaEquipantes;
     const limitObj = getLimiteAreaComGenero(area, limitsMap, DEFAULT_AREA_CAPACITY);
     const mulheresCount = getGenderCount(areaEquipantes, 'feminino');
     const homensCount = getGenderCount(areaEquipantes, 'masculino');
@@ -968,7 +982,7 @@ const OrganizerScalesPage = () => {
           </div>
 
           <div className="p-4 max-h-[400px] overflow-y-auto">
-            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={areaEquipantes} areaName={area} onExport={handleExportArea} onRealocar={podeGerir ? handleRealocar : undefined} onAdicionarArea={podeGerir ? handleAdicionarArea : undefined} onRemover={podeGerir ? handleRemover : undefined} areasPorEquipante={areasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={(id, val) => setManualAreaChoice(prev => ({ ...prev, [id]: val }))} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={handleDefinirAtuacao} salvandoAtuacao={salvandoAtuacao} mostrarCor={temCor} onDefinirCor={handleDefinirCor} salvandoCor={salvandoCor} />}
+            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={mostrados} areaName={area} onExport={() => handleExportArea(area, areaEquipantes)} onRealocar={podeGerir ? handleRealocar : undefined} onAdicionarArea={podeGerir ? handleAdicionarArea : undefined} onRemover={podeGerir ? handleRemover : undefined} areasPorEquipante={areasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={(id, val) => setManualAreaChoice(prev => ({ ...prev, [id]: val }))} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={handleDefinirAtuacao} salvandoAtuacao={salvandoAtuacao} mostrarCor={temCor} onDefinirCor={handleDefinirCor} salvandoCor={salvandoCor} />}
           </div>
         </div>;
   };
@@ -1650,9 +1664,63 @@ const OrganizerScalesPage = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        <div className="flex flex-col gap-6">
-          {AREAS_NO_CORPO.map(renderCartaoArea)}
-        </div>
+        {/* Filtro das areas (13/10/2026). */}
+        {(() => {
+          const termo = buscaNasAreas.trim();
+          const visiveis = AREAS_NO_CORPO
+            .filter(area => areaFiltro === 'todas' || area === areaFiltro)
+            .filter(area => !termo || getEquipantesByArea(area).some(casaBuscaEscalado));
+          const encontrados = termo
+            ? visiveis.reduce((t, area) => t + getEquipantesByArea(area).filter(casaBuscaEscalado).length, 0)
+            : null;
+          return (
+            <>
+              <div className="mt-8 mb-4 flex flex-col sm:flex-row gap-2 sm:items-center">
+                <Select value={areaFiltro} onValueChange={setAreaFiltro}>
+                  <SelectTrigger className="h-10 sm:w-[260px] bg-black/40 border-white/20 text-white">
+                    <SelectValue placeholder="Área" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as áreas</SelectItem>
+                    {AREAS_NO_CORPO.map(area => (
+                      <SelectItem key={area} value={area}>{area} ({getEquipantesByArea(area).length})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+                  <Input
+                    value={buscaNasAreas} onChange={e => setBuscaNasAreas(e.target.value)}
+                    placeholder="Filtrar os nomes nas tabelas abaixo..."
+                    className="h-10 pl-8 pr-8 bg-black/40 border-white/20 text-white placeholder:text-gray-500"
+                  />
+                  {buscaNasAreas && (
+                    <button type="button" onClick={() => setBuscaNasAreas('')} aria-label="Limpar a busca"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                {(areaFiltro !== 'todas' || termo) && (
+                  <Button variant="ghost" onClick={() => { setAreaFiltro('todas'); setBuscaNasAreas(''); }}
+                    className="h-10 text-gray-300 hover:text-white hover:bg-white/10">Limpar filtro</Button>
+                )}
+              </div>
+              {termo && (
+                <p className="-mt-2 mb-3 text-xs text-gray-400">
+                  {encontrados} {encontrados === 1 ? 'pessoa encontrada' : 'pessoas encontradas'} em {visiveis.length} {visiveis.length === 1 ? 'área' : 'áreas'}.
+                  {' '}As Áreas Especiais (Guia, Inimigo...) ficam no módulo próprio.
+                </p>
+              )}
+              <div className="flex flex-col gap-6">
+                {visiveis.length === 0 && (
+                  <p className="text-center py-10 text-gray-500">Ninguém escalado bate com a busca.</p>
+                )}
+                {visiveis.map(area => renderCartaoArea(area, true))}
+              </div>
+            </>
+          );
+        })()}
       </div>
     </Layout>;
 };

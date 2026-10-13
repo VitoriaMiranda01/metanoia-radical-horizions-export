@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, CheckSquare, Loader2, Search, Square, Users, X } from 'lucide-react';
+import { AlertTriangle, CheckSquare, ChevronDown, Loader2, Search, Square, Users, X } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
 import { CORES_GRUPO, areaTemCor } from '@/constants/workAreas';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -105,6 +106,16 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
     setMarcados(n);
   };
 
+  // "Selecionar" (13/10/2026): marca de uma vez todos da lista mostrada que
+  // deram esta area como 1ª, 2ª ou 3ª opcao -- ou todos da lista. Soma ao que
+  // ja estava marcado. Pode passar do limite (so aviso).
+  const qtdPorOpcao = [0, 1, 2].map((k) => lista.filter((p) => opcaoDe(p) === k).length);
+  const selecionar = (k) => setMarcados((s) => {
+    const n = new Set(s);
+    lista.forEach((p) => { if (k === 'todos' || opcaoDe(p) === k) n.add(p.id); });
+    return n;
+  });
+
   const alocar = async () => {
     if (!escolhidos.length) return;
     if (passaDoLimite && !window.confirm(
@@ -198,7 +209,34 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
 
         <div className="flex items-center justify-between gap-2 text-xs text-gray-400">
           <span className={cn(passaDoLimite && 'text-amber-300')}>{escolhidos.length} de {vagas} {vagas === 1 ? 'vaga' : 'vagas'} marcadas</span>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" disabled={!lista.length}
+                  data-dica="Marcar de uma vez todos que deram esta área como 1ª, 2ª ou 3ª opção — ou todos da lista."
+                  className="inline-flex items-center gap-1 hover:text-white disabled:opacity-40">
+                  Selecionar <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-neutral-900 border-white/10 text-white min-w-[16rem]">
+                <DropdownMenuLabel className="text-xs text-gray-400 font-normal">
+                  Selecionar todos que marcaram {area} como:
+                </DropdownMenuLabel>
+                {OPCAO.map((rotulo, k) => (
+                  <DropdownMenuItem key={rotulo} disabled={!qtdPorOpcao[k]} onSelect={() => selecionar(k)}
+                    className="flex justify-between gap-4 cursor-pointer focus:bg-white/10 focus:text-white">
+                    <span>{rotulo}</span>
+                    <span className="text-gray-500 tabular-nums">{qtdPorOpcao[k]}</span>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem onSelect={() => selecionar('todos')}
+                  className="flex justify-between gap-4 cursor-pointer focus:bg-white/10 focus:text-white">
+                  <span>Selecionar todos{modo === 'todos' ? ' (toda a fila)' : ''}{busca.trim() ? ' da busca' : ''}</span>
+                  <span className="text-gray-500 tabular-nums">{lista.length}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <button type="button" onClick={marcarAteEncher} disabled={!vagas || !lista.length}
               data-dica="Marcar os primeiros da lista (quem escolheu esta área como 1ª opção vem antes) até completar as vagas."
               className="hover:text-white disabled:opacity-40">Marcar até completar</button>

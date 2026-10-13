@@ -1236,7 +1236,8 @@ const OrganizerScalesPage = () => {
   // uma das duas copias envelhecer sozinha.
   // filtrar: so no corpo da pagina (a busca da barra de filtro). O cabecalho
   // continua contando a area inteira.
-  const renderCartaoArea = (area, filtrar = false) => {
+  // noModulo: dentro das Areas Especiais (janela grande), a tabela pode crescer.
+  const renderCartaoArea = (area, filtrar = false, noModulo = false) => {
     const areaEquipantes = getEquipantesByArea(area);
     const mostrados = filtrar && buscaNasAreas.trim() ? areaEquipantes.filter(casaBuscaEscalado) : areaEquipantes;
     const limitObj = getLimiteAreaComGenero(area, limitsMap, DEFAULT_AREA_CAPACITY);
@@ -1280,7 +1281,7 @@ const OrganizerScalesPage = () => {
             <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => !eq.cor).length : 0} fixos={fixosHeader} onLimpar={podeGerir && !escala?.lancada_em ? () => setLimparAreaAberta(area) : undefined} />
           </div>
 
-          <div className="p-4 max-h-[400px] overflow-y-auto">
+          <div className={cn("p-4 overflow-y-auto", noModulo ? "max-h-[65vh]" : "max-h-[400px]")}>
             {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={mostrados} areaName={area} onExport={() => handleExportArea(area, areaEquipantes)} onRealocar={podeGerir ? handleRealocar : undefined} onAdicionarArea={podeGerir ? handleAdicionarArea : undefined} onRemover={podeGerir ? handleRemover : undefined} areasPorEquipante={areasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={(id, val) => setManualAreaChoice(prev => ({ ...prev, [id]: val }))} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={handleDefinirAtuacao} salvandoAtuacao={salvandoAtuacao} mostrarCor={temCor} onDefinirCor={handleDefinirCor} salvandoCor={salvandoCor} fixasPorEquipante={fixasPorEquipante} onFixar={podeGerir ? (eq, a) => setFixarAberto({ eq, area: a }) : undefined} />}
           </div>
         </div>;
@@ -1882,7 +1883,7 @@ const OrganizerScalesPage = () => {
                       onAlocar={(cpf) => handleAlocarUmPorCpf(key, label, cpf)}
                     />
                   </div>
-                  {renderCartaoArea(label)}
+                  {renderCartaoArea(label, false, true)}
                 </div>
               ))}
             </AreasEspeciaisDialog>

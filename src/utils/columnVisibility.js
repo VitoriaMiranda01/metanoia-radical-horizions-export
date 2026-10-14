@@ -1,3 +1,19 @@
+// "14/10/2026 09:08", no horario de Brasilia. Nesse formato a ordenacao das
+// tabelas (utils/ordenacao.js) ja entende data e hora.
+export const formatarDataHora = (valor) => {
+  if (!valor) return '';
+  const d = new Date(valor);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(d).reduce((acc, x) => { acc[x.type] = x.value; return acc; }, {});
+  return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`;
+};
+
+// Colunas de data com hora.
+export const COLUNAS_DATA_HORA = ['inscrito_em', 'decidido_em'];
+
 export const COLUMN_DEFINITIONS = {
   equipantes: [
     // Identificação
@@ -58,6 +74,11 @@ export const COLUMN_DEFINITIONS = {
     { key: 'metodo_pagamento', label: 'Método Pagamento', group: 'Sistema' },
     { key: 'data_pagamento', label: 'Data do Pagamento', group: 'Sistema' },
     { key: 'status', label: 'Status', group: 'Sistema' },
+
+    // Quando a pessoa se inscreveu NA EDICAO, com hora (14/10/2026). So existe
+    // para quem se inscreveu a partir de 07/10/2026 -- antes disso o sistema
+    // nao gravava a hora (ver migration 20261007f); essas ficam em branco.
+    { key: 'inscrito_em', label: 'Data da inscrição', group: 'Sistema' },
 
     // Quem aprovou ou rejeitou. Escrito pelo servidor a partir do crachá
     // (ver decidir_inscricao) -- a mesma tela é usada por organizador e por
@@ -193,7 +214,7 @@ export const formatAreaTrabalho = (item) => {
 // desenhar as colunas dinamicas de visibleColumns, exatamente como faziam
 // antes disso). Essa lista define a ordem das colunas marcadas por padrao.
 const DEFAULT_VISIBLE_COLUMNS = {
-  equipantes: ['nome', 'cpf', 'igreja'],
+  equipantes: ['nome', 'cpf', 'igreja', 'inscrito_em'],
   acampantes: ['nome', 'cpf', 'igreja'],
   // As mesmas colunas que Pagamentos sempre mostrou.
   pagamentos: ['nome', 'cpf', 'tipo', 'whatsapp']

@@ -27,6 +27,8 @@ import {
   getVisibleColumnsFromStorage, 
   saveVisibleColumnsToStorage,
   COLUMN_DEFINITIONS,
+  COLUNAS_DATA_HORA,
+  formatarDataHora,
   formatEnderecoCompleto,
   formatAreaTrabalho
 } from '@/utils/columnVisibility';
@@ -56,6 +58,9 @@ const getColumnValue = (item, key) => {
   if (key === 'endereco_completo') return formatEnderecoCompleto(item);
   if (key === 'area_trabalho') return formatAreaTrabalho(item);
   if (key === 'data_pagamento') return formatarData(item[key]);
+  // Data da inscricao: a da edicao; se faltar, a do primeiro cadastro.
+  if (key === 'inscrito_em') return formatarDataHora(item.inscrito_em || item.created_at);
+  if (COLUNAS_DATA_HORA.includes(key)) return formatarDataHora(item[key]);
   if (typeof item[key] === 'boolean') return item[key] ? 'Sim' : 'Não';
   return String(item[key] || '');
 };
@@ -156,7 +161,18 @@ const AprovacoesTable = ({
 
   // Load columns preference
   useEffect(() => {
-    const loadedColumns = getVisibleColumnsFromStorage(tableType);
+    let loadedColumns = getVisibleColumnsFromStorage(tableType);
+    // A coluna "Data da inscricao" (14/10/2026) aparece uma vez para quem ja
+    // tinha as colunas salvas; depois disso vale o que a pessoa escolher.
+    try {
+      if (!localStorage.getItem('colunas_inscrito_em_v1')) {
+        localStorage.setItem('colunas_inscrito_em_v1', '1');
+        if (!loadedColumns.includes('inscrito_em')) {
+          loadedColumns = [...loadedColumns, 'inscrito_em'];
+          saveVisibleColumnsToStorage(tableType, loadedColumns);
+        }
+      }
+    } catch { /* sem armazenamento: segue com o padrao */ }
     setVisibleColumns(loadedColumns);
   }, []);
 

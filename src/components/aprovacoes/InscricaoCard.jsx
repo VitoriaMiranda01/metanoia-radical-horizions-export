@@ -3,6 +3,7 @@ import { Eye, CheckCircle, XCircle, AlertTriangle, UserCheck } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { naoCongrega, nomeDaIgreja } from '@/constants/igrejas';
 import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
+import { formatarDataHora } from '@/utils/columnVisibility';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import SeloPastor from '@/components/common/SeloPastor';
 
@@ -46,6 +47,12 @@ const InscricaoCard = ({
           <span className="font-medium text-gray-500 shrink-0">Igreja:</span>
           <span className="text-gray-300 text-right truncate">{nomeDaIgreja(inscricao) || 'Não informada'}</span>
         </div>
+        {(inscricao.inscrito_em || inscricao.created_at) && (
+          <div className="flex justify-between items-center gap-2">
+            <span className="font-medium text-gray-500 shrink-0">Inscrito em:</span>
+            <span className="text-gray-300 text-right">{formatarDataHora(inscricao.inscrito_em || inscricao.created_at)}</span>
+          </div>
+        )}
       </div>
 
       {/* Toda inscrição de equipante já passa por aprovação. Esta aqui é a

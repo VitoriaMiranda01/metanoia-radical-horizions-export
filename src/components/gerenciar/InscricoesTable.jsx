@@ -26,6 +26,7 @@ import {
   getVisibleColumnsFromStorage, 
   saveVisibleColumnsToStorage,
   COLUMN_DEFINITIONS,
+  formatarDataHora,
   formatEnderecoCompleto,
   formatAreaTrabalho
 } from '@/utils/columnVisibility';
@@ -71,6 +72,12 @@ const getColumnValue = (item, filterKey) => {
   }
   if (filterKey === 'data_pagamento') {
     return formatarData(item[filterKey]);
+  }
+  if (filterKey === 'inscrito_em') {
+    return formatarDataHora(item.inscrito_em || item.created_at);
+  }
+  if (filterKey === 'decidido_em') {
+    return formatarDataHora(item[filterKey]);
   }
   if (typeof item[filterKey] === 'boolean') {
     return item[filterKey] ? 'Sim' : 'Não';

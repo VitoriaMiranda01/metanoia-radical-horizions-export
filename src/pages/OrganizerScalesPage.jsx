@@ -589,24 +589,31 @@ const OrganizerScalesPage = () => {
 
   // Cor do grupo de trilha. Vale so nas nove areas que trabalham divididas
   // por cor, e e opcional -- "Sem cor" e uma resposta legitima.
+  // A cor aparece na hora (14/10/2026, como a atuacao) e so depois confirma
+  // com o banco; se o banco recusar, volta ao que era e avisa.
   const handleDefinirCor = async (escalaId, novaCor) => {
+    // Regra dos Guias: o banco muda a cor do outro lado (Guia <-> Recepção
+    // Sítio); a tela acompanha.
+    const linha = allocations.find(a => a.escalaId === escalaId);
+    if (!linha || (linha.cor || null) === (novaCor || null)) return;
+    const semCorNaRecepcao = (a) => (atuacoesPorArea[GUIA_TAMBEM_EM] || []).some(x => x.atuacao === a.atuacao && x.semCor);
+    const ehPar = (a) => a.id === linha.id && a.escalaId !== escalaId && (
+      (linha.allocatedArea === AREA_GUIA && a.allocatedArea === GUIA_TAMBEM_EM && !semCorNaRecepcao(a)) ||
+      (linha.allocatedArea === GUIA_TAMBEM_EM && a.allocatedArea === AREA_GUIA && !semCorNaRecepcao(linha)));
+    const antes = Object.fromEntries(allocations
+      .filter(a => a.escalaId === escalaId || ehPar(a)).map(a => [a.escalaId, a.cor ?? null]));
+    setAllocations(prev => prev.map(a => (a.escalaId in antes ? { ...a, cor: novaCor || null } : a)));
+    const desfazer = () => setAllocations(prev => prev.map(a => (a.escalaId in antes ? { ...a, cor: antes[a.escalaId] } : a)));
+
     setSalvandoCor(prev => ({ ...prev, [escalaId]: true }));
     try {
       const r = await definirCor(escalaId, novaCor);
       if (!r?.ok) {
+        desfazer();
         toast({ title: 'Não deu certo', description: r?.erro, variant: 'destructive' });
-        return;
       }
-      // Regra dos Guias: o banco ja mudou a cor do outro lado (Guia <->
-      // Recepção Sítio); aqui a tela acompanha na hora.
-      const linha = allocations.find(a => a.escalaId === escalaId);
-      const semCorNaRecepcao = (a) => (atuacoesPorArea[GUIA_TAMBEM_EM] || []).some(x => x.atuacao === a.atuacao && x.semCor);
-      const ehPar = (a) => !!linha && a.id === linha.id && a.escalaId !== escalaId && (
-        (linha.allocatedArea === AREA_GUIA && a.allocatedArea === GUIA_TAMBEM_EM && !semCorNaRecepcao(a)) ||
-        (linha.allocatedArea === GUIA_TAMBEM_EM && a.allocatedArea === AREA_GUIA && !semCorNaRecepcao(linha)));
-      setAllocations(prev => prev.map(a =>
-        a.escalaId === escalaId || ehPar(a) ? { ...a, cor: novaCor || null } : a));
     } catch (error) {
+      desfazer();
       toast({
         title: 'Erro ao definir a cor',
         description: error.message || 'Tente de novo.',

@@ -369,13 +369,12 @@ const OrganizerScalesPage = () => {
   const digitosBusca = termoBusca.replace(/\D/g, '');
   // Exato primeiro (nome, igreja, CPF, sugestoes); parecido pelo nome so se
   // nada bater exato -- nem na fila, nem entre os ja escalados.
-  const casaFilaExato = (eq) =>
-    semAcento(eq.nome).includes(termoBusca) ||
-    semAcento(nomeDaIgreja(eq)).includes(termoBusca) ||
-    (digitosBusca !== '' && (eq.cpf || '').replace(/\D/g, '').includes(digitosBusca)) ||
-    semAcento(eq.area_trabalho_opcao1).includes(termoBusca) ||
-    semAcento(eq.area_trabalho_opcao2).includes(termoBusca) ||
-    semAcento(eq.area_trabalho_opcao3).includes(termoBusca);
+  // casaBusca (utils/busca.js): trecho seguido OU todas as palavras, em qualquer
+  // ordem ("Lucio Simas" acha "Lúcio da Costa Simas").
+  const casaFilaExato = (eq) => casaBusca(buscaFila, [
+    eq.nome, nomeDaIgreja(eq), eq.cpf,
+    eq.area_trabalho_opcao1, eq.area_trabalho_opcao2, eq.area_trabalho_opcao3
+  ]);
 
   // As 3 preferencias da pessoa, sem repeticao e so as que existem hoje
   // como area de verdade (uma preferencia antiga pode ter sido renomeada).
@@ -449,9 +448,7 @@ const OrganizerScalesPage = () => {
   // Fila + "ja escalados" da busca da fila (a fila so lista quem nao tem
   // area: quem ja esta escalado aparece embaixo, com onde esta e o "escalar
   // tambem").
-  const casaEscaladoDaFila = (x) =>
-    semAcento(x.nome).includes(termoBusca) ||
-    (digitosBusca !== '' && (x.cpf || '').replace(/\D/g, '').includes(digitosBusca));
+  const casaEscaladoDaFila = (x) => casaBusca(buscaFila, [x.nome, x.cpf]);
   let filaFiltrada = filaOrdenada;
   let jaEscaladosDaBuscaFila = [];
   let filaPorParecido = false;

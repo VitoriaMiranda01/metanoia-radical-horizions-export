@@ -1,3 +1,4 @@
+import { casaBusca } from '@/utils/busca';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -67,12 +68,7 @@ const AreasExtraDialog = ({ onClose }) => {
   const termo = semAcento(busca.trim());
   const filtrados = useMemo(() => {
     if (!termo) return itens;
-    const digitos = termo.replace(/\D/g, '');
-    return itens.filter((i) =>
-      semAcento(i.nome).includes(termo)
-      || semAcento(i.igreja).includes(termo)
-      || (digitos !== '' && (i.cpf || '').includes(digitos))
-    );
+    return itens.filter((i) => casaBusca(termo, [i.nome, i.igreja, i.cpf]));
   }, [itens, termo]);
 
   const totalPessoas = useMemo(

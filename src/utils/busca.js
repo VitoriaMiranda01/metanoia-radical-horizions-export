@@ -75,17 +75,26 @@ export const casaNomeParecido = (termo, nome) => {
 };
 
 // Exato: o trecho aparece em algum dos campos (ou os digitos, no CPF).
+//
+// Palavras soltas (14/10/2026): com 2+ palavras, basta CADA palavra aparecer em
+// algum dos campos, em qualquer ordem e pulando as do meio -- "Claudio Simas",
+// "Lucio da Costa" e "Lucio Simas" acham "Cláudio Lúcio da Costa Simas". As
+// palavras podem estar em campos diferentes ("claudio metodista"). "de/da/do/
+// dos/das/e" nao contam. O trecho inteiro seguido continua achando como antes.
 export const casaBusca = (termo, campos) => {
   const t = normalizarBusca(termo);
   if (!t) return true;
   const soNumeros = /^[\d.\-/\s]+$/.test(t);
   const digitos = t.replace(/\D/g, '');
-  return campos.some((campo) => {
-    const valor = normalizarBusca(campo);
-    if (!valor) return false;
-    if (valor.includes(t)) return true;
-    return soNumeros && digitos.length >= 3 && valor.replace(/\D/g, '').includes(digitos);
-  });
+  const valores = campos.map(normalizarBusca).filter(Boolean);
+  if (valores.some((valor) => valor.includes(t)
+    || (soNumeros && digitos.length >= 3 && valor.replace(/\D/g, '').includes(digitos)))) return true;
+
+  const soltas = t.split(' ').filter((p) => p && !LIGACOES.has(p));
+  if (soltas.length < 2) return false;
+  return soltas.every((p) => valores.some((valor) => valor.includes(p)
+    || (/^[\d.\-/]+$/.test(p) && p.replace(/\D/g, '').length >= 3
+        && valor.replace(/\D/g, '').includes(p.replace(/\D/g, '')))));
 };
 
 // Filtra uma lista: primeiro os exatos; se NENHUM bater, os parecidos pelo

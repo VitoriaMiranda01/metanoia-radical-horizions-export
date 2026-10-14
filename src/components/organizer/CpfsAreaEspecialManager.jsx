@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { formatCPF } from '@/utils/formatters';
 import { validateCPF } from '@/utils/validation';
-import { normalizarBusca } from '@/utils/busca';
+import { normalizarBusca, casaBusca, casaNomeParecido } from '@/utils/busca';
 import { cn } from '@/lib/utils';
 import { AREAS_ESPECIAIS, AREA_GUIA, GUIA_TAMBEM_EM } from '@/constants/workAreas';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -108,16 +108,13 @@ const CpfsAreaEspecialManager = ({
   }, [equipantes]);
 
   // Quem casa com a busca, esteja ou nao ja na lista.
+  // Nome ou CPF; palavras soltas valem ("Lucio Simas" acha "Cláudio Lúcio da
+  // Costa Simas") e, se nada bater, tenta nomes parecidos (erro de digitacao).
   const encontrados = useMemo(() => {
-    const termo = normalizarBusca(busca);
-    if (!termo) return [];
-    const termoDigitos = soDigitos(termo);
-
-    return (equipantes || []).filter((eq) => {
-      const porNome = normalizarBusca(eq.nome).includes(termo);
-      const porCpf = termoDigitos && soDigitos(eq.cpf).includes(termoDigitos);
-      return porNome || porCpf;
-    });
+    if (!normalizarBusca(busca)) return [];
+    const exatos = (equipantes || []).filter((eq) => casaBusca(busca, [eq.nome, eq.cpf]));
+    if (exatos.length) return exatos;
+    return (equipantes || []).filter((eq) => casaNomeParecido(busca, eq.nome));
   }, [busca, equipantes]);
 
   // Só os que ainda dá para adicionar: fora os que já estão nesta lista e

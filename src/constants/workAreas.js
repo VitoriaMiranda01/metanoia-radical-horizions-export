@@ -238,6 +238,12 @@ export const AREAS_COM_COR = [
 
 export const areaTemCor = (area) => AREAS_COM_COR.includes(area);
 
+// Areas cuja tabela fica AGRUPADA POR COR (14/10/2026, Patrick): cada cor
+// junta, na ordem de CORES_GRUPO, com o lider daquela cor na primeira linha do
+// grupo (e nao todos os lideres no topo). Lider sem cor (da area inteira) fica
+// acima de todos; quem esta sem cor vai para o fim.
+export const AREAS_AGRUPADAS_POR_COR = ['Guia'];
+
 // Regra dos Guias (13/10/2026, migration 20261013h): todo Guia tambem fica
 // na Recepção Sítio (Fila / Confronto), e a cor anda junto nas duas areas.
 // Quem faz isso e o banco (gatilho regra_guia_recepcao); a tela so explica.

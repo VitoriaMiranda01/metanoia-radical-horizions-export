@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCPF, formatNomeExibicao } from '@/utils/formatters';
 import { User, Download, Loader2, Star, X, Plus, Pin, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
-import { WORK_AREAS, CORES_GRUPO } from '@/constants/workAreas';
+import { WORK_AREAS, CORES_GRUPO, AREAS_AGRUPADAS_POR_COR } from '@/constants/workAreas';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import SeloPastor from '@/components/common/SeloPastor';
 import { cn } from '@/lib/utils';
@@ -105,15 +105,34 @@ const EquipantesGridDisplay = ({
   };
   // Lider fica SEMPRE no topo, qualquer que seja a ordenacao (13/10/2026,
   // Patrick). Nas areas por cor, os lideres seguem a ordem das cores.
-  const linhas = !ordem.campo ? equipantes : [...equipantes].sort((a, b) => {
-    const lider = Number(ehLider(b.atuacao)) - Number(ehLider(a.atuacao));
-    if (lider) return lider;
-    if (ehLider(a.atuacao)) return (posCor(a) - posCor(b)) || porNome(a, b);
+  // Pela coluna escolhida (sem coluna: pelo nome).
+  const pelaColuna = (a, b) => {
+    if (!ordem.campo) return porNome(a, b);
     const ehVazio = vazio[ordem.campo];
     if (ehVazio && ehVazio(a) !== ehVazio(b)) return ehVazio(a) ? 1 : -1;
     const d = COMPARAR[ordem.campo](a, b);
     return (ordem.desc ? -d : d) || porNome(a, b);
+  };
+  // Agrupada por cor (ver AREAS_AGRUPADAS_POR_COR): lider sem cor no topo,
+  // depois cada cor com o seu lider na primeira linha; a coluna escolhida
+  // ordena dentro de cada cor.
+  const porCor = AREAS_AGRUPADAS_POR_COR.includes(areaName);
+  const liderGeral = (eq) => ehLider(eq.atuacao) && !eq.cor;
+  const linhas = porCor
+    ? [...equipantes].sort((a, b) =>
+        (Number(liderGeral(b)) - Number(liderGeral(a))) ||
+        (posCor(a) - posCor(b)) ||
+        (Number(ehLider(b.atuacao)) - Number(ehLider(a.atuacao))) ||
+        pelaColuna(a, b))
+    : !ordem.campo ? equipantes : [...equipantes].sort((a, b) => {
+    const lider = Number(ehLider(b.atuacao)) - Number(ehLider(a.atuacao));
+    if (lider) return lider;
+    if (ehLider(a.atuacao)) return (posCor(a) - posCor(b)) || porNome(a, b);
+    return pelaColuna(a, b);
   });
+  // Linha que abre um grupo de cor (para a linha divisoria).
+  const grupoDe = (eq) => (liderGeral(eq) ? '*' : eq.cor || '');
+  const abreGrupo = (index) => porCor && index > 0 && grupoDe(linhas[index]) !== grupoDe(linhas[index - 1]);
 
   // Funcao (nao componente): um componente criado dentro do render seria
   // desmontado e montado de novo a cada atualizacao da tabela.
@@ -167,7 +186,7 @@ const EquipantesGridDisplay = ({
             {linhas.map((eq, index) => (
               <TableRow
                 key={eq.escalaId || eq.id || index}
-                className="border-white/10 hover:bg-white/5 transition-colors"
+                className={cn('border-white/10 hover:bg-white/5 transition-colors', abreGrupo(index) && 'border-t-2 border-t-white/30')}
               >
                 <TableCell className="font-semibold text-white min-w-[230px]">
                   <div className="flex flex-col">

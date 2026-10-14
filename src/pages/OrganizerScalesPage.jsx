@@ -772,7 +772,6 @@ const OrganizerScalesPage = () => {
     return ok ? tentar(true) : { ...r, cancelado: true };
   };
 
-  // Acrescenta uma area a quem JA esta escalado, sem tirar das atuais.
   // Acrescenta uma area sem tirar das atuais. Usado pela busca e pelo chip
   // do pre-cadastro das Areas Especiais.
   const acrescentarArea = async (equipanteId, nomeBruto, area, areasAtuais) => {

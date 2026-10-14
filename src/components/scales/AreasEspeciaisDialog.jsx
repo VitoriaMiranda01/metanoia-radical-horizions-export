@@ -25,9 +25,10 @@ const listaDosLabels = AREAS_ESPECIAIS.map(a => a.label).reduce((frase, label, i
  * Guia, Inimigo e Espírito Santo saíram do corpo da Geração de Escalas a
  * pedido do Patrick: são papéis fixos, mudam pouco de uma edição para a
  * outra, e ficavam no meio das ~30 áreas disputando atenção com o que
- * realmente muda toda edição. Depressão e Infiltrados
- * entraram depois (16/09/2026), vindos de outras duas famílias de área --
- * ver o comentário em AREAS_ESPECIAIS.
+ * realmente muda toda edição. Infiltrados e outras entraram depois
+ * (16/09/2026), vindas de outras duas famílias de área; Perseguidos e
+ * Depressão saíram em 13/10/2026 (viraram áreas comuns) -- ver o comentário
+ * em AREAS_ESPECIAIS.
  *
  * Só a MOLDURA mora aqui. Os gerenciadores de CPF (CpfsAreaEspecialManager,
  * um por área) e as tabelas continuam sendo montados pela página (mesmo

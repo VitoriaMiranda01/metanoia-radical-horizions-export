@@ -114,11 +114,13 @@ const EquipantesGridDisplay = ({
     return (ordem.desc ? -d : d) || porNome(a, b);
   });
 
-  const Cabecalho = ({ campo, children, className, dica }) => {
+  // Funcao (nao componente): um componente criado dentro do render seria
+  // desmontado e montado de novo a cada atualizacao da tabela.
+  const cabecalho = ({ campo, children, className, dica }) => {
     const ativo = ordem.campo === campo;
     const Seta = !ativo ? ArrowUpDown : ordem.desc ? ArrowDown : ArrowUp;
     return (
-      <TableHead className={cn('text-[11px] uppercase tracking-wider font-semibold text-gray-400', className)}>
+      <TableHead key={campo} className={cn('text-[11px] uppercase tracking-wider font-semibold text-gray-400', className)}>
         <button type="button" onClick={() => clicarCabecalho(campo)}
           data-dica={dica || 'Ordenar por esta coluna (clique de novo para inverter; a terceira vez volta ao padrão: líder no topo).'}
           className={cn('inline-flex items-center gap-1 uppercase tracking-wider hover:text-white', ativo && 'text-white')}>
@@ -150,13 +152,13 @@ const EquipantesGridDisplay = ({
         <Table>
           <TableHeader className="bg-white/5 hover:bg-white/5">
             <TableRow className="border-white/10 hover:bg-transparent">
-              <Cabecalho campo="nome" className="w-[24%]">Nome</Cabecalho>
-              <Cabecalho campo="cpf" className="w-[14%] hidden sm:table-cell">CPF</Cabecalho>
-              <Cabecalho campo="igreja" className="w-[22%] hidden md:table-cell">Igreja</Cabecalho>
-              {mostrarAtuacao && <Cabecalho campo="atuacao" className="w-[18%]">Atuação</Cabecalho>}
-              {colunaCor && <Cabecalho campo="cor" className="w-[13%]">Cor</Cabecalho>}
-              <Cabecalho campo="fixo" className="w-[1%] whitespace-nowrap"
-                dica="Ordenar por quem é fixo 📌 nesta área (clique de novo para inverter).">📌</Cabecalho>
+              {cabecalho({ campo: 'nome', className: 'w-[24%]', children: 'Nome' })}
+              {cabecalho({ campo: 'cpf', className: 'w-[14%] hidden sm:table-cell', children: 'CPF' })}
+              {cabecalho({ campo: 'igreja', className: 'w-[22%] hidden md:table-cell', children: 'Igreja' })}
+              {mostrarAtuacao && cabecalho({ campo: 'atuacao', className: 'w-[18%]', children: 'Atuação' })}
+              {colunaCor && cabecalho({ campo: 'cor', className: 'w-[13%]', children: 'Cor' })}
+              {cabecalho({ campo: 'fixo', className: 'w-[1%] whitespace-nowrap', children: '📌',
+                dica: 'Ordenar por quem é fixo 📌 nesta área (clique de novo para inverter).' })}
               {onRealocar && <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-gray-400 w-[22%]">Ação</TableHead>}
             </TableRow>
           </TableHeader>

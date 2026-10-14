@@ -213,21 +213,15 @@ export const AREAS_COM_COR = [
 
 export const areaTemCor = (area) => AREAS_COM_COR.includes(area);
 
-// Areas que a tela de escalas mostra, uma tabela para cada.
-//
-// As de AREAS_SO_PREFERENCIA ficam de fora, de proposito: sao respostas do
-// formulario ("me ponha onde precisar", "prefiro cena teatral", "quero
-// tocar em cena"), nao lugares de trabalho. Ninguem e alocado nelas -- o
-// organizador ve a escolha na fila "A escalar" e decide o destino.
-// Areas que andam juntas e aparecem uma logo depois da outra na tela de
-// escalas, fora da ordem alfabetica (13/10/2026: Perseguidos complementa a
-// Selva). [ancora, a que vem logo abaixo]
 // Regra dos Guias (13/10/2026, migration 20261013h): todo Guia tambem fica
 // na Recepção Sítio (Fila / Confronto), e a cor anda junto nas duas areas.
 // Quem faz isso e o banco (gatilho regra_guia_recepcao); a tela so explica.
 export const AREA_GUIA = 'Guia';
 export const GUIA_TAMBEM_EM = 'Recepção Sítio';
 
+// Areas que andam juntas e aparecem uma logo depois da outra na tela de
+// escalas, fora da ordem alfabetica (13/10/2026: Perseguidos complementa a
+// Selva). [ancora, a que vem logo abaixo]
 export const AREAS_COMPLEMENTARES = [
   ['Selva', 'Perseguidos'],
 ];
@@ -243,6 +237,12 @@ export const ordenarComComplementares = (areas) => {
   return resultado;
 };
 
+// Areas que a tela de escalas mostra, uma tabela para cada.
+//
+// As de AREAS_SO_PREFERENCIA ficam de fora, de proposito: sao respostas do
+// formulario ("me ponha onde precisar", "prefiro cena teatral", "quero
+// tocar em cena"), nao lugares de trabalho. Ninguem e alocado nelas -- o
+// organizador ve a escolha na fila "A escalar" e decide o destino.
 export const WORK_AREAS = [
   ...AREAS_INSCRICAO.map(a => a.valor).filter(v => !AREAS_SO_PREFERENCIA.includes(v)),
   ...AREAS_ESPECIAIS.map(a => a.label),

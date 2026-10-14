@@ -19,20 +19,27 @@ export const normalizarBusca = (texto) => String(texto ?? '')
 // vem com letra faltando ou trocada ("MAURCIO PINHEIRO CARNEIRO"). Quando o
 // trecho exato nao aparece, cada palavra da busca precisa casar com alguma
 // palavra do campo: igual, comeco dela, ou com 1 letra de diferenca (2 em
-// palavras longas). "de/da/do/dos/das/e" sao ignoradas; palavras curtas so
-// casam pelo comeco.
+// palavras longas; duas letras trocadas de lugar contam como 1). "de/da/do/
+// dos/das/e" sao ignoradas; palavras curtas so casam pelo comeco.
+// So entra com 2+ palavras na busca, ou 1 palavra de 7+ letras: buscando uma
+// palavra curta ("silva") a lista ficaria cheia de parecidos ("Silvia").
 const LIGACOES = new Set(['de', 'da', 'do', 'dos', 'das', 'e']);
 const distancia = (a, b, max) => {
   if (Math.abs(a.length - b.length) > max) return max + 1;
+  let antes = null;
   let ant = Array.from({ length: b.length + 1 }, (_, j) => j);
   for (let i = 1; i <= a.length; i += 1) {
     const atual = [i];
     let menor = i;
     for (let j = 1; j <= b.length; j += 1) {
       atual[j] = Math.min(ant[j] + 1, atual[j - 1] + 1, ant[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (antes && i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        atual[j] = Math.min(atual[j], antes[j - 2] + 1);
+      }
       menor = Math.min(menor, atual[j]);
     }
     if (menor > max) return max + 1;
+    antes = ant;
     ant = atual;
   }
   return ant[b.length];
@@ -48,6 +55,7 @@ const casaPalavra = (termo, palavra) => {
 const casaAproximado = (t, valor) => {
   const busca = palavras(t);
   if (!busca.length || !busca.some((p) => p.length >= 4)) return false;
+  if (busca.length === 1 && busca[0].length < 7) return false;
   const doCampo = palavras(valor);
   const falham = busca.filter((p) => !doCampo.some((w) => casaPalavra(p, w)));
   // Nome completo colado (3+ palavras): tolera UMA palavra que nao bate, se

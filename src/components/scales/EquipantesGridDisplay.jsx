@@ -9,13 +9,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCPF, formatNomeExibicao } from '@/utils/formatters';
 import { User, Download, Loader2, Star, X, Plus, Pin, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { WORK_AREAS, CORES_GRUPO, AREAS_AGRUPADAS_POR_COR } from '@/constants/workAreas';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import SeloPastor from '@/components/common/SeloPastor';
 import SeloAutomatico from '@/components/common/SeloAutomatico';
+import SelectSobDemanda from '@/components/common/SelectSobDemanda';
 import { cn } from '@/lib/utils';
 
 const EquipantesGridDisplay = ({
@@ -240,11 +241,12 @@ const EquipantesGridDisplay = ({
                 </TableCell>
                 {mostrarAtuacao && (
                   <TableCell>
-                    <Select
+                    <SelectSobDemanda
                       value={eq.atuacao || ''}
                       onValueChange={(val) => onDefinirAtuacao(eq.escalaId, val)}
                       disabled={!!salvandoAtuacao[eq.escalaId]}
                     >
+                      {(aberto) => (<>
                       <SelectTrigger
                         className={cn(
                           "h-8 w-full sm:w-[170px] bg-black/40 border-white/20 text-xs",
@@ -256,13 +258,14 @@ const EquipantesGridDisplay = ({
                           : <SelectValue placeholder="Definir..." />}
                       </SelectTrigger>
                       <SelectContent>
-                        {atuacoes.map(a => (
+                        {(aberto ? atuacoes : atuacoes.filter(a => a.atuacao === eq.atuacao)).map(a => (
                           <SelectItem key={a.atuacao} value={a.atuacao}>
                             {a.ehLider ? `★ ${a.atuacao}` : a.atuacao}
                           </SelectItem>
                         ))}
                       </SelectContent>
-                    </Select>
+                      </>)}
+                    </SelectSobDemanda>
                   </TableCell>
                 )}
                 {colunaCor && atuacaoSemCor(eq.atuacao) && (
@@ -272,11 +275,12 @@ const EquipantesGridDisplay = ({
                 )}
                 {colunaCor && !atuacaoSemCor(eq.atuacao) && (
                   <TableCell>
-                    <Select
+                    <SelectSobDemanda
                       value={eq.cor || 'sem'}
                       onValueChange={(val) => onDefinirCor(eq.escalaId, val === 'sem' ? '' : val)}
                       disabled={!!salvandoCor[eq.escalaId]}
                     >
+                      {(aberto) => (<>
                       <SelectTrigger
                         data-dica={eq.cor ? undefined : ehLider(eq.atuacao)
                           ? 'Líder sem cor = líder da área inteira. Escolha uma cor só se ele for líder apenas daquela cor.'
@@ -293,8 +297,8 @@ const EquipantesGridDisplay = ({
                           )}
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="sem">Sem cor</SelectItem>
-                        {CORES_GRUPO.map(cor => (
+                        {aberto && <SelectItem value="sem">Sem cor</SelectItem>}
+                        {aberto && CORES_GRUPO.map(cor => (
                           <SelectItem key={cor} value={cor}>
                             <span className="flex items-center gap-2">
                               <Bolinha cor={cor} />
@@ -303,7 +307,8 @@ const EquipantesGridDisplay = ({
                           </SelectItem>
                         ))}
                       </SelectContent>
-                    </Select>
+                      </>)}
+                    </SelectSobDemanda>
                   </TableCell>
                 )}
                 <TableCell className="text-center">
@@ -327,19 +332,24 @@ const EquipantesGridDisplay = ({
                 {onRealocar && (
                   <TableCell>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <Select
+                      <SelectSobDemanda
                         value={realocarAreaChoice[eq.escalaId] || ''}
                         onValueChange={(val) => onRealocarAreaChoiceChange(eq.escalaId, val)}
                       >
+                        {(aberto) => (<>
                         <SelectTrigger className="h-8 w-full sm:w-[150px] bg-black/40 border-white/20 text-white text-xs">
                           <SelectValue placeholder="Mover para..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {WORK_AREAS.filter(area => area !== areaName).map(area => (
+                          {(aberto
+                            ? WORK_AREAS.filter(area => area !== areaName)
+                            : [realocarAreaChoice[eq.escalaId]].filter(Boolean)
+                          ).map(area => (
                             <SelectItem key={area} value={area}>{area}</SelectItem>
                           ))}
                         </SelectContent>
-                      </Select>
+                        </>)}
+                      </SelectSobDemanda>
                       <Button
                         size="sm"
                         onClick={() => onRealocar(eq.escalaId, eq.nome, areaName)}

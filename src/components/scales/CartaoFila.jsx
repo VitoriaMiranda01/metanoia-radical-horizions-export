@@ -1,8 +1,9 @@
 import React from 'react';
 import { X, Pin, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from '@/components/ui/select';
+import { SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from '@/components/ui/select';
 import SeloPastor from '@/components/common/SeloPastor';
+import SelectSobDemanda from '@/components/common/SelectSobDemanda';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { WORK_AREAS } from '@/constants/workAreas';
 import { cn } from '@/lib/utils';
@@ -95,7 +96,8 @@ const CartaoFila = ({
           </div>
         )}
         <div className="flex items-center gap-2">
-          <Select value="" onValueChange={(val) => acoes.alternar(eq.id, val)}>
+          <SelectSobDemanda value="" onValueChange={(val) => acoes.alternar(eq.id, val)}>
+            {(aberto) => (<>
             <SelectTrigger className="h-9 w-[200px] bg-black/40 border-white/20 text-white text-xs">
               <span className="truncate">
                 {escolhidas.length === 0
@@ -105,8 +107,9 @@ const CartaoFila = ({
             </SelectTrigger>
             <SelectContent>
               {/* As 3 escolhas da pessoa vem primeiro, num grupo separado; todas
-                  as areas continuam logo abaixo. */}
-              {prefs.length > 0 && (
+                  as areas continuam logo abaixo. Fechado, nada (ver
+                  SelectSobDemanda). */}
+              {aberto && prefs.length > 0 && (
                 <SelectGroup>
                   <SelectLabel className="text-amber-300/80 text-[11px]">
                     O que o equipante pediu
@@ -116,14 +119,17 @@ const CartaoFila = ({
                   ))}
                 </SelectGroup>
               )}
+              {aberto && (
               <SelectGroup>
                 <SelectLabel className="text-gray-400 text-[11px]">Todas as áreas</SelectLabel>
                 {WORK_AREAS.filter(area => !prefs.includes(area)).map(area => (
                   <SelectItem key={area} value={area}>{area}</SelectItem>
                 ))}
               </SelectGroup>
+              )}
             </SelectContent>
-          </Select>
+            </>)}
+          </SelectSobDemanda>
           {podeGerir && (
             <Button
               type="button" size="sm" variant="ghost"

@@ -33,6 +33,7 @@ import ChamadaQuadro from '@/components/scales/ChamadaQuadro';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import SeloPastor from '@/components/common/SeloPastor';
+import QuandoVisivel from '@/components/common/QuandoVisivel';
 import CampoBusca from '@/components/common/CampoBusca';
 import { tituloPastor } from '@/utils/pastor';
 import { nomeDaIgreja } from '@/constants/igrejas';
@@ -1634,7 +1635,9 @@ const OrganizerScalesPage = () => {
         : !areaEquipantes.some(eq => atuacoesDeLider.includes(eq.atuacao))
     );
 
-    return <div key={area} className="bg-black/40 border border-white/10 rounded-lg overflow-hidden shadow-md backdrop-blur-sm">
+    // Sem backdrop-blur (14/10/2026): ~35 caixas com desfoque pesavam demais
+    // na memoria do iPhone.
+    return <div key={area} className="bg-black/60 border border-white/10 rounded-lg overflow-hidden shadow-md">
           <div className="sticky top-0 z-10 bg-gray-900 border-b border-white/10">
             <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => faltaCor(area, eq)).length : 0} fixos={fixosHeader} onLimpar={podeGerir && !escala?.lancada_em ? () => setLimparAreaAberta(area) : undefined} onDistribuirCores={podeGerir && AREAS_DISTRIBUIR_CORES.includes(area) ? () => handleDistribuirCores(area) : undefined} distribuindoCores={distribuindoCores === area} />
           </div>
@@ -1643,7 +1646,7 @@ const OrganizerScalesPage = () => {
               muda de lugar na tabela, e o navegador rolava a tela atras dela
               (no Guia, ate o topo). */}
           <div className={cn("p-4 overflow-y-auto [overflow-anchor:none]", noModulo ? "max-h-[65vh]" : "max-h-[400px]")}>
-            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={mostrados} areaName={area} onExport={acoesTabela.exportar} onRealocar={podeGerir ? acoesTabela.realocar : undefined} onAdicionarArea={podeGerir ? acoesTabela.adicionarArea : undefined} onRemover={podeGerir ? acoesTabela.remover : undefined} areasPorEquipante={areasPorEquipante} nomesAreasPorEquipante={nomesAreasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={acoesTabela.escolherArea} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={acoesTabela.definirAtuacao} salvandoAtuacao={mostrados.some(e => salvandoAtuacao[e.escalaId]) ? salvandoAtuacao : VAZIO_OBJ} mostrarCor={temCor} onDefinirCor={acoesTabela.definirCor} salvandoCor={mostrados.some(e => salvandoCor[e.escalaId]) ? salvandoCor : VAZIO_OBJ} fixasPorEquipante={fixasPorEquipante} onFixar={podeGerir ? acoesTabela.fixar : undefined} />}
+            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <QuandoVisivel altura={Math.min(400, 60 + mostrados.length * 52)}><EquipantesGridDisplay equipantes={mostrados} areaName={area} onExport={acoesTabela.exportar} onRealocar={podeGerir ? acoesTabela.realocar : undefined} onAdicionarArea={podeGerir ? acoesTabela.adicionarArea : undefined} onRemover={podeGerir ? acoesTabela.remover : undefined} areasPorEquipante={areasPorEquipante} nomesAreasPorEquipante={nomesAreasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={acoesTabela.escolherArea} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={acoesTabela.definirAtuacao} salvandoAtuacao={mostrados.some(e => salvandoAtuacao[e.escalaId]) ? salvandoAtuacao : VAZIO_OBJ} mostrarCor={temCor} onDefinirCor={acoesTabela.definirCor} salvandoCor={mostrados.some(e => salvandoCor[e.escalaId]) ? salvandoCor : VAZIO_OBJ} fixasPorEquipante={fixasPorEquipante} onFixar={podeGerir ? acoesTabela.fixar : undefined} /></QuandoVisivel>}
           </div>
         </div>;
   };

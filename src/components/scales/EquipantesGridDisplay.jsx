@@ -104,7 +104,8 @@ const EquipantesGridDisplay = ({
     atuacao: (eq) => !texto(eq.atuacao), cor: (eq) => !eq.cor,
   };
   // Lider fica SEMPRE no topo, qualquer que seja a ordenacao (13/10/2026,
-  // Patrick). Nas areas por cor, os lideres seguem a ordem das cores.
+  // Patrick). Sem coluna escolhida, nas areas por cor os lideres seguem a
+  // ordem das cores; com coluna, ela vale entre os lideres tambem.
   // Pela coluna escolhida (sem coluna: pelo nome).
   const pelaColuna = (a, b) => {
     if (!ordem.campo) return porNome(a, b);
@@ -127,7 +128,8 @@ const EquipantesGridDisplay = ({
     : !ordem.campo ? equipantes : [...equipantes].sort((a, b) => {
     const lider = Number(ehLider(b.atuacao)) - Number(ehLider(a.atuacao));
     if (lider) return lider;
-    if (ehLider(a.atuacao)) return (posCor(a) - posCor(b)) || porNome(a, b);
+    // Entre os lideres tambem vale a coluna escolhida (14/10/2026): eles
+    // continuam no topo, mas se ordenam entre si (nome, igreja, cor...).
     return pelaColuna(a, b);
   });
   // Linha que abre um grupo de cor (para a linha divisoria).

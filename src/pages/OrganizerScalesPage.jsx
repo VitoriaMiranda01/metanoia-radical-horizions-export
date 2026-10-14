@@ -92,6 +92,7 @@ const AREAS_COMUNS = AREAS_NO_CORPO.filter(area => area !== 'Não será escalado
 // Lista vazia com identidade fixa (para o React.memo da tabela nao achar que
 // "[]" novo e mudanca).
 const VAZIO = [];
+const VAZIO_OBJ = {};
 
 const OrganizerScalesPage = () => {
   const [loading, setLoading] = useState(false);
@@ -387,16 +388,20 @@ const OrganizerScalesPage = () => {
   // e algumas em tres.
   // (useMemo: mesma identidade enquanto os dados nao mudam -- a tabela de cada
   // area so se redesenha quando algo dela muda; ver "Desempenho" abaixo.)
+  // Desempenho (14/10/2026): estes mapas so mudam quando muda QUEM esta ONDE.
+  // Trocar cor ou atuacao nao muda a assinatura, entao as tabelas das outras
+  // areas nao se redesenham.
+  const assinaturaAreas = allocations.map(a => `${a.id}|${a.allocatedArea}`).join(',');
   const areasPorEquipante = useMemo(() => allocations.reduce((acc, a) => {
     acc[a.id] = (acc[a.id] || 0) + 1;
     return acc;
-  }, {}), [allocations]);
+  }, {}), [assinaturaAreas]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Nomes das areas de cada pessoa (para a dica do "+1").
   const nomesAreasPorEquipante = useMemo(() => allocations.reduce((acc, a) => {
     (acc[a.id] ||= []).push(a.allocatedArea);
     return acc;
-  }, {}), [allocations]);
+  }, {}), [assinaturaAreas]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // { equipanteId: [areas fixas] } e { area: [fixos] }.
   const { fixasPorEquipante, fixosPorArea } = useMemo(() => {
@@ -1428,6 +1433,10 @@ const OrganizerScalesPage = () => {
   // ordem alfabetica.
   // Agrupado e ordenado UMA vez por mudanca dos dados (antes: a cada letra
   // digitada numa busca, 40 filtros + ordenacoes de ~900 linhas).
+  // Desempenho (14/10/2026): a lista de uma area que nao mudou continua sendo
+  // o MESMO array (ver gruposAnterioresRef), e a tabela dela (React.memo) nem
+  // se redesenha quando se mexe em outra area.
+  const gruposAnterioresRef = useRef({});
   const equipantesPorArea = useMemo(() => {
     const ordemCor = (eq) => { const i = CORES_GRUPO.indexOf(eq.cor); return i < 0 ? CORES_GRUPO.length : i; };
     const grupos = {};
@@ -1439,7 +1448,12 @@ const OrganizerScalesPage = () => {
         (Number(ehLider(b)) - Number(ehLider(a))) ||
         (ehLider(a) ? ordemCor(a) - ordemCor(b) : 0) ||
         String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' }));
+      const antes = gruposAnterioresRef.current[areaName];
+      if (antes && antes.length === grupos[areaName].length && antes.every((x, i) => x === grupos[areaName][i])) {
+        grupos[areaName] = antes;
+      }
     });
+    gruposAnterioresRef.current = grupos;
     return grupos;
   }, [allocations, atuacoesPorArea]);
   const getEquipantesByArea = areaName => equipantesPorArea[areaName] || VAZIO;
@@ -1568,8 +1582,11 @@ const OrganizerScalesPage = () => {
             <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => faltaCor(area, eq)).length : 0} fixos={fixosHeader} onLimpar={podeGerir && !escala?.lancada_em ? () => setLimparAreaAberta(area) : undefined} />
           </div>
 
-          <div className={cn("p-4 overflow-y-auto", noModulo ? "max-h-[65vh]" : "max-h-[400px]")}>
-            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={mostrados} areaName={area} onExport={acoesTabela.exportar} onRealocar={podeGerir ? acoesTabela.realocar : undefined} onAdicionarArea={podeGerir ? acoesTabela.adicionarArea : undefined} onRemover={podeGerir ? acoesTabela.remover : undefined} areasPorEquipante={areasPorEquipante} nomesAreasPorEquipante={nomesAreasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={acoesTabela.escolherArea} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={acoesTabela.definirAtuacao} salvandoAtuacao={salvandoAtuacao} mostrarCor={temCor} onDefinirCor={acoesTabela.definirCor} salvandoCor={salvandoCor} fixasPorEquipante={fixasPorEquipante} onFixar={podeGerir ? acoesTabela.fixar : undefined} />}
+          {/* [overflow-anchor:none] (14/10/2026): ao trocar cor/atuacao a linha
+              muda de lugar na tabela, e o navegador rolava a tela atras dela
+              (no Guia, ate o topo). */}
+          <div className={cn("p-4 overflow-y-auto [overflow-anchor:none]", noModulo ? "max-h-[65vh]" : "max-h-[400px]")}>
+            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={mostrados} areaName={area} onExport={acoesTabela.exportar} onRealocar={podeGerir ? acoesTabela.realocar : undefined} onAdicionarArea={podeGerir ? acoesTabela.adicionarArea : undefined} onRemover={podeGerir ? acoesTabela.remover : undefined} areasPorEquipante={areasPorEquipante} nomesAreasPorEquipante={nomesAreasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={acoesTabela.escolherArea} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={acoesTabela.definirAtuacao} salvandoAtuacao={mostrados.some(e => salvandoAtuacao[e.escalaId]) ? salvandoAtuacao : VAZIO_OBJ} mostrarCor={temCor} onDefinirCor={acoesTabela.definirCor} salvandoCor={mostrados.some(e => salvandoCor[e.escalaId]) ? salvandoCor : VAZIO_OBJ} fixasPorEquipante={fixasPorEquipante} onFixar={podeGerir ? acoesTabela.fixar : undefined} />}
           </div>
         </div>;
   };

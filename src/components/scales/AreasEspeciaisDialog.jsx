@@ -68,13 +68,14 @@ const AreasEspeciaisDialog = ({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50"
-      onClick={onClose}
     >
+      {/* Clicar FORA da janela nao fecha mais (14/10/2026, Patrick): com muitos
+          nomes e tabelas, um clique perdido fechava tudo. Fecha pelo X, pelo
+          "Fechar" ou pelo Esc. */}
       {/* Ocupa quase a tela toda (13/10/2026, Patrick achou pequena): as
           tabelas das areas tem 6 colunas e espremiam os nomes. */}
       <div
         className="bg-black border border-white/10 rounded-lg shadow-2xl w-full max-w-[min(96vw,1700px)] h-[96vh] sm:h-[94vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start gap-4 p-5 border-b border-white/10 bg-zinc-900">
           <div>

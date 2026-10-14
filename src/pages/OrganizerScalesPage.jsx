@@ -23,6 +23,7 @@ import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
 import AlocarEmLoteDialog from '@/components/scales/AlocarEmLoteDialog';
 import FixarAreaDialog from '@/components/scales/FixarAreaDialog';
 import EquipantesGridDisplay from '@/components/scales/EquipantesGridDisplay';
+import CartaoFila from '@/components/scales/CartaoFila';
 import AreasExtraDialog from '@/components/scales/AreasExtraDialog';
 import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
 import PreEscalaDialog from '@/components/scales/PreEscalaDialog';
@@ -1510,6 +1511,20 @@ const OrganizerScalesPage = () => {
   // quando os dados DELA mudam. Para isso as funcoes passadas para ela tem de
   // ser sempre as mesmas -- estas chamam a versao mais nova de cada handler
   // pelo ref (nada fica com estado velho).
+  // Acoes dos cartoes da fila (CartaoFila, React.memo): objeto fixo que chama
+  // sempre a versao atual das funcoes -- mesmo padrao de acoesTabela abaixo.
+  const acoesFilaRef = useRef({});
+  acoesFilaRef.current = {
+    alternar: alternarAreaDaFila,
+    alocar: handleManualAllocate,
+    alternarFixar: (id) => setFixarNaFila(prev => ({ ...prev, [id]: !prev[id] })),
+  };
+  const acoesFila = useMemo(() => ({
+    alternar: (...a) => acoesFilaRef.current.alternar(...a),
+    alocar: (...a) => acoesFilaRef.current.alocar(...a),
+    alternarFixar: (...a) => acoesFilaRef.current.alternarFixar(...a),
+  }), []);
+
   const acoesRef = useRef({});
   const acoesTabela = useMemo(() => ({
     exportar: (area) => acoesRef.current.exportar(area),
@@ -1978,134 +1993,21 @@ const OrganizerScalesPage = () => {
                   900 blocos com 2 menus cada trava a tela sem necessidade.
                   Quem procura alguem especifico usa a busca. */}
               {filaFiltrada.slice(0, LIMITE_FILA_VISIVEL).map((eq) => (
-                <div key={eq.id} className="bg-red-900/20 border border-red-700/30 rounded-md p-3 flex flex-col sm:flex-row sm:items-center gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-medium truncate">
-                      {eq.nome} <SeloPastor pessoa={eq} className="align-[-2px] mx-0.5" /> <span className="text-xs text-red-300/70">({eq.sexo || 'sexo não informado'})</span>
-                      {semVagaPorPessoa[eq.id] && (
-                        <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded border border-amber-500/50 bg-amber-500/15 text-amber-200"
-                          title={'Todas as áreas que pediu estão sem vaga:\n' + semVagaPorPessoa[eq.id].map(m => `• ${m.area}: ${m.motivo}`).join('\n') + '\n\nColoque à mão (na alocação manual o limite é só aviso).'}>
-                          ⚠ Sugestões cheias
-                        </span>
-                      )}
-                      {ehManualSemOpcao(eq) && (
-                        <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded border border-white/15 bg-white/5 text-gray-400"
-                          title="Inscrição manual que ainda não completou o cadastro: sem as opções de área (e às vezes sem sexo). Vai à mão.">
-                          Inscrição manual
-                        </span>
-                      )}
-                      {(fixasPorEquipante[eq.id] || []).length > 0 && (
-                        <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-200"
-                          title="Fixo: o Alocar automático coloca primeiro nesta(s) área(s).">
-                          📌 {(fixasPorEquipante[eq.id] || []).join(', ')}
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-[11px] text-gray-500 truncate mb-1.5" title={nomeDaIgreja(eq) || ''}>{nomeDaIgreja(eq) || '—'}</p>
-
-                    {/* As 3 areas que a PESSOA marcou na inscricao. E
-                        sugestao: a escolha final e sua -- por isso o menu
-                        ao lado continua com as 40 areas. */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] uppercase tracking-wider text-gray-500 shrink-0">
-                        Pediu (sugestão)
-                      </span>
-                      {[eq.area_trabalho_opcao1, eq.area_trabalho_opcao2, eq.area_trabalho_opcao3].map((area, i) => (
-                        <span
-                          key={i}
-                          className={cn(
-                            "text-[11px] px-1.5 py-0.5 rounded border",
-                            area
-                              ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
-                              : "border-white/10 bg-white/5 text-gray-600"
-                          )}
-                        >
-                          <span className="opacity-60 mr-1">{i + 1}ª</span>{area || '—'}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-stretch sm:items-end gap-2 shrink-0">
-                    {/* As areas ja escolhidas, como selos removiveis. */}
-                    {(areasDaFila[eq.id] || []).length > 0 && (
-                      <div className="flex flex-wrap gap-1 justify-end">
-                        {(areasDaFila[eq.id] || []).map(area => (
-                          <button
-                            key={area}
-                            onClick={() => alternarAreaDaFila(eq.id, area)}
-                            title={`Tirar ${area} da escolha`}
-                            className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded border border-blue-500/40 bg-blue-500/15 text-blue-200 hover:bg-blue-500/25"
-                          >
-                            {area} <X className="h-3 w-3" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                    <Select
-                      value=""
-                      onValueChange={(val) => alternarAreaDaFila(eq.id, val)}
-                    >
-                      <SelectTrigger className="h-9 w-[200px] bg-black/40 border-white/20 text-white text-xs">
-                        <span className="truncate">
-                          {(areasDaFila[eq.id] || []).length === 0
-                            ? 'Escolher área'
-                            : `Adicionar outra (${(areasDaFila[eq.id] || []).length}/${MAX_AREAS_DE_UMA_VEZ})`}
-                        </span>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {/* As 3 escolhas da pessoa vem primeiro, num grupo
-                            separado -- e o que o organizador vai usar na
-                            maioria das vezes, e evita procurar o nome no
-                            meio das 40 areas. Todas as areas continuam
-                            logo abaixo: a decisao e dele. */}
-                        {preferenciasValidas(eq).length > 0 && (
-                          <SelectGroup>
-                            <SelectLabel className="text-amber-300/80 text-[11px]">
-                              O que o equipante pediu
-                            </SelectLabel>
-                            {preferenciasValidas(eq).map(area => (
-                              <SelectItem key={`pref-${area}`} value={area}>★ {area}</SelectItem>
-                            ))}
-                          </SelectGroup>
-                        )}
-                        <SelectGroup>
-                          <SelectLabel className="text-gray-400 text-[11px]">Todas as áreas</SelectLabel>
-                          {WORK_AREAS.filter(area => !preferenciasValidas(eq).includes(area)).map(area => (
-                            <SelectItem key={area} value={area}>{area}</SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    {podeGerir && (
-                      <Button
-                        type="button" size="sm" variant="ghost"
-                        onClick={() => setFixarNaFila(prev => ({ ...prev, [eq.id]: !prev[eq.id] }))}
-                        data-dica={fixarNaFila[eq.id]
-                          ? 'Vai alocar já como fixo 📌 na(s) área(s) escolhida(s). Clique para desligar.'
-                          : 'Alocar já como fixo 📌 na(s) área(s) escolhida(s): entra primeiro no Alocar automático, toda edição.'}
-                        className={cn('h-9 w-9 p-0 shrink-0 border',
-                          fixarNaFila[eq.id]
-                            ? 'border-amber-500/60 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 hover:text-amber-200'
-                            : 'border-white/15 text-gray-400 hover:text-amber-300 hover:bg-amber-500/10')}
-                      >
-                        <Pin className="h-4 w-4" fill={fixarNaFila[eq.id] ? 'currentColor' : 'none'} />
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      onClick={() => handleManualAllocate(eq.id, eq.nome)}
-                      data-dica="Colocar esta pessoa na(s) área(s) escolhida(s) ao lado."
-                      disabled={(areasDaFila[eq.id] || []).length === 0 || manualAllocating[eq.id]}
-                      className="bg-blue-600 hover:bg-blue-700 text-white h-9"
-                    >
-                      {manualAllocating[eq.id]
-                        ? <Loader2 className="h-4 w-4 animate-spin" />
-                        : `${fixarNaFila[eq.id] ? '📌 ' : ''}Alocar${(areasDaFila[eq.id] || []).length > 1 ? ` (${areasDaFila[eq.id].length})` : ''}`}
-                    </Button>
-                    </div>
-                  </div>
-                </div>
+                <CartaoFila
+                  key={eq.id}
+                  eq={eq}
+                  semVagaDica={semVagaPorPessoa[eq.id]
+                    ? 'Todas as áreas que pediu estão sem vaga:\n' + semVagaPorPessoa[eq.id].map(m => `• ${m.area}: ${m.motivo}`).join('\n') + '\n\nColoque à mão (na alocação manual o limite é só aviso).'
+                    : ''}
+                  manual={ehManualSemOpcao(eq)}
+                  fixas={fixasPorEquipante[eq.id] || VAZIO}
+                  escolhidas={areasDaFila[eq.id] || VAZIO}
+                  fixar={!!fixarNaFila[eq.id]}
+                  alocando={!!manualAllocating[eq.id]}
+                  podeGerir={podeGerir}
+                  maxAreas={MAX_AREAS_DE_UMA_VEZ}
+                  acoes={acoesFila}
+                />
               ))}
               {filaFiltrada.length > LIMITE_FILA_VISIVEL && (
                 <p className="text-sm text-red-200/60 text-center py-2">

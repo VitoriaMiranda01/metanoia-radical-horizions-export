@@ -74,7 +74,7 @@ export const detectAllocationChanges = (currentAllocations, previousAllocations)
   const changes = [];
   currentAllocations.forEach(current => {
     const prev = prevMap.get(current.escalaId ?? current.id);
-    if (!prev || prev.allocatedArea !== current.allocatedArea) changes.push(current);
+    if (!prev || prev.allocatedArea !== current.allocatedArea || !!prev.automatica !== !!current.automatica) changes.push(current);
   });
   return changes;
 };
@@ -103,10 +103,15 @@ export const saveScales = async (allocations) => {
 };
 
 export const fetchAllAllocations = async () => {
-  const linhas = await lerTudoPaginado(
-    () => supabase.from('escalas').select(`id, equipante_id, area_alocada, atuacao, cor, separado_de, incluido_por, equipantes!inner (${COLUNAS_EQUIPANTE})`),
-    'alocações'
-  );
+  const [linhas, automaticas] = await Promise.all([
+    lerTudoPaginado(
+      () => supabase.from('escalas').select(`id, equipante_id, area_alocada, atuacao, cor, separado_de, incluido_por, equipantes!inner (${COLUNAS_EQUIPANTE})`),
+      'alocações'
+    ),
+    // Quem veio do "Alocar automático" e ainda esta onde ele colocou (14/10/2026,
+    // migration 20261014e). So organizador recebe; falhou = sem a marca, sem erro.
+    supabase.rpc('escalas_automaticas').then(({ data }) => new Set(Array.isArray(data) ? data : []), () => new Set())
+  ]);
 
   // Uma linha por PARTICIPACAO, nao por pessoa: quem trabalha em duas areas
   // vem duas vezes, com o mesmo `id` de equipante e `escalaId` diferentes.
@@ -125,6 +130,7 @@ export const fetchAllAllocations = async () => {
     separadoDe: item.separado_de || null,
     // Linha criada pela regra dos Guias (Recepção Sítio; migration 20261013h).
     regraGuia: item.incluido_por === 'Regra: Guia',
+    automatica: automaticas.has(item.id),
     statusAllocation: 'Alocado'
   }));
 };

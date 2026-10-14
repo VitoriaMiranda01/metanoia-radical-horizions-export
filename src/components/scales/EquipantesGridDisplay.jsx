@@ -15,6 +15,7 @@ import { User, Download, Loader2, Star, X, Plus, Pin, ArrowUp, ArrowDown, ArrowU
 import { WORK_AREAS, CORES_GRUPO, AREAS_AGRUPADAS_POR_COR } from '@/constants/workAreas';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import SeloPastor from '@/components/common/SeloPastor';
+import SeloAutomatico from '@/components/common/SeloAutomatico';
 import { cn } from '@/lib/utils';
 
 const EquipantesGridDisplay = ({
@@ -195,6 +196,7 @@ const EquipantesGridDisplay = ({
                     <span className="flex items-center gap-1.5">
                       <NomeComBandeira nome={formatNomeExibicao(eq.nome)} nacionalidade={eq.nacionalidade} />
                       <SeloPastor pessoa={eq} />
+                      {eq.automatica && <SeloAutomatico />}
                       {ehLider(eq.atuacao) && (
                         <Star
                           className="h-3 w-3 text-amber-400 shrink-0"

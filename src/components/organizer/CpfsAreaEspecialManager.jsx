@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, X, Loader2, Search, AlertTriangle, UserPlus, Check } from 'lucide-react';
+import { Plus, X, Loader2, Search, AlertTriangle, UserPlus, Check, ArrowRightLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -65,7 +65,12 @@ const CpfsAreaEspecialManager = ({
   onEscalarTambem,
   // Dica do "Alocar" (14/10/2026): nas areas da Recepção Igreja nao ha
   // exclusividade, entao ninguem sai de lugar nenhum.
-  dicaAlocar
+  dicaAlocar,
+  // Transferir (14/10/2026): passa a pessoa para OUTRA area especial de uma vez
+  // (pre-cadastro e, se ja esta escalada, a escala tambem).
+  // areasDestino -> [{ key, label }]; onTransferir(cpf, destino) -> Promise.
+  areasDestino = [],
+  onTransferir
 }) => {
   const [busca, setBusca] = useState('');
   const [aberto, setAberto] = useState(false);
@@ -74,6 +79,7 @@ const CpfsAreaEspecialManager = ({
   const [removendo, setRemovendo] = useState(null);
   const [alocando, setAlocando] = useState(null);
   const [acrescentando, setAcrescentando] = useState(null);
+  const [transferindo, setTransferindo] = useState(null);
   const containerRef = useRef(null);
   const { toast } = useToast();
 
@@ -238,6 +244,12 @@ const CpfsAreaEspecialManager = ({
     try { await onEscalarTambem(cpf, area); } finally { setAcrescentando(null); }
   };
 
+  const transferir = async (cpf, destino) => {
+    if (!onTransferir) return;
+    setTransferindo(cpf);
+    try { await onTransferir(cpf, destino); } finally { setTransferindo(null); }
+  };
+
   const alocar = async (cpf) => {
     if (!onAlocar) return;
     setAlocando(cpf);
@@ -316,6 +328,25 @@ const CpfsAreaEspecialManager = ({
                   <span className="text-[11px] text-amber-300 px-1" data-dica="A inscrição ainda não foi aprovada. Depois de aprovada, o botão Alocar aparece aqui.">
                     aguardando aprovação
                   </span>
+                )}
+                {onTransferir && areasDestino.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button type="button" disabled={!!transferindo || isSaving}
+                        data-dica={`Passar esta pessoa de ${areaLabel} para outra área especial, de uma vez (sai daqui e entra lá).`}
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-purple-600/25 text-purple-200 hover:bg-purple-600/45 disabled:opacity-50">
+                        {transferindo === cpf ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowRightLeft className="w-3 h-3" />}
+                        Transferir
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="bg-neutral-900 border-white/10 text-white max-h-72 overflow-y-auto">
+                      <DropdownMenuLabel className="text-xs text-gray-400 font-normal">Passar de {areaLabel} para:</DropdownMenuLabel>
+                      {areasDestino.filter((d) => d.label !== areaLabel).map((d) => (
+                        <DropdownMenuItem key={d.key} onSelect={() => transferir(cpf, d)}
+                          className="cursor-pointer focus:bg-white/10 focus:text-white">{d.label}</DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
                 <button
                   type="button"

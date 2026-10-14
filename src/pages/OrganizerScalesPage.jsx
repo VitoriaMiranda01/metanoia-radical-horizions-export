@@ -1200,6 +1200,38 @@ const OrganizerScalesPage = () => {
     }
   };
 
+  // Transferencia entre areas especiais (14/10/2026): a pessoa sai do
+  // pre-cadastro de uma e entra no da outra, e, se ja estava escalada, a escala
+  // acompanha (realocar_alocacao: mesma regra de vaga e de uma especial por
+  // pessoa). Ordem pensada para nunca perder ninguem: primeiro a escala (se
+  // falhar, nada mudou), depois entra na lista nova, por ultimo sai da antiga.
+  const handleTransferirPorCpf = async (de, cpf, para) => {
+    const nome = formatNomeExibicao(
+      (equipantesParaSelecao || []).find(e => soDigitosCpf(e.cpf) === cpf)?.nome || cpf);
+    const escalado = allocations.find(a => a.allocatedArea === de.label && soDigitosCpf(a.cpf) === cpf);
+    try {
+      if (escalado) {
+        const r = await comAvisoDeLimite((forcar) => realocarAlocacao(escalado.escalaId, para.label, forcar), para.label, nome);
+        if (!r.success) {
+          if (!r.cancelado) toast({ title: 'Não foi possível transferir', description: `${nome}: ${r.error}`, variant: 'destructive' });
+          return;
+        }
+      }
+      const listaDestino = cpfsAreaEspecial[para.key] || [];
+      if (!listaDestino.includes(cpf)) await handleSaveCpfsAreaEspecial(para.key, [...listaDestino, cpf]);
+      await handleSaveCpfsAreaEspecial(de.key, (cpfsAreaEspecial[de.key] || []).filter(c => c !== cpf));
+      toast({
+        title: 'Transferido',
+        description: `${nome}: ${de.label} → ${para.label}${escalado ? ' (a escala também mudou)' : ''}.`,
+        className: 'bg-green-600 text-white'
+      });
+      if (escalado) await fetchBackgroundData(false);
+    } catch (error) {
+      toast({ title: 'Erro ao transferir', description: `${nome}: ${error.message || 'tente de novo.'}`, variant: 'destructive' });
+      fetchBackgroundData(false);
+    }
+  };
+
   const handleSaveCpfsAreaEspecial = async (areaKey, novaLista) => {
     await updateCpfsAreaEspecial(areaKey, novaLista);
     setCpfsAreaEspecial(prev => ({ ...prev, [areaKey]: novaLista }));
@@ -2131,6 +2163,8 @@ const OrganizerScalesPage = () => {
                       onSave={(novaLista) => handleSaveCpfsAreaEspecial(key, novaLista)}
                       situacaoDoCpf={situacaoDoCpfNaArea(label)}
                       onAlocar={(cpf) => handleAlocarUmPorCpf(key, label, cpf)}
+                      areasDestino={AREAS_ESPECIAIS}
+                      onTransferir={podeGerir ? (cpf, para) => handleTransferirPorCpf({ key, label }, cpf, para) : undefined}
                       areasComunsDoCpf={areasComunsDoCpf}
                       areasComunsDisponiveis={AREAS_COMUNS}
                       onEscalarTambem={podeGerir ? handleEscalarTambemPorCpf : undefined}

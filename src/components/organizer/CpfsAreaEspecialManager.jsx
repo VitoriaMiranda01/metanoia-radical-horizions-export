@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { formatCPF } from '@/utils/formatters';
 import { validateCPF } from '@/utils/validation';
 import { normalizarBusca } from '@/utils/busca';
+import { cn } from '@/lib/utils';
 import { AREAS_ESPECIAIS, AREA_GUIA, GUIA_TAMBEM_EM } from '@/constants/workAreas';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -274,29 +275,8 @@ const CpfsAreaEspecialManager = ({
     return na.localeCompare(nb, 'pt-BR', { sensitivity: 'base' });
   }), [cpfs, equipantePorCpf]);
 
-  const acrescentar = async (cpf, area) => {
-    if (!onEscalarTambem) return;
-    setAcrescentando(cpf);
-    try { await onEscalarTambem(cpf, area); } finally { setAcrescentando(null); }
-  };
-
-  const transferir = async (cpf, destino) => {
-    if (!onTransferir) return;
-    setTransferindo(cpf);
-    try { await onTransferir(cpf, destino); } finally { setTransferindo(null); }
-  };
-
-  const alocar = async (cpf) => {
-    if (!onAlocar) return;
-    setAlocando(cpf);
-    try { await onAlocar(cpf); } finally { setAlocando(null); }
-  };
-
-  return (
-    <div className="space-y-3" ref={containerRef}>
-      {cpfs.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {cpfsOrdenados.map((cpf) => {
+  // Um nome do pre-cadastro (chip).
+  const renderChip = (cpf) => {
             const pessoa = equipantePorCpf.get(cpf);
             const situacao = situacaoDoCpf ? situacaoDoCpf(cpf) : null;
             return (
@@ -396,7 +376,56 @@ const CpfsAreaEspecialManager = ({
                 </button>
               </Badge>
             );
-          })}
+  };
+
+  // Falta alocar x ja escalados (cada um em ordem alfabetica).
+  const jaEscalados = situacaoDoCpf ? cpfsOrdenados.filter((c) => situacaoDoCpf(c) === 'na_area') : [];
+  const faltamAlocar = situacaoDoCpf ? cpfsOrdenados.filter((c) => situacaoDoCpf(c) !== 'na_area') : cpfsOrdenados;
+
+  const acrescentar = async (cpf, area) => {
+    if (!onEscalarTambem) return;
+    setAcrescentando(cpf);
+    try { await onEscalarTambem(cpf, area); } finally { setAcrescentando(null); }
+  };
+
+  const transferir = async (cpf, destino) => {
+    if (!onTransferir) return;
+    setTransferindo(cpf);
+    try { await onTransferir(cpf, destino); } finally { setTransferindo(null); }
+  };
+
+  const alocar = async (cpf) => {
+    if (!onAlocar) return;
+    setAlocando(cpf);
+    try { await onAlocar(cpf); } finally { setAlocando(null); }
+  };
+
+  return (
+    <div className="space-y-3" ref={containerRef}>
+      {cpfs.length > 0 ? (
+        <div className="space-y-2">
+          {/* Separado (14/10/2026): primeiro quem ainda falta alocar, depois
+              quem ja esta escalado -- cada grupo em ordem alfabetica. Com
+              muitos nomes, assim nao se perde quem ainda precisa de acao. */}
+          {faltamAlocar.length > 0 && (
+            <>
+              {situacaoDoCpf && (
+                <p className="text-[11px] uppercase tracking-wide font-semibold text-amber-300/90">
+                  Falta alocar · {faltamAlocar.length}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">{faltamAlocar.map(renderChip)}</div>
+            </>
+          )}
+          {jaEscalados.length > 0 && (
+            <>
+              <p className={cn('text-[11px] uppercase tracking-wide font-semibold text-emerald-300/80',
+                faltamAlocar.length > 0 && 'pt-2 border-t border-white/10')}>
+                Já escalados · {jaEscalados.length}
+              </p>
+              <div className="flex flex-wrap gap-2">{jaEscalados.map(renderChip)}</div>
+            </>
+          )}
         </div>
       ) : (
         <div className="text-center p-4 border border-dashed border-white/20 rounded-md text-gray-400 text-sm">

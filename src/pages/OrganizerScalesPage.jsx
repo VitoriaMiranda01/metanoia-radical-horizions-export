@@ -387,6 +387,12 @@ const OrganizerScalesPage = () => {
     return acc;
   }, {}), [allocations]);
 
+  // Nomes das areas de cada pessoa (para a dica do "+1").
+  const nomesAreasPorEquipante = useMemo(() => allocations.reduce((acc, a) => {
+    (acc[a.id] ||= []).push(a.allocatedArea);
+    return acc;
+  }, {}), [allocations]);
+
   // { equipanteId: [areas fixas] } e { area: [fixos] }.
   const { fixasPorEquipante, fixosPorArea } = useMemo(() => {
     const porEquipante = {};
@@ -1506,7 +1512,7 @@ const OrganizerScalesPage = () => {
           </div>
 
           <div className={cn("p-4 overflow-y-auto", noModulo ? "max-h-[65vh]" : "max-h-[400px]")}>
-            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={mostrados} areaName={area} onExport={acoesTabela.exportar} onRealocar={podeGerir ? acoesTabela.realocar : undefined} onAdicionarArea={podeGerir ? acoesTabela.adicionarArea : undefined} onRemover={podeGerir ? acoesTabela.remover : undefined} areasPorEquipante={areasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={acoesTabela.escolherArea} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={acoesTabela.definirAtuacao} salvandoAtuacao={salvandoAtuacao} mostrarCor={temCor} onDefinirCor={acoesTabela.definirCor} salvandoCor={salvandoCor} fixasPorEquipante={fixasPorEquipante} onFixar={podeGerir ? acoesTabela.fixar : undefined} />}
+            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={mostrados} areaName={area} onExport={acoesTabela.exportar} onRealocar={podeGerir ? acoesTabela.realocar : undefined} onAdicionarArea={podeGerir ? acoesTabela.adicionarArea : undefined} onRemover={podeGerir ? acoesTabela.remover : undefined} areasPorEquipante={areasPorEquipante} nomesAreasPorEquipante={nomesAreasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={acoesTabela.escolherArea} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={acoesTabela.definirAtuacao} salvandoAtuacao={salvandoAtuacao} mostrarCor={temCor} onDefinirCor={acoesTabela.definirCor} salvandoCor={salvandoCor} fixasPorEquipante={fixasPorEquipante} onFixar={podeGerir ? acoesTabela.fixar : undefined} />}
           </div>
         </div>;
   };

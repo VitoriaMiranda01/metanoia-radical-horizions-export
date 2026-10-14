@@ -31,6 +31,7 @@ const EquipantesGridDisplay = ({
   // lado do nome de quem esta em mais de uma -- nas escalas oficiais isso e
   // ~6% da equipe.
   areasPorEquipante = {},
+  nomesAreasPorEquipante = {},
   // Atuacoes possiveis NESTA area, na ordem do banco (a primeira e a
   // padrao, que todo mundo recebe ao ser alocado).
   atuacoes = [],
@@ -191,7 +192,7 @@ const EquipantesGridDisplay = ({
                       {areasPorEquipante[eq.id] > 1 && (
                         <span
                           className="shrink-0 text-[9px] px-1 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30"
-                          title={`Esta pessoa está em ${areasPorEquipante[eq.id]} áreas.`}
+                          title={`Esta pessoa está em ${areasPorEquipante[eq.id]} áreas: ${(nomesAreasPorEquipante[eq.id] || []).join(', ')}.`}
                         >
                           +{areasPorEquipante[eq.id] - 1}
                         </span>

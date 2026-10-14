@@ -34,7 +34,7 @@ import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialMana
 import SeloPastor from '@/components/common/SeloPastor';
 import { tituloPastor } from '@/utils/pastor';
 import { nomeDaIgreja } from '@/constants/igrejas';
-import { casaBusca } from '@/utils/busca';
+import { casaBusca, casaNome } from '@/utils/busca';
 import { emTeste } from '@/services/ambiente';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
@@ -359,7 +359,7 @@ const OrganizerScalesPage = () => {
   const digitosBusca = termoBusca.replace(/\D/g, '');
   const filaFiltrada = termoBusca
     ? filaOrdenada.filter(eq =>
-        semAcento(eq.nome).includes(termoBusca) ||
+        casaNome(buscaFila, eq.nome) ||
         semAcento(nomeDaIgreja(eq)).includes(termoBusca) ||
         (digitosBusca !== '' && (eq.cpf || '').replace(/\D/g, '').includes(digitosBusca)) ||
         semAcento(eq.area_trabalho_opcao1).includes(termoBusca) ||
@@ -420,7 +420,7 @@ const OrganizerScalesPage = () => {
       return acc;
     }, {})
   ).filter(p =>
-    semAcento(p.nome).includes(termoEscalados) ||
+    casaNome(buscaEscalados, p.nome) ||
     semAcento(p.igreja).includes(termoEscalados) ||
     (p.cpf || '').replace(/\D/g, '').includes(termoEscalados.replace(/\D/g, '') || ' ') ||
     p.areas.some(x => semAcento(x.area).includes(termoEscalados))
@@ -436,7 +436,7 @@ const OrganizerScalesPage = () => {
       return acc;
     }, {})
   ).filter(x =>
-    semAcento(x.nome).includes(termoBusca) ||
+    casaNome(buscaFila, x.nome) ||
     (digitosBusca !== '' && (x.cpf || '').replace(/\D/g, '').includes(digitosBusca))
   ).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).slice(0, 5);
 

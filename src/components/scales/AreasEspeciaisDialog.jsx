@@ -10,9 +10,8 @@ import { AREAS_ESPECIAIS } from '@/constants/workAreas';
 const NUMERO_POR_EXTENSO = ['zero', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez'];
 const porExtenso = (n) => NUMERO_POR_EXTENSO[n] ?? String(n);
 
-// Guia, Inimigo, Espírito Santo, Depressão e Infiltrados,
-// nesta ordem: "Guia, Inimigo, Espírito Santo, Depressão e
-// Infiltrados".
+// Guia, Inimigo, Espírito Santo, Infiltrados..., nesta ordem:
+// "Guia, Inimigo, Espírito Santo, Infiltrados, ... e Pastor Invisível".
 const listaDosLabels = AREAS_ESPECIAIS.map(a => a.label).reduce((frase, label, i, arr) => {
   if (i === 0) return label;
   if (i === arr.length - 1) return `${frase} e ${label}`;

@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 
 /**
  * Escolha dos equipantes de UMA area especial (Guia, Inimigo, Espirito
- * Santo, Depressao, Infiltrados, Familia muculmana,
+ * Santo, Infiltrados, Familia muculmana,
  * Apresentadores, Equipe de Manutencao ou Pastor Invisivel -- ver
  * AREAS_ESPECIAIS em constants/workAreas.js).
  *
@@ -37,7 +37,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
  * ----------------------------
  * Os dez papeis atravessam o acampamento inteiro, cada um com seu roteiro,
  * todos ao mesmo tempo -- ninguem cumpre dois. "areaPorCpf" traz quem ja
- * esta em uma das outras nove listas, para a tela nem oferecer a pessoa.
+ * esta em uma das outras listas, para a tela nem oferecer a pessoa.
  * Quem garante mesmo assim e o banco (ver migration 20260912t,
  * schema-update-20260916-mais-3-areas-especiais.sql e
  * schema-update-20260916b-mais-4-areas-especiais.sql); isto aqui e para o

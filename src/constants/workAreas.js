@@ -105,7 +105,11 @@ export { AREA_DISPONIVEL_QUALQUER };
 // AREAS_SOMENTE_ORGANIZADOR e AREAS_COMPLEMENTARES abaixo; banco: migration
 // 20261013f).
 //
-// Uma pessoa so pode ter UM destes nove (roteiros simultaneos, ninguem
+// Depressao SAIU daqui tambem em 13/10/2026 (Patrick): virou area comum da
+// diretoria (AREAS_SOMENTE_ORGANIZADOR; banco: migration 20261013i) -- a
+// pessoa pode estar na Depressao e em outra area, especial ou nao.
+//
+// Uma pessoa so pode ter UM destes oito (roteiros simultaneos, ninguem
 // cumpre dois). A regra e do banco -- _area_especial(), migration 20260912t
 // (as 3 originais), schema-update-20260916-mais-3-areas-especiais.sql (mais
 // 3) e schema-update-20260916b-mais-4-areas-especiais.sql (mais 4) --, e
@@ -118,7 +122,6 @@ export const AREAS_ESPECIAIS = [
   { key: 'guia', label: 'Guia' },
   { key: 'inimigo', label: 'Inimigo' },
   { key: 'espirito_santo', label: 'Espírito Santo' },
-  { key: 'depressao', label: 'Depressão' },
   { key: 'infiltrados', label: 'Infiltrados' },
   { key: 'familia_muculmana', label: 'Família muçulmana' },
   { key: 'apresentadores', label: 'Apresentadores' },
@@ -143,6 +146,8 @@ export const AREAS_ESPECIAIS = [
 export const AREAS_SOMENTE_ORGANIZADOR = [
   // Perseguidos voltou para ca em 13/10/2026 (deixou de ser area especial).
   'Perseguidos',
+  // Depressao voltou para ca em 13/10/2026 (deixou de ser area especial).
+  'Depressão',
   // Apresentadores, Depressao, Equipe de Manutencao, Infiltrados e Pastor
   // Invisivel sairam daqui em 16/09/2026: viraram areas especiais (ver
   // AREAS_ESPECIAIS acima), exclusivas entre si.

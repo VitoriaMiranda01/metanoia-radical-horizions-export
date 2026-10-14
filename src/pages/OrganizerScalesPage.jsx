@@ -2093,6 +2093,17 @@ const OrganizerScalesPage = () => {
 
         {loteArea && (() => {
           const naArea = getEquipantesByArea(loteArea);
+          // Quem ja esta escalado em OUTRA area (13/10/2026): aparece na busca
+          // do lote para ganhar esta como segunda area. Fica de fora quem ja
+          // esta aqui e quem esta em "Não será escalado".
+          const porPessoa = new Map();
+          allocations.forEach(a => {
+            const p = porPessoa.get(a.id) || { ...a, areas: [] };
+            p.areas.push(a.allocatedArea);
+            porPessoa.set(a.id, p);
+          });
+          const escaladosFora = [...porPessoa.values()]
+            .filter(p => !p.areas.includes(loteArea) && !p.areas.includes('Não será escalado'));
           return (
             <AlocarEmLoteDialog
               area={loteArea}
@@ -2101,6 +2112,8 @@ const OrganizerScalesPage = () => {
               mulheres={getGenderCount(naArea, 'feminino')}
               homens={getGenderCount(naArea, 'masculino')}
               fila={waitlist}
+              escalados={escaladosFora}
+              areasEspeciais={NOMES_ESPECIAIS}
               atuacoes={atuacoesPorArea[loteArea] || []}
               onClose={() => setLoteArea(null)}
               onAlocado={() => fetchBackgroundData(false)}

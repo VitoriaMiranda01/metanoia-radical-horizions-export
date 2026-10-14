@@ -22,6 +22,11 @@ import { cn } from '@/lib/utils';
  * acima do limite, e vice-versa). A tela mostra o aviso e confirma; ai manda
  * forcar = true. Sem passar das vagas, o banco confere de novo pessoa a
  * pessoa (alocar_em_lote_na_area) e devolve quem nao coube.
+ *
+ * Ja escalados (13/10/2026): buscando um nome, aparecem tambem as pessoas que
+ * ja estao em OUTRA area ("já em Guia"). Marcando, elas ganham esta como
+ * segunda area -- nao saem da primeira. Numa area especial, quem ja tem
+ * outra especial aparece bloqueado (uma especial por pessoa).
  */
 
 const OPCAO = ['1ª opção', '2ª opção', '3ª opção'];
@@ -39,7 +44,7 @@ const vagasPorSexo = (limitObj, mulheres, homens) => {
   };
 };
 
-const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila = [], atuacoes = [], onClose, onAlocado }) => {
+const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila = [], escalados = [], areasEspeciais = [], atuacoes = [], onClose, onAlocado }) => {
   const { toast } = useToast();
   const [modo, setModo] = useState('escolheram');
   const [busca, setBusca] = useState('');
@@ -72,7 +77,15 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
       return ra - rb || String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
     }), [fila, modo, busca, area]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const escolhidos = useMemo(() => fila.filter((p) => marcados.has(p.id)), [fila, marcados]);
+  // Ja escalados em outra area: so com busca (sao centenas), no maximo 30.
+  const areaEhEspecial = areasEspeciais.includes(area);
+  const especialDe = (p) => (areaEhEspecial ? (p.areas || []).find((a) => areasEspeciais.includes(a)) : null);
+  const extras = useMemo(() => (busca.trim().length < 2 ? [] : escalados
+    .filter((p) => casaBusca(busca, [p.nome, nomeDaIgreja(p), p.igreja_outra, p.cpf]))
+    .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'))
+    .slice(0, 30)), [escalados, busca]);
+
+  const escolhidos = useMemo(() => [...fila, ...escalados].filter((p) => marcados.has(p.id)), [fila, escalados, marcados]);
   const mulheresMarcadas = escolhidos.filter(ehMulher).length;
   const homensMarcados = escolhidos.length - mulheresMarcadas;
 
@@ -161,7 +174,7 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
           <DialogTitle className="flex items-center gap-2"><Users className="w-5 h-5" />Alocar em lote — {area}</DialogTitle>
           <DialogDescription className="text-gray-400">
             {ocupados}/{limitObj?.limiteMaximo} ocupados · <span className={cn('font-medium', vagas ? 'text-emerald-300' : 'text-red-300')}>{vagas} {vagas === 1 ? 'vaga' : 'vagas'}</span>
-            {textoSexo && <> ({textoSexo})</>}. Marque quem vem da fila “A escalar”. Passar do limite é permitido, com aviso.
+            {textoSexo && <> ({textoSexo})</>}. Marque quem vem da fila “A escalar” — buscando o nome, aparece também quem já está em outra área. Passar do limite é permitido, com aviso.
           </DialogDescription>
         </DialogHeader>
 
@@ -273,7 +286,7 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
         )}
 
         <div className="flex-1 min-h-0 max-h-[50vh] overflow-y-auto pr-1 space-y-1">
-          {!lista.length && (
+          {!lista.length && !extras.length && (
             <p className="text-center py-8 text-gray-500">
               {busca ? 'Ninguém da fila bate com a busca.' : modo === 'escolheram' ? `Ninguém na fila escolheu ${area}. Veja “Toda a fila”.` : 'A fila “A escalar” está vazia.'}
             </p>
@@ -301,6 +314,39 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
               </button>
             );
           })}
+          {extras.length > 0 && (
+            <>
+              <p className="pt-3 pb-1 text-[11px] uppercase tracking-wider text-sky-300/80">
+                Já escalados em outra área — marcando, ficam também em {area}
+              </p>
+              {extras.map((p) => {
+                const marcado = marcados.has(p.id);
+                const bloqueio = especialDe(p);
+                const acima = !marcado && !bloqueio && !cabe(p);
+                return (
+                  <button
+                    key={p.id} type="button" disabled={!!bloqueio} onClick={() => alternar(p)}
+                    data-dica={bloqueio
+                      ? `Já está em ${bloqueio}, que também é área especial (uma especial por pessoa).`
+                      : `Continua em ${p.areas.join(', ')} e entra também em ${area}.`}
+                    className={cn('w-full flex items-center gap-3 rounded-md px-3 py-2 text-left border',
+                      marcado ? 'border-blue-500/50 bg-blue-500/10' : 'border-sky-500/15 bg-sky-500/5 hover:bg-sky-500/10',
+                      (acima || bloqueio) && 'opacity-60', bloqueio && 'cursor-not-allowed')}
+                  >
+                    {marcado ? <CheckSquare className="w-4 h-4 text-blue-400 shrink-0" /> : <Square className="w-4 h-4 text-gray-500 shrink-0" />}
+                    <span className="flex-1 min-w-0">
+                      <span className="flex items-center gap-1.5 text-sm text-white min-w-0"><span className="truncate">{p.nome}</span><SeloPastor pessoa={p} /></span>
+                      <span className="block text-[11px] text-gray-500 truncate">{nomeDaIgreja(p) || '—'}</span>
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full border border-sky-500/30 text-sky-200 shrink-0 max-w-[45%] truncate">
+                      já em {p.areas.join(', ')}
+                    </span>
+                    <span className={cn('text-[10px] shrink-0', ehMulher(p) ? 'text-pink-300' : 'text-blue-300')}>{ehMulher(p) ? 'F' : 'M'}</span>
+                  </button>
+                );
+              })}
+            </>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 pt-1">

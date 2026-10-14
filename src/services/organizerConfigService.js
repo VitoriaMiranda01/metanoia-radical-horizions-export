@@ -23,7 +23,7 @@ export const fetchConfiguracoes = async () => {
       if (!navigator.onLine) return { max_equipantes: 0, max_acampantes: 0, max_acampantes_homens: 0, max_acampantes_mulheres: 0, equipante_pricing_periods: [], acampante_pricing_periods: [], edicao_numero: '' };
       
       let configQuery = supabase.from('configuracoes').select(
-        `id, data_evento_inicio, data_evento_fim, horario_saida_igreja, horario_retorno_sitio, data_limite_inscricao_pagamento, max_equipantes, max_acampantes, updated_at, equipante_pricing_periods, acampante_pricing_periods, max_acampantes_homens, max_acampantes_mulheres, edicao_numero, limite_acampantes_por_igreja, ${CPFS_AREA_COLUMNS.join(', ')}`
+        `id, data_evento_inicio, data_evento_fim, horario_saida_igreja, horario_retorno_sitio, data_limite_inscricao_pagamento, max_equipantes, max_acampantes, updated_at, equipante_pricing_periods, acampante_pricing_periods, max_acampantes_homens, max_acampantes_mulheres, edicao_numero, limite_acampantes_por_igreja, pre_cadastro_sem_cpf, ${CPFS_AREA_COLUMNS.join(', ')}`
       );
       
       const { data, error } = await configQuery.order('updated_at', { ascending: false }).limit(1).maybeSingle();
@@ -47,6 +47,7 @@ export const fetchConfiguracoes = async () => {
         data_evento_inicio: data?.data_evento_inicio || '',
         data_evento_fim: data?.data_evento_fim || '',
         limite_acampantes_por_igreja: data?.limite_acampantes_por_igreja ?? null,
+        pre_cadastro_sem_cpf: !!data?.pre_cadastro_sem_cpf,
         ...Object.fromEntries(CPFS_AREA_COLUMNS.map((coluna) => [coluna, data?.[coluna] || []]))
       };
 
@@ -191,6 +192,23 @@ export const updateLimiteAcampantesPorIgreja = async (valor) => {
     console.error("[updateLimiteAcampantesPorIgreja] Error:", error);
     throw error;
   }
+};
+
+// "Pré-cadastro sem CPF" (14/10/2026, migration 20261014g): ligado, as Areas
+// Especiais e a Recepção Igreja aceitam escolher pelo nome quem nao tem CPF.
+// Salva na hora, como o limite acima.
+export const updatePreCadastroSemCpf = async (ligado) => {
+  if (!navigator.onLine) throw new Error("Você está offline. Verifique sua conexão.");
+  const { data: existing, error: checkError } = await supabase
+    .from('configuracoes').select('id').limit(1).maybeSingle();
+  if (checkError) throw checkError;
+  if (!existing?.id) throw new Error('Configurações ainda não criadas: salve as configurações gerais primeiro.');
+  const { error } = await supabase
+    .from('configuracoes')
+    .update({ pre_cadastro_sem_cpf: !!ligado, updated_at: new Date().toISOString() })
+    .eq('id', existing.id);
+  if (error) throw error;
+  return !!ligado;
 };
 
 // Busca so o limite padrao geral (select enxuto, usado pelo formulario de

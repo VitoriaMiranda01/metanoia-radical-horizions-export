@@ -1,3 +1,4 @@
+import { chavesDaPessoa, normalizarChave } from '@/utils/preCadastro';
 import { supabase } from '@/services/supabaseClient';
 import { AREAS_ESPECIAIS } from '@/constants/workAreas';
 
@@ -257,12 +258,10 @@ export const fetchListaEspera = async (equipantesAprovados, alocacoesAtuais) => 
 export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovados, allocations, forcar = false, grupo = AREAS_ESPECIAIS) => {
   const resultado = { alocados: 0, realocados: 0, semCorrespondencia: [], erros: [] };
 
-  const soDigitos = (v) => (v || '').replace(/\D/g, '');
-
+  // Chave = CPF ou, para quem nao tem CPF, 'id:<uuid>' (utils/preCadastro.js).
   const equipantePorCpf = new Map();
   (equipantesAprovados || []).forEach(eq => {
-    const cpf = soDigitos(eq.cpf);
-    if (cpf) equipantePorCpf.set(cpf, eq);
+    chavesDaPessoa(eq).forEach(chave => equipantePorCpf.set(chave, eq));
   });
 
   // allocations tem uma linha por PARTICIPACAO (a mesma pessoa pode estar
@@ -285,7 +284,7 @@ export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovado
     const cpfs = cpfsPorArea?.[areaInfo.key] || [];
 
     for (const cpfBruto of cpfs) {
-      const cpf = soDigitos(cpfBruto);
+      const cpf = normalizarChave(cpfBruto);
       const equipante = equipantePorCpf.get(cpf);
 
       if (!equipante) {

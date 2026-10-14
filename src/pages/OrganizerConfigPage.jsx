@@ -10,11 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimiteAcampantesPorIgreja, subscribeToConfiguracoesChanges, resetarParaNovaEdicao } from '@/services/organizerConfigService';
+import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimiteAcampantesPorIgreja, updatePreCadastroSemCpf, subscribeToConfiguracoesChanges, resetarParaNovaEdicao } from '@/services/organizerConfigService';
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
-import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users, Church, BookUser, HeartPulse } from 'lucide-react';
+import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users, Church, BookUser, HeartPulse, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
@@ -134,7 +134,8 @@ const OrganizerConfigPage = () => {
         data_limite_inscricao_pagamento: data.data_limite_inscricao_pagamento || '',
         equipante_pricing_periods: data.equipante_pricing_periods || [],
         acampante_pricing_periods: data.acampante_pricing_periods || [],
-        limite_acampantes_por_igreja: data.limite_acampantes_por_igreja ?? null
+        limite_acampantes_por_igreja: data.limite_acampantes_por_igreja ?? null,
+        pre_cadastro_sem_cpf: !!data.pre_cadastro_sem_cpf
       });
     } catch (error) {
       console.error("[OrganizerConfigPage] Error loading config data:", error);
@@ -188,6 +189,27 @@ const OrganizerConfigPage = () => {
     } catch (error) {
       console.error("Failed to save pricing periods directly", error);
       throw error;
+    }
+  };
+
+  // "Pré-cadastro sem CPF" (14/10/2026): salva na hora, ao virar a chave.
+  const [salvandoSemCpf, setSalvandoSemCpf] = useState(false);
+  const handleTogglePreCadastroSemCpf = async (ligado) => {
+    setSalvandoSemCpf(true);
+    try {
+      await updatePreCadastroSemCpf(ligado);
+      setConfig(prev => ({ ...prev, pre_cadastro_sem_cpf: ligado }));
+      toast({
+        title: ligado ? 'Pré-cadastro sem CPF ligado' : 'Pré-cadastro sem CPF desligado',
+        description: ligado
+          ? 'Nas Áreas Especiais e na Recepção Igreja, quem não tem CPF já pode ser escolhido pelo nome.'
+          : 'Só quem tem CPF pode ser escolhido. Quem já entrou sem CPF continua na lista.',
+        className: 'bg-emerald-600 text-white border-none'
+      });
+    } catch (error) {
+      toast({ title: 'Erro ao salvar', description: error.message || 'Tente de novo.', variant: 'destructive' });
+    } finally {
+      setSalvandoSemCpf(false);
     }
   };
 
@@ -591,6 +613,42 @@ const OrganizerConfigPage = () => {
                   limiteGeral={config.limite_acampantes_por_igreja}
                   onSaveLimiteGeral={handleSaveLimiteAcampantesPorIgreja}
                 />
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Pre-cadastro sem CPF (14/10/2026): as listas das Areas Especiais e
+              da Recepção Igreja guardam CPF; ligado, aceitam quem nao tem CPF
+              (inscricoes manuais), escolhido pelo nome. */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+            <Card className="glass-effect border-white/10 bg-black/40">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-white">
+                  <Star className="w-5 h-5 text-purple-400" />
+                  <span>Áreas Especiais e Recepção Igreja</span>
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  O pré-cadastro dessas áreas, na tela de Geração de Escalas.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between gap-4 p-4 bg-white/5 rounded-lg border border-white/10">
+                  <div className="min-w-0">
+                    <Label htmlFor="pre-cadastro-sem-cpf" className="text-white font-medium">Pré-cadastro sem CPF (só pelo nome)</Label>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Ligado: quem não tem CPF (como as inscrições manuais) pode ser escolhido pelo nome e alocado.
+                      Desligado: só quem tem CPF; quem já entrou sem CPF continua na lista.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {salvandoSemCpf && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                    <Switch id="pre-cadastro-sem-cpf"
+                      data-dica="Permitir escolher pelo nome, sem CPF, nas Áreas Especiais e na Recepção Igreja."
+                      checked={!!config.pre_cadastro_sem_cpf}
+                      onCheckedChange={handleTogglePreCadastroSemCpf}
+                      disabled={salvandoSemCpf} />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </motion.div>

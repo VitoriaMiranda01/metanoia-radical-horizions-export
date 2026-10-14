@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { formatCPF } from '@/utils/formatters';
 import { validateCPF } from '@/utils/validation';
 import { normalizarBusca, casaBusca, casaNomeParecido } from '@/utils/busca';
+import { chaveDaPessoa, chavesDaPessoa, ehChaveSemCpf } from '@/utils/preCadastro';
 import { cn } from '@/lib/utils';
 import { AREAS_ESPECIAIS, AREA_GUIA, GUIA_TAMBEM_EM } from '@/constants/workAreas';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -57,6 +58,9 @@ const CpfsAreaEspecialManager = ({
   // 'nao_aprovado' ou 'sem_inscricao'; onAlocar(cpf) aloca so essa pessoa,
   // com a mesma regra do "Aplicar CPFs cadastrados". Sem eles, nada muda.
   situacaoDoCpf,
+  // "Pré-cadastro sem CPF" ligado em Configuracoes (14/10/2026): quem nao tem
+  // CPF pode ser escolhido pelo nome e fica guardado como 'id:<uuid>'.
+  permitirSemCpf = false,
   onAlocar,
   // Areas comuns no proprio chip (13/10/2026): a pessoa da area especial pode
   // estar tambem em areas comuns. areasComunsDoCpf(cpf) -> [areas comuns em
@@ -97,15 +101,21 @@ const CpfsAreaEspecialManager = ({
 
   const soDigitos = (v) => (v || '').replace(/\D/g, '');
 
-  // Indice CPF -> equipante, para mostrar o nome de quem ja esta na lista.
+  // Indice chave -> equipante, para mostrar o nome de quem ja esta na lista.
+  // A chave e o CPF ou, de quem nao tem CPF, 'id:<uuid>' (utils/preCadastro.js);
+  // cada pessoa entra pelas duas, para continuar reconhecida se ganhar CPF.
   const equipantePorCpf = useMemo(() => {
     const mapa = new Map();
     (equipantes || []).forEach((eq) => {
-      const chave = soDigitos(eq.cpf);
-      if (chave) mapa.set(chave, eq);
+      chavesDaPessoa(eq).forEach((chave) => mapa.set(chave, eq));
     });
     return mapa;
   }, [equipantes]);
+
+  // A chave desta pessoa nas listas: a que ja esta salva (nesta area ou em
+  // outra especial), senao a que seria salva agora.
+  const chaveDe = (eq) => chavesDaPessoa(eq).find((k) => cpfs.includes(k) || areaPorCpf[k]) || chaveDaPessoa(eq);
+  const semCpf = (eq) => !soDigitos(eq?.cpf);
 
   // Quem casa com a busca, esteja ou nao ja na lista.
   // Nome ou CPF; palavras soltas valem ("Lucio Simas" acha "Cláudio Lúcio da
@@ -121,17 +131,17 @@ const CpfsAreaEspecialManager = ({
   // fora os que já têm outro papel especial.
   const sugestoes = useMemo(
     () => encontrados
-      .filter((eq) => !cpfs.includes(soDigitos(eq.cpf)))
-      .filter((eq) => !areaPorCpf[soDigitos(eq.cpf)])
+      .filter((eq) => !cpfs.includes(chaveDe(eq)))
+      .filter((eq) => !areaPorCpf[chaveDe(eq)])
       .slice(0, 8),
-    [encontrados, cpfs, areaPorCpf]
+    [encontrados, cpfs, areaPorCpf] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Achados pela busca que estão em OUTRO papel especial. Aparecem na lista
   // dizendo onde estão, em vez de sumirem sem explicação.
   const emOutroPapel = useMemo(
-    () => encontrados.filter((eq) => areaPorCpf[soDigitos(eq.cpf)]).slice(0, 6),
-    [encontrados, areaPorCpf]
+    () => encontrados.filter((eq) => areaPorCpf[chaveDe(eq)]).slice(0, 6),
+    [encontrados, areaPorCpf] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Pode transferir de `de` para esta area? So entre as transferiveis.
@@ -163,8 +173,8 @@ const CpfsAreaEspecialManager = ({
   // sugestões e a tela diz "ninguém encontrado" -- o organizador sabe que ela
   // existe e fica sem entender. Melhor dizer o motivo.
   const jaNaLista = useMemo(
-    () => encontrados.filter((eq) => cpfs.includes(soDigitos(eq.cpf))).slice(0, 4),
-    [encontrados, cpfs]
+    () => encontrados.filter((eq) => cpfs.includes(chaveDe(eq))).slice(0, 4),
+    [encontrados, cpfs] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Fecha a lista de sugestões ao clicar fora.
@@ -200,9 +210,13 @@ const CpfsAreaEspecialManager = ({
   };
 
   const adicionarEquipante = (equipante) => {
-    const cpf = soDigitos(equipante.cpf);
+    if (semCpf(equipante) && !permitirSemCpf) {
+      setError('Este equipante está sem CPF cadastrado. Para escolher pelo nome, ligue "Pré-cadastro sem CPF" em Configurações.');
+      return;
+    }
+    const cpf = chaveDe(equipante);
     if (!cpf) {
-      setError('Este equipante está sem CPF cadastrado e não pode ser escolhido.');
+      setError('Não foi possível identificar este equipante.');
       return;
     }
     if (cpfs.includes(cpf)) {
@@ -242,14 +256,17 @@ const CpfsAreaEspecialManager = ({
     });
   };
 
+  // Nome de quem esta na lista; sem inscricao achada, o CPF (ou o aviso).
+  const rotulo = (cpf) => equipantePorCpf.get(cpf)?.nome
+    || (ehChaveSemCpf(cpf) ? 'Pessoa sem CPF (inscrição não encontrada)' : formatCPF(cpf));
+
   const remover = async (cpf) => {
     setRemovendo(cpf);
-    const pessoa = equipantePorCpf.get(cpf);
     try {
       await onSave(cpfs.filter((c) => c !== cpf));
       toast({
         title: 'Removido',
-        description: `${pessoa?.nome || formatCPF(cpf)} saiu da lista de ${areaLabel}.`,
+        description: `${rotulo(cpf)} saiu da lista de ${areaLabel}.`,
         className: 'bg-emerald-600 text-white border-none'
       });
     } catch (err) {
@@ -284,10 +301,12 @@ const CpfsAreaEspecialManager = ({
               >
                 <span className="flex flex-col leading-tight">
                   <span className="font-medium">
-                    {pessoa ? pessoa.nome : formatCPF(cpf)}
+                    {rotulo(cpf)}
                   </span>
                   <span className="text-[11px] text-gray-400 font-mono">
-                    {pessoa ? formatCPF(cpf) : 'ainda não se inscreveu'}
+                    {pessoa
+                      ? (semCpf(pessoa) ? 'sem CPF' : formatCPF(pessoa.cpf))
+                      : (ehChaveSemCpf(cpf) ? 'pode ter sido excluída' : 'ainda não se inscreveu')}
                   </span>
                 </span>
                 {situacao === 'na_area' && (
@@ -367,7 +386,7 @@ const CpfsAreaEspecialManager = ({
                   data-dica={`Tirar esta pessoa do pré-cadastro de ${areaLabel}.`}
                   disabled={isSaving || removendo === cpf}
                   className="rounded-full p-0.5 text-gray-400 hover:text-red-300 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                  aria-label={`Remover ${pessoa ? pessoa.nome : formatCPF(cpf)} de ${areaLabel}`}
+                  aria-label={`Remover ${rotulo(cpf)} de ${areaLabel}`}
                 >
                   {removendo === cpf ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
                 </button>
@@ -449,7 +468,7 @@ const CpfsAreaEspecialManager = ({
                 onde esta escalado. Entre as transferiveis, clicar pergunta se
                 quer transferir para ca. */}
             {emOutroPapel.map((eq) => {
-              const cpf = soDigitos(eq.cpf);
+              const cpf = chaveDe(eq);
               const de = areaPorCpf[cpf];
               const onde = ondeEsta(cpf);
               return podeTransferirDe(de) ? (
@@ -489,9 +508,13 @@ const CpfsAreaEspecialManager = ({
                   <span className="block text-xs text-gray-400">
                     {eq.igreja || 'sem igreja informada'}
                     {eq.status ? ` · ${eq.status}` : ''}
+                    {semCpf(eq) ? ' · sem CPF' : ''}
                   </span>
-                  {escaladoEm(soDigitos(eq.cpf)) && escaladoEm(soDigitos(eq.cpf)) !== areaLabel && (
-                    <span className="block text-xs text-amber-300">já escalado em {escaladoEm(soDigitos(eq.cpf))}</span>
+                  {semCpf(eq) && !permitirSemCpf && (
+                    <span className="block text-xs text-amber-300">sem CPF: ligue “Pré-cadastro sem CPF” em Configurações para escolher</span>
+                  )}
+                  {escaladoEm(chaveDe(eq)) && escaladoEm(chaveDe(eq)) !== areaLabel && (
+                    <span className="block text-xs text-amber-300">já escalado em {escaladoEm(chaveDe(eq))}</span>
                   )}
                 </button>
               ))

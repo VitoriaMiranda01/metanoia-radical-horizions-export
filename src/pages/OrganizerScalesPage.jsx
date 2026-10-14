@@ -1,3 +1,4 @@
+import { pessoaTemChave } from '@/utils/preCadastro';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import Layout from '@/components/Layout';
@@ -260,6 +261,9 @@ const OrganizerScalesPage = () => {
   // (ver handleSaveCpfsAreaEspecial). Comeca vazio -- loadCpfsAreaEspecial
   // preenche uma chave por area assim que a configuracao carrega.
   const [cpfsAreaEspecial, setCpfsAreaEspecial] = useState({});
+  // "Pré-cadastro sem CPF" (Configuracoes, 14/10/2026): ligado, quem nao tem
+  // CPF pode ser escolhido pelo nome nas Areas Especiais e na Recepção Igreja.
+  const [preCadastroSemCpf, setPreCadastroSemCpf] = useState(false);
   const [equipantesParaSelecao, setEquipantesParaSelecao] = useState([]);
   const [carregandoEquipantesParaSelecao, setCarregandoEquipantesParaSelecao] = useState(true);
 
@@ -844,14 +848,14 @@ const OrganizerScalesPage = () => {
 
   // Chip do pre-cadastro (Areas Especiais): areas comuns da pessoa e o acrescimo.
   const areasComunsDoCpf = (cpf) => allocations
-    .filter(a => soDigitosCpf(a.cpf) === cpf && !NOMES_ESPECIAIS.includes(a.allocatedArea) && a.allocatedArea !== 'Não será escalado')
+    .filter(a => pessoaTemChave(a, cpf) && !NOMES_ESPECIAIS.includes(a.allocatedArea) && a.allocatedArea !== 'Não será escalado')
     .map(a => a.allocatedArea);
   // No modulo Recepção Igreja (sem exclusividade): todas as outras areas da pessoa.
   const outrasAreasDoCpf = (label) => (cpf) => allocations
-    .filter(a => soDigitosCpf(a.cpf) === cpf && a.allocatedArea !== label && a.allocatedArea !== 'Não será escalado')
+    .filter(a => pessoaTemChave(a, cpf) && a.allocatedArea !== label && a.allocatedArea !== 'Não será escalado')
     .map(a => a.allocatedArea);
   const handleEscalarTambemPorCpf = async (cpf, area) => {
-    const eq = (equipantesAprovados || []).find(e => soDigitosCpf(e.cpf) === cpf);
+    const eq = (equipantesAprovados || []).find(e => pessoaTemChave(e, cpf));
     if (!eq) { toast({ title: 'Equipante não encontrado', variant: 'destructive' }); return; }
     await acrescentarArea(eq.id, eq.nome, area, allocations.filter(a => a.id === eq.id).map(a => a.allocatedArea));
   };
@@ -1139,6 +1143,7 @@ const OrganizerScalesPage = () => {
         novasListas[key] = configAtual[`cpfs_area_${key}`] || [];
       });
       setCpfsAreaEspecial(novasListas);
+      setPreCadastroSemCpf(!!configAtual.pre_cadastro_sem_cpf);
     } catch (error) {
       console.error('[OrganizerScalesPage] Error loading CPFs das areas especiais:', error);
     }
@@ -1173,16 +1178,17 @@ const OrganizerScalesPage = () => {
   };
 
   // Alocar com um clique, no pre-cadastro de cada area especial (13/10/2026).
-  const soDigitosCpf = (v) => String(v || '').replace(/\D/g, '');
+  // `cpf` aqui e a chave da lista: o CPF ou 'id:<uuid>' de quem nao tem CPF
+  // (utils/preCadastro.js).
   const situacaoDoCpfNaArea = (label) => (cpf) => {
-    if (allocations.some(a => a.allocatedArea === label && soDigitosCpf(a.cpf) === cpf)) return 'na_area';
-    if ((equipantesAprovados || []).some(eq => soDigitosCpf(eq.cpf) === cpf)) return 'pode';
-    if ((equipantesParaSelecao || []).some(eq => soDigitosCpf(eq.cpf) === cpf)) return 'nao_aprovado';
+    if (allocations.some(a => a.allocatedArea === label && pessoaTemChave(a, cpf))) return 'na_area';
+    if ((equipantesAprovados || []).some(eq => pessoaTemChave(eq, cpf))) return 'pode';
+    if ((equipantesParaSelecao || []).some(eq => pessoaTemChave(eq, cpf))) return 'nao_aprovado';
     return 'sem_inscricao';
   };
 
   const handleAlocarUmPorCpf = async (key, label, cpf, grupo = AREAS_ESPECIAIS) => {
-    const nome = (equipantesAprovados || []).find(eq => soDigitosCpf(eq.cpf) === cpf)?.nome || cpf;
+    const nome = (equipantesAprovados || []).find(eq => pessoaTemChave(eq, cpf))?.nome || cpf;
     let r = await alocarAreasEspeciaisPorCpf({ [key]: [cpf] }, equipantesAprovados, allocations, false, grupo);
     // Area cheia: na alocacao manual o limite e so aviso.
     if (r.erros[0]?.semVaga && window.confirm(
@@ -1217,8 +1223,8 @@ const OrganizerScalesPage = () => {
   // falhar, nada mudou), depois entra na lista nova, por ultimo sai da antiga.
   const handleTransferirPorCpf = async (de, cpf, para) => {
     const nome = formatNomeExibicao(
-      (equipantesParaSelecao || []).find(e => soDigitosCpf(e.cpf) === cpf)?.nome || cpf);
-    const escalado = allocations.find(a => a.allocatedArea === de.label && soDigitosCpf(a.cpf) === cpf);
+      (equipantesParaSelecao || []).find(e => pessoaTemChave(e, cpf))?.nome || cpf);
+    const escalado = allocations.find(a => a.allocatedArea === de.label && pessoaTemChave(a, cpf));
     try {
       if (escalado) {
         const r = await comAvisoDeLimite((forcar) => realocarAlocacao(escalado.escalaId, para.label, forcar), para.label, nome);
@@ -1244,7 +1250,7 @@ const OrganizerScalesPage = () => {
 
   // Especial em que a pessoa esta escalada (para a busca do pre-cadastro).
   const escaladoEmEspecial = (cpf) => allocations
-    .find(a => soDigitosCpf(a.cpf) === cpf && NOMES_ESPECIAIS.includes(a.allocatedArea))?.allocatedArea || null;
+    .find(a => pessoaTemChave(a, cpf) && NOMES_ESPECIAIS.includes(a.allocatedArea))?.allocatedArea || null;
   // "Transferir para ca" pela busca: acha em qual lista a pessoa esta.
   const transferirParaCa = (para) => async (cpf) => {
     const de = AREAS_ESPECIAIS.find(a => a.key !== para.key && (cpfsAreaEspecial[a.key] || []).includes(cpf));
@@ -2096,6 +2102,7 @@ const OrganizerScalesPage = () => {
                       areaPorCpf={cpfsDosOutrosPapeis(key)}
                       onSave={(novaLista) => handleSaveCpfsAreaEspecial(key, novaLista)}
                       situacaoDoCpf={situacaoDoCpfNaArea(label)}
+                      permitirSemCpf={preCadastroSemCpf}
                       onAlocar={(cpf) => handleAlocarUmPorCpf(key, label, cpf)}
                       areasDestino={AREAS_ESPECIAIS_TRANSFERIVEIS.includes(label) ? DESTINOS_TRANSFERENCIA : []}
                       onTransferir={podeGerir && AREAS_ESPECIAIS_TRANSFERIVEIS.includes(label) ? (cpf, para) => handleTransferirPorCpf({ key, label }, cpf, para) : undefined}
@@ -2136,6 +2143,7 @@ const OrganizerScalesPage = () => {
                       carregandoEquipantes={carregandoEquipantesParaSelecao}
                       onSave={(novaLista) => handleSaveCpfsAreaEspecial(key, novaLista)}
                       situacaoDoCpf={situacaoDoCpfNaArea(label)}
+                      permitirSemCpf={preCadastroSemCpf}
                       onAlocar={(cpf) => handleAlocarUmPorCpf(key, label, cpf, AREAS_RECEPCAO_IGREJA)}
                       dicaAlocar={`Colocar esta pessoa em ${label} agora (as outras áreas dela continuam).`}
                       areasComunsDoCpf={outrasAreasDoCpf(label)}

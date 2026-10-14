@@ -1095,6 +1095,9 @@ const OrganizerScalesPage = () => {
 
   // Distribuir cores (14/10/2026): quem esta na area sem cor ganha a cor com
   // menos gente (e, no empate, menos gente do mesmo sexo). Quem ja tem cor fica.
+  // So nestas: em Guia/Recepção Sítio a cor e o grupo do Guia (sincronizada
+  // entre as duas), escolhida a dedo.
+  const AREAS_DISTRIBUIR_CORES = ['Invisível', 'Marcador', 'Pastor Invisível'];
   const handleDistribuirCores = async (area) => {
     setDistribuindoCores(area);
     const r = await distribuirCoresArea(area);
@@ -1633,7 +1636,7 @@ const OrganizerScalesPage = () => {
 
     return <div key={area} className="bg-black/40 border border-white/10 rounded-lg overflow-hidden shadow-md backdrop-blur-sm">
           <div className="sticky top-0 z-10 bg-gray-900 border-b border-white/10">
-            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => faltaCor(area, eq)).length : 0} fixos={fixosHeader} onLimpar={podeGerir && !escala?.lancada_em ? () => setLimparAreaAberta(area) : undefined} onDistribuirCores={podeGerir && temCor ? () => handleDistribuirCores(area) : undefined} distribuindoCores={distribuindoCores === area} />
+            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => faltaCor(area, eq)).length : 0} fixos={fixosHeader} onLimpar={podeGerir && !escala?.lancada_em ? () => setLimparAreaAberta(area) : undefined} onDistribuirCores={podeGerir && AREAS_DISTRIBUIR_CORES.includes(area) ? () => handleDistribuirCores(area) : undefined} distribuindoCores={distribuindoCores === area} />
           </div>
 
           {/* [overflow-anchor:none] (14/10/2026): ao trocar cor/atuacao a linha
@@ -2279,7 +2282,8 @@ const OrganizerScalesPage = () => {
                 Quem foi <strong className="text-white">mexido à mão depois</strong> fica onde está
                 {autoSituacao.total > autoSituacao.no_lugar ? ` (${autoSituacao.total - autoSituacao.no_lugar} hoje)` : ''},
                 e quem foi <strong className="text-white">alocado à mão</strong> não é tocado. Os fixos 📌
-                ficam nas suas áreas fixas.
+                ficam nas suas áreas fixas. Os pastores que o automático passou para o
+                Pastor Invisível <strong className="text-white">voltam para as áreas de antes</strong>.
                 {autoSituacao.feito_por ? <><br /><br />Última alocação automática feita por {autoSituacao.feito_por}.</> : null}
               </AlertDialogDescription>
             </AlertDialogHeader>

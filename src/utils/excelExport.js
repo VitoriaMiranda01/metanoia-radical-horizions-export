@@ -394,11 +394,12 @@ export const exportPreEscala = (grupos, situacao = 'todos', area = null) => {
     'Igreja': nomeDaIgreja(p) || 'sem igreja',
     'Situação': situacaoDe(p.status),
     'WhatsApp': p.whatsapp || '',
+    '1ª opção': p.area_trabalho_opcao1 || 'Sem 1ª opção registrada',
     '2ª opção': p.area_trabalho_opcao2 || '',
     '3ª opção': p.area_trabalho_opcao3 || '',
     'Data da inscrição': formatarDataHora(p.inscrito_em)
   });
-  const larguras = [{ wch: 40 }, { wch: 16 }, { wch: 40 }, { wch: 12 }, { wch: 18 }, { wch: 28 }, { wch: 28 }, { wch: 18 }];
+  const larguras = [{ wch: 40 }, { wch: 16 }, { wch: 40 }, { wch: 12 }, { wch: 18 }, { wch: 28 }, { wch: 28 }, { wch: 28 }, { wch: 18 }];
 
   const wb = XLSX.utils.book_new();
   const nomeDeAba = (texto) => texto.replace(/[\/?*[\]:]/g, '-').substring(0, 31).trim() || 'Área';
@@ -428,10 +429,11 @@ export const exportPreEscala = (grupos, situacao = 'todos', area = null) => {
   wsResumo['!cols'] = [{ wch: 36 }, { wch: 12 }, { wch: 11 }, { wch: 11 }, { wch: 11 }];
   XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo');
 
+  // Na aba Todos a 1ª opcao vem primeiro (e por ela que a lista e agrupada).
   const wsTodos = XLSX.utils.json_to_sheet(
     grupos.flatMap((g) => g.pessoas.map((p) => ({ '1ª opção': g.area, ...linha(p) })))
   );
-  wsTodos['!cols'] = [{ wch: 30 }, ...larguras];
+  wsTodos['!cols'] = [{ wch: 30 }, ...larguras.filter((_, i) => i !== 5)];
   XLSX.utils.book_append_sheet(wb, wsTodos, 'Todos');
 
   // Uma aba por area. Nome de aba: ate 31 caracteres, sem / \ ? * [ ] : e

@@ -287,5 +287,12 @@ export const toggleColumn = (currentColumns, key, type) => {
   if (isCurrentlyVisible) {
     return currentColumns.filter(c => c !== key);
   }
-  return [...currentColumns, key];
+  // A coluna marcada entra logo depois das fixas (Nome/CPF/Igreja), e nao no
+  // fim (14/10/2026): no fim ela ficava fora da tela, atras da coluna
+  // "Acoes", e parecia que marcar nao fazia nada.
+  const travadas = colunasTravadas(type);
+  const depoisDe = currentColumns.reduce((ult, c, i) => (travadas.includes(c) ? i : ult), -1);
+  const nova = [...currentColumns];
+  nova.splice(depoisDe + 1, 0, key);
+  return nova;
 };

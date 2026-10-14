@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import BotaoOrdenar from '@/components/common/BotaoOrdenar';
@@ -176,7 +176,35 @@ const AprovacoesTable = ({
     setVisibleColumns(loadedColumns);
   }, []);
 
+  // Ao marcar uma coluna, a tabela rola ate ela (a tabela e mais larga que a
+  // tela; sem isso a coluna nova podia ficar escondida do lado).
+  const tabelaRef = useRef(null);
+  const [colunaNova, setColunaNova] = useState(null);
+  useEffect(() => {
+    if (!colunaNova) return;
+    const th = tabelaRef.current?.querySelector(`[data-coluna="${colunaNova}"]`);
+    th?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    setColunaNova(null);
+  }, [colunaNova]);
+
+  // Ha colunas fora da tela, a direita? Mostra um aviso em cima da tabela.
+  const [sobraDireita, setSobraDireita] = useState(false);
+  useEffect(() => {
+    // Quem rola e a moldura interna do <Table> (components/ui/table.jsx).
+    const el = tabelaRef.current?.querySelector('table')?.parentElement;
+    if (!el) return undefined;
+    const medir = () => setSobraDireita(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
+    medir();
+    el.addEventListener('scroll', medir);
+    window.addEventListener('resize', medir);
+    const obs = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null;
+    obs?.observe(el.firstElementChild || el);
+    obs?.observe(el);
+    return () => { el.removeEventListener('scroll', medir); window.removeEventListener('resize', medir); obs?.disconnect(); };
+  }, [visibleColumns, dados]);
+
   const handleSaveColumns = (newColumns) => {
+    setColunaNova(newColumns.find(c => !visibleColumns.includes(c)) || null);
     setVisibleColumns(newColumns);
     saveVisibleColumnsToStorage(tableType, newColumns);
   };
@@ -336,7 +364,12 @@ const AprovacoesTable = ({
             </div>
 
             {/* Desktop View - Table (md+) */}
-            <div className="hidden md:block overflow-x-auto relative max-h-[600px]">
+            {sobraDireita && (
+              <p className="hidden md:flex justify-end items-center gap-1 text-xs text-amber-300/90 mb-1">
+                Há mais colunas à direita — role a tabela para o lado (ou Shift + roda do mouse) →
+              </p>
+            )}
+            <div ref={tabelaRef} className="hidden md:block overflow-x-auto relative max-h-[600px]">
               <Table>
                 <TableHeader className="bg-slate-900/90 backdrop-blur supports-[backdrop-filter]:bg-slate-900/50 sticky top-0 z-20">
                   <TableRow className="hover:bg-transparent border-white/10">
@@ -354,7 +387,7 @@ const AprovacoesTable = ({
                       if (colKey === 'nome') return null;
                       const def = getColDef(colKey);
                       return (
-                        <TableHead key={colKey} className="min-w-[150px] h-12 bg-zinc-900">
+                        <TableHead key={colKey} data-coluna={colKey} className="min-w-[150px] h-12 bg-zinc-900">
                           <ColumnHeader ordem={ordem} onOrdenar={setOrdem}
                               title={def ? def.label : colKey} 
                               filterKey={colKey} 
@@ -410,7 +443,14 @@ const AprovacoesTable = ({
                           if (colKey === 'nome') return null;
                           return (
                             <TableCell key={colKey} className="text-white/80 whitespace-nowrap">
-                              {colKey === 'status' ? getStatusBadge(inscricao.status) : getColumnValue(inscricao, colKey)}
+                              {colKey === 'status' ? getStatusBadge(inscricao.status) : (
+                                // Texto longo (igreja, areas...) corta com "..." e
+                                // mostra inteiro ao passar o mouse: assim cabem
+                                // mais colunas na tela.
+                                <span className="block max-w-[260px] truncate" title={getColumnValue(inscricao, colKey)}>
+                                  {getColumnValue(inscricao, colKey)}
+                                </span>
+                              )}
                             </TableCell>
                           );
                         })}

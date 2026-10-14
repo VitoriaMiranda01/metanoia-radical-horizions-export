@@ -357,4 +357,6 @@ const EquipantesGridDisplay = ({
   );
 };
 
-export default EquipantesGridDisplay;
+// memo (13/10/2026): a pagina de escalas tem ~40 destas tabelas; sem isso,
+// cada letra numa busca da pagina redesenhava todas (~1,5 s travado).
+export default React.memo(EquipantesGridDisplay);

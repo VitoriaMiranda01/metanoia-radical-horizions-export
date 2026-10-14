@@ -16,8 +16,10 @@ export const normalizarBusca = (texto) => String(texto ?? '')
   .trim();
 
 // Tolerancia a erro de digitacao (13/10/2026): nomes copiados de planilha
-// vem com letra faltando ou trocada ("MAURCIO PINHEIRO CARNEIRO"). Quando o
-// trecho exato nao aparece, cada palavra da busca precisa casar com alguma
+// vem com letra faltando ou trocada ("MAURCIO PINHEIRO CARNEIRO"). E uma
+// SEGUNDA tentativa, para a lista inteira: so quando nada bate exato (ver
+// filtrarBusca). Misturar parecidos com exatos escondia o resultado certo.
+// Cada palavra da busca precisa casar com alguma
 // palavra do campo: igual, comeco dela, ou com 1 letra de diferenca (2 em
 // palavras longas; duas letras trocadas de lugar contam como 1). "de/da/do/
 // dos/das/e" sao ignoradas; palavras curtas so casam pelo comeco.
@@ -64,28 +66,35 @@ const casaAproximado = (t, valor) => {
   return falham.length === 0 || (busca.length >= 3 && falham.length === 1 && longasOk >= 2);
 };
 
-// Um nome so (sem os outros campos): exato, ou aproximado como acima.
-export const casaNome = (termo, nome) => {
+// Um nome so, parecido (a segunda tentativa).
+export const casaNomeParecido = (termo, nome) => {
   const t = normalizarBusca(termo);
-  if (!t) return true;
+  if (!t || /^[\d.\-/\s]+$/.test(t)) return false;
   const valor = normalizarBusca(nome);
-  return !!valor && (valor.includes(t) || casaAproximado(t, valor));
+  return !!valor && casaAproximado(t, valor);
 };
 
+// Exato: o trecho aparece em algum dos campos (ou os digitos, no CPF).
 export const casaBusca = (termo, campos) => {
   const t = normalizarBusca(termo);
   if (!t) return true;
   const soNumeros = /^[\d.\-/\s]+$/.test(t);
   const digitos = t.replace(/\D/g, '');
-  const exato = campos.some((campo) => {
+  return campos.some((campo) => {
     const valor = normalizarBusca(campo);
     if (!valor) return false;
     if (valor.includes(t)) return true;
     return soNumeros && digitos.length >= 3 && valor.replace(/\D/g, '').includes(digitos);
   });
-  if (exato || soNumeros) return exato;
-  return campos.some((campo) => {
-    const valor = normalizarBusca(campo);
-    return !!valor && casaAproximado(t, valor);
-  });
+};
+
+// Filtra uma lista: primeiro os exatos; se NENHUM bater, os parecidos pelo
+// nome (campoNome). Devolve { itens, parecidos } -- parecidos = true quando
+// caiu na segunda tentativa (a tela avisa).
+export const filtrarBusca = (lista, termo, campos, campoNome) => {
+  if (!normalizarBusca(termo)) return { itens: lista, parecidos: false };
+  const exatos = lista.filter((x) => casaBusca(termo, campos(x)));
+  if (exatos.length) return { itens: exatos, parecidos: false };
+  const parecidos = lista.filter((x) => casaNomeParecido(termo, campoNome(x)));
+  return { itens: parecidos, parecidos: parecidos.length > 0 };
 };

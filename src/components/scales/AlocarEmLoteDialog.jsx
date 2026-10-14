@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { nomeDaIgreja } from '@/constants/igrejas';
-import { casaBusca } from '@/utils/busca';
+import { casaBusca, casaNomeParecido } from '@/utils/busca';
 import { alocarEmLoteNaArea } from '@/services/equipanteAllocationService';
 import { cn } from '@/lib/utils';
 
@@ -68,22 +68,34 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
 
   const escolheramQtd = useMemo(() => fila.filter((p) => opcaoDe(p) >= 0).length, [fila, area]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Busca: exato primeiro (na fila e nos ja escalados); nomes parecidos so se
+  // nada bater exato em nenhum dos dois.
+  const casaExato = (p) => casaBusca(busca, [p.nome, nomeDaIgreja(p), p.igreja_outra, p.cpf]);
+  const daBusca = (p) => (!porParecido ? casaExato(p) : casaNomeParecido(busca, p.nome));
+  const porParecido = useMemo(() => {
+    if (!busca.trim()) return false;
+    const naFila = fila.filter((p) => (modo === 'escolheram' ? opcaoDe(p) >= 0 : true));
+    if (naFila.some(casaExato)) return false;
+    if (busca.trim().length >= 2 && escalados.some(casaExato)) return false;
+    return true;
+  }, [fila, escalados, modo, busca, area]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const lista = useMemo(() => fila
     .filter((p) => (modo === 'escolheram' ? opcaoDe(p) >= 0 : true))
-    .filter((p) => casaBusca(busca, [p.nome, nomeDaIgreja(p), p.igreja_outra, p.cpf]))
+    .filter(daBusca)
     .sort((a, b) => {
       const oa = opcaoDe(a); const ob = opcaoDe(b);
       const ra = oa < 0 ? 9 : oa; const rb = ob < 0 ? 9 : ob;
       return ra - rb || String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
-    }), [fila, modo, busca, area]); // eslint-disable-line react-hooks/exhaustive-deps
+    }), [fila, modo, busca, area, porParecido]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Ja escalados em outra area: so com busca (sao centenas), no maximo 30.
   const areaEhEspecial = areasEspeciais.includes(area);
   const especialDe = (p) => (areaEhEspecial ? (p.areas || []).find((a) => areasEspeciais.includes(a)) : null);
   const extras = useMemo(() => (busca.trim().length < 2 ? [] : escalados
-    .filter((p) => casaBusca(busca, [p.nome, nomeDaIgreja(p), p.igreja_outra, p.cpf]))
+    .filter(daBusca)
     .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'))
-    .slice(0, 30)), [escalados, busca]);
+    .slice(0, 30)), [escalados, busca, porParecido]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const escolhidos = useMemo(() => [...fila, ...escalados].filter((p) => marcados.has(p.id)), [fila, escalados, marcados]);
   const mulheresMarcadas = escolhidos.filter(ehMulher).length;
@@ -286,6 +298,12 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
         )}
 
         <div className="flex-1 min-h-0 max-h-[50vh] overflow-y-auto pr-1 space-y-1">
+          {porParecido && (lista.length > 0 || extras.length > 0) && (
+            <p className="flex items-center gap-1.5 text-[11px] text-amber-200/80 pb-1">
+              <AlertTriangle className="h-3 w-3 shrink-0" />
+              Nenhum nome igual a “{busca.trim()}” — mostrando nomes parecidos (erro de digitação?).
+            </p>
+          )}
           {!lista.length && !extras.length && (
             <p className="text-center py-8 text-gray-500">
               {busca ? 'Ninguém da fila bate com a busca.' : modo === 'escolheram' ? `Ninguém na fila escolheu ${area}. Veja “Toda a fila”.` : 'A fila “A escalar” está vazia.'}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,6 @@ import { fetchConfiguracoes, updateCpfsAreaEspecial } from '@/services/organizer
 import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
 import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus, ChevronDown, ChevronUp, Pin, ArrowUpDown, Plus } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
 import AlocarEmLoteDialog from '@/components/scales/AlocarEmLoteDialog';
@@ -32,9 +31,10 @@ import ChamadaQuadro from '@/components/scales/ChamadaQuadro';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import SeloPastor from '@/components/common/SeloPastor';
+import CampoBusca from '@/components/common/CampoBusca';
 import { tituloPastor } from '@/utils/pastor';
 import { nomeDaIgreja } from '@/constants/igrejas';
-import { casaBusca, casaNome } from '@/utils/busca';
+import { casaBusca, casaNomeParecido, filtrarBusca } from '@/utils/busca';
 import { emTeste } from '@/services/ambiente';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
@@ -85,6 +85,9 @@ const NOMES_ESPECIAIS = AREAS_ESPECIAIS.map(a => a.label);
 const AREAS_NO_CORPO = ordenarComComplementares(WORK_AREAS.filter(area => !NOMES_ESPECIAIS.includes(area)));
 // Areas comuns que da para acrescentar a alguem ("Não será escalado" nao e area de trabalho).
 const AREAS_COMUNS = AREAS_NO_CORPO.filter(area => area !== 'Não será escalado');
+// Lista vazia com identidade fixa (para o React.memo da tabela nao achar que
+// "[]" novo e mudanca).
+const VAZIO = [];
 
 const OrganizerScalesPage = () => {
   const [loading, setLoading] = useState(false);
@@ -357,16 +360,15 @@ const OrganizerScalesPage = () => {
 
   const termoBusca = semAcento(buscaFila.trim());
   const digitosBusca = termoBusca.replace(/\D/g, '');
-  const filaFiltrada = termoBusca
-    ? filaOrdenada.filter(eq =>
-        casaNome(buscaFila, eq.nome) ||
-        semAcento(nomeDaIgreja(eq)).includes(termoBusca) ||
-        (digitosBusca !== '' && (eq.cpf || '').replace(/\D/g, '').includes(digitosBusca)) ||
-        semAcento(eq.area_trabalho_opcao1).includes(termoBusca) ||
-        semAcento(eq.area_trabalho_opcao2).includes(termoBusca) ||
-        semAcento(eq.area_trabalho_opcao3).includes(termoBusca)
-      )
-    : filaOrdenada;
+  // Exato primeiro (nome, igreja, CPF, sugestoes); parecido pelo nome so se
+  // nada bater exato -- nem na fila, nem entre os ja escalados.
+  const casaFilaExato = (eq) =>
+    semAcento(eq.nome).includes(termoBusca) ||
+    semAcento(nomeDaIgreja(eq)).includes(termoBusca) ||
+    (digitosBusca !== '' && (eq.cpf || '').replace(/\D/g, '').includes(digitosBusca)) ||
+    semAcento(eq.area_trabalho_opcao1).includes(termoBusca) ||
+    semAcento(eq.area_trabalho_opcao2).includes(termoBusca) ||
+    semAcento(eq.area_trabalho_opcao3).includes(termoBusca);
 
   // As 3 preferencias da pessoa, sem repeticao e so as que existem hoje
   // como area de verdade (uma preferencia antiga pode ter sido renomeada).
@@ -378,18 +380,23 @@ const OrganizerScalesPage = () => {
   // Quantas areas cada pessoa tem. Uma pessoa pode aparecer em varias
   // tabelas -- nas escalas oficiais ~55 por edicao trabalham em duas areas
   // e algumas em tres.
-  const areasPorEquipante = allocations.reduce((acc, a) => {
+  // (useMemo: mesma identidade enquanto os dados nao mudam -- a tabela de cada
+  // area so se redesenha quando algo dela muda; ver "Desempenho" abaixo.)
+  const areasPorEquipante = useMemo(() => allocations.reduce((acc, a) => {
     acc[a.id] = (acc[a.id] || 0) + 1;
     return acc;
-  }, {});
+  }, {}), [allocations]);
 
   // { equipanteId: [areas fixas] } e { area: [fixos] }.
-  const fixasPorEquipante = {};
-  const fixosPorArea = {};
-  fixas.forEach(f => {
-    (fixasPorEquipante[f.equipante_id] ||= []).push(f.area);
-    (fixosPorArea[f.area] ||= []).push(f);
-  });
+  const { fixasPorEquipante, fixosPorArea } = useMemo(() => {
+    const porEquipante = {};
+    const porArea = {};
+    fixas.forEach(f => {
+      (porEquipante[f.equipante_id] ||= []).push(f.area);
+      (porArea[f.area] ||= []).push(f);
+    });
+    return { fixasPorEquipante: porEquipante, fixosPorArea: porArea };
+  }, [fixas]);
   const ehFixoEm = (equipanteId, area) => (fixasPorEquipante[equipanteId] || []).includes(area);
 
   // Contagem de PESSOAS, nao de participacoes: quem esta em duas areas tem
@@ -412,33 +419,40 @@ const OrganizerScalesPage = () => {
   // Resultado da busca "onde o fulano esta?". Agrupa as participacoes por
   // pessoa, para responder numa linha so em vez de obrigar o organizador a
   // varrer as 40 tabelas.
+  // Quem esta escalado: uma entrada por pessoa, com todas as areas dela.
+  const escaladosPorPessoa = useMemo(() => Object.values(
+    allocations.reduce((acc, a) => {
+      (acc[a.id] = acc[a.id] || { id: a.id, nome: a.nome, igreja: nomeDaIgreja(a), cpf: a.cpf, areas: [] })
+        .areas.push({ area: a.allocatedArea, atuacao: a.atuacao, escalaId: a.escalaId });
+      return acc;
+    }, {})
+  ).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')), [allocations]);
+
+  // Fila + "ja escalados" da busca da fila (a fila so lista quem nao tem
+  // area: quem ja esta escalado aparece embaixo, com onde esta e o "escalar
+  // tambem").
+  const casaEscaladoDaFila = (x) =>
+    semAcento(x.nome).includes(termoBusca) ||
+    (digitosBusca !== '' && (x.cpf || '').replace(/\D/g, '').includes(digitosBusca));
+  let filaFiltrada = filaOrdenada;
+  let jaEscaladosDaBuscaFila = [];
+  let filaPorParecido = false;
+  if (termoBusca) {
+    filaFiltrada = filaOrdenada.filter(casaFilaExato);
+    jaEscaladosDaBuscaFila = escaladosPorPessoa.filter(casaEscaladoDaFila);
+    if (!filaFiltrada.length && !jaEscaladosDaBuscaFila.length) {
+      filaFiltrada = filaOrdenada.filter(eq => casaNomeParecido(buscaFila, eq.nome));
+      jaEscaladosDaBuscaFila = escaladosPorPessoa.filter(x => casaNomeParecido(buscaFila, x.nome));
+      filaPorParecido = filaFiltrada.length + jaEscaladosDaBuscaFila.length > 0;
+    }
+    jaEscaladosDaBuscaFila = jaEscaladosDaBuscaFila.slice(0, 5);
+  }
+
   const termoEscalados = semAcento(buscaEscalados.trim());
-  const escaladosEncontrados = !termoEscalados ? [] : Object.values(
-    allocations.reduce((acc, a) => {
-      (acc[a.id] = acc[a.id] || { id: a.id, nome: a.nome, igreja: nomeDaIgreja(a), cpf: a.cpf, areas: [] })
-        .areas.push({ area: a.allocatedArea, atuacao: a.atuacao, escalaId: a.escalaId });
-      return acc;
-    }, {})
-  ).filter(p =>
-    casaNome(buscaEscalados, p.nome) ||
-    semAcento(p.igreja).includes(termoEscalados) ||
-    (p.cpf || '').replace(/\D/g, '').includes(termoEscalados.replace(/\D/g, '') || ' ') ||
-    p.areas.some(x => semAcento(x.area).includes(termoEscalados))
-  ).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-  
-  // Quem bate com a busca da FILA mas ja esta escalado (a fila so lista quem
-  // nao tem area): em vez de "ninguem", mostra onde a pessoa esta e deixa
-  // acrescentar outra area ali mesmo.
-  const jaEscaladosDaBuscaFila = !termoBusca ? [] : Object.values(
-    allocations.reduce((acc, a) => {
-      (acc[a.id] = acc[a.id] || { id: a.id, nome: a.nome, igreja: nomeDaIgreja(a), cpf: a.cpf, areas: [] })
-        .areas.push({ area: a.allocatedArea, atuacao: a.atuacao, escalaId: a.escalaId });
-      return acc;
-    }, {})
-  ).filter(x =>
-    casaNome(buscaFila, x.nome) ||
-    (digitosBusca !== '' && (x.cpf || '').replace(/\D/g, '').includes(digitosBusca))
-  ).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).slice(0, 5);
+  const { itens: escaladosEncontrados, parecidos: escaladosPorParecido } = !termoEscalados
+    ? { itens: [], parecidos: false }
+    : filtrarBusca(escaladosPorPessoa, buscaEscalados,
+        p => [p.nome, p.igreja, p.cpf, ...p.areas.map(x => x.area)], p => p.nome);
 
   const previousAllocationsRef = useRef([]);
   const saveTimeoutRef = useRef(null);
@@ -1350,17 +1364,23 @@ const OrganizerScalesPage = () => {
   // Lider sempre no topo (13/10/2026, Patrick). Nas areas por cor ha um lider
   // por cor: ficam todos no topo, na ordem das cores. Depois, todo mundo em
   // ordem alfabetica.
-  const getEquipantesByArea = areaName => {
-    const lideres = (atuacoesPorArea[areaName] || []).filter(a => a.ehLider).map(a => a.atuacao);
-    const ehLider = (eq) => lideres.includes(eq.atuacao);
+  // Agrupado e ordenado UMA vez por mudanca dos dados (antes: a cada letra
+  // digitada numa busca, 40 filtros + ordenacoes de ~900 linhas).
+  const equipantesPorArea = useMemo(() => {
     const ordemCor = (eq) => { const i = CORES_GRUPO.indexOf(eq.cor); return i < 0 ? CORES_GRUPO.length : i; };
-    return allocations
-      .filter(a => a.allocatedArea === areaName)
-      .sort((a, b) =>
+    const grupos = {};
+    allocations.forEach(a => { (grupos[a.allocatedArea] ||= []).push(a); });
+    Object.keys(grupos).forEach(areaName => {
+      const lideres = (atuacoesPorArea[areaName] || []).filter(a => a.ehLider).map(a => a.atuacao);
+      const ehLider = (eq) => lideres.includes(eq.atuacao);
+      grupos[areaName].sort((a, b) =>
         (Number(ehLider(b)) - Number(ehLider(a))) ||
         (ehLider(a) ? ordemCor(a) - ordemCor(b) : 0) ||
         String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' }));
-  };
+    });
+    return grupos;
+  }, [allocations, atuacoesPorArea]);
+  const getEquipantesByArea = areaName => equipantesPorArea[areaName] || VAZIO;
 
   // Sem cor numa area dividida por cor (13/10/2026): so aviso -- no topo, no
   // cabecalho da area, na coluna Cor e na confirmacao de lancamento.
@@ -1392,8 +1412,38 @@ const OrganizerScalesPage = () => {
     requestAnimationFrame(() => filtroAreasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
-  const casaBuscaEscalado = (eq) =>
-    casaBusca(buscaNasAreas, [eq.nome, nomeDaIgreja(eq), eq.igreja_outra, eq.cpf]);
+  // Resultado do filtro "Filtrar os nomes nas tabelas", por area.
+  const filtradosPorArea = useMemo(() => {
+    if (!buscaNasAreas.trim()) return null;
+    const montar = (casa) => {
+      const r = {};
+      let total = 0;
+      Object.entries(equipantesPorArea).forEach(([area, lista]) => {
+        r[area] = lista.filter(casa);
+        total += r[area].length;
+      });
+      return { r, total };
+    };
+    const exato = montar(eq => casaBusca(buscaNasAreas, [eq.nome, nomeDaIgreja(eq), eq.igreja_outra, eq.cpf]));
+    return exato.total ? exato.r : montar(eq => casaNomeParecido(buscaNasAreas, eq.nome)).r;
+  }, [equipantesPorArea, buscaNasAreas]);
+
+  // Desempenho (13/10/2026, Patrick: as buscas travavam a digitacao). A
+  // tabela de cada area (EquipantesGridDisplay) e React.memo: so se redesenha
+  // quando os dados DELA mudam. Para isso as funcoes passadas para ela tem de
+  // ser sempre as mesmas -- estas chamam a versao mais nova de cada handler
+  // pelo ref (nada fica com estado velho).
+  const acoesRef = useRef({});
+  const acoesTabela = useMemo(() => ({
+    exportar: (area) => acoesRef.current.exportar(area),
+    realocar: (...a) => acoesRef.current.realocar(...a),
+    adicionarArea: (...a) => acoesRef.current.adicionarArea(...a),
+    remover: (...a) => acoesRef.current.remover(...a),
+    definirAtuacao: (...a) => acoesRef.current.definirAtuacao(...a),
+    definirCor: (...a) => acoesRef.current.definirCor(...a),
+    escolherArea: (id, val) => setManualAreaChoice(prev => ({ ...prev, [id]: val })),
+    fixar: (eq, a) => setFixarAberto({ eq, area: a }),
+  }), []);
 
   const getGenderCount = (equipantes, targetGender) => {
     return equipantes.filter(e => {
@@ -1411,11 +1461,11 @@ const OrganizerScalesPage = () => {
   // noModulo: dentro das Areas Especiais (janela grande), a tabela pode crescer.
   const renderCartaoArea = (area, filtrar = false, noModulo = false) => {
     const areaEquipantes = getEquipantesByArea(area);
-    const mostrados = filtrar && buscaNasAreas.trim() ? areaEquipantes.filter(casaBuscaEscalado) : areaEquipantes;
+    const mostrados = filtrar && filtradosPorArea ? (filtradosPorArea[area] || VAZIO) : areaEquipantes;
     const limitObj = getLimiteAreaComGenero(area, limitsMap, DEFAULT_AREA_CAPACITY);
     const mulheresCount = getGenderCount(areaEquipantes, 'feminino');
     const homensCount = getGenderCount(areaEquipantes, 'masculino');
-    const atuacoesDaArea = atuacoesPorArea[area] || [];
+    const atuacoesDaArea = atuacoesPorArea[area] || VAZIO;
 
     // A área tem líder previsto na escala oficial e ninguém está com
     // essa atuação -- só avisa se já houver gente na área (numa área
@@ -1456,9 +1506,18 @@ const OrganizerScalesPage = () => {
           </div>
 
           <div className={cn("p-4 overflow-y-auto", noModulo ? "max-h-[65vh]" : "max-h-[400px]")}>
-            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={mostrados} areaName={area} onExport={() => handleExportArea(area, areaEquipantes)} onRealocar={podeGerir ? handleRealocar : undefined} onAdicionarArea={podeGerir ? handleAdicionarArea : undefined} onRemover={podeGerir ? handleRemover : undefined} areasPorEquipante={areasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={(id, val) => setManualAreaChoice(prev => ({ ...prev, [id]: val }))} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={handleDefinirAtuacao} salvandoAtuacao={salvandoAtuacao} mostrarCor={temCor} onDefinirCor={handleDefinirCor} salvandoCor={salvandoCor} fixasPorEquipante={fixasPorEquipante} onFixar={podeGerir ? (eq, a) => setFixarAberto({ eq, area: a }) : undefined} />}
+            {loadingLimits ? <div className="flex items-center justify-center h-20"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div> : <EquipantesGridDisplay equipantes={mostrados} areaName={area} onExport={acoesTabela.exportar} onRealocar={podeGerir ? acoesTabela.realocar : undefined} onAdicionarArea={podeGerir ? acoesTabela.adicionarArea : undefined} onRemover={podeGerir ? acoesTabela.remover : undefined} areasPorEquipante={areasPorEquipante} realocarAreaChoice={manualAreaChoice} onRealocarAreaChoiceChange={acoesTabela.escolherArea} realocando={manualAllocating} atuacoes={atuacoesDaArea} onDefinirAtuacao={acoesTabela.definirAtuacao} salvandoAtuacao={salvandoAtuacao} mostrarCor={temCor} onDefinirCor={acoesTabela.definirCor} salvandoCor={salvandoCor} fixasPorEquipante={fixasPorEquipante} onFixar={podeGerir ? acoesTabela.fixar : undefined} />}
           </div>
         </div>;
+  };
+
+  acoesRef.current = {
+    exportar: (area) => handleExportArea(area, getEquipantesByArea(area)),
+    realocar: handleRealocar,
+    adicionarArea: handleAdicionarArea,
+    remover: handleRemover,
+    definirAtuacao: handleDefinirAtuacao,
+    definirCor: handleDefinirCor,
   };
 
   return <Layout largo>
@@ -1802,9 +1861,9 @@ const OrganizerScalesPage = () => {
                 </Button>
                 <div className="relative flex-1 min-w-[12rem] xl:w-72 xl:flex-none">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
-                  <Input
+                  <CampoBusca
                     value={buscaFila}
-                    onChange={(e) => setBuscaFila(e.target.value)}
+                    onChange={setBuscaFila}
                     placeholder="Buscar por nome, igreja, CPF ou área..."
                     className="h-9 pl-8 bg-black/40 border-white/20 text-white"
                   />
@@ -1812,6 +1871,7 @@ const OrganizerScalesPage = () => {
               </div>}
             </div>
             {!filaMinimizada && <div className="p-4 space-y-3 max-h-[32rem] overflow-y-auto">
+              {filaPorParecido && <p className="text-[11px] text-amber-200/80 flex items-center gap-1.5"><AlertTriangle className="h-3 w-3 shrink-0" />Nenhum nome igual a “{buscaFila.trim()}” — mostrando nomes parecidos (erro de digitação?).</p>}
               {filaFiltrada.length === 0 && (
                 <p className="text-sm text-red-200/60 text-center py-4">
                   {buscaFila.trim() ? <>Ninguém na fila corresponde a “{buscaFila}”.</> : 'Ninguém na fila com esse filtro.'}
@@ -1976,9 +2036,9 @@ const OrganizerScalesPage = () => {
                 <Search className="h-4 w-4 text-gray-500 shrink-0" />
                 <h3 className="font-semibold text-white text-sm">Onde alguém está escalado</h3>
               </div>
-              <Input
+              <CampoBusca
                 value={buscaEscalados}
-                onChange={(e) => setBuscaEscalados(e.target.value)}
+                onChange={setBuscaEscalados}
                 placeholder="Buscar por nome, igreja, CPF ou área..."
                 className="h-9 w-full sm:w-96 bg-black/40 border-white/20 text-white"
               />
@@ -1986,6 +2046,7 @@ const OrganizerScalesPage = () => {
 
             {termoEscalados && (
               <div className="px-4 pb-4 space-y-2 max-h-80 overflow-y-auto">
+                {escaladosPorParecido && <p className="text-[11px] text-amber-200/80 flex items-center gap-1.5"><AlertTriangle className="h-3 w-3 shrink-0" />Nenhum nome igual a “{buscaEscalados.trim()}” — mostrando nomes parecidos (erro de digitação?).</p>}
                 {escaladosEncontrados.length === 0 && (
                   <p className="text-sm text-gray-500 text-center py-2">
                     Ninguém escalado corresponde a “{buscaEscalados}”.
@@ -2358,9 +2419,9 @@ const OrganizerScalesPage = () => {
           const termo = buscaNasAreas.trim();
           const visiveis = AREAS_NO_CORPO
             .filter(area => areaFiltro === 'todas' || area === areaFiltro)
-            .filter(area => !termo || getEquipantesByArea(area).some(casaBuscaEscalado));
+            .filter(area => !termo || (filtradosPorArea?.[area] || VAZIO).length > 0);
           const encontrados = termo
-            ? visiveis.reduce((t, area) => t + getEquipantesByArea(area).filter(casaBuscaEscalado).length, 0)
+            ? visiveis.reduce((t, area) => t + (filtradosPorArea?.[area] || VAZIO).length, 0)
             : null;
           return (
             <>
@@ -2378,8 +2439,8 @@ const OrganizerScalesPage = () => {
                 </Select>
                 <div className="relative flex-1">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
-                  <Input
-                    value={buscaNasAreas} onChange={e => setBuscaNasAreas(e.target.value)}
+                  <CampoBusca
+                    value={buscaNasAreas} onChange={setBuscaNasAreas}
                     placeholder="Filtrar os nomes nas tabelas abaixo..."
                     className="h-10 pl-8 pr-8 bg-black/40 border-white/20 text-white placeholder:text-gray-500"
                   />

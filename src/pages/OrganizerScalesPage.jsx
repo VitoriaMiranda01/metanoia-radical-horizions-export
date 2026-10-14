@@ -9,7 +9,7 @@ import { WORK_AREAS, AREAS_ESPECIAIS, AREAS_ESPECIAIS_TRANSFERIVEIS, AREAS_RECEP
 import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges, fetchAtuacoesPorArea, definirAtuacao,
   definirCor, contarAguardandoAprovacao, fetchSituacaoEscala, lancarEscala, desfazerLancamentoEscala,
   alocarFilaAutomaticamente, fetchEscalaOrdem, lancarEscalaOficial, desfazerEscalaOficial,
-  fetchSituacaoAlocacaoAutomatica, desfazerAlocacaoAutomatica } from '@/services/scalesService';
+  fetchSituacaoAlocacaoAutomatica, desfazerAlocacaoAutomatica, distribuirCoresArea } from '@/services/scalesService';
 import { fetchLimitesAreas, saveLimiteAreaComGenero, getLimiteAreaComGenero } from '@/services/limiteAreasService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { exportEquipantesByArea, exportAllEquipantes } from '@/utils/excelExport';
@@ -201,6 +201,8 @@ const OrganizerScalesPage = () => {
   const [confirmandoDesfazerAuto, setConfirmandoDesfazerAuto] = useState(false);
   // "Alocar em lote" de uma area (12/10/2026): o nome da area aberta.
   const [loteArea, setLoteArea] = useState(null);
+  // Area cujas cores estao sendo distribuidas (botao "Distribuir cores").
+  const [distribuindoCores, setDistribuindoCores] = useState(null);
   // Fixos na area 📌 (13/10/2026, migration 20261013b): o "core" de cada area.
   const [fixas, setFixas] = useState([]);
   const [fixarAberto, setFixarAberto] = useState(null); // null | { eq, area }
@@ -1069,7 +1071,10 @@ const OrganizerScalesPage = () => {
       r.opcao1 > 0 && `${r.opcao1} na 1ª opção`,
       r.opcao2 > 0 && `${r.opcao2} na 2ª`,
       r.opcao3 > 0 && `${r.opcao3} na 3ª`,
-      r.coringa > 0 && `${r.coringa} de "qualquer área"`
+      r.pastores > 0 && `${r.pastores} no Pastor Invisível`,
+      r.coringa > 0 && `${r.coringa} de "qualquer área"`,
+      r.semOpcaoAlocados > 0 && `${r.semOpcaoAlocados} sem opção (inscrição manual) numa área com vaga`,
+      r.foraDasOpcoes > 0 && `${r.foraDasOpcoes} fora das opções (as 3 estavam cheias)`
     ].filter(Boolean).join(', ');
 
     toast({
@@ -1087,6 +1092,30 @@ const OrganizerScalesPage = () => {
     if (r.opcoesCheias > 0) setSoSugestoesCheias(true);
     fetchBackgroundData(false);
   };
+
+  // Distribuir cores (14/10/2026): quem esta na area sem cor ganha a cor com
+  // menos gente (e, no empate, menos gente do mesmo sexo). Quem ja tem cor fica.
+  const handleDistribuirCores = async (area) => {
+    setDistribuindoCores(area);
+    const r = await distribuirCoresArea(area);
+    setDistribuindoCores(null);
+    if (!r.success) {
+      toast({ title: 'Não foi possível distribuir as cores', description: r.error, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: r.coloridos > 0 ? `${r.coloridos} pessoa(s) ganharam cor em ${area}` : 'Ninguém sem cor',
+      description: 'Equilibrado por quantidade e por homens/mulheres em cada cor.',
+      className: 'bg-green-600 text-white'
+    });
+    fetchBackgroundData(false);
+  };
+
+  // Pastor Invisível ainda com vaga: o Alocar automático completa com pastores
+  // mesmo com a fila vazia (14/10/2026).
+  const faltaPastorInvisivel = Math.max(0,
+    getLimiteAreaComGenero('Pastor Invisível', limitsMap, 0).limiteMaximo
+    - allocations.filter(a => a.allocatedArea === 'Pastor Invisível').length);
 
   // So quando ainda ha alguem para desfazer: se todos foram mexidos a mao (ou
   // a area foi limpa), o botao nao faria nada.
@@ -1604,7 +1633,7 @@ const OrganizerScalesPage = () => {
 
     return <div key={area} className="bg-black/40 border border-white/10 rounded-lg overflow-hidden shadow-md backdrop-blur-sm">
           <div className="sticky top-0 z-10 bg-gray-900 border-b border-white/10">
-            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => faltaCor(area, eq)).length : 0} fixos={fixosHeader} onLimpar={podeGerir && !escala?.lancada_em ? () => setLimparAreaAberta(area) : undefined} />
+            <AreaLimitHeader areaName={area} currentCount={areaEquipantes.length} currentMulheres={mulheresCount} currentHomens={homensCount} limitObj={limitObj} onSaveLimit={handleUpdateLimit} isOrganizer={true} faltaLider={faltaLider} coresSemLider={coresSemLider} onAlocarEmLote={() => setLoteArea(area)} semCor={temCor ? areaEquipantes.filter(eq => faltaCor(area, eq)).length : 0} fixos={fixosHeader} onLimpar={podeGerir && !escala?.lancada_em ? () => setLimparAreaAberta(area) : undefined} onDistribuirCores={podeGerir && temCor ? () => handleDistribuirCores(area) : undefined} distribuindoCores={distribuindoCores === area} />
           </div>
 
           {/* [overflow-anchor:none] (14/10/2026): ao trocar cor/atuacao a linha
@@ -1832,12 +1861,14 @@ const OrganizerScalesPage = () => {
 
               {/* Distribui a fila pelas preferencias da inscricao. So aparece
                   habilitado quando ha alguem esperando. */}
-              {(!autoAtivo || waitlist.length > 0) && (
+              {(!autoAtivo || waitlist.length > 0 || faltaPastorInvisivel > 0) && (
               <Button onClick={() => setConfirmandoAuto(true)}
-                disabled={waitlist.length === 0 || alocandoAuto}
+                disabled={(waitlist.length === 0 && faltaPastorInvisivel === 0) || alocandoAuto}
                 variant="outline"
                 data-dica={waitlist.length === 0
-                  ? 'A fila "A escalar" está vazia.'
+                  ? (faltaPastorInvisivel > 0
+                    ? `A fila está vazia, mas o Pastor Invisível tem ${faltaPastorInvisivel} vaga(s): completa com pastores. Pede confirmação.`
+                    : 'A fila "A escalar" está vazia.')
                   : 'Distribuir todo mundo da fila "A escalar" pelas áreas que escolheram na inscrição. Pede confirmação.'}
                 className="bg-purple-600/20 text-purple-300 border-purple-600/50 hover:bg-purple-600/40 hover:text-purple-200">
                 {alocandoAuto
@@ -2176,11 +2207,21 @@ const OrganizerScalesPage = () => {
                 quem sobrou na 2ª, depois na 3ª — assim ninguém perde a 1ª opção para a 3ª de
                 outra pessoa. Dentro de cada opção, escolhe primeiro quem{' '}
                 {escalaOrdem === 'cadastro' ? 'se cadastrou' : 'foi aprovado'} antes.
-                Quem marcou “Disponível para qualquer área” fica para o fim.
                 <br /><br />
-                Guia, Inimigo, Espírito Santo e as demais áreas que só a diretoria preenche
-                <strong className="text-white"> só recebem os fixos 📌</strong> por aqui. Quem já
-                está escalado não sai do lugar, e você pode mudar tudo depois.
+                <strong className="text-white">No fim, quem sobrou vai para uma área sorteada com vaga</strong>:
+                quem marcou “Disponível para qualquer área”, as inscrições manuais sem opção e quem
+                teve as 3 opções cheias (esses ficam com a etiqueta “Fora das opções”). Quem não tem
+                sexo informado só vai para área sem limite por sexo.
+                <br /><br />
+                <strong className="text-white">Pastor Invisível:</strong> completa até o limite com
+                pastores, 3 por cor, homens e mulheres misturados (o pré-cadastro entra primeiro).
+                Eles <strong className="text-white">saem das outras áreas</strong> — menos quem é
+                líder ou fixo 📌 em alguma área.
+                <br /><br />
+                Invisível e Marcador já entram com cor. Fotografia, Guia, Inimigo, Espírito Santo e
+                as demais áreas que só a diretoria preenche <strong className="text-white">só recebem
+                os fixos 📌</strong> por aqui. Ninguém volta para uma área de onde foi tirado à mão.
+                Fora os pastores, quem já está escalado não sai do lugar, e você pode mudar tudo depois.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -2215,8 +2256,8 @@ const OrganizerScalesPage = () => {
               ocupados={naArea.length}
               mulheres={getGenderCount(naArea, 'feminino')}
               homens={getGenderCount(naArea, 'masculino')}
-              fila={waitlist}
-              escalados={escaladosFora}
+              fila={loteArea === 'Pastor Invisível' ? waitlist.filter(p => tituloPastor(p)) : waitlist}
+              escalados={loteArea === 'Pastor Invisível' ? escaladosFora.filter(p => tituloPastor(p)) : escaladosFora}
               areasEspeciais={NOMES_ESPECIAIS}
               atuacoes={atuacoesPorArea[loteArea] || []}
               onClose={() => setLoteArea(null)}

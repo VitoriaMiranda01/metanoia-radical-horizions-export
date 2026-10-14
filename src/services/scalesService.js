@@ -74,7 +74,8 @@ export const detectAllocationChanges = (currentAllocations, previousAllocations)
   const changes = [];
   currentAllocations.forEach(current => {
     const prev = prevMap.get(current.escalaId ?? current.id);
-    if (!prev || prev.allocatedArea !== current.allocatedArea || !!prev.automatica !== !!current.automatica) changes.push(current);
+    if (!prev || prev.allocatedArea !== current.allocatedArea || !!prev.automatica !== !!current.automatica
+      || !!prev.foraDasOpcoes !== !!current.foraDasOpcoes || prev.cor !== current.cor) changes.push(current);
   });
   return changes;
 };
@@ -108,9 +109,10 @@ export const fetchAllAllocations = async () => {
       () => supabase.from('escalas').select(`id, equipante_id, area_alocada, atuacao, cor, separado_de, incluido_por, equipantes!inner (${COLUNAS_EQUIPANTE})`),
       'alocações'
     ),
-    // Quem veio do "Alocar automático" e ainda esta onde ele colocou (14/10/2026,
-    // migration 20261014e). So organizador recebe; falhou = sem a marca, sem erro.
-    supabase.rpc('escalas_automaticas').then(({ data }) => new Set(Array.isArray(data) ? data : []), () => new Set())
+    // Quem veio do "Alocar automático" e ainda esta onde ele colocou, com o
+    // motivo (14/10/2026, migrations 20261014e/h): { escala_id: motivo }. So
+    // organizador recebe; falhou = sem a marca, sem erro.
+    supabase.rpc('escalas_automaticas_motivos').then(({ data }) => (data && typeof data === 'object' ? data : {}), () => ({}))
   ]);
 
   // Uma linha por PARTICIPACAO, nao por pessoa: quem trabalha em duas areas
@@ -130,7 +132,9 @@ export const fetchAllAllocations = async () => {
     separadoDe: item.separado_de || null,
     // Linha criada pela regra dos Guias (Recepção Sítio; migration 20261013h).
     regraGuia: item.incluido_por === 'Regra: Guia',
-    automatica: automaticas.has(item.id),
+    automatica: !!automaticas[item.id],
+    // As 3 opcoes estavam cheias e o automatico sorteou outra area.
+    foraDasOpcoes: automaticas[item.id] === 'fora_das_opcoes',
     statusAllocation: 'Alocado'
   }));
 };
@@ -248,6 +252,11 @@ export const alocarFilaAutomaticamente = async () => {
     opcao2: data.opcao2 ?? 0,
     opcao3: data.opcao3 ?? 0,
     coringa: data.coringa ?? 0,
+    // 14/10/2026 (migration 20261014h): Pastor Invisível, manuais sem opcao e
+    // quem tinha as 3 opcoes cheias (foi para uma area sorteada).
+    pastores: data.pastores ?? 0,
+    semOpcaoAlocados: data.sem_opcao_alocados ?? 0,
+    foraDasOpcoes: data.fora_das_opcoes ?? 0,
     sobraram: data.sobraram ?? 0,
     // Fixos 📌 (migration 20261013b): entram antes e podem passar do limite.
     fixos: data.fixos ?? 0,
@@ -267,6 +276,15 @@ export const fetchSituacaoAlocacaoAutomatica = async () => {
   const { data, error } = await supabase.rpc('situacao_alocacao_automatica');
   if (error || !data) return { ativo: false };
   return data;
+};
+
+// Da cor a quem esta na area SEM cor, equilibrando quantidade e homens/
+// mulheres por cor (14/10/2026, migration 20261014h). Quem ja tem cor fica.
+export const distribuirCoresArea = async (area) => {
+  const { data, error } = await supabase.rpc('distribuir_cores_area', { p_area: area });
+  if (error) return { success: false, error: error.message || 'Erro ao distribuir as cores' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível distribuir as cores' };
+  return { success: true, coloridos: data.coloridos ?? 0 };
 };
 
 export const desfazerAlocacaoAutomatica = async () => {

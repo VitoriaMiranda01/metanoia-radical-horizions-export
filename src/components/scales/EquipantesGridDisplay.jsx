@@ -197,6 +197,14 @@ const EquipantesGridDisplay = ({
                       <NomeComBandeira nome={formatNomeExibicao(eq.nome)} nacionalidade={eq.nacionalidade} />
                       <SeloPastor pessoa={eq} />
                       {eq.automatica && <SeloAutomatico />}
+                      {eq.foraDasOpcoes && (
+                        <span
+                          className="shrink-0 text-[9px] px-1 py-0.5 rounded bg-orange-500/15 text-orange-300 border border-orange-500/30 whitespace-nowrap"
+                          data-dica="As 3 áreas que a pessoa pediu estavam cheias: o Alocar automático a colocou numa área com vaga, diferente do que ela pediu."
+                        >
+                          Fora das opções
+                        </span>
+                      )}
                       {ehLider(eq.atuacao) && (
                         <Star
                           className="h-3 w-3 text-amber-400 shrink-0"

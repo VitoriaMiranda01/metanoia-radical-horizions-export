@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, AlertCircle, CheckCircle2, Edit2, X, Users, Trash2 } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle2, Edit2, X, Users, Trash2, Palette, Loader2 } from 'lucide-react';
 import { getOcupacaoArea } from '@/services/limiteAreasService';
 import { cn } from '@/lib/utils';
 
@@ -56,7 +56,10 @@ const AreaLimitHeader = ({
   // foram aprovados...).
   fixos = null,
   // "Limpar área": tira todo mundo. Sem a funcao, o botao nao aparece.
-  onLimpar
+  onLimpar,
+  // Distribuir cores (14/10/2026): da cor a quem esta sem, equilibrando.
+  onDistribuirCores,
+  distribuindoCores = false
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [localLimit, setLocalLimit] = useState(limitObj.limiteMaximo);
@@ -247,6 +250,12 @@ const AreaLimitHeader = ({
                 variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10" onClick={onAlocarEmLote}>
                 <Users className="w-3 h-3 mr-1" />
                 <span className="text-[10px]">Alocar em lote</span>
+              </Button>}
+              {onDistribuirCores && semCor > 0 && <Button
+                data-dica={`Dar cor às ${semCor} pessoa(s) sem cor, equilibrando a quantidade e homens/mulheres em cada cor. Quem já tem cor continua com a dela.`}
+                variant="ghost" size="sm" className="h-6 px-2 hover:text-white hover:bg-white/10" onClick={onDistribuirCores} disabled={distribuindoCores}>
+                {distribuindoCores ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Palette className="w-3 h-3 mr-1" />}
+                <span className="text-[10px]">Distribuir cores</span>
               </Button>}
               {onLimpar && <Button
                 data-dica={currentCount === 0 ? 'A área já está vazia.' : 'Tirar todo mundo desta área de uma vez (fixos inclusive). Quem não tem outra área volta para a fila "A escalar".'}

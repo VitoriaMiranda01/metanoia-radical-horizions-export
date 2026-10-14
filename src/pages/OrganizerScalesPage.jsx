@@ -4,7 +4,7 @@ import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { WORK_AREAS, AREAS_ESPECIAIS, AREAS_RECEPCAO_IGREJA, AREAS_COM_PRE_CADASTRO, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor, AREA_DISPONIVEL_QUALQUER, AREAS_SO_PREFERENCIA, ordenarComComplementares, AREA_GUIA, GUIA_TAMBEM_EM } from '@/constants/workAreas';
+import { WORK_AREAS, AREAS_ESPECIAIS, AREAS_ESPECIAIS_TRANSFERIVEIS, AREAS_RECEPCAO_IGREJA, AREAS_COM_PRE_CADASTRO, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor, AREA_DISPONIVEL_QUALQUER, AREAS_SO_PREFERENCIA, ordenarComComplementares, AREA_GUIA, GUIA_TAMBEM_EM } from '@/constants/workAreas';
 import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges, fetchAtuacoesPorArea, definirAtuacao,
   definirCor, contarAguardandoAprovacao, fetchSituacaoEscala, lancarEscala, desfazerLancamentoEscala,
   alocarFilaAutomaticamente, fetchEscalaOrdem, lancarEscalaOficial, desfazerEscalaOficial,
@@ -1232,6 +1232,17 @@ const OrganizerScalesPage = () => {
     }
   };
 
+  // Especial em que a pessoa esta escalada (para a busca do pre-cadastro).
+  const escaladoEmEspecial = (cpf) => allocations
+    .find(a => soDigitosCpf(a.cpf) === cpf && NOMES_ESPECIAIS.includes(a.allocatedArea))?.allocatedArea || null;
+  // "Transferir para ca" pela busca: acha em qual lista a pessoa esta.
+  const transferirParaCa = (para) => async (cpf) => {
+    const de = AREAS_ESPECIAIS.find(a => a.key !== para.key && (cpfsAreaEspecial[a.key] || []).includes(cpf));
+    if (!de) { toast({ title: 'Não achei o pré-cadastro de origem', description: 'Recarregue a página e tente de novo.', variant: 'destructive' }); return; }
+    await handleTransferirPorCpf(de, cpf, para);
+  };
+  const DESTINOS_TRANSFERENCIA = AREAS_ESPECIAIS.filter(a => AREAS_ESPECIAIS_TRANSFERIVEIS.includes(a.label));
+
   const handleSaveCpfsAreaEspecial = async (areaKey, novaLista) => {
     await updateCpfsAreaEspecial(areaKey, novaLista);
     setCpfsAreaEspecial(prev => ({ ...prev, [areaKey]: novaLista }));
@@ -2163,8 +2174,11 @@ const OrganizerScalesPage = () => {
                       onSave={(novaLista) => handleSaveCpfsAreaEspecial(key, novaLista)}
                       situacaoDoCpf={situacaoDoCpfNaArea(label)}
                       onAlocar={(cpf) => handleAlocarUmPorCpf(key, label, cpf)}
-                      areasDestino={AREAS_ESPECIAIS}
-                      onTransferir={podeGerir ? (cpf, para) => handleTransferirPorCpf({ key, label }, cpf, para) : undefined}
+                      areasDestino={AREAS_ESPECIAIS_TRANSFERIVEIS.includes(label) ? DESTINOS_TRANSFERENCIA : []}
+                      onTransferir={podeGerir && AREAS_ESPECIAIS_TRANSFERIVEIS.includes(label) ? (cpf, para) => handleTransferirPorCpf({ key, label }, cpf, para) : undefined}
+                      escaladoEmEspecial={escaladoEmEspecial}
+                      areasTransferiveis={AREAS_ESPECIAIS_TRANSFERIVEIS}
+                      onTransferirParaCa={podeGerir ? transferirParaCa({ key, label }) : undefined}
                       areasComunsDoCpf={areasComunsDoCpf}
                       areasComunsDisponiveis={AREAS_COMUNS}
                       onEscalarTambem={podeGerir ? handleEscalarTambemPorCpf : undefined}

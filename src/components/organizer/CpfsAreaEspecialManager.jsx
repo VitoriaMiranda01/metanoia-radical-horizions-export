@@ -9,6 +9,7 @@ import { validateCPF } from '@/utils/validation';
 import { normalizarBusca } from '@/utils/busca';
 import { AREAS_ESPECIAIS, AREA_GUIA, GUIA_TAMBEM_EM } from '@/constants/workAreas';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 /**
  * Escolha dos equipantes de UMA area especial (Guia, Inimigo, Espirito
@@ -70,7 +71,15 @@ const CpfsAreaEspecialManager = ({
   // (pre-cadastro e, se ja esta escalada, a escala tambem).
   // areasDestino -> [{ key, label }]; onTransferir(cpf, destino) -> Promise.
   areasDestino = [],
-  onTransferir
+  onTransferir,
+  // Na busca (14/10/2026): quem ja esta em OUTRA especial aparece dizendo onde
+  // esta pre-cadastrado e onde esta escalado. Entre as AREAS_ESPECIAIS_
+  // TRANSFERIVEIS, clicar no nome pergunta se quer transferir para ca.
+  // escaladoEmEspecial(cpf) -> especial em que a pessoa esta escalada (ou null);
+  // areasTransferiveis -> labels; onTransferirParaCa(cpf) -> Promise.
+  escaladoEmEspecial,
+  areasTransferiveis = [],
+  onTransferirParaCa
 }) => {
   const [busca, setBusca] = useState('');
   const [aberto, setAberto] = useState(false);
@@ -80,6 +89,8 @@ const CpfsAreaEspecialManager = ({
   const [alocando, setAlocando] = useState(null);
   const [acrescentando, setAcrescentando] = useState(null);
   const [transferindo, setTransferindo] = useState(null);
+  // { eq, cpf, de, escaladoEm } -- a janela "transferir para ca?"
+  const [confirmarTransf, setConfirmarTransf] = useState(null);
   const containerRef = useRef(null);
   const { toast } = useToast();
 
@@ -121,9 +132,34 @@ const CpfsAreaEspecialManager = ({
   // Achados pela busca que estão em OUTRO papel especial. Aparecem na lista
   // dizendo onde estão, em vez de sumirem sem explicação.
   const emOutroPapel = useMemo(
-    () => encontrados.filter((eq) => areaPorCpf[soDigitos(eq.cpf)]).slice(0, 4),
+    () => encontrados.filter((eq) => areaPorCpf[soDigitos(eq.cpf)]).slice(0, 6),
     [encontrados, areaPorCpf]
   );
+
+  // Pode transferir de `de` para esta area? So entre as transferiveis.
+  const podeTransferirDe = (de) => !!onTransferirParaCa &&
+    areasTransferiveis.includes(areaLabel) && areasTransferiveis.includes(de);
+  const escaladoEm = (cpf) => (escaladoEmEspecial ? escaladoEmEspecial(cpf) : null);
+  // "pré-cadastrado em Espírito Santo · já escalado em Espírito Santo"
+  const ondeEsta = (cpf) => {
+    const de = areaPorCpf[cpf];
+    const esc = escaladoEm(cpf);
+    return [de && `pré-cadastrado em ${de}`, esc && esc !== areaLabel && `já escalado em ${esc}`].filter(Boolean).join(' · ');
+  };
+
+  const confirmarTransferencia = async () => {
+    const alvo = confirmarTransf;
+    setConfirmarTransf(null);
+    if (!alvo || !onTransferirParaCa) return;
+    setTransferindo(alvo.cpf);
+    try {
+      await onTransferirParaCa(alvo.cpf);
+      setBusca('');
+      setAberto(false);
+    } finally {
+      setTransferindo(null);
+    }
+  };
 
   // Quem a busca achou MAS já está nesta área. Sem isso, a pessoa some das
   // sugestões e a tela diz "ninguém encontrado" -- o organizador sabe que ela
@@ -383,6 +419,36 @@ const CpfsAreaEspecialManager = ({
 
         {aberto && busca.trim() && (
           <div className="absolute z-20 mt-1 w-full sm:max-w-[420px] bg-neutral-900 border border-white/15 rounded-md shadow-xl overflow-hidden">
+            {/* Quem ja esta em outra especial: diz onde esta pre-cadastrado e
+                onde esta escalado. Entre as transferiveis, clicar pergunta se
+                quer transferir para ca. */}
+            {emOutroPapel.map((eq) => {
+              const cpf = soDigitos(eq.cpf);
+              const de = areaPorCpf[cpf];
+              const onde = ondeEsta(cpf);
+              return podeTransferirDe(de) ? (
+                <button key={`outro-${eq.id}`} type="button"
+                  onClick={() => setConfirmarTransf({ eq, cpf, de, escaladoEm: escaladoEm(cpf) })}
+                  disabled={isSaving || !!transferindo}
+                  data-dica={`Transferir ${eq.nome} de ${de} para ${areaLabel} (pede confirmação).`}
+                  className="w-full text-left px-3 py-2 hover:bg-purple-600/15 transition-colors border-b border-white/5 disabled:opacity-50">
+                  <span className="flex items-center gap-1.5 text-white text-sm font-medium">
+                    {transferindo === cpf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRightLeft className="w-3.5 h-3.5 text-purple-300" />}
+                    {eq.nome}
+                  </span>
+                  <span className="block text-xs text-amber-300">{onde}</span>
+                  <span className="block text-[11px] text-purple-300">Clique para transferir para {areaLabel}</span>
+                </button>
+              ) : (
+                <div key={`outro-${eq.id}`} className="px-3 py-2 border-b border-white/5 text-xs text-amber-300 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>
+                    <span className="text-white font-medium">{eq.nome}</span> — {onde}.
+                    {' '}Cada pessoa só pode ter um dos {AREAS_ESPECIAIS.length} papéis especiais: tire de lá primeiro.
+                  </span>
+                </div>
+              );
+            })}
             {sugestoes.length > 0 ? (
               sugestoes.map((eq) => (
                 <button
@@ -398,19 +464,14 @@ const CpfsAreaEspecialManager = ({
                     {eq.igreja || 'sem igreja informada'}
                     {eq.status ? ` · ${eq.status}` : ''}
                   </span>
+                  {escaladoEm(soDigitos(eq.cpf)) && escaladoEm(soDigitos(eq.cpf)) !== areaLabel && (
+                    <span className="block text-xs text-amber-300">já escalado em {escaladoEm(soDigitos(eq.cpf))}</span>
+                  )}
                 </button>
               ))
-            ) : (
+            ) : (emOutroPapel.length > 0 && jaNaLista.length === 0 && !buscaEhCpfValido) ? null : (
               <div className="px-3 py-3 text-sm text-gray-400">
-                {emOutroPapel.length > 0 ? (
-                  <span className="text-amber-300 flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <span>
-                      {emOutroPapel.map((e) => `${e.nome} já é ${areaPorCpf[soDigitos(e.cpf)]}`).join('; ')}.
-                      Cada pessoa só pode ter um dos {AREAS_ESPECIAIS.length} papéis especiais.
-                    </span>
-                  </span>
-                ) : jaNaLista.length > 0 ? (
+                {jaNaLista.length > 0 ? (
                   <span className="text-emerald-300">
                     {jaNaLista.length === 1
                       ? `${jaNaLista[0].nome} já está em ${areaLabel}.`
@@ -421,7 +482,7 @@ const CpfsAreaEspecialManager = ({
                     <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     Nenhum equipante inscrito ainda. Você pode cadastrar por CPF por enquanto.
                   </span>
-                ) : (
+                ) : emOutroPapel.length > 0 ? null : (
                   'Ninguém encontrado com esse nome.'
                 )}
                 {buscaEhCpfValido && (
@@ -444,6 +505,31 @@ const CpfsAreaEspecialManager = ({
       </div>
 
       {error && <p className="text-red-400 text-sm font-medium">{error}</p>}
+
+      <AlertDialog open={!!confirmarTransf} onOpenChange={(v) => { if (!v) setConfirmarTransf(null); }}>
+        <AlertDialogContent className="bg-gray-900 border-gray-700 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Transferir para {areaLabel}?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-300 space-y-2">
+              {confirmarTransf && (
+                <>
+                  <span className="block"><b className="text-white">{confirmarTransf.eq.nome}</b> já está pré-cadastrado em <b className="text-white">{confirmarTransf.de}</b>
+                    {confirmarTransf.escaladoEm ? <> e já está escalado em <b className="text-white">{confirmarTransf.escaladoEm}</b></> : <> (ainda não escalado)</>}.</span>
+                  <span className="block">Transferindo, sai de {confirmarTransf.de} e entra em <b className="text-white">{areaLabel}</b>
+                    {confirmarTransf.escaladoEm === confirmarTransf.de ? ' — a escala muda junto (atuação padrão; a cor, se a área usa, você escolhe depois)' : ''}.
+                    {' '}As áreas comuns dele continuam.</span>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmarTransferencia} className="bg-purple-600 hover:bg-purple-700 text-white">
+              Transferir para {areaLabel}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

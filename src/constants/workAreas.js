@@ -129,6 +129,13 @@ export const AREAS_ESPECIAIS = [
   { key: 'pastor_invisivel', label: 'Pastor Invisível' }
 ];
 
+// Especiais entre as quais da para TRANSFERIR a pessoa direto (14/10/2026,
+// Patrick): sai do pre-cadastro (e da escala, se ja estava) de uma e entra na
+// outra, com confirmacao. As demais especiais (Familia muculmana,
+// Apresentadores, Equipe de Manutencao) continuam como antes: tira de la
+// primeiro e depois coloca.
+export const AREAS_ESPECIAIS_TRANSFERIVEIS = ['Guia', 'Inimigo', 'Espírito Santo', 'Infiltrados', 'Pastor Invisível'];
+
 // Areas que existem na escala oficial e NAO sao oferecidas ao equipante: quem
 // trabalha nelas e escolhido pela diretoria. Aparecem na tela de Geracao de
 // Escalas (com tabela propria e como destino de "Realocar"), mas nunca no

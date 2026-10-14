@@ -55,7 +55,7 @@ const AreasEspeciaisDialog = ({
     // so ela, nao este modulo junto.
     const aoTeclar = (e) => {
       if (e.key !== 'Escape') return;
-      if (document.querySelector('[role="dialog"][data-state="open"]')) return;
+      if (document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) return;
       onClose();
     };
     window.addEventListener('keydown', aoTeclar);

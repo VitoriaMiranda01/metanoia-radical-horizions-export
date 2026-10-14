@@ -412,7 +412,7 @@ export const fetchEquipantesParaPreEscala = async () =>
   comReenvio(
     () => supabase
       .from('equipantes')
-      .select('id, nome, igreja, status, area_trabalho_opcao1')
+      .select('id, nome, cpf, whatsapp, igreja, igreja_outra, status, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, inscrito_em')
       .eq('tipo', 'equipante')
       .eq('inscrito', true)
       .order('nome', { ascending: true }),

@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import { formatCPF } from '@/utils/formatters';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { montarLinhasIgrejas } from '@/utils/igrejasCadastradas';
+import { formatarDataHora } from '@/utils/columnVisibility';
 
 // Helper to set column widths and styling
 const configureWorksheet = (ws) => {
@@ -373,4 +374,68 @@ export const exportSaudeToExcel = (linhas, resumo) => {
     console.error('Erro ao exportar:', error);
     return { success: false, error: error.message };
   }
+};
+
+// Relatorio da Pre-escala (14/10/2026): quem marcou cada area como 1ª opcao.
+// `situacao`: 'todos' | 'aprovado' | 'pendente' | 'rejeitado' -- a tela ja
+// manda a lista filtrada; aqui so muda o nome do arquivo e o resumo.
+// Abas: Resumo (quantos por area), Todos (uma linha por pessoa) e uma aba por
+// area.
+const ROTULO_SITUACAO = { todos: 'Todos', aprovado: 'Aprovados', pendente: 'Pendentes', rejeitado: 'Rejeitados' };
+
+export const exportPreEscala = (grupos, situacao = 'todos') => {
+  const total = grupos.reduce((n, g) => n + g.pessoas.length, 0);
+  if (total === 0) throw new Error('Ninguém para exportar.');
+
+  const situacaoDe = (s) => ({ aprovado: 'Aprovado', pendente: 'Pendente', rejeitado: 'Rejeitado' }[s] || s || '');
+  const linha = (p) => ({
+    'Nome': p.nome || '-',
+    'CPF': formatCPF(p.cpf || ''),
+    'Igreja': nomeDaIgreja(p) || 'sem igreja',
+    'Situação': situacaoDe(p.status),
+    'WhatsApp': p.whatsapp || '',
+    '2ª opção': p.area_trabalho_opcao2 || '',
+    '3ª opção': p.area_trabalho_opcao3 || '',
+    'Data da inscrição': formatarDataHora(p.inscrito_em)
+  });
+  const larguras = [{ wch: 40 }, { wch: 16 }, { wch: 40 }, { wch: 12 }, { wch: 18 }, { wch: 28 }, { wch: 28 }, { wch: 18 }];
+
+  const wb = XLSX.utils.book_new();
+
+  const resumo = grupos.map((g) => {
+    const r = { 'Área (1ª opção)': g.area, 'Quantidade': g.pessoas.length };
+    if (situacao === 'todos') {
+      r['Aprovados'] = g.pessoas.filter((p) => p.status === 'aprovado').length;
+      r['Pendentes'] = g.pessoas.filter((p) => p.status === 'pendente').length;
+      r['Rejeitados'] = g.pessoas.filter((p) => p.status === 'rejeitado').length;
+    }
+    return r;
+  });
+  resumo.push({ 'Área (1ª opção)': 'TOTAL', 'Quantidade': total });
+  const wsResumo = XLSX.utils.json_to_sheet(resumo);
+  wsResumo['!cols'] = [{ wch: 36 }, { wch: 12 }, { wch: 11 }, { wch: 11 }, { wch: 11 }];
+  XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo');
+
+  const wsTodos = XLSX.utils.json_to_sheet(
+    grupos.flatMap((g) => g.pessoas.map((p) => ({ '1ª opção': g.area, ...linha(p) })))
+  );
+  wsTodos['!cols'] = [{ wch: 30 }, ...larguras];
+  XLSX.utils.book_append_sheet(wb, wsTodos, 'Todos');
+
+  // Uma aba por area. Nome de aba: ate 31 caracteres, sem / \ ? * [ ] : e
+  // sem repetir (duas areas longas podem cortar igual).
+  const usados = new Set(['Resumo', 'Todos']);
+  grupos.forEach((g) => {
+    const base = g.area.replace(/[\/?*[\]:]/g, '-').substring(0, 31).trim() || 'Área';
+    let nome = base;
+    for (let i = 2; usados.has(nome); i += 1) nome = `${base.substring(0, 27)} (${i})`;
+    usados.add(nome);
+    const ws = XLSX.utils.json_to_sheet(g.pessoas.map(linha));
+    ws['!cols'] = larguras;
+    XLSX.utils.book_append_sheet(wb, ws, nome);
+  });
+
+  const hoje = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Pre-escala_${ROTULO_SITUACAO[situacao] || 'Todos'}_${hoje}.xlsx`);
+  return true;
 };

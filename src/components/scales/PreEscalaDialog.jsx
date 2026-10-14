@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ClipboardCheck, Loader2, X } from 'lucide-react';
+import { ClipboardCheck, Loader2, X, Download } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import { exportPreEscala } from '@/utils/excelExport';
 import { fetchEquipantesParaPreEscala } from '@/services/equipantesService';
 import { AREAS_INSCRICAO, AREAS_ESPECIAIS } from '@/constants/workAreas';
 import { cn } from '@/lib/utils';
@@ -33,12 +35,18 @@ const AREAS_VIRARAM_ESPECIAIS = new Set(
  * zerar, e planejar a partir disso.
  *
  * Clicar numa área expande a lista de quem marcou ela.
+ *
+ * Exportar (14/10/2026): planilha de quem marcou cada área como 1ª opção. A
+ * pessoa escolhe a situação -- todos, só aprovados, só pendentes ou só
+ * rejeitados -- porque esta tela mostra todo mundo junto.
  */
 const PreEscalaDialog = ({ onClose }) => {
   const [equipantes, setEquipantes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
   const [abertas, setAbertas] = useState(() => new Set());
+  const [escolhendoExport, setEscolhendoExport] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     (async () => {
@@ -61,19 +69,39 @@ const PreEscalaDialog = ({ onClose }) => {
     return () => window.removeEventListener('keydown', aoTeclar);
   }, [onClose]);
 
-  const grupos = useMemo(() => {
+  // Agrupa por 1ª opção, da área com mais gente para a com menos.
+  const agrupar = (lista) => {
     const porArea = new Map();
-    equipantes.forEach((eq) => {
+    lista.forEach((eq) => {
       const area = eq.area_trabalho_opcao1 || SEM_OPCAO;
       if (!porArea.has(area)) porArea.set(area, []);
       porArea.get(area).push(eq);
     });
-    const lista = Array.from(porArea.entries()).map(([area, pessoas]) => ({ area, pessoas }));
-    lista.sort((a, b) => b.pessoas.length - a.pessoas.length);
-    return lista;
-  }, [equipantes]);
+    const resultado = Array.from(porArea.entries()).map(([area, pessoas]) => ({ area, pessoas }));
+    resultado.sort((a, b) => b.pessoas.length - a.pessoas.length);
+    return resultado;
+  };
+  const grupos = useMemo(() => agrupar(equipantes), [equipantes]);
 
   const maiorGrupo = grupos.length > 0 ? grupos[0].pessoas.length : 0;
+
+  const OPCOES_EXPORT = [
+    { chave: 'todos', rotulo: 'Todos' },
+    { chave: 'aprovado', rotulo: 'Só aprovados' },
+    { chave: 'pendente', rotulo: 'Só pendentes' },
+    { chave: 'rejeitado', rotulo: 'Só rejeitados' }
+  ];
+  const daSituacao = (chave) => (chave === 'todos' ? equipantes : equipantes.filter((eq) => eq.status === chave));
+
+  const exportar = (chave, rotulo) => {
+    try {
+      exportPreEscala(agrupar(daSituacao(chave)), chave);
+      setEscolhendoExport(false);
+      toast({ title: 'Planilha gerada', description: `Pré-escala: ${rotulo.toLowerCase()}.`, className: 'bg-green-600 text-white' });
+    } catch (e) {
+      toast({ title: 'Não foi possível exportar', description: e.message, variant: 'destructive' });
+    }
+  };
 
   const alternar = (area) => {
     setAbertas((atual) => {
@@ -199,7 +227,33 @@ const PreEscalaDialog = ({ onClose }) => {
           )}
         </div>
 
-        <div className="p-4 border-t border-white/10 bg-zinc-900 flex justify-end">
+        {escolhendoExport && (
+          <div className="px-4 pt-3 pb-1 border-t border-white/10 bg-zinc-900">
+            <p className="text-xs text-gray-400 mb-2">Exportar quem marcou cada área como 1ª opção. Escolha quem entra na planilha:</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {OPCOES_EXPORT.map(({ chave, rotulo }) => {
+                const n = daSituacao(chave).length;
+                return (
+                  <Button key={chave} type="button" variant="outline" disabled={n === 0}
+                    onClick={() => exportar(chave, rotulo)}
+                    data-dica={`Baixar a planilha com ${rotulo.toLowerCase()} (${n}).`}
+                    className="flex-col h-auto py-2 bg-white/5 border-white/15 text-gray-200 hover:bg-emerald-600/20 hover:text-white hover:border-emerald-500/50">
+                    <span className="text-sm font-medium">{rotulo}</span>
+                    <span className="text-[11px] text-gray-400">{n} {n === 1 ? 'pessoa' : 'pessoas'}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="p-4 border-t border-white/10 bg-zinc-900 flex justify-end gap-3">
+          <Button onClick={() => setEscolhendoExport((v) => !v)} variant="outline"
+            disabled={loading || !!erro || equipantes.length === 0}
+            data-dica="Baixar uma planilha (Excel) de quem marcou cada área como 1ª opção. Você escolhe: todos, só aprovados, só pendentes ou só rejeitados."
+            className="bg-emerald-600/20 text-emerald-300 border-emerald-600/50 hover:bg-emerald-600/40 hover:text-emerald-200">
+            <Download className="mr-2 h-4 w-4" /> Exportar
+          </Button>
           <Button onClick={onClose} variant="outline" className="border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white">
             Fechar
           </Button>

@@ -22,5 +22,5 @@ export const COLUNAS_SAUDE = [
   { chave: 'whatsapp', rotulo: 'WhatsApp do acampante', valor: (p) => formatarTelefone(p.whatsapp) || p.whatsapp || '' },
 ];
 
-// Marcadas de saida: tudo menos o WhatsApp do proprio acampante.
-export const COLUNAS_SAUDE_PADRAO = COLUNAS_SAUDE.filter((c) => c.chave !== 'whatsapp').map((c) => c.chave);
+// Marcadas de saida: todas.
+export const COLUNAS_SAUDE_PADRAO = COLUNAS_SAUDE.map((c) => c.chave);

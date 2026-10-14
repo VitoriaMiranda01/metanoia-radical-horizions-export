@@ -92,6 +92,17 @@ const Texto = ({ valor, marcado }) =>
 
 // Ficha sem data de nascimento: sem idade. A organizacao ja foi avisada
 // (aviso em Gerenciar Inscricoes) -- a dica explica isso para a lider.
+const ZapAcampante = ({ telefone }) => {
+  if (!telefone) return <p className="text-xs text-gray-500">Sem WhatsApp</p>;
+  const zap = linkWhatsApp(telefone);
+  if (!zap) return <p className="text-xs text-gray-400">{telefone}</p>;
+  return (
+    <a href={zap} target="_blank" rel="noreferrer" title="Chamar no WhatsApp" className="text-xs text-emerald-300 hover:underline inline-flex items-center gap-1">
+      <Phone className="w-3 h-3" />{formatarTelefone(telefone)}
+    </a>
+  );
+};
+
 const SemNascimento = () => (
   <span
     className="text-amber-300"
@@ -441,6 +452,7 @@ const SaudePage = () => {
                                 {p.esta_gravida && <span className="ml-1 text-pink-300">· gestante</span>}
                               </p>
                               <p className="text-xs text-gray-500 truncate max-w-[240px]" title={p.igreja || ''}>{p.igreja || '—'}</p>
+                              <ZapAcampante telefone={p.whatsapp} />
                             </td>
                             <td className="px-3 py-2.5"><GrupoTrilhaTag grupo={p.grupo_trailha} /></td>
                             <td className="px-3 py-2.5"><Texto valor={p.condicoes_medicas} marcado={p.tem_problema_saude} /></td>
@@ -484,6 +496,7 @@ const SaudePage = () => {
                               {p.idade != null ? `${p.idade} anos` : <SemNascimento />}{p.sexo ? ` · ${p.sexo}` : ''}
                               {p.esta_gravida && <span className="text-pink-300"> · gestante</span>}
                             </p>
+                            <ZapAcampante telefone={p.whatsapp} />
                           </div>
                           <GrupoTrilhaTag grupo={p.grupo_trailha} />
                         </div>

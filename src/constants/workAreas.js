@@ -153,14 +153,12 @@ export const AREAS_SOMENTE_ORGANIZADOR = [
   // AREAS_ESPECIAIS acima), exclusivas entre si.
   'Ataque / Madrugada',
   'Base Operacional',
-  'Estacionamento',
-  // As duas recepcoes entraram aqui em 12/09/2026: o equipante nao escolhe
-  // recepcao. E o organizador que separa quem fica na mesa de cracha da
-  // igreja e quem recebe no sitio.
-  'Recepção Igreja',
+  // Estacionamento, Recepção Igreja e Som / Multimídia sairam daqui em
+  // 14/10/2026: foram para o grupo AREAS_RECEPCAO_IGREJA, abaixo.
+  // A recepcao do sitio entrou aqui em 12/09/2026: o equipante nao escolhe
+  // recepcao.
   'Recepção Sítio',
   'Secretaria',
-  'Som / Multimídia',
   'Som / Projeção',
   // Nao e cena: e o destino de quem foi aprovado pela igreja mas nao entrou
   // na escala (excesso de gente, por exemplo). Existe para que a fila "A
@@ -169,6 +167,26 @@ export const AREAS_SOMENTE_ORGANIZADOR = [
   // a Direcao" e nao consegue pagar.
   AREA_NAO_SERA_ESCALADO
 ];
+
+// Equipe da igreja no dia da saida (14/10/2026, Patrick). Tem botao e modulo
+// proprios na tela de escalas, igual ao das AREAS_ESPECIAIS (pre-cadastro por
+// CPF, "Alocar", "Aplicar CPFs cadastrados"), mas SEM exclusividade: a mesma
+// pessoa pode estar em varias destas areas e tambem nas do sitio.
+//
+// "Cozinha Igreja" e a cozinha da igreja; a "Cozinha" do sitio continua sendo
+// area comum. "Mesa crachá" herdou as atuacoes masculino/feminino que eram da
+// Recepção Igreja. No banco: somente_organizador = true (fora do automatico) e
+// uma coluna configuracoes.cpfs_area_<key> por area (migration 20261014a).
+export const AREAS_RECEPCAO_IGREJA = [
+  { key: 'recepcao_igreja', label: 'Recepção Igreja' },
+  { key: 'cozinha_igreja', label: 'Cozinha Igreja' },
+  { key: 'som_multimidia', label: 'Som / Multimídia' },
+  { key: 'estacionamento', label: 'Estacionamento' },
+  { key: 'mesa_cracha', label: 'Mesa crachá' }
+];
+
+// Todas as areas com pre-cadastro por CPF (uma coluna cpfs_area_<key> cada).
+export const AREAS_COM_PRE_CADASTRO = [...AREAS_ESPECIAIS, ...AREAS_RECEPCAO_IGREJA];
 
 // "Teatro" e "Louvor nas cenas" NAO sao cena nenhuma -- sao pergunta. No
 // formulario elas servem para a pessoa dizer que prefere cena teatral, ou
@@ -246,6 +264,7 @@ export const ordenarComComplementares = (areas) => {
 export const WORK_AREAS = [
   ...AREAS_INSCRICAO.map(a => a.valor).filter(v => !AREAS_SO_PREFERENCIA.includes(v)),
   ...AREAS_ESPECIAIS.map(a => a.label),
+  ...AREAS_RECEPCAO_IGREJA.map(a => a.label),
   ...AREAS_SOMENTE_ORGANIZADOR
 ].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 

@@ -1,12 +1,12 @@
 import { supabase } from '@/services/supabaseClient';
 import { withRetry } from '@/services/serviceHelpers';
 import { fetchConfigPublica } from '@/services/publicDataService';
-import { AREAS_ESPECIAIS } from '@/constants/workAreas';
+import { AREAS_COM_PRE_CADASTRO } from '@/constants/workAreas';
 
 // Nome de coluna -> chave de area, para as duas colecoes abaixo lerem e
 // escreverem sem repetir os 6 nomes na mao (e sem esquecer um se um setimo
 // papel especial entrar -- so mexe em AREAS_ESPECIAIS).
-const CPFS_AREA_COLUMNS = AREAS_ESPECIAIS.map(({ key }) => `cpfs_area_${key}`);
+const CPFS_AREA_COLUMNS = AREAS_COM_PRE_CADASTRO.map(({ key }) => `cpfs_area_${key}`);
 
 // Não busca mais data_edicao_dia_inicio/dia_fim/mes/ano na tabela
 // "organizadores" (removido em 2026-09-04, a pedido da usuaria). Motivo:
@@ -105,7 +105,7 @@ export const updatePricingPeriods = async (type, periods) => {
 // tela de Geracao de Escalas -- ver alocarAreasEspeciaisPorCpf em
 // equipanteAllocationService.js.
 const CPFS_AREA_COLUMN_MAP = Object.fromEntries(
-  AREAS_ESPECIAIS.map(({ key }) => [key, `cpfs_area_${key}`])
+  AREAS_COM_PRE_CADASTRO.map(({ key }) => [key, `cpfs_area_${key}`])
 );
 
 export const updateCpfsAreaEspecial = async (area, cpfs) => {

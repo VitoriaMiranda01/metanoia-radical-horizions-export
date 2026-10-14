@@ -4,7 +4,7 @@ import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { WORK_AREAS, AREAS_ESPECIAIS, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor, AREA_DISPONIVEL_QUALQUER, AREAS_SO_PREFERENCIA, ordenarComComplementares, AREA_GUIA, GUIA_TAMBEM_EM } from '@/constants/workAreas';
+import { WORK_AREAS, AREAS_ESPECIAIS, AREAS_RECEPCAO_IGREJA, AREAS_COM_PRE_CADASTRO, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor, AREA_DISPONIVEL_QUALQUER, AREAS_SO_PREFERENCIA, ordenarComComplementares, AREA_GUIA, GUIA_TAMBEM_EM } from '@/constants/workAreas';
 import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges, fetchAtuacoesPorArea, definirAtuacao,
   definirCor, contarAguardandoAprovacao, fetchSituacaoEscala, lancarEscala, desfazerLancamentoEscala,
   alocarFilaAutomaticamente, fetchEscalaOrdem, lancarEscalaOficial, desfazerEscalaOficial,
@@ -16,7 +16,7 @@ import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
 import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf, fetchAreasFixas, limparArea, marcarAreaFixa } from '@/services/equipanteAllocationService';
 import { fetchConfiguracoes, updateCpfsAreaEspecial } from '@/services/organizerConfigService';
 import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
-import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus, ChevronDown, ChevronUp, Pin, ArrowUpDown, Plus } from 'lucide-react';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus, ChevronDown, ChevronUp, Pin, ArrowUpDown, Plus, Church } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
@@ -81,8 +81,12 @@ const MAX_AREAS_DE_UMA_VEZ = 5;
 // proprios. Continuam sendo areas normais em todo o resto -- aparecem no
 // menu da fila, recebem Realocar, contam nos totais.
 const NOMES_ESPECIAIS = AREAS_ESPECIAIS.map(a => a.label);
+// A equipe da igreja (14/10/2026) tambem tem modulo proprio -- ver
+// AREAS_RECEPCAO_IGREJA em constants/workAreas.js.
+const NOMES_RECEPCAO_IGREJA = AREAS_RECEPCAO_IGREJA.map(a => a.label);
 // Alfabetica, com as complementares logo abaixo da sua (Perseguidos depois da Selva).
-const AREAS_NO_CORPO = ordenarComComplementares(WORK_AREAS.filter(area => !NOMES_ESPECIAIS.includes(area)));
+const AREAS_NO_CORPO = ordenarComComplementares(WORK_AREAS.filter(area =>
+  !NOMES_ESPECIAIS.includes(area) && !NOMES_RECEPCAO_IGREJA.includes(area)));
 // Areas comuns que da para acrescentar a alguem ("Não será escalado" nao e area de trabalho).
 const AREAS_COMUNS = AREAS_NO_CORPO.filter(area => area !== 'Não será escalado');
 // Lista vazia com identidade fixa (para o React.memo da tabela nao achar que
@@ -177,6 +181,7 @@ const OrganizerScalesPage = () => {
   // Nao mexe em escalas nem no lancamento -- ver AreasExtraDialog.jsx.
   const [verAreasExtra, setVerAreasExtra] = useState(false);
   const [verAreasEspeciais, setVerAreasEspeciais] = useState(false);
+  const [verRecepcaoIgreja, setVerRecepcaoIgreja] = useState(false);
 
   // Pre-escala: so leitura, ve-se a demanda por area entre TODO MUNDO ja
   // inscrito (qualquer status). Nao mexe em nada -- ver PreEscalaDialog.jsx.
@@ -421,6 +426,7 @@ const OrganizerScalesPage = () => {
   // modulo. E por PARTICIPACAO, mas como ninguem pode ter dois dos tres, da
   // no mesmo que contar pessoas.
   const totalEspeciais = allocations.filter(a => NOMES_ESPECIAIS.includes(a.allocatedArea)).length;
+  const totalRecepcaoIgreja = allocations.filter(a => NOMES_RECEPCAO_IGREJA.includes(a.allocatedArea)).length;
 
   // Resultado da busca "onde o fulano esta?". Agrupa as participacoes por
   // pessoa, para responder numa linha so em vez de obrigar o organizador a
@@ -830,6 +836,10 @@ const OrganizerScalesPage = () => {
   const areasComunsDoCpf = (cpf) => allocations
     .filter(a => soDigitosCpf(a.cpf) === cpf && !NOMES_ESPECIAIS.includes(a.allocatedArea) && a.allocatedArea !== 'Não será escalado')
     .map(a => a.allocatedArea);
+  // No modulo Recepção Igreja (sem exclusividade): todas as outras areas da pessoa.
+  const outrasAreasDoCpf = (label) => (cpf) => allocations
+    .filter(a => soDigitosCpf(a.cpf) === cpf && a.allocatedArea !== label && a.allocatedArea !== 'Não será escalado')
+    .map(a => a.allocatedArea);
   const handleEscalarTambemPorCpf = async (cpf, area) => {
     const eq = (equipantesAprovados || []).find(e => soDigitosCpf(e.cpf) === cpf);
     if (!eq) { toast({ title: 'Equipante não encontrado', variant: 'destructive' }); return; }
@@ -1115,7 +1125,7 @@ const OrganizerScalesPage = () => {
     try {
       const configAtual = await fetchConfiguracoes();
       const novasListas = {};
-      AREAS_ESPECIAIS.forEach(({ key }) => {
+      AREAS_COM_PRE_CADASTRO.forEach(({ key }) => {
         novasListas[key] = configAtual[`cpfs_area_${key}`] || [];
       });
       setCpfsAreaEspecial(novasListas);
@@ -1161,14 +1171,14 @@ const OrganizerScalesPage = () => {
     return 'sem_inscricao';
   };
 
-  const handleAlocarUmPorCpf = async (key, label, cpf) => {
+  const handleAlocarUmPorCpf = async (key, label, cpf, grupo = AREAS_ESPECIAIS) => {
     const nome = (equipantesAprovados || []).find(eq => soDigitosCpf(eq.cpf) === cpf)?.nome || cpf;
-    let r = await alocarAreasEspeciaisPorCpf({ [key]: [cpf] }, equipantesAprovados, allocations);
+    let r = await alocarAreasEspeciaisPorCpf({ [key]: [cpf] }, equipantesAprovados, allocations, false, grupo);
     // Area cheia: na alocacao manual o limite e so aviso.
     if (r.erros[0]?.semVaga && window.confirm(
       `${label}: ${r.erros[0].erro}.\n\nAlocar ${nome} mesmo assim? Na alocação manual o limite é só aviso.`
     )) {
-      r = await alocarAreasEspeciaisPorCpf({ [key]: [cpf] }, equipantesAprovados, allocations, true);
+      r = await alocarAreasEspeciaisPorCpf({ [key]: [cpf] }, equipantesAprovados, allocations, true, grupo);
     } else if (r.erros[0]?.semVaga) {
       return;
     }
@@ -1202,12 +1212,13 @@ const OrganizerScalesPage = () => {
   // pontual, nao algo que precisa reagir a mudanca em tempo real -- e assim
   // continua valendo mesmo que essa aba tenha ficado aberta um tempao sem
   // recarregar.
-  const handleAlocarPorCpf = async () => {
+  // grupo: AREAS_ESPECIAIS ou AREAS_RECEPCAO_IGREJA (cada modulo aplica so as suas).
+  const handleAlocarPorCpf = async (grupo = AREAS_ESPECIAIS) => {
     setAlocandoPorCpf(true);
     try {
       const configAtual = await fetchConfiguracoes();
       const cpfsPorArea = {};
-      AREAS_ESPECIAIS.forEach(({ key }) => {
+      grupo.forEach(({ key }) => {
         cpfsPorArea[key] = configAtual[`cpfs_area_${key}`] || [];
       });
 
@@ -1219,7 +1230,7 @@ const OrganizerScalesPage = () => {
         return;
       }
 
-      const r = await alocarAreasEspeciaisPorCpf(cpfsPorArea, equipantesAprovados, allocations);
+      const r = await alocarAreasEspeciaisPorCpf(cpfsPorArea, equipantesAprovados, allocations, false, grupo);
       // Quem nao coube pelo limite: pergunta uma vez e tenta de novo so esses.
       const semVaga = r.erros.filter(e => e.semVaga);
       if (semVaga.length > 0 && window.confirm(
@@ -1229,7 +1240,7 @@ const OrganizerScalesPage = () => {
       )) {
         const deNovo = {};
         semVaga.forEach(e => { (deNovo[e.key] ||= []).push(e.cpf); });
-        const r2 = await alocarAreasEspeciaisPorCpf(deNovo, equipantesAprovados, allocations, true);
+        const r2 = await alocarAreasEspeciaisPorCpf(deNovo, equipantesAprovados, allocations, true, grupo);
         r.alocados += r2.alocados;
         r.realocados += r2.realocados;
         r.erros = [...r.erros.filter(e => !e.semVaga), ...r2.erros];
@@ -1238,7 +1249,9 @@ const OrganizerScalesPage = () => {
 
       const detalhe = [
         r.alocados > 0 && `${r.alocados} alocado(s)`,
-        r.realocados > 0 && `${r.realocados} trocado(s) de outra área especial ou de “Não será escalado”`,
+        r.realocados > 0 && (grupo === AREAS_ESPECIAIS
+          ? `${r.realocados} trocado(s) de outra área especial ou de “Não será escalado”`
+          : `${r.realocados} saíram de “Não será escalado”`),
         r.semCorrespondencia.length > 0 && `${r.semCorrespondencia.length} CPF(s) sem equipante aprovado correspondente`,
         r.erros.length > 0 && `${r.erros.length} erro(s): ${r.erros.map(e => `${e.nome || e.cpf} (${e.erro})`).join('; ')}`
       ].filter(Boolean).join('. ');
@@ -1413,6 +1426,7 @@ const OrganizerScalesPage = () => {
   );
   const irParaArea = (area) => {
     if (NOMES_ESPECIAIS.includes(area)) { setVerAreasEspeciais(true); return; }
+    if (NOMES_RECEPCAO_IGREJA.includes(area)) { setVerRecepcaoIgreja(true); return; }
     setAreaFiltro(area);
     setBuscaNasAreas('');
     requestAnimationFrame(() => filtroAreasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
@@ -1721,6 +1735,15 @@ const OrganizerScalesPage = () => {
                   Desfazer alocação automática{autoSituacao.no_lugar ? ` (${autoSituacao.no_lugar})` : ''}
                 </Button>
               )}
+
+              {/* Equipe da igreja no dia da saida (14/10/2026): modulo proprio,
+                  igual ao das Areas Especiais, mas sem exclusividade. */}
+              <Button data-dica="Equipe da igreja no dia da saída: Recepção Igreja, Cozinha Igreja, Som / Multimídia, Estacionamento e Mesa crachá. Pré-cadastro e alocação, como nas Áreas Especiais."
+                onClick={() => setVerRecepcaoIgreja(true)} variant="outline"
+                className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
+                <Church className="mr-2 h-4 w-4" /> Recepção Igreja ({totalRecepcaoIgreja})
+                <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
+              </Button>
 
               {/* Distribui a fila pelas preferencias da inscricao. So aparece
                   habilitado quando ha alguem esperando. */}
@@ -2092,7 +2115,7 @@ const OrganizerScalesPage = () => {
             <AreasEspeciaisDialog
               total={totalEspeciais}
               onClose={() => setVerAreasEspeciais(false)}
-              onAplicarCpfs={handleAlocarPorCpf}
+              onAplicarCpfs={() => handleAlocarPorCpf(AREAS_ESPECIAIS)}
               aplicandoPorCpf={alocandoPorCpf}
             >
               {AREAS_ESPECIAIS.map(({ key, label }) => (
@@ -2109,6 +2132,42 @@ const OrganizerScalesPage = () => {
                       situacaoDoCpf={situacaoDoCpfNaArea(label)}
                       onAlocar={(cpf) => handleAlocarUmPorCpf(key, label, cpf)}
                       areasComunsDoCpf={areasComunsDoCpf}
+                      areasComunsDisponiveis={AREAS_COMUNS}
+                      onEscalarTambem={podeGerir ? handleEscalarTambemPorCpf : undefined}
+                    />
+                  </div>
+                  {renderCartaoArea(label, false, true)}
+                </div>
+              ))}
+            </AreasEspeciaisDialog>
+          )}
+          {verRecepcaoIgreja && (
+            <AreasEspeciaisDialog
+              titulo="Recepção Igreja"
+              Icone={Church}
+              descricao={<>Equipe da igreja no dia da saída: {NOMES_RECEPCAO_IGREJA.join(', ')}. A mesma pessoa pode estar em várias destas áreas e também nas áreas do sítio (o “Alocar” só acrescenta).</>}
+              resumo={totalRecepcaoIgreja === 0
+                ? 'Ninguém escalado nestas áreas ainda.'
+                : `${totalRecepcaoIgreja} ${totalRecepcaoIgreja === 1 ? 'escalação' : 'escalações'} nestas áreas.`}
+              dicaAplicar="Aplica as listas de CPF pré-cadastradas acima contra quem já está aprovado."
+              onClose={() => setVerRecepcaoIgreja(false)}
+              onAplicarCpfs={() => handleAlocarPorCpf(AREAS_RECEPCAO_IGREJA)}
+              aplicandoPorCpf={alocandoPorCpf}
+            >
+              {AREAS_RECEPCAO_IGREJA.map(({ key, label }) => (
+                <div key={key} className="space-y-3">
+                  <div className="space-y-2 p-3 rounded-lg bg-white/5 border border-white/10">
+                    <h4 className="text-sm font-medium text-gray-300">Pré-cadastro por CPF — {label}</h4>
+                    <CpfsAreaEspecialManager
+                      areaLabel={label}
+                      cpfs={cpfsAreaEspecial[key] || []}
+                      equipantes={equipantesParaSelecao}
+                      carregandoEquipantes={carregandoEquipantesParaSelecao}
+                      onSave={(novaLista) => handleSaveCpfsAreaEspecial(key, novaLista)}
+                      situacaoDoCpf={situacaoDoCpfNaArea(label)}
+                      onAlocar={(cpf) => handleAlocarUmPorCpf(key, label, cpf, AREAS_RECEPCAO_IGREJA)}
+                      dicaAlocar={`Colocar esta pessoa em ${label} agora (as outras áreas dela continuam).`}
+                      areasComunsDoCpf={outrasAreasDoCpf(label)}
                       areasComunsDisponiveis={AREAS_COMUNS}
                       onEscalarTambem={podeGerir ? handleEscalarTambemPorCpf : undefined}
                     />

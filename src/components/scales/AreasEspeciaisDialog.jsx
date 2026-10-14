@@ -41,8 +41,15 @@ const listaDosLabels = AREAS_ESPECIAIS.map(a => a.label).reduce((frase, label, i
  * porque só faz sentido para estas áreas (ver handleAlocarPorCpf em
  * OrganizerScalesPage.jsx e alocarAreasEspeciaisPorCpf em
  * equipanteAllocationService.js). Sem onAplicarCpfs o botão nem aparece.
+ *
+ * titulo / Icone / descricao / resumo / dicaAplicar (14/10/2026): a mesma
+ * moldura serve ao módulo "Recepção Igreja" (AREAS_RECEPCAO_IGREJA). Sem
+ * eles, fica o texto das Áreas Especiais.
  */
-const AreasEspeciaisDialog = ({ onClose, total = 0, children, onAplicarCpfs, aplicandoPorCpf = false }) => {
+const AreasEspeciaisDialog = ({
+  onClose, total = 0, children, onAplicarCpfs, aplicandoPorCpf = false,
+  titulo = 'Áreas Especiais', Icone = Sparkles, descricao, resumo, dicaAplicar
+}) => {
   useEffect(() => {
     // Com outra janela aberta por cima (ex.: "Alocar em lote"), o Esc fecha
     // so ela, nao este modulo junto.
@@ -72,17 +79,19 @@ const AreasEspeciaisDialog = ({ onClose, total = 0, children, onAplicarCpfs, apl
         <div className="flex justify-between items-start gap-4 p-5 border-b border-white/10 bg-zinc-900">
           <div>
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-purple-400" />
-              Áreas Especiais
+              <Icone className="h-5 w-5 text-purple-400" />
+              {titulo}
             </h3>
             <p className="text-sm text-gray-400 mt-1">
-              {listaDosLabels}. Uma pessoa só pode ter um dos {porExtenso(AREAS_ESPECIAIS.length)}, mas pode
-              estar também numa área comum (o “Alocar” acrescenta, não tira da área comum).
+              {descricao ?? <>
+                {listaDosLabels}. Uma pessoa só pode ter um dos {porExtenso(AREAS_ESPECIAIS.length)}, mas pode
+                estar também numa área comum (o “Alocar” acrescenta, não tira da área comum).
+              </>}
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              {total === 0
+              {resumo ?? (total === 0
                 ? `Ninguém escalado nestes ${porExtenso(AREAS_ESPECIAIS.length)} papéis ainda.`
-                : `${total} ${total === 1 ? 'pessoa escalada' : 'pessoas escaladas'} nos ${porExtenso(AREAS_ESPECIAIS.length)}.`}
+                : `${total} ${total === 1 ? 'pessoa escalada' : 'pessoas escaladas'} nos ${porExtenso(AREAS_ESPECIAIS.length)}.`)}
               {' '}Para colocar alguém, use o “Alocar” do pré-cadastro, a fila “A escalar” ou o “+” (escalar também) na tabela de outra área.
             </p>
           </div>
@@ -98,7 +107,7 @@ const AreasEspeciaisDialog = ({ onClose, total = 0, children, onAplicarCpfs, apl
         <div className="p-4 border-t border-white/10 bg-zinc-900 flex justify-end gap-3">
           {onAplicarCpfs && (
             <Button onClick={onAplicarCpfs} disabled={aplicandoPorCpf} variant="outline"
-              title={`Aplica as ${AREAS_ESPECIAIS.length} listas de CPF pré-cadastradas acima contra quem já está aprovado.`}
+              title={dicaAplicar ?? `Aplica as ${AREAS_ESPECIAIS.length} listas de CPF pré-cadastradas acima contra quem já está aprovado.`}
               className="bg-indigo-600/20 text-indigo-300 border-indigo-600/50 hover:bg-indigo-600/40 hover:text-indigo-200">
               {aplicandoPorCpf
                 ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />

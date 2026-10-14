@@ -247,10 +247,14 @@ export const fetchListaEspera = async (equipantesAprovados, alocacoesAtuais) => 
 // fetchAllAllocations, em scalesService.js) -- esta funcao nao faz
 // nenhuma consulta nova, so orquestra chamadas de alocacao/realocacao.
 //
+// grupo (14/10/2026): AREAS_ESPECIAIS (padrao) ou AREAS_RECEPCAO_IGREJA. Nas
+// especiais a pessoa SAI da outra especial (uma por pessoa); nas da igreja
+// nao ha exclusividade -- so acrescenta (sai apenas de "Não será escalado").
+//
 // forcar (13/10/2026): o limite da area e so aviso na alocacao manual. Sem
 // vaga, o erro volta com semVaga = true; a tela pergunta e chama de novo so
 // com esses CPFs e forcar = true.
-export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovados, allocations, forcar = false) => {
+export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovados, allocations, forcar = false, grupo = AREAS_ESPECIAIS) => {
   const resultado = { alocados: 0, realocados: 0, semCorrespondencia: [], erros: [] };
 
   const soDigitos = (v) => (v || '').replace(/\D/g, '');
@@ -268,7 +272,7 @@ export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovado
   // especial por pessoa) ou em "Não será escalado" (nao faz sentido ficar
   // nas duas). Antes movia a primeira area que achasse -- tirava a pessoa da
   // area comum.
-  const nomesEspeciais = AREAS_ESPECIAIS.map(a => a.label);
+  const nomesEspeciais = grupo === AREAS_ESPECIAIS ? AREAS_ESPECIAIS.map(a => a.label) : [];
   const alocacaoPorEquipanteEArea = new Map();
   const aMoverPorEquipante = new Map();
   (allocations || []).forEach(a => {
@@ -277,7 +281,7 @@ export const alocarAreasEspeciaisPorCpf = async (cpfsPorArea, equipantesAprovado
     else if (a.allocatedArea === 'Não será escalado' && !aMoverPorEquipante.has(a.id)) aMoverPorEquipante.set(a.id, a);
   });
 
-  for (const areaInfo of AREAS_ESPECIAIS) {
+  for (const areaInfo of grupo) {
     const cpfs = cpfsPorArea?.[areaInfo.key] || [];
 
     for (const cpfBruto of cpfs) {

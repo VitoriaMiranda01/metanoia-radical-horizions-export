@@ -38,7 +38,8 @@ const AREAS_VIRARAM_ESPECIAIS = new Set(
  *
  * Exportar (14/10/2026): planilha de quem marcou cada área como 1ª opção. A
  * pessoa escolhe a situação -- todos, só aprovados, só pendentes ou só
- * rejeitados -- porque esta tela mostra todo mundo junto.
+ * rejeitados -- porque esta tela mostra todo mundo junto. Dá para exportar
+ * todas as áreas (botão do rodapé) ou uma área só (dentro da área aberta).
  */
 const PreEscalaDialog = ({ onClose }) => {
   const [equipantes, setEquipantes] = useState([]);
@@ -93,11 +94,18 @@ const PreEscalaDialog = ({ onClose }) => {
   ];
   const daSituacao = (chave) => (chave === 'todos' ? equipantes : equipantes.filter((eq) => eq.status === chave));
 
-  const exportar = (chave, rotulo) => {
+  const doGrupo = (pessoas, chave) => (chave === 'todos' ? pessoas : pessoas.filter((eq) => eq.status === chave));
+
+  // area: null = todas as áreas; senão, só a área (pessoas = quem marcou ela).
+  const exportar = (chave, rotulo, area = null, pessoas = null) => {
     try {
-      exportPreEscala(agrupar(daSituacao(chave)), chave);
-      setEscolhendoExport(false);
-      toast({ title: 'Planilha gerada', description: `Pré-escala: ${rotulo.toLowerCase()}.`, className: 'bg-green-600 text-white' });
+      if (area) {
+        exportPreEscala([{ area, pessoas: doGrupo(pessoas, chave) }], chave, area);
+      } else {
+        exportPreEscala(agrupar(daSituacao(chave)), chave);
+        setEscolhendoExport(false);
+      }
+      toast({ title: 'Planilha gerada', description: `Pré-escala${area ? ` — ${area}` : ''}: ${rotulo.toLowerCase()}.`, className: 'bg-green-600 text-white' });
     } catch (e) {
       toast({ title: 'Não foi possível exportar', description: e.message, variant: 'destructive' });
     }
@@ -204,7 +212,25 @@ const PreEscalaDialog = ({ onClose }) => {
                       </button>
 
                       {aberta && (
-                        <div className="ml-2 mb-2 mt-1 rounded-md border border-white/10 bg-white/[0.03] max-h-56 overflow-y-auto">
+                        <div className="ml-2 mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                          <span className="text-gray-400 mr-1 inline-flex items-center gap-1">
+                            <Download className="w-3.5 h-3.5" /> Exportar {area}:
+                          </span>
+                          {OPCOES_EXPORT.map(({ chave, rotulo }) => {
+                            const n = doGrupo(pessoas, chave).length;
+                            return (
+                              <button key={chave} type="button" disabled={n === 0}
+                                onClick={() => exportar(chave, rotulo, area, pessoas)}
+                                data-dica={`Baixar a planilha de ${area} com ${rotulo.toLowerCase()} (${n}).`}
+                                className="px-2 py-1 rounded-md border border-white/15 bg-white/5 text-gray-200 hover:bg-emerald-600/20 hover:border-emerald-500/50 hover:text-white disabled:opacity-40 disabled:pointer-events-none">
+                                {rotulo} <span className="text-gray-400">({n})</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {aberta && (
+                        <div className="ml-2 mb-2 mt-1.5 rounded-md border border-white/10 bg-white/[0.03] max-h-56 overflow-y-auto">
                           {pessoas.map((p) => (
                             <div
                               key={p.id}
@@ -229,7 +255,7 @@ const PreEscalaDialog = ({ onClose }) => {
 
         {escolhendoExport && (
           <div className="px-4 pt-3 pb-1 border-t border-white/10 bg-zinc-900">
-            <p className="text-xs text-gray-400 mb-2">Exportar quem marcou cada área como 1ª opção. Escolha quem entra na planilha:</p>
+            <p className="text-xs text-gray-400 mb-2">Exportar <b className="text-gray-300">todas as áreas</b> (uma aba por área, mais o resumo). Escolha quem entra na planilha. Para uma área só, abra a área e use o “Exportar” dela.</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {OPCOES_EXPORT.map(({ chave, rotulo }) => {
                 const n = daSituacao(chave).length;
@@ -252,7 +278,7 @@ const PreEscalaDialog = ({ onClose }) => {
             disabled={loading || !!erro || equipantes.length === 0}
             data-dica="Baixar uma planilha (Excel) de quem marcou cada área como 1ª opção. Você escolhe: todos, só aprovados, só pendentes ou só rejeitados."
             className="bg-emerald-600/20 text-emerald-300 border-emerald-600/50 hover:bg-emerald-600/40 hover:text-emerald-200">
-            <Download className="mr-2 h-4 w-4" /> Exportar
+            <Download className="mr-2 h-4 w-4" /> Exportar todas as áreas
           </Button>
           <Button onClick={onClose} variant="outline" className="border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white">
             Fechar

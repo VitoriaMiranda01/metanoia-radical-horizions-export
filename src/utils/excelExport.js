@@ -380,10 +380,10 @@ export const exportSaudeToExcel = (linhas, resumo) => {
 // `situacao`: 'todos' | 'aprovado' | 'pendente' | 'rejeitado' -- a tela ja
 // manda a lista filtrada; aqui so muda o nome do arquivo e o resumo.
 // Abas: Resumo (quantos por area), Todos (uma linha por pessoa) e uma aba por
-// area.
+// area. Com `area` (exportar so uma area), sai uma aba so, a da area.
 const ROTULO_SITUACAO = { todos: 'Todos', aprovado: 'Aprovados', pendente: 'Pendentes', rejeitado: 'Rejeitados' };
 
-export const exportPreEscala = (grupos, situacao = 'todos') => {
+export const exportPreEscala = (grupos, situacao = 'todos', area = null) => {
   const total = grupos.reduce((n, g) => n + g.pessoas.length, 0);
   if (total === 0) throw new Error('Ninguém para exportar.');
 
@@ -401,6 +401,18 @@ export const exportPreEscala = (grupos, situacao = 'todos') => {
   const larguras = [{ wch: 40 }, { wch: 16 }, { wch: 40 }, { wch: 12 }, { wch: 18 }, { wch: 28 }, { wch: 28 }, { wch: 18 }];
 
   const wb = XLSX.utils.book_new();
+  const nomeDeAba = (texto) => texto.replace(/[\/?*[\]:]/g, '-').substring(0, 31).trim() || 'Área';
+  const hoje = new Date().toISOString().split('T')[0];
+
+  // So uma area: uma aba, arquivo com o nome da area.
+  if (area) {
+    const ws = XLSX.utils.json_to_sheet(grupos.flatMap((g) => g.pessoas.map(linha)));
+    ws['!cols'] = larguras;
+    XLSX.utils.book_append_sheet(wb, ws, nomeDeAba(area));
+    const arquivo = area.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+    XLSX.writeFile(wb, `Pre-escala_${arquivo}_${ROTULO_SITUACAO[situacao] || 'Todos'}_${hoje}.xlsx`);
+    return true;
+  }
 
   const resumo = grupos.map((g) => {
     const r = { 'Área (1ª opção)': g.area, 'Quantidade': g.pessoas.length };
@@ -426,7 +438,7 @@ export const exportPreEscala = (grupos, situacao = 'todos') => {
   // sem repetir (duas areas longas podem cortar igual).
   const usados = new Set(['Resumo', 'Todos']);
   grupos.forEach((g) => {
-    const base = g.area.replace(/[\/?*[\]:]/g, '-').substring(0, 31).trim() || 'Área';
+    const base = nomeDeAba(g.area);
     let nome = base;
     for (let i = 2; usados.has(nome); i += 1) nome = `${base.substring(0, 27)} (${i})`;
     usados.add(nome);
@@ -435,7 +447,6 @@ export const exportPreEscala = (grupos, situacao = 'todos') => {
     XLSX.utils.book_append_sheet(wb, ws, nome);
   });
 
-  const hoje = new Date().toISOString().split('T')[0];
   XLSX.writeFile(wb, `Pre-escala_${ROTULO_SITUACAO[situacao] || 'Todos'}_${hoje}.xlsx`);
   return true;
 };

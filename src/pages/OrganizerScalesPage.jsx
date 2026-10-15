@@ -1907,7 +1907,7 @@ const OrganizerScalesPage = () => {
                     <Button data-dica="Esconder a escala provisória do site de novo: os equipantes deixam de ver a área e de poder pagar, e os líderes perdem a relação. Pede confirmação."
                       onClick={() => setConfirmandoDesfazer(true)} variant="outline" disabled={!escala.pode_gerir}
                       className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
-                      <Undo2 className="mr-2 h-4 w-4" /> Desfazer provisória
+                      <Undo2 className="mr-2 h-4 w-4" /> Desfazer Escala Provisória
                     </Button>
                     <Button onClick={() => setConfirmandoOficial(true)}
                       disabled={(escala.faltam > 0 && !liberaComFila) || !escala.pode_gerir}

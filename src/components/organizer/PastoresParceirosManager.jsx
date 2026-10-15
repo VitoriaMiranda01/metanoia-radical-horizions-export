@@ -285,9 +285,10 @@ const PastoresParceirosManager = () => {
                         ) : (
                           <span className="text-[11px] w-fit px-1.5 py-0.5 rounded-full border border-amber-500/40 text-amber-300">a vincular</span>
                         )}
-                        {/* Conferido: a linha some (dá para desfazer no aviso
-                            ou pelo "desfazer conferência"). Os "a vincular"
-                            nao tem botao: primeiro vincular a igreja. */}
+                        {/* Conferido: a linha some por inteiro e fica so a
+                            igreja (15/10/2026); desfazer, pelo aviso que aparece
+                            logo apos o clique. Os "a vincular" nao tem botao:
+                            primeiro vincular a igreja. */}
                         {p.igreja_digitada && !p.conferido_em && (
                           <span className="text-xs text-gray-500 mt-0.5 flex items-center gap-2 flex-wrap">
                             <span><span className="text-gray-600">Na planilha:</span> “{p.igreja_digitada}”</span>
@@ -301,13 +302,7 @@ const PastoresParceirosManager = () => {
                             )}
                           </span>
                         )}
-                        {p.igreja_digitada && p.conferido_em && (
-                          <button type="button" onClick={() => conferir(p, false)} disabled={conferindo === p.id}
-                            data-dica={`Conferido${p.conferido_por ? ` por ${p.conferido_por}` : ''}. Clique para mostrar de novo o que escreveu na planilha.`}
-                            className="w-fit text-[10px] text-gray-600 hover:text-gray-300 mt-0.5 disabled:opacity-50">
-                            ✓ conferido · desfazer
-                          </button>
-                        )}
+
                       </span>
                     </td>
                     <td className="px-3 py-1.5 text-gray-400 tabular-nums whitespace-nowrap hidden md:table-cell">

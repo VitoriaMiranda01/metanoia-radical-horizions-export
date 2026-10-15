@@ -65,3 +65,52 @@ export const linkWhatsApp = (telefone, estrangeiro = false, texto = '') => {
   if (d.length < 10) return null;
   return `https://wa.me/${d}${texto ? `?text=${encodeURIComponent(texto)}` : ''}`;
 };
+
+// ---- Lider v2 (15/10/2026) ----------------------------------------------
+
+// So o lider, em areas com 2+ atuacoes alem do lider (menos Guia).
+export const trocarAtuacaoLider = (equipanteId, dono, escalaId, atuacao) =>
+  chamar('lider_trocar_atuacao', {
+    ...credenciais(equipanteId, dono),
+    p_escala_id: escalaId,
+    p_atuacao: atuacao
+  }, 'troca de atuação');
+
+// So o lider da Fotografia. cor = null tira a cor.
+export const definirCorLider = (equipanteId, dono, escalaId, cor) =>
+  chamar('lider_definir_cor', {
+    ...credenciais(equipanteId, dono),
+    p_escala_id: escalaId,
+    p_cor: cor || null
+  }, 'cor');
+
+// Responsavel pela reuniao da escala: alguem da equipe. null desfaz.
+export const delegarReuniao = (equipanteId, dono, area, cor, delegadoId) =>
+  chamar('lider_delegar_reuniao', {
+    ...credenciais(equipanteId, dono),
+    p_area: area,
+    p_cor: cor || null,
+    p_equipante_id: delegadoId || null
+  }, 'responsável pela reunião');
+
+// Lider de area extra: puxar gente para a lista.
+export const buscarParaAreaExtra = (equipanteId, dono, area, termo) =>
+  chamar('lider_extra_buscar', {
+    ...credenciais(equipanteId, dono),
+    p_area: area,
+    p_termo: termo
+  }, 'busca');
+
+export const incluirNaAreaExtra = (equipanteId, dono, area, pessoaId) =>
+  chamar('lider_extra_incluir', {
+    ...credenciais(equipanteId, dono),
+    p_area: area,
+    p_equipante_id: pessoaId
+  }, 'inclusão na área extra');
+
+export const removerDaAreaExtra = (equipanteId, dono, area, pessoaId) =>
+  chamar('lider_extra_remover', {
+    ...credenciais(equipanteId, dono),
+    p_area: area,
+    p_equipante_id: pessoaId
+  }, 'remoção da área extra');

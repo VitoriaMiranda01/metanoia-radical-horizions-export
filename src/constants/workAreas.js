@@ -289,3 +289,16 @@ export const WORK_AREAS = [
 // partir das edicoes 33/35/36 (ver a migration citada acima); este valor so
 // vale para uma area nova que alguem crie sem configurar.
 export const DEFAULT_AREA_CAPACITY = 5;
+
+// Areas SECUNDARIAS (15/10/2026, Patrick) -- so interno, nao existe "area
+// secundaria" em lugar nenhum da escala. Na revelacao da area, as principais
+// aparecem em destaque e estas (mais as Areas Extras) embaixo, menores. A
+// presenca "confirmada" conta so as principais. Espelha _area_principal() no
+// banco (migration 20261015c): mudar aqui, mudar la.
+export const AREAS_SECUNDARIAS = [
+  'Ataque / Madrugada', 'Recepção Sítio',
+  'Recepção Igreja', 'Cozinha Igreja', 'Som / Multimídia', 'Estacionamento', 'Mesa crachá',
+  'Família muçulmana', 'Apresentadores', 'Equipe de Manutenção'
+];
+
+export const ehAreaPrincipal = (area) => !!area && !AREAS_SECUNDARIAS.includes(area);

@@ -4,9 +4,10 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Check, Download, Loader2, Search, Truck, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Crown, Download, Loader2, Search, Truck, X } from 'lucide-react';
 import { AREAS_EXTRA } from '@/constants/areasExtra';
-import { fetchDisponibilidadesExtra, decidirDisponibilidadeExtra } from '@/services/scalesService';
+import { fetchDisponibilidadesExtra, decidirDisponibilidadeExtra, definirLiderAreaExtra } from '@/services/scalesService';
+import { supabase } from '@/services/supabaseClient';
 import { exportDisponibilidadesExtra } from '@/utils/excelExport';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { formatCPF } from '@/utils/formatters';
@@ -42,6 +43,11 @@ const AreasExtraDialog = ({ onClose }) => {
   const [erro, setErro] = useState('');
   const [busca, setBusca] = useState('');
   const [salvando, setSalvando] = useState({});
+  const [lideres, setLideres] = useState({});
+  // Cada mutirao abre e fecha (15/10/2026): com centenas de nomes, achar
+  // quem esta na cozinha de sexta exigia rolar a lista inteira.
+  const [abertas, setAbertas] = useState(() => new Set());
+  const [escolhendoLider, setEscolhendoLider] = useState(null); // chave da area
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -52,6 +58,7 @@ const AreasExtraDialog = ({ onClose }) => {
     } else {
       setErro('');
       setItens(r.itens);
+      setLideres(r.lideres || {});
     }
     setLoading(false);
   }, []);
@@ -106,6 +113,30 @@ const AreasExtraDialog = ({ onClose }) => {
     )));
   };
 
+  const salvarLider = async (area, pessoa) => {
+    setSalvando((s) => ({ ...s, [`lider:${area}`]: true }));
+    const r = await definirLiderAreaExtra(area, pessoa?.equipante_id || null);
+    setSalvando((s) => { const c = { ...s }; delete c[`lider:${area}`]; return c; });
+    if (!r.success) {
+      toast({ title: 'Não deu para salvar o líder', description: r.error, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: pessoa ? `${pessoa.nome} é o líder` : 'Líder retirado',
+      description: pessoa ? 'Entrou aprovado na lista e já vê a relação no acompanhamento da inscrição.' : undefined,
+      className: 'bg-emerald-600 text-white'
+    });
+    setEscolhendoLider(null);
+    carregar();
+  };
+
+  const alternarArea = (chave) => setAbertas((atual) => {
+    const novo = new Set(atual);
+    if (novo.has(chave)) novo.delete(chave); else novo.add(chave);
+    return novo;
+  });
+  const todasAbertas = abertas.size === AREAS_EXTRA.length;
+
   const exportar = () => {
     try {
       const r = exportDisponibilidadesExtra(itens, AREAS_EXTRA);
@@ -151,9 +182,15 @@ const AreasExtraDialog = ({ onClose }) => {
                 {chip.texto}
               </span>
             )}
+            {item.ofereceu === false && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full border border-blue-500/40 bg-blue-500/10 text-blue-300">
+                não se ofereceu · {item.decidido_por_tipo === 'lider' ? 'puxado pelo líder' : 'incluído'}
+              </span>
+            )}
             {item.decidido_por && (
               <span className="text-[11px] text-gray-500">
                 {aprovado ? 'Aprovado' : 'Recusado'} por {item.decidido_por}
+                {item.decidido_por_tipo === 'lider' ? ' (líder)' : ''}
               </span>
             )}
           </div>
@@ -245,6 +282,13 @@ const AreasExtraDialog = ({ onClose }) => {
           </div>
           <Button
             variant="outline"
+            onClick={() => setAbertas(todasAbertas ? new Set() : new Set(AREAS_EXTRA.map((a) => a.chave)))}
+            className="h-9 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/5"
+          >
+            {todasAbertas ? 'Recolher todas' : 'Expandir todas'}
+          </Button>
+          <Button
+            variant="outline"
             onClick={exportar}
             data-dica="Baixar a lista dos mutirões em planilha."
             disabled={loading || itens.length === 0}
@@ -254,7 +298,7 @@ const AreasExtraDialog = ({ onClose }) => {
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {loading && (
             <div className="flex items-center justify-center gap-2 py-12 text-gray-400">
               <Loader2 className="h-5 w-5 animate-spin" /> Carregando...
@@ -276,28 +320,63 @@ const AreasExtraDialog = ({ onClose }) => {
             const totalArea = itens.filter((i) => i.area === area.chave).length;
             const aprovadosArea = itens.filter((i) => i.area === area.chave && i.aprovado === true).length;
 
+            // Buscando, abre sozinha onde tem resultado.
+            const aberta = abertas.has(area.chave) || (!!termo && doGrupo.length > 0);
+            const lider = lideres[area.chave];
+
             return (
-              <div key={area.chave}>
-                <div className="flex items-baseline justify-between gap-3 mb-3 pb-2 border-b border-white/10">
-                  <div>
-                    <h4 className="text-white font-semibold">{area.rotulo}</h4>
-                    <p className="text-xs text-gray-500">{area.detalhe}</p>
-                  </div>
+              <div key={area.chave} className="rounded-lg border border-white/10">
+                <button type="button" onClick={() => alternarArea(area.chave)}
+                  className="w-full flex items-center justify-between gap-3 p-3 text-left hover:bg-white/5 rounded-t-lg">
+                  <span className="flex items-start gap-2 min-w-0">
+                    {aberta ? <ChevronDown className="h-4 w-4 mt-1 text-gray-400 shrink-0" /> : <ChevronRight className="h-4 w-4 mt-1 text-gray-400 shrink-0" />}
+                    <span className="min-w-0">
+                      <span className="block text-white font-semibold">{area.rotulo}</span>
+                      <span className="block text-xs text-gray-500">{area.detalhe}</span>
+                      <span className="block text-xs mt-0.5 text-amber-300/90">
+                        {lider ? <><Crown className="inline h-3 w-3 mr-1" />Líder: {lider.nome}</> : <span className="text-gray-500">sem líder</span>}
+                      </span>
+                    </span>
+                  </span>
                   <span className="text-xs text-gray-400 shrink-0">
                     {totalArea === 0
                       ? 'ninguém'
                       : `${aprovadosArea} de ${totalArea} ${totalArea === 1 ? 'aprovado' : 'aprovados'}`}
                   </span>
-                </div>
+                </button>
 
-                {doGrupo.length === 0 ? (
-                  <p className="text-sm text-gray-500 py-2">
-                    {totalArea === 0
-                      ? 'Ninguém se ofereceu para este mutirão.'
-                      : 'Ninguém neste mutirão bate com a busca.'}
-                  </p>
-                ) : (
-                  <div className="space-y-2">{doGrupo.map(renderPessoa)}</div>
+                {aberta && (
+                  <div className="p-3 pt-0 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+                      <Button size="sm" variant="outline" onClick={() => setEscolhendoLider(escolhendoLider === area.chave ? null : area.chave)}
+                        className="h-8 border-amber-500/40 bg-transparent text-amber-200 hover:bg-amber-500/10 hover:text-amber-100">
+                        <Crown className="h-3.5 w-3.5 mr-1.5" /> {lider ? 'Trocar líder' : 'Definir líder'}
+                      </Button>
+                      {lider && (
+                        <Button size="sm" variant="ghost" disabled={!!salvando[`lider:${area.chave}`]}
+                          onClick={() => salvarLider(area.chave, null)}
+                          className="h-8 text-gray-400 hover:text-red-300 hover:bg-white/10">
+                          Tirar líder
+                        </Button>
+                      )}
+                    </div>
+                    {escolhendoLider === area.chave && (
+                      <EscolherLider
+                        candidatos={itens.filter((i) => i.area === area.chave)}
+                        ocupado={!!salvando[`lider:${area.chave}`]}
+                        onEscolher={(p) => salvarLider(area.chave, p)}
+                      />
+                    )}
+                    {doGrupo.length === 0 ? (
+                      <p className="text-sm text-gray-500 py-2">
+                        {totalArea === 0
+                          ? 'Ninguém se ofereceu para este mutirão.'
+                          : 'Ninguém neste mutirão bate com a busca.'}
+                      </p>
+                    ) : (
+                      <div className="space-y-2">{doGrupo.map(renderPessoa)}</div>
+                    )}
+                  </div>
                 )}
               </div>
             );
@@ -311,6 +390,56 @@ const AreasExtraDialog = ({ onClose }) => {
         </div>
       </div>
     </motion.div>
+  );
+};
+
+// Escolher o lider de um mutirao: primeiro quem se ofereceu para ele; com 3+
+// letras, procura tambem entre todos os equipantes aprovados.
+const EscolherLider = ({ candidatos, ocupado, onEscolher }) => {
+  const [busca, setBusca] = useState('');
+  const [deFora, setDeFora] = useState([]);
+  const termo = semAcento(busca.trim());
+
+  const locais = useMemo(() => candidatos
+    .filter((c) => !termo || semAcento(c.nome).includes(termo))
+    .slice(0, 30), [candidatos, termo]);
+
+  useEffect(() => {
+    if (termo.length < 3) { setDeFora([]); return undefined; }
+    let vivo = true;
+    const t = setTimeout(async () => {
+      const { data } = await supabase.from('equipantes').select('id, nome, igreja')
+        .eq('tipo', 'equipante').eq('status', 'aprovado').ilike('nome', `%${busca.trim()}%`).order('nome').limit(15);
+      if (!vivo) return;
+      const ja = new Set(candidatos.map((c) => c.equipante_id));
+      setDeFora((data || []).filter((d) => !ja.has(d.id)).map((d) => ({ equipante_id: d.id, nome: d.nome, igreja: d.igreja })));
+    }, 350);
+    return () => { vivo = false; clearTimeout(t); };
+  }, [termo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const linha = (p, fora) => (
+    <button key={p.equipante_id} type="button" disabled={ocupado} onClick={() => onEscolher(p)}
+      className="w-full flex items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-white/10 disabled:opacity-50">
+      <span className="flex-1 min-w-0">
+        <span className="block text-sm text-gray-100 truncate">{p.nome}</span>
+        <span className="block text-xs text-gray-500 truncate">{p.igreja || ''}{fora ? ' · não se ofereceu' : ''}</span>
+      </span>
+      <Crown className="h-3.5 w-3.5 text-amber-300/70 shrink-0" />
+    </button>
+  );
+
+  return (
+    <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2 space-y-2">
+      <Input autoFocus value={busca} onChange={(e) => setBusca(e.target.value)}
+        placeholder="Buscar quem vai liderar (nome)" className="h-9 bg-black/40 border-white/20 text-white" />
+      <div className="max-h-60 overflow-y-auto">
+        {locais.map((p) => linha(p, false))}
+        {deFora.map((p) => linha(p, true))}
+        {locais.length === 0 && deFora.length === 0 && (
+          <p className="text-xs text-gray-500 text-center py-3">{termo.length < 3 ? 'Ninguém nesta lista. Digite 3 letras para buscar entre todos.' : 'Ninguém encontrado.'}</p>
+        )}
+      </div>
+    </div>
   );
 };
 

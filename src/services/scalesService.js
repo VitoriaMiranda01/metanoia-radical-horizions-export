@@ -396,7 +396,42 @@ export const fetchDisponibilidadesExtra = async () => {
   if (!data?.ok) {
     return { success: false, error: data?.erro || 'Não foi possível carregar', itens: [] };
   }
-  return { success: true, itens: data.itens || [] };
+  return { success: true, itens: data.itens || [], lideres: data.lideres || {} };
+};
+
+// Lider de cada area extra (15/10/2026). equipanteId null tira o lider.
+export const definirLiderAreaExtra = async (area, equipanteId) => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('definir_lider_area_extra', { p_area: area, p_equipante_id: equipanteId || null }),
+    { rotulo: 'líder da área extra' }
+  );
+  if (error) return { success: false, error: error.message || 'Erro ao salvar o líder' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar o líder' };
+  return { success: true, lider: data.lider || null };
+};
+
+// Responsaveis pela reuniao da escala (15/10/2026): uma linha por equipe
+// (area, ou area + cor), com lider(es), responsavel e membros.
+export const fetchResponsaveisReuniao = async () => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('responsaveis_reuniao_painel'),
+    { rotulo: 'responsáveis pela reunião' }
+  );
+  if (error) return { success: false, error: error.message || 'Erro ao carregar', equipes: [] };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível carregar', equipes: [] };
+  return { success: true, equipes: data.equipes || [] };
+};
+
+export const definirResponsavelReuniao = async (area, cor, equipanteId) => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('definir_responsavel_reuniao', {
+      p_area: area, p_cor: cor || null, p_equipante_id: equipanteId || null
+    }),
+    { rotulo: 'responsável pela reunião' }
+  );
+  if (error) return { success: false, error: error.message || 'Erro ao salvar' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar' };
+  return { success: true };
 };
 
 // aprovado: true = conto com você · false = dispensado · null = desfaz a resposta

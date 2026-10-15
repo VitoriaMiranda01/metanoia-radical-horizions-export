@@ -19,16 +19,18 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
   // gravada. O `age` da tela e so o palpite enquanto nao carregou.
   const isMinor = workflowData ? !!workflowData.menor_de_idade : resolvedAge < 18;
 
-  const fetchWorkflow = useCallback(async () => {
+  // silencioso: atualiza sem trocar a tela por "Carregando..." (que
+  // desmontava a relacao do lider no meio da chamada).
+  const fetchWorkflow = useCallback(async (silencioso = false) => {
     if (!equipante_id) return;
     try {
-      setIsLoading(true);
+      if (!silencioso) setIsLoading(true);
       const data = await getEquipanteWorkflow(equipante_id, dono);
       setWorkflowData(data);
     } catch (err) {
       setError(err.message);
     } finally {
-      setIsLoading(false);
+      if (!silencioso) setIsLoading(false);
     }
   }, [equipante_id, dono.cpf, dono.nome, dono.nascimento]);
 
@@ -128,21 +130,25 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
           : 'pendente',
     });
 
-    // So conta como concluida DEPOIS que o organizador lanca a escala --
-    // ter area nao basta, porque quem anuncia a escala e a reuniao. Na
-    // escala PROVISORIA a etapa fica "em processo": falta a chamada da
-    // reuniao de escala e o lancamento da oficial (05/10/2026).
+    // Escala PROVISORIA (05/10 e 15/10/2026): fica "em processo" ate a
+    // presenca ser confirmada na reuniao de escala; confirmada, conclui com
+    // "presenca confirmada". A escala OFICIAL ganha uma linha propria.
+    const provisoriaLabel = workflowData.presenca === 'presente'
+      ? 'Escala de trabalho (provisória) — presença confirmada'
+      : 'Escala de trabalho (provisória)';
     stages.push({
       id: 'scale',
-      label: workflowData.escalado && !workflowData.escala_oficial
-        ? 'Escala de trabalho (provisória)'
-        : 'Escala de trabalho',
+      label: workflowData.escalado ? provisoriaLabel : 'Escala de trabalho',
       status: workflowData.nao_sera_escalado
         ? 'rejeitado'
         : workflowData.escalado
-          ? (workflowData.escala_oficial ? 'ok' : 'em_processo')
+          ? (workflowData.presenca === 'presente' ? 'ok' : 'em_processo')
           : 'pendente',
     });
+
+    if (workflowData.escalado && workflowData.escala_oficial) {
+      stages.push({ id: 'scale_oficial', label: 'Escala oficial lançada', status: 'ok' });
+    }
 
     stages.push({
       id: 'payment',
@@ -167,6 +173,9 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     // Areas em que a pessoa e lider (so depois da provisoria) e como ficou
     // a chamada dela na reuniao de escala: 'presente' | 'ausente' | null.
     liderDe: workflowData?.lider_de || [],
+    // Responsavel pela reuniao de alguma equipe e lider de area extra.
+    delegadoDe: workflowData?.delegado_de || [],
+    liderExtraDe: workflowData?.lider_extra_de || [],
     presenca: workflowData?.presenca ?? null,
     pago: !!workflowData?.pago,
     // Problemas na ficha que a propria pessoa corrige (igreja que faltou,
@@ -183,6 +192,7 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     error,
     updateStage,
     uploadFile,
-    refresh: fetchWorkflow
+    refresh: () => fetchWorkflow(false),
+    refreshSilencioso: () => fetchWorkflow(true)
   };
 };

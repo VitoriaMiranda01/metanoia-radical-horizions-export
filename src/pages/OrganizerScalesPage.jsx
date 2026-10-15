@@ -17,7 +17,7 @@ import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
 import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf, fetchAreasFixas, limparArea, marcarAreaFixa } from '@/services/equipanteAllocationService';
 import { fetchConfiguracoes, updateCpfsAreaEspecial } from '@/services/organizerConfigService';
 import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
-import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus, ChevronDown, ChevronUp, Pin, ArrowUpDown, Plus, Church } from 'lucide-react';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus, ChevronDown, ChevronUp, Pin, ArrowUpDown, Plus, Church, UserCog } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
@@ -26,6 +26,7 @@ import FixarAreaDialog from '@/components/scales/FixarAreaDialog';
 import EquipantesGridDisplay from '@/components/scales/EquipantesGridDisplay';
 import CartaoFila from '@/components/scales/CartaoFila';
 import AreasExtraDialog from '@/components/scales/AreasExtraDialog';
+import ResponsaveisReuniaoDialog from '@/components/scales/ResponsaveisReuniaoDialog';
 import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
 import PreEscalaDialog from '@/components/scales/PreEscalaDialog';
 import TrocarAreaDialog from '@/components/scales/TrocarAreaDialog';
@@ -185,6 +186,7 @@ const OrganizerScalesPage = () => {
   // Areas de Trabalho Extra: painel a parte, so de leitura + resposta.
   // Nao mexe em escalas nem no lancamento -- ver AreasExtraDialog.jsx.
   const [verAreasExtra, setVerAreasExtra] = useState(false);
+  const [verResponsaveis, setVerResponsaveis] = useState(false);
   const [verAreasEspeciais, setVerAreasEspeciais] = useState(false);
   const [verRecepcaoIgreja, setVerRecepcaoIgreja] = useState(false);
 
@@ -1833,6 +1835,16 @@ const OrganizerScalesPage = () => {
                 </Button>
               )}
 
+              {/* Quem conduz a Leitura de Escala no lugar do lider (15/10/2026). */}
+              <Button onClick={() => setVerResponsaveis(true)} variant="outline" disabled={!escala?.lancada_em}
+                data-dica={escala?.lancada_em
+                  ? 'Quem conduz a reunião da escala no lugar do líder: faz a chamada e o grupo do WhatsApp.'
+                  : 'Libera depois que a escala provisória for lançada.'}
+                className="bg-amber-600/15 text-amber-300 border-amber-600/40 hover:bg-amber-600/30 hover:text-amber-200">
+                <UserCog className="mr-2 h-4 w-4" /> Responsáveis pela reunião
+                <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
+              </Button>
+
               <Button data-dica="Listas dos mutirões (caminhão, cozinha, limpeza). Não mexe na escala." onClick={() => setVerAreasExtra(true)} variant="outline"
                 className="bg-blue-600/20 text-blue-300 border-blue-600/50 hover:bg-blue-600/40 hover:text-blue-200">
                 <Truck className="mr-2 h-4 w-4" /> Áreas Extras
@@ -2105,6 +2117,7 @@ const OrganizerScalesPage = () => {
         <AnimatePresence>
           {verPreEscala && <PreEscalaDialog onClose={() => setVerPreEscala(false)} />}
           {verAreasExtra && <AreasExtraDialog onClose={() => setVerAreasExtra(false)} />}
+          {verResponsaveis && <ResponsaveisReuniaoDialog onClose={() => setVerResponsaveis(false)} />}
           {manualAberta && (
             <InscricaoManualDialog
               key="manual"

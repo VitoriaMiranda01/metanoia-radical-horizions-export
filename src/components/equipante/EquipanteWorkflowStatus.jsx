@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEquipanteWorkflow } from '@/hooks/useEquipanteWorkflow';
-import { CheckCircle2, Clock, AlertCircle, XCircle, ArrowRight, Hand, Undo2, Sparkles } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, XCircle, ArrowRight, Hand, Undo2, Sparkles, ChevronUp, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import ParentalAuthUpload from './ParentalAuthUpload';
 import { Button } from '@/components/ui/button';
 import CorrecaoCadastroDialog from './CorrecaoCadastroDialog';
 import RevelarAreaDialog from './RevelarAreaDialog';
 import RelacaoLider from './RelacaoLider';
+import AreaOficial from './AreaOficial';
 
 // onSair: "Não sou eu" -- a janela de cadastro não fecha, então precisa ter saída.
 // onDonoAtualizado: o que a pessoa acabou de gravar (CPF, nascimento) e que
@@ -32,9 +33,12 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     areaVista,
     escalaOficial,
     liderDe,
+    delegadoDe,
+    liderExtraDe,
     presenca,
     error,
-    refresh
+    refresh,
+    refreshSilencioso
   } = useEquipanteWorkflow(equipanteId, age, dono);
 
   // So o proprio equipante (que provou ser dono) ve a janela de correcao
@@ -44,6 +48,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
   const [completou, setCompletou] = useState(false);
   const [revelando, setRevelando] = useState(false);
   const [revelouAgora, setRevelouAgora] = useState(false);
+  const [verOficial, setVerOficial] = useState(false);
 
   // Ao entrar no acompanhamento: se ha pendencia, abre a janela de cadastro.
   // Ela NAO fecha enquanto sobrar pendencia (a pessoa completa ou sai) -- e
@@ -73,8 +78,10 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     }
     setCompletou(true);
     setCorrecao(null);
-    await refresh();
-    if (revelarDepois) setRevelando(true);
+    await refreshSilencioso();
+    if (revelarDepois) {
+      if (escalaOficial) setVerOficial(true); else setRevelando(true);
+    }
   };
 
   if (isLoading) {
@@ -144,6 +151,22 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
   // se inscrever. Quem autoriza e o servidor, em situacao_inscricao.
   const canProceedToPayment = podePagar;
 
+  const viuArea = areaVista || revelouAgora;
+  const ehLider = liderDe.length > 0;
+  // A relacao (chamada, areas extras) so aparece DEPOIS que a pessoa viu a
+  // propria area -- antes disso ela entregaria a surpresa (15/10/2026).
+  const conduzEquipe = liderDe.length > 0 || delegadoDe.length > 0 || liderExtraDe.length > 0;
+  const mostrarRelacao = ehOProprio && conduzEquipe && (viuArea || !escalado);
+
+  const abrirOficial = () => {
+    if (verOficial) { setVerOficial(false); return; }
+    if (ehOProprio && pendencias.length > 0) {
+      setCorrecao({ antesDeRevelar: true });
+      return;
+    }
+    setVerOficial(true);
+  };
+
   // O que falta, em uma frase, para a pessoa saber o que esperar.
   const oQueFalta = () => {
     if (pago) return null;
@@ -160,7 +183,9 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     if (!escalaOficial) {
       if (presenca === 'ausente') return 'Você ficou como ausente na chamada da reunião de escala. Procure o líder da sua área ou a organização.';
       if (presenca === 'presente') return null;
-      return 'Esta é a escala provisória. Na reunião de escala, confirme sua presença com o líder da sua área.';
+      if (!viuArea) return 'A escala provisória saiu! Veja a sua área no botão abaixo. Depois, na reunião de escala, confirme sua presença.';
+      if (ehLider) return 'Você é líder: confirme a sua própria presença na lista da sua equipe, aqui embaixo (botão "Presente" ao lado do seu nome).';
+      return 'Confirme sua presença com o líder da sua área na reunião de escala. Quando ele marcar, esta etapa fica concluída.';
     }
     return null;
   };
@@ -318,28 +343,42 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
             fazer -- quando na verdade e so aguardar a escala. */}
         {/* Revelacao da area: aparece quando a escala foi lancada e a pessoa
             esta nela. O pagamento so abre depois que ela viu a area. */}
-        {escalado && (
+        {escalado && !escalaOficial && (
           <div className="mt-8 pt-6 border-t border-white/10 space-y-3">
-            {!areaVista && !revelouAgora && (
-              <p className="text-center text-gray-300 text-sm">
-                {escalaOficial
-                  ? 'A escala foi divulgada e você está nela!'
-                  : 'A escala provisória saiu e você está nela!'}
-              </p>
+            {!viuArea && (
+              <p className="text-center text-gray-300 text-sm">A escala provisória saiu e você está nela!</p>
             )}
             <Button
               onClick={abrirRevelacao}
-              className={`w-full py-6 text-lg ${areaVista || revelouAgora
+              className={`w-full py-6 text-lg ${viuArea
                 ? 'bg-transparent border border-white/20 text-gray-200 hover:bg-white/10'
                 : 'bg-gradient-to-r from-red-700 to-green-700 hover:from-red-600 hover:to-green-600 text-white shadow-lg shadow-red-900/30'}`}
             >
               <Sparkles className="mr-2 w-5 h-5" />
-              {areaVista || revelouAgora ? 'Ver minha área de novo' : 'Ver qual área fui escalado'}
+              {viuArea ? 'Ver minha área de novo' : 'Ver qual área fui escalado'}
             </Button>
           </div>
         )}
 
-        {canProceedToPayment && (areaVista || revelouAgora || !ehOProprio) && (
+        {/* Escala OFICIAL (15/10/2026): mostra direto, sem o misterio. Se a
+            pessoa mudou de area depois da provisoria, aparece a nova. */}
+        {escalado && escalaOficial && (
+          <div className="mt-8 pt-6 border-t border-white/10 space-y-3">
+            <p className="text-center text-gray-300 text-sm">A escala oficial foi lançada!</p>
+            <Button onClick={abrirOficial}
+              className="w-full py-6 text-lg bg-gradient-to-r from-red-700 to-green-700 hover:from-red-600 hover:to-green-600 text-white">
+              {verOficial ? <ChevronUp className="mr-2 w-5 h-5" /> : <Eye className="mr-2 w-5 h-5" />}
+              {verOficial ? 'Esconder minha área oficial' : 'Ver minha área oficial'}
+            </Button>
+            {verOficial && (
+              <AreaOficial equipanteId={equipanteId} dono={dono}
+                onVisto={() => setRevelouAgora(true)}
+                onPendencias={(lista) => { setVerOficial(false); setCorrecao({ antesDeRevelar: true, pendencias: lista }); }} />
+            )}
+          </div>
+        )}
+
+        {canProceedToPayment && (viuArea || !ehOProprio) && (
           <div className="mt-8 pt-6 border-t border-white/10">
             <Button
               onClick={() => onProceedToPayment?.({ nome: workflowData?.nome })}
@@ -353,8 +392,10 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
 
       {/* Relacao da equipe, para quem esta como lider. So o proprio (que
           provou ser dono) -- o organizador abrindo a ficha nao precisa. */}
-      {ehOProprio && liderDe.length > 0 && (
-        <RelacaoLider equipanteId={equipanteId} dono={dono} liderDe={liderDe} />
+      {mostrarRelacao && (
+        <RelacaoLider equipanteId={equipanteId} dono={dono} liderDe={liderDe}
+          delegadoDe={delegadoDe} liderExtraDe={liderExtraDe}
+          onPresencaPropria={refreshSilencioso} />
       )}
 
       <AnimatePresence>
@@ -382,7 +423,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
             onPendencias={(lista) => { setRevelando(false); setCorrecao({ antesDeRevelar: true, pendencias: lista }); }}
             // So libera o pagamento se a area chegou a aparecer (fechar no meio
             // da busca ou num erro nao conta como "viu").
-            onClose={(viu) => { setRevelando(false); if (viu) setRevelouAgora(true); refresh(); }}
+            onClose={(viu) => { setRevelando(false); if (viu) setRevelouAgora(true); refreshSilencioso(); }}
           />
         )}
       </AnimatePresence>

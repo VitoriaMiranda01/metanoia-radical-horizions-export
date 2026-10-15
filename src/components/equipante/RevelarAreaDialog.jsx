@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Crown, Loader2, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Loader2, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { revelarArea } from '@/services/equipantesService';
+import AreasReveladas from './AreasReveladas';
 
 /**
  * "Ver qual área fui escalado": a revelacao animada da area, que substitui o
@@ -15,10 +16,6 @@ import { revelarArea } from '@/services/equipantesService';
  *
  * A area vem SEMPRE do servidor (escalas), a mesma fonte da lista impressa.
  */
-
-const CORES_GRUPO = {
-  Amarelo: '#facc15', Azul: '#3b82f6', Roxo: '#a855f7', Verde: '#22c55e', Vermelho: '#ef4444',
-};
 
 const SUSPENSE_MS = 1800;
 
@@ -43,6 +40,7 @@ const Brilhos = () => (
 const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, onPagar, onPendencias, onClose }) => {
   const [etapa, setEtapa] = useState('buscando'); // buscando | suspense | revelado | fora | erro
   const [areas, setAreas] = useState([]);
+  const [extras, setExtras] = useState([]);
   const [erro, setErro] = useState('');
   // O servidor ja respondeu com a area (e gravou que a pessoa viu).
   const viu = etapa === 'suspense' || etapa === 'revelado';
@@ -69,6 +67,7 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, o
           return;
         }
         setAreas(r.areas);
+        setExtras(r.extras || []);
         setEtapa('suspense');
         timer = setTimeout(() => { if (vivo) setEtapa('revelado'); }, SUSPENSE_MS);
       } catch (e) {
@@ -84,13 +83,13 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, o
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
     >
-      <div className="relative w-full max-w-md min-h-[360px] rounded-2xl border border-white/10 bg-gradient-to-b from-neutral-900 to-black shadow-2xl overflow-hidden flex flex-col">
+      <div className="relative w-full max-w-md min-h-[360px] max-h-[92vh] rounded-2xl border border-white/10 bg-gradient-to-b from-neutral-900 to-black shadow-2xl overflow-hidden flex flex-col">
         <button type="button" onClick={fechar} aria-label="Fechar"
           className="absolute right-3 top-3 z-10 text-gray-500 hover:text-white">
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex-1 flex items-center justify-center p-8 text-center">
+        <div className="flex-1 flex items-center justify-center p-8 text-center overflow-y-auto">
           <AnimatePresence mode="wait">
             {etapa === 'buscando' && (
               <motion.div key="buscando" exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 text-gray-300">
@@ -119,43 +118,7 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, o
                   <Sparkles className="w-4 h-4 text-yellow-400" />
                   {areas.length > 1 ? 'Suas áreas' : 'Sua área'}
                 </motion.div>
-                {areas.map((a, i) => (
-                  <motion.div
-                    key={`${a.area}-${i}`}
-                    initial={{ opacity: 0, scale: 0.3 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 220, damping: 14, delay: 0.15 + i * 0.25 }}
-                    className="flex flex-col items-center"
-                  >
-                    <span className="text-4xl sm:text-5xl font-extrabold uppercase text-white drop-shadow-[0_0_24px_rgba(220,38,38,0.55)]">
-                      {a.area}
-                    </span>
-                    {/* Quem e lider ve isso em destaque, logo abaixo da area. */}
-                    {a.eh_lider && (
-                      <motion.span
-                        initial={{ opacity: 0, y: 10, scale: 0.6 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ type: 'spring', stiffness: 260, damping: 12, delay: 0.75 + i * 0.25 }}
-                        className="mt-3 inline-flex items-center gap-2 rounded-full border border-yellow-400/60 bg-yellow-400/15 px-4 py-1.5 text-base font-bold uppercase tracking-widest text-yellow-300 shadow-[0_0_24px_rgba(250,204,21,0.35)]"
-                      >
-                        <Crown className="w-5 h-5" /> Você é o líder
-                      </motion.span>
-                    )}
-                    {/* "Líder" puro ja esta no selo acima; "Carcereiro / Líder" continua aparecendo. */}
-                    {((a.atuacao && !(a.eh_lider && a.atuacao === 'Líder')) || a.cor) && (
-                      <span className="mt-2 flex items-center gap-2 text-gray-300">
-                        {a.eh_lider && a.atuacao === 'Líder' ? null : a.atuacao}
-                        {a.cor && (
-                          <span className="inline-flex items-center gap-1.5 text-sm">
-                            {a.atuacao && !(a.eh_lider && a.atuacao === 'Líder') ? '·' : ''}
-                            <span className="h-3 w-3 rounded-full" style={{ background: CORES_GRUPO[a.cor] || '#999' }} />
-                            {a.cor}
-                          </span>
-                        )}
-                      </span>
-                    )}
-                  </motion.div>
-                ))}
+                <AreasReveladas areas={areas} extras={extras} />
               </motion.div>
             )}
 
@@ -180,8 +143,9 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, o
             className="p-5 border-t border-white/10 flex flex-col gap-2">
             {etapa === 'revelado' && provisoria && (
               <p className="text-center text-sm text-amber-200/90 pb-1">
-                Esta é a escala provisória. Confirme sua presença com o líder da sua área na
-                reunião de escala.
+                {areas.some((a) => a.eh_lider)
+                  ? 'Esta é a escala provisória. Como líder, confirme a sua própria presença na lista da sua equipe, logo abaixo do acompanhamento.'
+                  : 'Esta é a escala provisória. Confirme sua presença com o líder da sua área na reunião de escala.'}
               </p>
             )}
             {etapa === 'revelado' && podePagar && (

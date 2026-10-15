@@ -72,7 +72,11 @@ const IgrejaSelect = ({
   };
 
   return (
-    <Popover open={open} onOpenChange={handleAbrirFechar}>
+    // modal (15/10/2026): dentro de uma janela do Radix (ex.: "Adicionar
+    // pastor", em Pastores Parceiros) a lista abre fora da janela, e a janela
+    // trancava o foco e a rolagem -- nao dava para digitar nem rolar. Modal, a
+    // lista vira a camada da vez: digita, rola e fecha ao clicar fora.
+    <Popover open={open} onOpenChange={handleAbrirFechar} modal>
       <PopoverTrigger asChild>
         <button
           id={id}

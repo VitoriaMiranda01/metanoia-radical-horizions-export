@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, Filter, Search } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Filter, Search } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
@@ -104,14 +104,24 @@ export const CabecalhoFiltro = ({ coluna, f, alinharDireita = false }) => {
   };
   const somenteVisiveis = () => f.definirFiltro(coluna.chave, new Set(visiveis), valores);
 
+  // Clicar no titulo (setinhas, igual as tabelas da escala): crescente ->
+  // decrescente -> volta a ordem padrao.
+  const clicarTitulo = () => f.setOrdem(
+    ordenada === 0 ? { chave: coluna.chave, dir: 1 }
+      : ordenada === 1 ? { chave: coluna.chave, dir: -1 } : null);
+  const Seta = ordenada === 1 ? ArrowUp : ordenada === -1 ? ArrowDown : ArrowUpDown;
+
   const crescente = coluna.numerica ? 'Menor → maior' : 'A → Z';
   const decrescente = coluna.numerica ? 'Maior → menor' : 'Z → A';
 
   return (
     <span className={cn('inline-flex items-center gap-1', alinharDireita && 'justify-end w-full')}>
-      <span>{coluna.rotulo}</span>
-      {ordenada === 1 && <ArrowUp className="w-3 h-3 text-sky-300" />}
-      {ordenada === -1 && <ArrowDown className="w-3 h-3 text-sky-300" />}
+      <button type="button" onClick={clicarTitulo}
+        data-dica="Ordenar por esta coluna (clique de novo para inverter; a terceira vez volta à ordem padrão)."
+        className={cn('inline-flex items-center gap-1 uppercase tracking-wide hover:text-white', ordenada && 'text-white')}>
+        {coluna.rotulo}
+        <Seta className={cn('w-3 h-3 shrink-0', ordenada ? 'opacity-100' : 'opacity-40')} />
+      </button>
       <Popover open={aberto} onOpenChange={(v) => { setAberto(v); if (!v) setBusca(''); }}>
         <PopoverTrigger asChild>
           <button type="button" aria-label={`Filtrar a coluna ${coluna.rotulo}`}

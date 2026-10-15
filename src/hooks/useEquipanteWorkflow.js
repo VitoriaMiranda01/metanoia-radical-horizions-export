@@ -38,6 +38,11 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     fetchWorkflow();
   }, [fetchWorkflow]);
 
+  // Estaveis entre desenhos: a relacao do lider recebe refreshSilencioso e,
+  // se ele mudasse a cada desenho, todas as linhas da lista redesenhariam.
+  const refresh = useCallback(() => fetchWorkflow(false), [fetchWorkflow]);
+  const refreshSilencioso = useCallback(() => fetchWorkflow(true), [fetchWorkflow]);
+
   const uploadFile = async (file) => {
     try {
       setIsLoading(true);
@@ -192,7 +197,7 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     error,
     updateStage,
     uploadFile,
-    refresh: () => fetchWorkflow(false),
-    refreshSilencioso: () => fetchWorkflow(true)
+    refresh,
+    refreshSilencioso
   };
 };

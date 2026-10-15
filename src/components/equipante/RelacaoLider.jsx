@@ -84,12 +84,18 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
   const [aba, setAba] = useState(null);
   const [delegando, setDelegando] = useState(false);
   const temDados = useRef(false);
+  // Atualizacao que saiu ANTES de um toque (presenca, atuacao...) chega com
+  // a lista velha: e descartada, senao o botao "voltava" por um instante.
+  const versao = useRef(0);
+  const emVoo = useRef(0);
 
   const carregar = useCallback(async (silencioso = false) => {
+    const v = versao.current;
     if (!silencioso) setCarregando(true);
     const r = await fetchRelacaoLider(equipanteId, dono);
     if (!silencioso) setCarregando(false);
     if (r.ok) {
+      if (silencioso && (emVoo.current > 0 || v !== versao.current)) return;
       temDados.current = true;
       setDados(r);
       setErro('');
@@ -113,6 +119,7 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
 
   // Muda um membro na tela na hora (o toque responde sem esperar o servidor).
   const ajustarMembro = useCallback((escalaId, mudanca) => {
+    versao.current += 1;
     setDados((d) => d && ({
       ...d,
       equipes: (d.equipes || []).map((e) => (
@@ -125,7 +132,10 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
   // Executa uma acao e recarrega a relacao. `id` marca o botao como ocupado.
   const agir = useCallback(async (id, acao, sucesso) => {
     setOcupado((o) => ({ ...o, [id]: true }));
+    emVoo.current += 1;
     const r = await acao();
+    emVoo.current -= 1;
+    versao.current += 1;
     setOcupado((o) => { const c = { ...o }; delete c[id]; return c; });
     if (!r.ok) {
       toast({ title: 'Não deu certo', description: r.erro, variant: 'destructive' });
@@ -214,6 +224,19 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
             </Button>
           )}
         </div>
+        {/* Quem foi delegado, com o nome completo, logo abaixo do botao. */}
+        {podeDelegar && equipeAtual.delegado && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm">
+            <p className="text-amber-100">
+              <UserCog className="inline w-4 h-4 mr-1.5 -mt-0.5" />
+              Responsável pela reunião{abas.length > 1 ? ` (${tituloEquipe(equipeAtual)})` : ''}:{' '}
+              <strong className="text-white">{equipeAtual.delegado.nome}</strong>
+            </p>
+            {equipeAtual.delegado.definido_por && (
+              <p className="text-xs text-amber-200/70 mt-0.5">definido por {equipeAtual.delegado.definido_por}</p>
+            )}
+          </div>
+        )}
       </div>
 
       {aberta && !dados && (
@@ -349,11 +372,6 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
             Você é o <strong>responsável pela reunião</strong> desta equipe
             {equipe.lideres?.length ? ` (líder: ${equipe.lideres.join(', ')})` : ''}. Faça a chamada e mande o convite do grupo.
           </p>
-        ) : equipe.delegado ? (
-          <p className="text-xs text-amber-200/90">
-            Responsável pela reunião: <strong>{equipe.delegado.nome}</strong>
-            {equipe.delegado.definido_por ? ` · definido por ${equipe.delegado.definido_por}` : ''}
-          </p>
         ) : null}
 
         <div className="grid grid-cols-4 gap-2">
@@ -416,6 +434,7 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
         {mostrados.map((m) => (
           <Membro key={m.escala_id} m={m} grupoLink={equipe.grupo_link} area={equipe.area}
             atuacoes={!m.eh_lider && m.area === equipe.area ? equipe.atuacoes : null}
+            responsavel={!!equipe.delegado && equipe.delegado.equipante_id === m.equipante_id}
             podeCor={equipe.pode_trocar_cor && !m.eh_lider}
             ocupadoPresenca={!!ocupado[`p-${m.escala_id}`]}
             ocupadoConvite={!!ocupado[`c-${m.escala_id}`]}
@@ -435,7 +454,7 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
 };
 
 const mesmasProps = (a, b) => (
-  a.grupoLink === b.grupoLink && a.area === b.area && a.podeCor === b.podeCor
+  a.grupoLink === b.grupoLink && a.area === b.area && a.podeCor === b.podeCor && a.responsavel === b.responsavel
   && (a.atuacoes === b.atuacoes || JSON.stringify(a.atuacoes) === JSON.stringify(b.atuacoes))
   && a.ocupadoPresenca === b.ocupadoPresenca && a.ocupadoConvite === b.ocupadoConvite
   && a.ocupadoEdicao === b.ocupadoEdicao
@@ -443,7 +462,7 @@ const mesmasProps = (a, b) => (
   && (a.m === b.m || JSON.stringify(a.m) === JSON.stringify(b.m))
 );
 
-const Membro = memo(({ m, grupoLink, area, atuacoes, podeCor, ocupadoPresenca, ocupadoConvite, ocupadoEdicao,
+const Membro = memo(({ m, grupoLink, area, atuacoes, podeCor, responsavel, ocupadoPresenca, ocupadoConvite, ocupadoEdicao,
   onPresenca, onConvite, onAtuacao, onCor }) => {
   const pendente = m.pendencias?.length > 0;
   const zap = linkWhatsApp(m.whatsapp, m.estrangeiro);
@@ -471,6 +490,11 @@ const Membro = memo(({ m, grupoLink, area, atuacoes, podeCor, ocupadoPresenca, o
             {m.eu && <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300">você</span>}
             {m.eh_lider && !m.eu && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">líder</span>}
             {ehMarcador && <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">Marcador</span>}
+            {responsavel && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40">
+                responsável pela reunião
+              </span>
+            )}
           </p>
           <p className="text-xs text-gray-400 truncate">{nomeDaIgreja(m) || 'Igreja não informada'}</p>
           <p className="text-sm text-gray-300 flex items-center gap-2 mt-0.5 flex-wrap">

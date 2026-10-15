@@ -1836,10 +1836,8 @@ const OrganizerScalesPage = () => {
               )}
 
               {/* Quem conduz a Leitura de Escala no lugar do lider (15/10/2026). */}
-              <Button onClick={() => setVerResponsaveis(true)} variant="outline" disabled={!escala?.lancada_em}
-                data-dica={escala?.lancada_em
-                  ? 'Quem conduz a reunião da escala no lugar do líder: faz a chamada e o grupo do WhatsApp.'
-                  : 'Libera depois que a escala provisória for lançada.'}
+              <Button onClick={() => setVerResponsaveis(true)} variant="outline"
+                data-dica="Quem conduz a reunião da escala no lugar do líder (quando ele não pode ou não delegou): faz a chamada e o grupo do WhatsApp. Dá para deixar escolhido antes do lançamento."
                 className="bg-amber-600/15 text-amber-300 border-amber-600/40 hover:bg-amber-600/30 hover:text-amber-200">
                 <UserCog className="mr-2 h-4 w-4" /> Responsáveis pela reunião
                 <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />

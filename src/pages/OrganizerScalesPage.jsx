@@ -1692,8 +1692,8 @@ const OrganizerScalesPage = () => {
         {/* Topo (16/10/2026, Patrick): a situacao a esquerda e os botoes em
             tres linhas com rotulo, na ordem do trabalho -- montar a escala,
             cuidar das equipes, publicar. */}
-        <div className="flex flex-col xl:flex-row items-start gap-5">
-          <div className="w-full xl:w-[400px] xl:shrink-0">
+        <div className="flex flex-col xl:flex-row xl:items-stretch gap-5">
+          <div className="w-full xl:flex-1 min-w-0">
             <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
               <Grid className="h-8 w-8 text-red-500" />
               Geração de Escalas
@@ -1727,7 +1727,7 @@ const OrganizerScalesPage = () => {
             </div>
 
             {escala && (
-              <p className={cn('text-xs mt-2', escala.lancada_em ? 'text-green-400' : 'text-amber-400/90')}>
+              <p className={cn('text-sm mt-3 leading-relaxed', escala.lancada_em ? 'text-green-400' : 'text-amber-400/90')}>
                 {escala.oficial_em
                   ? `Escala oficial lançada em ${new Date(escala.oficial_em).toLocaleString('pt-BR')} . ${escaladosReais.length - naoViramArea.length} de ${escaladosReais.length} já viram a área no site.`
                   : escala.lancada_em
@@ -1747,9 +1747,9 @@ const OrganizerScalesPage = () => {
             )}
 
             {totalSemCor > 0 && (
-              <div className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-100 space-y-1.5">
-                <p className="flex items-start gap-1.5">
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-400" />
+              <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-100 space-y-2">
+                <p className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
                   <span>
                     {totalSemCor === 1 ? '1 pessoa está' : `${totalSemCor} pessoas estão`} sem cor de grupo em áreas divididas por cor.
                     Escolha a cor na coluna Cor de cada área (não impede nada, é só aviso).
@@ -1759,7 +1759,7 @@ const OrganizerScalesPage = () => {
                   {Object.entries(semCorPorArea).sort(([a], [b]) => a.localeCompare(b, 'pt-BR')).map(([area, n]) => (
                     <button key={area} type="button" onClick={() => irParaArea(area)}
                       data-dica={`Ir para ${area}.`}
-                      className="rounded-full border border-amber-500/40 px-2 py-0.5 text-[11px] text-amber-200 hover:bg-amber-500/20">
+                      className="rounded-full border border-amber-500/40 px-2.5 py-0.5 text-xs text-amber-200 hover:bg-amber-500/20">
                       {area} <span className="tabular-nums">{n}</span>
                     </button>
                   ))}
@@ -1773,12 +1773,12 @@ const OrganizerScalesPage = () => {
                   type="button"
                   onClick={() => setMostrarNaoViram(v => !v)}
                   data-dica="Lista de escalados que ainda não abriram &quot;Ver qual área fui escalado&quot; no site."
-                  className="text-xs text-gray-400 underline underline-offset-2 hover:text-white"
+                  className="text-sm text-gray-400 underline underline-offset-2 hover:text-white"
                 >
                   {mostrarNaoViram ? 'esconder' : `ver quem ainda não viu (${naoViramArea.length})`}
                 </button>
                 {mostrarNaoViram && (
-                  <ul className="mt-2 max-h-48 overflow-y-auto text-xs text-gray-300 space-y-0.5">
+                  <ul className="mt-2 max-h-48 overflow-y-auto text-sm text-gray-300 space-y-0.5">
                     {naoViramArea
                       .slice()
                       .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'))
@@ -1793,7 +1793,9 @@ const OrganizerScalesPage = () => {
               </div>
             )}
           </div>
-          <div className="w-full flex-1 min-w-0 rounded-xl border border-white/10 bg-white/[0.03] p-3 sm:p-4 space-y-3">
+          {/* O quadro ocupa so o que os botoes precisam, encostado a direita,
+              e acompanha a altura do lado esquerdo (sem vao embaixo). */}
+          <div className="w-full xl:w-auto xl:max-w-[720px] xl:shrink-0 rounded-xl border border-white/10 bg-white/[0.03] p-3 sm:p-4 flex flex-col justify-center gap-3">
             <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3">
               <p className="lg:w-28 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-gray-500" data-dica="Montar a escala: consultar, cadastrar e alocar.">Montar a escala</p>
               <div className="flex flex-wrap gap-2 flex-1">
@@ -1877,7 +1879,7 @@ const OrganizerScalesPage = () => {
                 </Button>
                 {!escala?.lancada_em && (
                   <p className="self-center text-xs text-gray-500">
-                    Trocar de área e Responsáveis pela reunião aparecem depois que a provisória for lançada.
+                    Trocar de área e Responsáveis pela reunião aparecem após lançar a provisória.
                   </p>
                 )}
               </div>

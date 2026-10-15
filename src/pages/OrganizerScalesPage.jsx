@@ -1689,8 +1689,11 @@ const OrganizerScalesPage = () => {
             </motion.div>}
         </AnimatePresence>
 
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex-1">
+        {/* Topo (16/10/2026, Patrick): a situacao a esquerda e os botoes em
+            tres linhas com rotulo, na ordem do trabalho -- montar a escala,
+            cuidar das equipes, publicar. */}
+        <div className="flex flex-col xl:flex-row items-start gap-5">
+          <div className="w-full xl:w-[400px] xl:shrink-0">
             <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
               <Grid className="h-8 w-8 text-red-500" />
               Geração de Escalas
@@ -1790,158 +1793,143 @@ const OrganizerScalesPage = () => {
               </div>
             )}
           </div>
-          <div className="flex flex-col items-stretch sm:items-end gap-2.5 w-full md:w-auto">
-            {/* Duas fileiras, de proposito: a de cima abre uma janela à parte
-                (cadastro/gestão de outra lista) -- não muda nada na escala
-                por si só (setinha no final). A de baixo age direto nesta
-                tela. Empilhadas (em vez de lado a lado) pra caber sem
-                espremer numa tela mais estreita. */}
-            <div className="flex flex-col sm:flex-row gap-3 flex-wrap sm:justify-end w-full">
-              {/* So leitura: demanda por area entre todo mundo ja inscrito,
-                  antes mesmo da fila de aprovacao zerar. Ver
-                  PreEscalaDialog.jsx. */}
-              <Button data-dica="Só consulta: quantos inscritos escolheram cada área, antes de montar a escala." onClick={() => setVerPreEscala(true)} variant="outline"
-                className="bg-teal-600/20 text-teal-300 border-teal-600/50 hover:bg-teal-600/40 hover:text-teal-200">
-                <ClipboardCheck className="mr-2 h-4 w-4" /> Pré-escala
-                <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
-              </Button>
-
-              <Button data-dica="Escolher quem fica nos papéis especiais (Guia, Inimigo, Espírito Santo...)." onClick={() => setVerAreasEspeciais(true)} variant="outline"
-                className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
-                <Sparkles className="mr-2 h-4 w-4" /> Áreas Especiais ({totalEspeciais})
-                <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
-              </Button>
-
-              {/* Os 3 mutiroes da Centenario (caminhao, cozinha, limpeza). Fica
-                  aqui porque e o organizador de escalas quem organiza isso --
-                  mas e uma lista a parte: nao entra na escala, nao conta para
-                  "faltam N" e nao interfere no lancamento. */}
-              {escala?.pode_gerir && (
-                <Button onClick={() => setManualAberta(true)} variant="outline"
-                  data-dica="Cadastrar na hora quem chegou sem inscrição. A pessoa cai na fila A escalar para ser alocada."
-                  className="bg-emerald-600/15 text-emerald-300 border-emerald-600/40 hover:bg-emerald-600/30 hover:text-emerald-200">
-                  <UserPlus className="mr-2 h-4 w-4" /> Inscrição manual
-                </Button>
-              )}
-
-              {escala?.pode_gerir && (
-                <Button onClick={() => abrirTroca()} variant="outline" disabled={!escala.lancada_em}
-                  data-dica={escala.lancada_em
-                    ? 'Mudar alguém da área X para a área Y. Entra na relação do novo líder na hora.'
-                    : 'Libera depois que a escala provisória for lançada.'}
-                  className="bg-cyan-600/15 text-cyan-300 border-cyan-600/40 hover:bg-cyan-600/30 hover:text-cyan-200">
-                  <Repeat className="mr-2 h-4 w-4" /> Trocar de área
+          <div className="w-full flex-1 min-w-0 rounded-xl border border-white/10 bg-white/[0.03] p-3 sm:p-4 space-y-3">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3">
+              <p className="lg:w-28 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-gray-500" data-dica="Montar a escala: consultar, cadastrar e alocar.">Montar a escala</p>
+              <div className="flex flex-wrap gap-2 flex-1">
+                <Button data-dica="Só consulta: quantos inscritos escolheram cada área, antes de montar a escala." onClick={() => setVerPreEscala(true)} variant="outline"
+                  className="bg-teal-600/20 text-teal-300 border-teal-600/50 hover:bg-teal-600/40 hover:text-teal-200">
+                  <ClipboardCheck className="mr-2 h-4 w-4" /> Pré-escala
                   <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
                 </Button>
-              )}
-
-              {/* Quem conduz a Leitura de Escala no lugar do lider (15/10/2026). */}
-              <Button onClick={() => setVerResponsaveis(true)} variant="outline"
-                data-dica="Quem conduz a reunião da escala no lugar do líder (quando ele não pode ou não delegou): faz a chamada e o grupo do WhatsApp. Dá para deixar escolhido antes do lançamento."
-                className="bg-amber-600/15 text-amber-300 border-amber-600/40 hover:bg-amber-600/30 hover:text-amber-200">
-                <UserCog className="mr-2 h-4 w-4" /> Responsáveis pela reunião
-                <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
-              </Button>
-
-              <Button data-dica="Listas dos mutirões (caminhão, cozinha, limpeza). Não mexe na escala." onClick={() => setVerAreasExtra(true)} variant="outline"
-                className="bg-blue-600/20 text-blue-300 border-blue-600/50 hover:bg-blue-600/40 hover:text-blue-200">
-                <Truck className="mr-2 h-4 w-4" /> Áreas Extras
-                <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
-              </Button>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 flex-wrap sm:justify-end w-full">
-              {/* Depois de um "Alocar automático", o botao vira "Desfazer" --
-                  ate lancar a provisoria. Se ainda sobrou gente na fila, o
-                  "Alocar automático" continua ao lado. */}
-              {autoAtivo && (
-                <Button onClick={() => setConfirmandoDesfazerAuto(true)}
-                  disabled={desfazendoAuto}
-                  variant="outline"
-                  data-dica="Tirar da escala quem o Alocar automático colocou (e ainda está na mesma área). Quem foi mexido ou alocado à mão fica. Pede confirmação."
-                  className="bg-amber-600/20 text-amber-300 border-amber-600/50 hover:bg-amber-600/40 hover:text-amber-200">
-                  {desfazendoAuto
-                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    : <Undo2 className="mr-2 h-4 w-4" />}
-                  Desfazer alocação automática{autoSituacao.no_lugar ? ` (${autoSituacao.no_lugar})` : ''}
-                </Button>
-              )}
-
-              {/* Equipe da igreja no dia da saida (14/10/2026): modulo proprio,
-                  igual ao das Areas Especiais, mas sem exclusividade. */}
-              <Button data-dica="Equipe da igreja no dia da saída: Recepção Igreja, Cozinha Igreja, Som / Multimídia, Estacionamento e Mesa crachá. Pré-cadastro e alocação, como nas Áreas Especiais."
-                onClick={() => setVerRecepcaoIgreja(true)} variant="outline"
-                className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
-                <Church className="mr-2 h-4 w-4" /> Recepção Igreja ({totalRecepcaoIgreja})
-                <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
-              </Button>
-
-              {/* Distribui a fila pelas preferencias da inscricao. So aparece
-                  habilitado quando ha alguem esperando. */}
-              {(!autoAtivo || waitlist.length > 0 || faltaPastorInvisivel > 0) && (
-              <Button onClick={() => setConfirmandoAuto(true)}
-                disabled={(waitlist.length === 0 && faltaPastorInvisivel === 0) || alocandoAuto}
-                variant="outline"
-                data-dica={waitlist.length === 0
-                  ? (faltaPastorInvisivel > 0
-                    ? `A fila está vazia, mas o Pastor Invisível tem ${faltaPastorInvisivel} vaga(s): completa com pastores. Pede confirmação.`
-                    : 'A fila "A escalar" está vazia.')
-                  : 'Distribuir todo mundo da fila "A escalar" pelas áreas que escolheram na inscrição. Pede confirmação.'}
-                className="bg-purple-600/20 text-purple-300 border-purple-600/50 hover:bg-purple-600/40 hover:text-purple-200">
-                {alocandoAuto
-                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  : <Wand2 className="mr-2 h-4 w-4" />}
-                Alocar automático{waitlist.length > 0 ? ` (${waitlist.length})` : ''}
-              </Button>
-              )}
-
-              {/* Lancar a escala e o que faz o equipante ver a etapa concluida
-                  e poder pagar. So libera com a fila zerada -- todo aprovado
-                  precisa ter destino, nem que seja "Não será escalado". */}
-              {!escala?.lancada_em ? (
-                <Button onClick={() => setConfirmandoLancamento(true)}
-                  disabled={!escala || (escala.faltam > 0 && !liberaComFila) || !escala.escalados || !escala.pode_gerir}
-                  data-dica={escala && !escala.pode_gerir
-                    ? 'Só Desenvolvedores, Raquel e Dudu lançam a escala.'
-                    : escala?.faltam > 0 && !liberaComFila
-                      ? 'Distribua todos os equipantes antes de lançar a escala.'
-                      : escala && !escala.escalados
-                        ? 'Não há ninguém escalado. Coloque pelo menos um equipante em uma área.'
-                        : 'Publicar a escala provisória: cada equipante vê a área no site e pode pagar, e os líderes fazem a chamada. Pede confirmação.'}
-                  className="bg-amber-600 hover:bg-amber-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
-                  <Send className="mr-2 h-4 w-4" />
-                  Lançar escala provisória{escala?.faltam > 0 ? ` (faltam ${escala.faltam})` : ''}
-                </Button>
-              ) : !escala.oficial_em ? (
-                <>
-                  <Button data-dica="Esconder a escala provisória do site de novo: os equipantes deixam de ver a área e de poder pagar, e os líderes perdem a relação. Pede confirmação."
-                    onClick={() => setConfirmandoDesfazer(true)} variant="outline" disabled={!escala.pode_gerir}
-                    className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
-                    <Undo2 className="mr-2 h-4 w-4" /> Desfazer provisória
-                  </Button>
-                  <Button onClick={() => setConfirmandoOficial(true)}
-                    disabled={(escala.faltam > 0 && !liberaComFila) || !escala.pode_gerir}
-                    data-dica={!escala.pode_gerir
-                      ? 'Só Desenvolvedores, Raquel e Dudu lançam a escala.'
-                      : escala.faltam > 0 && !liberaComFila
-                        ? 'Há gente na fila "A escalar" (inscrição manual, por exemplo). Distribua antes de lançar a oficial.'
-                        : 'Lançar a escala oficial (final), depois de refazer a escala com a chamada. Pede confirmação.'}
-                    className="bg-green-600 hover:bg-green-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
-                    <BadgeCheck className="mr-2 h-4 w-4" />
-                    Lançar escala oficial{escala.faltam > 0 ? ` (faltam ${escala.faltam})` : ''}
-                  </Button>
-                </>
-              ) : (
-                <Button data-dica="Voltar para a escala provisória. Não mexe em pagamento nenhum. Pede confirmação."
-                  onClick={() => setConfirmandoDesfazerOficial(true)} variant="outline" disabled={!escala.pode_gerir}
+                <Button data-dica="Escolher quem fica nos papéis especiais (Guia, Inimigo, Espírito Santo...)." onClick={() => setVerAreasEspeciais(true)} variant="outline"
                   className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
-                  <Undo2 className="mr-2 h-4 w-4" /> Desfazer oficial
+                  <Sparkles className="mr-2 h-4 w-4" /> Áreas Especiais ({totalEspeciais})
+                  <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
                 </Button>
-              )}
-
-              <Button data-dica="Baixar a escala completa em planilha." onClick={handleExportAll} disabled={allocations.length === 0} variant="outline" className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300">
-                <Download className="mr-2 h-4 w-4" /> Exportar
-              </Button>
+                <Button data-dica="Equipe da igreja no dia da saída: Recepção Igreja, Cozinha Igreja, Som / Multimídia, Estacionamento e Mesa crachá. Pré-cadastro e alocação, como nas Áreas Especiais."
+                  onClick={() => setVerRecepcaoIgreja(true)} variant="outline"
+                  className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
+                  <Church className="mr-2 h-4 w-4" /> Recepção Igreja ({totalRecepcaoIgreja})
+                  <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
+                </Button>
+                {escala?.pode_gerir && (
+                  <Button onClick={() => setManualAberta(true)} variant="outline"
+                    data-dica="Cadastrar na hora quem chegou sem inscrição. A pessoa cai na fila A escalar para ser alocada."
+                    className="bg-emerald-600/15 text-emerald-300 border-emerald-600/40 hover:bg-emerald-600/30 hover:text-emerald-200">
+                    <UserPlus className="mr-2 h-4 w-4" /> Inscrição manual
+                  </Button>
+                )}
+                {(!autoAtivo || waitlist.length > 0 || faltaPastorInvisivel > 0) && (
+                <Button onClick={() => setConfirmandoAuto(true)}
+                  disabled={(waitlist.length === 0 && faltaPastorInvisivel === 0) || alocandoAuto}
+                  variant="outline"
+                  data-dica={waitlist.length === 0
+                    ? (faltaPastorInvisivel > 0
+                      ? `A fila está vazia, mas o Pastor Invisível tem ${faltaPastorInvisivel} vaga(s): completa com pastores. Pede confirmação.`
+                      : 'A fila "A escalar" está vazia.')
+                    : 'Distribuir todo mundo da fila "A escalar" pelas áreas que escolheram na inscrição. Pede confirmação.'}
+                  className="bg-purple-600/20 text-purple-300 border-purple-600/50 hover:bg-purple-600/40 hover:text-purple-200">
+                  {alocandoAuto
+                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    : <Wand2 className="mr-2 h-4 w-4" />}
+                  Alocar automático{waitlist.length > 0 ? ` (${waitlist.length})` : ''}
+                </Button>
+                )}
+                {autoAtivo && (
+                  <Button onClick={() => setConfirmandoDesfazerAuto(true)}
+                    disabled={desfazendoAuto}
+                    variant="outline"
+                    data-dica="Tirar da escala quem o Alocar automático colocou (e ainda está na mesma área). Quem foi mexido ou alocado à mão fica. Pede confirmação."
+                    className="bg-amber-600/20 text-amber-300 border-amber-600/50 hover:bg-amber-600/40 hover:text-amber-200">
+                    {desfazendoAuto
+                      ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      : <Undo2 className="mr-2 h-4 w-4" />}
+                    Desfazer alocação automática{autoSituacao.no_lugar ? ` (${autoSituacao.no_lugar})` : ''}
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="border-t border-white/5" />
+            <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3">
+              <p className="lg:w-28 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-gray-500" data-dica="Depois de lançar: trocas, reunião de escala e mutirões.">Equipes</p>
+              <div className="flex flex-wrap gap-2 flex-1">
+                {escala?.pode_gerir && escala.lancada_em && (
+                  <Button onClick={() => abrirTroca()} variant="outline"
+                    data-dica="Mudar alguém da área X para a área Y. Entra na relação do novo líder na hora."
+                    className="bg-cyan-600/15 text-cyan-300 border-cyan-600/40 hover:bg-cyan-600/30 hover:text-cyan-200">
+                    <Repeat className="mr-2 h-4 w-4" /> Trocar de área
+                    <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
+                  </Button>
+                )}
+                {escala?.lancada_em && (
+                  <Button onClick={() => setVerResponsaveis(true)} variant="outline"
+                    data-dica="Quem conduz a reunião da escala no lugar do líder (quando ele não pode ou não delegou): faz a chamada e o grupo do WhatsApp."
+                    className="bg-amber-600/15 text-amber-300 border-amber-600/40 hover:bg-amber-600/30 hover:text-amber-200">
+                    <UserCog className="mr-2 h-4 w-4" /> Responsáveis pela reunião
+                    <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
+                  </Button>
+                )}
+                <Button data-dica="Listas dos mutirões (caminhão, cozinha, limpeza). Não mexe na escala." onClick={() => setVerAreasExtra(true)} variant="outline"
+                  className="bg-blue-600/20 text-blue-300 border-blue-600/50 hover:bg-blue-600/40 hover:text-blue-200">
+                  <Truck className="mr-2 h-4 w-4" /> Áreas Extras
+                  <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
+                </Button>
+                {!escala?.lancada_em && (
+                  <p className="self-center text-xs text-gray-500">
+                    Trocar de área e Responsáveis pela reunião aparecem depois que a provisória for lançada.
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="border-t border-white/5" />
+            <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3">
+              <p className="lg:w-28 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-gray-500" data-dica="Lançar ou desfazer a escala e baixar a planilha.">Publicar</p>
+              <div className="flex flex-wrap gap-2 flex-1">
+                {!escala?.lancada_em ? (
+                  <Button onClick={() => setConfirmandoLancamento(true)}
+                    disabled={!escala || (escala.faltam > 0 && !liberaComFila) || !escala.escalados || !escala.pode_gerir}
+                    data-dica={escala && !escala.pode_gerir
+                      ? 'Só Desenvolvedores, Raquel e Dudu lançam a escala.'
+                      : escala?.faltam > 0 && !liberaComFila
+                        ? 'Distribua todos os equipantes antes de lançar a escala.'
+                        : escala && !escala.escalados
+                          ? 'Não há ninguém escalado. Coloque pelo menos um equipante em uma área.'
+                          : 'Publicar a escala provisória: cada equipante vê a área no site e pode pagar, e os líderes fazem a chamada. Pede confirmação.'}
+                    className="bg-amber-600 hover:bg-amber-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
+                    <Send className="mr-2 h-4 w-4" />
+                    Lançar escala provisória{escala?.faltam > 0 ? ` (faltam ${escala.faltam})` : ''}
+                  </Button>
+                ) : !escala.oficial_em ? (
+                  <>
+                    <Button data-dica="Esconder a escala provisória do site de novo: os equipantes deixam de ver a área e de poder pagar, e os líderes perdem a relação. Pede confirmação."
+                      onClick={() => setConfirmandoDesfazer(true)} variant="outline" disabled={!escala.pode_gerir}
+                      className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
+                      <Undo2 className="mr-2 h-4 w-4" /> Desfazer provisória
+                    </Button>
+                    <Button onClick={() => setConfirmandoOficial(true)}
+                      disabled={(escala.faltam > 0 && !liberaComFila) || !escala.pode_gerir}
+                      data-dica={!escala.pode_gerir
+                        ? 'Só Desenvolvedores, Raquel e Dudu lançam a escala.'
+                        : escala.faltam > 0 && !liberaComFila
+                          ? 'Há gente na fila "A escalar" (inscrição manual, por exemplo). Distribua antes de lançar a oficial.'
+                          : 'Lançar a escala oficial (final), depois de refazer a escala com a chamada. Pede confirmação.'}
+                      className="bg-green-600 hover:bg-green-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
+                      <BadgeCheck className="mr-2 h-4 w-4" />
+                      Lançar escala oficial{escala.faltam > 0 ? ` (faltam ${escala.faltam})` : ''}
+                    </Button>
+                  </>
+                ) : (
+                  <Button data-dica="Voltar para a escala provisória. Não mexe em pagamento nenhum. Pede confirmação."
+                    onClick={() => setConfirmandoDesfazerOficial(true)} variant="outline" disabled={!escala.pode_gerir}
+                    className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
+                    <Undo2 className="mr-2 h-4 w-4" /> Desfazer oficial
+                  </Button>
+                )}
+                <Button data-dica="Baixar a escala completa em planilha." onClick={handleExportAll} disabled={allocations.length === 0} variant="outline" className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300">
+                  <Download className="mr-2 h-4 w-4" /> Exportar
+                </Button>
+              </div>
             </div>
           </div>
         </div>

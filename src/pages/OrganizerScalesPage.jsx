@@ -35,7 +35,7 @@ import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialMana
 import SeloPastor from '@/components/common/SeloPastor';
 import QuandoVisivel from '@/components/common/QuandoVisivel';
 import CampoBusca from '@/components/common/CampoBusca';
-import { tituloPastor } from '@/utils/pastor';
+import { tituloPastor, ehPastorDiretor } from '@/utils/pastor';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { casaBusca, casaNomeParecido, filtrarBusca } from '@/utils/busca';
 import { emTeste } from '@/services/ambiente';
@@ -2262,8 +2262,8 @@ const OrganizerScalesPage = () => {
               ocupados={naArea.length}
               mulheres={getGenderCount(naArea, 'feminino')}
               homens={getGenderCount(naArea, 'masculino')}
-              fila={loteArea === 'Pastor Invisível' ? waitlist.filter(p => tituloPastor(p)) : waitlist}
-              escalados={loteArea === 'Pastor Invisível' ? escaladosFora.filter(p => tituloPastor(p)) : escaladosFora}
+              fila={loteArea === 'Pastor Invisível' ? waitlist.filter(p => tituloPastor(p) && !ehPastorDiretor(p)) : waitlist}
+              escalados={loteArea === 'Pastor Invisível' ? escaladosFora.filter(p => tituloPastor(p) && !ehPastorDiretor(p)) : escaladosFora}
               areasEspeciais={NOMES_ESPECIAIS}
               atuacoes={atuacoesPorArea[loteArea] || []}
               onClose={() => setLoteArea(null)}

@@ -250,16 +250,22 @@ const PastoresParceirosManager = () => {
                   <tr key={p.id} className="border-t border-white/5 hover:bg-white/5">
                     <td className="px-3 py-1.5 text-white">{p.nome}</td>
                     <td className="px-3 py-1.5">
-                      {p.igreja_codigo ? (
-                        <span className="text-gray-200">
-                          <span className="text-gray-500 tabular-nums">{p.igreja_codigo}</span> {p.igreja_nome}
-                        </span>
-                      ) : (
-                        <span className="inline-flex flex-col">
+                      {/* "Na planilha:" embaixo de todos que vieram do formulario
+                          (15/10/2026): da para conferir o de-para da igreja. */}
+                      <span className="inline-flex flex-col">
+                        {p.igreja_codigo ? (
+                          <span className="text-gray-200">
+                            <span className="text-gray-500 tabular-nums">{p.igreja_codigo}</span> {p.igreja_nome}
+                          </span>
+                        ) : (
                           <span className="text-[11px] w-fit px-1.5 py-0.5 rounded-full border border-amber-500/40 text-amber-300">a vincular</span>
-                          {p.igreja_digitada && <span className="text-xs text-gray-500 mt-0.5">“{p.igreja_digitada}”</span>}
-                        </span>
-                      )}
+                        )}
+                        {p.igreja_digitada && (
+                          <span className="text-xs text-gray-500 mt-0.5">
+                            <span className="text-gray-600">Na planilha:</span> “{p.igreja_digitada}”
+                          </span>
+                        )}
+                      </span>
                     </td>
                     <td className="px-3 py-1.5 text-gray-400 tabular-nums whitespace-nowrap hidden md:table-cell">
                       {p.cpf ? formatCPF(p.cpf) : '—'}

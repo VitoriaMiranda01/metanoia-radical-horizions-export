@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -61,7 +61,15 @@ const IgrejaSelect = ({
     return options.filter(opcao => normalizar(opcao).includes(termoNormalizado));
   }, [options, busca]);
 
+  // Dentro de uma janela (ex.: "Adicionar pastor", em Pastores Parceiros) a
+  // lista e desenhada DENTRO dela (15/10/2026). Desenhada fora, a janela
+  // trancava o foco e a rolagem -- nao dava para digitar nem rolar (a janela e
+  // a lista usam versoes diferentes do Radix e uma nao enxerga a outra).
+  const gatilhoRef = useRef(null);
+  const [janela, setJanela] = useState(undefined);
+
   const handleAbrirFechar = (proximoEstado) => {
+    if (proximoEstado) setJanela(gatilhoRef.current?.closest('[role="dialog"]') || undefined);
     setOpen(proximoEstado);
     if (proximoEstado) setBusca('');
   };
@@ -72,13 +80,10 @@ const IgrejaSelect = ({
   };
 
   return (
-    // modal (15/10/2026): dentro de uma janela do Radix (ex.: "Adicionar
-    // pastor", em Pastores Parceiros) a lista abre fora da janela, e a janela
-    // trancava o foco e a rolagem -- nao dava para digitar nem rolar. Modal, a
-    // lista vira a camada da vez: digita, rola e fecha ao clicar fora.
-    <Popover open={open} onOpenChange={handleAbrirFechar} modal>
+    <Popover open={open} onOpenChange={handleAbrirFechar}>
       <PopoverTrigger asChild>
         <button
+          ref={gatilhoRef}
           id={id}
           type="button"
           className="flex w-full items-center justify-between rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm text-white text-left"
@@ -88,6 +93,7 @@ const IgrejaSelect = ({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        container={janela}
         align="start"
         className="w-[--radix-popover-trigger-width] p-0 bg-neutral-900 border-white/20 text-white shadow-xl"
       >

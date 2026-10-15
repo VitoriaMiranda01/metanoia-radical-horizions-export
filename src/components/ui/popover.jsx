@@ -6,8 +6,10 @@ const Popover = PopoverPrimitive.Root
 
 const PopoverTrigger = PopoverPrimitive.Trigger
 
-const PopoverContent = React.forwardRef(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
+// container (15/10/2026): onde a lista e desenhada. Padrao: o fim da pagina.
+// Dentro de uma janela (Dialog), passar a propria janela -- ver IgrejaSelect.
+const PopoverContent = React.forwardRef(({ className, align = "center", sideOffset = 4, container, ...props }, ref) => (
+  <PopoverPrimitive.Portal container={container}>
     <PopoverPrimitive.Content
       ref={ref}
       align={align}

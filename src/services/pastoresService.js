@@ -26,6 +26,15 @@ export const salvarPastor = async ({ id = null, nome, cpf, telefone, igrejaCodig
   return { success: true, id: data.id, nome: data.nome, igreja: data.igreja };
 };
 
+// Conferencia do de-para (15/10/2026): marca/desmarca "Conferido" -- a linha
+// "Na planilha: ..." some para quem ja foi conferido.
+export const conferirPastor = async (id, conferido = true) => {
+  const { data, error } = await supabase.rpc('conferir_pastor', { p_id: id, p_conferido: !!conferido });
+  if (error) return { success: false, error: error.message || 'Erro ao marcar a conferência' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível marcar a conferência' };
+  return { success: true, nome: data.nome };
+};
+
 // Nao apaga: fica no historico como removido.
 export const removerPastor = async (id) => {
   const { data, error } = await supabase.rpc('remover_pastor', { p_id: id });

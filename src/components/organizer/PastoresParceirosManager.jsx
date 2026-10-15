@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2, MessageCircle, Pencil, Plus, RotateCcw, Save, Search, Trash2 } from 'lucide-react';
+import { Check, Loader2, MessageCircle, Pencil, Plus, RotateCcw, Save, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
-import { fetchPastores, removerPastor, salvarPastor } from '@/services/pastoresService';
+import { conferirPastor, fetchPastores, removerPastor, salvarPastor } from '@/services/pastoresService';
 import { linkWhatsApp } from '@/services/liderService';
 import { formatarTelefone, mascararTelefone } from '@/utils/telefone';
 import { formatCPF } from '@/utils/formatters';
@@ -170,6 +170,30 @@ const PastoresParceirosManager = () => {
 
   const igrejasComPastor = new Set(pastores.filter((p) => p.igreja_id).map((p) => p.igreja_id)).size;
   const aVincular = pastores.filter((p) => !p.igreja_id).length;
+  // Vieram da planilha, ja tem igreja e ainda nao foram conferidos.
+  const aConferir = pastores.filter((p) => p.igreja_digitada && p.igreja_id && !p.conferido_em).length;
+  const [conferindo, setConferindo] = useState(null);
+
+  // Conferencia do de-para (15/10/2026): marca na hora; se falhar, volta.
+  const conferir = async (p, conferido) => {
+    setConferindo(p.id);
+    const antes = pastores;
+    setPastores((lista) => lista.map((x) => (x.id === p.id ? { ...x, conferido_em: conferido ? new Date().toISOString() : null } : x)));
+    const r = await conferirPastor(p.id, conferido);
+    setConferindo(null);
+    if (!r.success) {
+      setPastores(antes);
+      toast({ title: 'Não deu para marcar', description: r.error, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: conferido ? 'Conferido' : 'Conferência desfeita',
+      description: conferido ? `${p.nome}: a linha "Na planilha" saiu.` : `${p.nome}: a linha "Na planilha" voltou.`,
+      action: conferido ? (
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => conferir(p, false)}>Desfazer</Button>
+      ) : undefined
+    });
+  };
 
   const salvar = async (dados) => {
     const r = await salvarPastor(dados);
@@ -221,6 +245,7 @@ const PastoresParceirosManager = () => {
         <p className="text-xs text-gray-500">
           {pastores.length} {pastores.length === 1 ? 'pastor' : 'pastores'} · {igrejasComPastor} {igrejasComPastor === 1 ? 'igreja' : 'igrejas'}
           {aVincular > 0 && <span className="text-amber-300"> · {aVincular} a vincular</span>}
+          {aConferir > 0 && <span className="text-sky-300"> · {aConferir} a conferir</span>}
           {termo ? ` · ${filtrados.length} na busca` : ''}
         </p>
       )}
@@ -260,10 +285,28 @@ const PastoresParceirosManager = () => {
                         ) : (
                           <span className="text-[11px] w-fit px-1.5 py-0.5 rounded-full border border-amber-500/40 text-amber-300">a vincular</span>
                         )}
-                        {p.igreja_digitada && (
-                          <span className="text-xs text-gray-500 mt-0.5">
-                            <span className="text-gray-600">Na planilha:</span> “{p.igreja_digitada}”
+                        {/* Conferido: a linha some (dá para desfazer no aviso
+                            ou pelo "desfazer conferência"). Os "a vincular"
+                            nao tem botao: primeiro vincular a igreja. */}
+                        {p.igreja_digitada && !p.conferido_em && (
+                          <span className="text-xs text-gray-500 mt-0.5 flex items-center gap-2 flex-wrap">
+                            <span><span className="text-gray-600">Na planilha:</span> “{p.igreja_digitada}”</span>
+                            {p.igreja_id && (
+                              <button type="button" onClick={() => conferir(p, true)} disabled={conferindo === p.id}
+                                data-dica="A igreja vinculada está certa: tirar a linha “Na planilha”."
+                                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/15 disabled:opacity-50">
+                                {conferindo === p.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                Conferido
+                              </button>
+                            )}
                           </span>
+                        )}
+                        {p.igreja_digitada && p.conferido_em && (
+                          <button type="button" onClick={() => conferir(p, false)} disabled={conferindo === p.id}
+                            data-dica={`Conferido${p.conferido_por ? ` por ${p.conferido_por}` : ''}. Clique para mostrar de novo o que escreveu na planilha.`}
+                            className="w-fit text-[10px] text-gray-600 hover:text-gray-300 mt-0.5 disabled:opacity-50">
+                            ✓ conferido · desfazer
+                          </button>
                         )}
                       </span>
                     </td>

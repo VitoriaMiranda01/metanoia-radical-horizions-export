@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { CabecalhoFiltro, useFiltrosColunas } from '@/components/common/FiltroColuna';
 import { Download, Loader2, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,17 @@ import IgrejaDialog from '@/components/organizer/IgrejaDialog';
 
 const semAcento = (t) => (t || '')
   .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+// Filtro por coluna (15/10/2026): funil no titulo de cada coluna.
+const COLUNAS_IGREJAS = [
+  { chave: 'codigo', rotulo: 'Cód.', valor: (l) => (l.codigo ? Number(l.codigo) : null), numerica: true },
+  { chave: 'nome', rotulo: 'Igreja', valor: (l) => l.nome },
+  { chave: 'pastor', rotulo: 'Pastor', valor: (l) => l.pastor || null },
+  { chave: 'responsavel', rotulo: 'Responsável', valor: (l) => l.responsavel || null },
+  { chave: 'equip', rotulo: 'Equip.', valor: (l) => l.equipantesInscritos, numerica: true },
+  { chave: 'acamp', rotulo: 'Acamp.', valor: (l) => l.acampantes, numerica: true },
+];
+const COL_IGREJA = Object.fromEntries(COLUNAS_IGREJAS.map((c) => [c.chave, c]));
 
 const IgrejasCadastradasManager = () => {
   const { toast } = useToast();
@@ -104,6 +116,8 @@ const IgrejasCadastradasManager = () => {
       semAcento(`${l.codigo} ${l.nome} ${l.responsavel} ${l.pastor}`).includes(termo));
   }, [linhas, termo]);
 
+  const f = useFiltrosColunas(filtradas, COLUNAS_IGREJAS);
+
   const adicionadas = linhas.filter((l) => !l.codigo).length;
   const comInscritos = linhas.filter((l) => l.equipantesInscritos > 0 || l.acampantes > 0).length;
 
@@ -154,6 +168,12 @@ const IgrejasCadastradasManager = () => {
           {linhas.length} igrejas · {linhas.length - adicionadas} parceiras e {adicionadas} adicionadas pela
           organização · {comInscritos} com inscritos
           {termo ? ` · ${filtradas.length} na busca` : ''}
+          {f.ativos > 0 && <span className="text-sky-300"> · {f.linhas.length} com os filtros</span>}
+          {(f.ativos > 0 || f.ordem) && (
+            <button type="button" onClick={f.limparTudo} className="ml-2 text-sky-300 hover:text-sky-200 underline">
+              limpar filtros
+            </button>
+          )}
         </p>
       )}
 
@@ -168,17 +188,17 @@ const IgrejasCadastradasManager = () => {
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-zinc-900 text-gray-400 text-xs uppercase tracking-wide">
               <tr>
-                <th className="text-left font-medium px-3 py-2 w-14">Cód.</th>
-                <th className="text-left font-medium px-3 py-2">Igreja</th>
-                <th className="text-left font-medium px-3 py-2 hidden sm:table-cell">Pastor</th>
-                <th className="text-left font-medium px-3 py-2 hidden lg:table-cell">Responsável</th>
-                <th className="text-right font-medium px-3 py-2" title="Equipantes inscritos (aprovados)">Equip.</th>
-                <th className="text-right font-medium px-3 py-2">Acamp.</th>
+                <th className="text-left font-medium px-3 py-2 w-14 whitespace-nowrap"><CabecalhoFiltro coluna={COL_IGREJA.codigo} f={f} /></th>
+                <th className="text-left font-medium px-3 py-2"><CabecalhoFiltro coluna={COL_IGREJA.nome} f={f} /></th>
+                <th className="text-left font-medium px-3 py-2 hidden sm:table-cell"><CabecalhoFiltro coluna={COL_IGREJA.pastor} f={f} /></th>
+                <th className="text-left font-medium px-3 py-2 hidden lg:table-cell"><CabecalhoFiltro coluna={COL_IGREJA.responsavel} f={f} /></th>
+                <th className="text-right font-medium px-3 py-2 whitespace-nowrap" title="Equipantes inscritos (aprovados)"><CabecalhoFiltro coluna={COL_IGREJA.equip} f={f} alinharDireita /></th>
+                <th className="text-right font-medium px-3 py-2 whitespace-nowrap"><CabecalhoFiltro coluna={COL_IGREJA.acamp} f={f} alinharDireita /></th>
                 <th className="w-px px-2 py-2"><span className="sr-only">Editar</span></th>
               </tr>
             </thead>
             <tbody>
-              {filtradas.map((l) => (
+              {f.linhas.map((l) => (
                 <tr key={`${l.codigo}-${l.nome}`} className="border-t border-white/5 hover:bg-white/5">
                   <td className="px-3 py-1.5 text-gray-400 tabular-nums">{l.codigo || '—'}</td>
                   <td className="px-3 py-1.5 text-white">
@@ -213,9 +233,9 @@ const IgrejasCadastradasManager = () => {
                   </td>
                 </tr>
               ))}
-              {filtradas.length === 0 && (
+              {f.linhas.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-gray-400">Nenhuma igreja bate com a busca.</td>
+                  <td colSpan={7} className="px-3 py-6 text-center text-gray-400">Nenhuma igreja bate com a busca e os filtros.</td>
                 </tr>
               )}
             </tbody>

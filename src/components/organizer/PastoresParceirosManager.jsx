@@ -12,6 +12,7 @@ import { linkWhatsApp } from '@/services/liderService';
 import { formatarTelefone, mascararTelefone } from '@/utils/telefone';
 import { formatCPF } from '@/utils/formatters';
 import { cn } from '@/lib/utils';
+import { CabecalhoFiltro, useFiltrosColunas } from '@/components/common/FiltroColuna';
 
 /**
  * Quadro "Pastores Parceiros" (Configuracoes, Patrick, 08/10/2026): todos os
@@ -133,6 +134,15 @@ const PastorDialog = ({ aberto, pastor, igrejas, onSalvar, onFechar }) => {
   );
 };
 
+// Filtro por coluna (15/10/2026): funil no titulo de cada coluna.
+const COLUNAS_PASTORES = [
+  { chave: 'nome', rotulo: 'Pastor', valor: (p) => p.nome },
+  { chave: 'igreja', rotulo: 'Igreja', valor: (p) => (p.igreja_codigo ? `${p.igreja_codigo} ${p.igreja_nome}` : 'a vincular') },
+  { chave: 'cpf', rotulo: 'CPF', valor: (p) => (p.cpf ? formatCPF(p.cpf) : null) },
+  { chave: 'telefone', rotulo: 'Telefone', valor: (p) => (p.telefone ? formatarTelefone(p.telefone) : null) },
+];
+const COL_PASTOR = Object.fromEntries(COLUNAS_PASTORES.map((c) => [c.chave, c]));
+
 const PastoresParceirosManager = () => {
   const { toast } = useToast();
   const { parceiras } = useOpcoesDeIgreja();
@@ -167,6 +177,8 @@ const PastoresParceirosManager = () => {
       semAcento(`${p.nome} ${p.igreja_codigo || ''} ${p.igreja_nome || ''} ${p.igreja_digitada || ''}`).includes(termo)
       || (digitos.length >= 3 && (`${p.cpf || ''} ${p.telefone || ''}`).includes(digitos)));
   }, [pastores, termo, digitos]);
+
+  const f = useFiltrosColunas(filtrados, COLUNAS_PASTORES);
 
   const igrejasComPastor = new Set(pastores.filter((p) => p.igreja_id).map((p) => p.igreja_id)).size;
   const aVincular = pastores.filter((p) => !p.igreja_id).length;
@@ -247,6 +259,12 @@ const PastoresParceirosManager = () => {
           {aVincular > 0 && <span className="text-amber-300"> · {aVincular} a vincular</span>}
           {aConferir > 0 && <span className="text-sky-300"> · {aConferir} a conferir</span>}
           {termo ? ` · ${filtrados.length} na busca` : ''}
+          {f.ativos > 0 && <span className="text-sky-300"> · {f.linhas.length} com os filtros</span>}
+          {(f.ativos > 0 || f.ordem) && (
+            <button type="button" onClick={f.limparTudo} className="ml-2 text-sky-300 hover:text-sky-200 underline">
+              limpar filtros
+            </button>
+          )}
         </p>
       )}
 
@@ -261,15 +279,15 @@ const PastoresParceirosManager = () => {
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-zinc-900 text-gray-400 text-xs uppercase tracking-wide">
               <tr>
-                <th className="text-left font-medium px-3 py-2">Pastor</th>
-                <th className="text-left font-medium px-3 py-2">Igreja</th>
-                <th className="text-left font-medium px-3 py-2 hidden md:table-cell">CPF</th>
-                <th className="text-left font-medium px-3 py-2 hidden sm:table-cell">Telefone</th>
+                <th className="text-left font-medium px-3 py-2"><CabecalhoFiltro coluna={COL_PASTOR.nome} f={f} /></th>
+                <th className="text-left font-medium px-3 py-2"><CabecalhoFiltro coluna={COL_PASTOR.igreja} f={f} /></th>
+                <th className="text-left font-medium px-3 py-2 hidden md:table-cell"><CabecalhoFiltro coluna={COL_PASTOR.cpf} f={f} /></th>
+                <th className="text-left font-medium px-3 py-2 hidden sm:table-cell"><CabecalhoFiltro coluna={COL_PASTOR.telefone} f={f} /></th>
                 <th className="w-px px-2 py-2"><span className="sr-only">Ações</span></th>
               </tr>
             </thead>
             <tbody>
-              {filtrados.map((p) => {
+              {f.linhas.map((p) => {
                 const link = linkWhatsApp(p.telefone);
                 return (
                   <tr key={p.id} className="border-t border-white/5 hover:bg-white/5">
@@ -351,12 +369,12 @@ const PastoresParceirosManager = () => {
                   </tr>
                 );
               })}
-              {filtrados.length === 0 && (
+              {f.linhas.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-3 py-6 text-center text-gray-400">
                     {pastores.length === 0
                       ? 'Nenhum pastor cadastrado ainda. Os da planilha entram quando ela for importada.'
-                      : 'Nenhum pastor bate com a busca.'}
+                      : 'Nenhum pastor bate com a busca e os filtros.'}
                   </td>
                 </tr>
               )}

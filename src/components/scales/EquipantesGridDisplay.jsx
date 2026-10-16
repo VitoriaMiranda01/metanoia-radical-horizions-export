@@ -54,6 +54,8 @@ const EquipantesGridDisplay = ({
   // topo e o resto em ordem alfabetica, como vem da pagina). Clicar no mesmo
   // cabecalho: crescente -> decrescente -> volta ao padrao.
   const [ordem, setOrdem] = useState({ campo: null, desc: false });
+  // Filtro por cor (16/10/2026): null = todos; 'sem' = quem nao tem cor.
+  const [corFiltro, setCorFiltro] = useState(null);
   const clicarCabecalho = (campo) => setOrdem((o) => (
     o.campo !== campo ? { campo, desc: false } : !o.desc ? { campo, desc: true } : { campo: null, desc: false }
   ));
@@ -122,7 +124,7 @@ const EquipantesGridDisplay = ({
   // ordena dentro de cada cor.
   const porCor = AREAS_AGRUPADAS_POR_COR.includes(areaName);
   const liderGeral = (eq) => ehLider(eq.atuacao) && !eq.cor;
-  const linhas = porCor
+  const ordenadas = porCor
     ? [...equipantes].sort((a, b) =>
         (Number(liderGeral(b)) - Number(liderGeral(a))) ||
         (posCor(a) - posCor(b)) ||
@@ -135,6 +137,13 @@ const EquipantesGridDisplay = ({
     // continuam no topo, mas se ordenam entre si (nome, igreja, cor...).
     return pelaColuna(a, b);
   });
+  // Totalizador por cor (da lista que chegou) e o filtro por cor.
+  const contagemPorCor = {};
+  equipantes.forEach((eq) => { const k = eq.cor || 'sem'; contagemPorCor[k] = (contagemPorCor[k] || 0) + 1; });
+  const filtroAtivo = colunaCor && corFiltro;
+  const linhas = filtroAtivo
+    ? ordenadas.filter((eq) => (corFiltro === 'sem' ? !eq.cor : eq.cor === corFiltro))
+    : ordenadas;
   // Linha que abre um grupo de cor (para a linha divisoria).
   const grupoDe = (eq) => (liderGeral(eq) ? '*' : eq.cor || '');
   const abreGrupo = (index) => porCor && index > 0 && grupoDe(linhas[index]) !== grupoDe(linhas[index - 1]);
@@ -158,8 +167,29 @@ const EquipantesGridDisplay = ({
 
   return (
     <div className="space-y-3">
-      {onExport && (
-        <div className="flex justify-end">
+      {(onExport || colunaCor) && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {colunaCor ? (
+            <div className="flex flex-wrap items-center gap-1.5" data-testid="totais-por-cor">
+              <button type="button" onClick={() => setCorFiltro(null)}
+                data-dica="Mostrar todas as cores."
+                className={cn('h-7 px-2.5 rounded-full border text-xs flex items-center gap-1.5 transition-colors',
+                  !corFiltro ? 'bg-white/15 border-white/40 text-white' : 'border-white/15 text-gray-400 hover:text-white hover:border-white/30')}>
+                Todos <strong className="text-white">{equipantes.length}</strong>
+              </button>
+              {[...CORES_GRUPO, 'sem'].filter((c) => c !== 'sem' || contagemPorCor.sem).map((cor) => (
+                <button key={cor} type="button" onClick={() => setCorFiltro(corFiltro === cor ? null : cor)}
+                  data-dica={corFiltro === cor ? 'Clique para mostrar todas as cores.' : cor === 'sem' ? 'Mostrar só quem está sem cor.' : `Mostrar só o grupo ${cor}.`}
+                  className={cn('h-7 px-2.5 rounded-full border text-xs flex items-center gap-1.5 transition-colors',
+                    corFiltro === cor ? 'bg-white/15 border-white/40 text-white' : 'border-white/15 text-gray-400 hover:text-white hover:border-white/30')}>
+                  {cor !== 'sem' && <Bolinha cor={cor} />}
+                  {cor === 'sem' ? 'Sem cor' : cor}
+                  <strong className="text-white">{contagemPorCor[cor] || 0}</strong>
+                </button>
+              ))}
+            </div>
+          ) : <span />}
+          {onExport && (
           <Button
             size="sm"
             variant="outline"
@@ -170,6 +200,7 @@ const EquipantesGridDisplay = ({
             <Download className="mr-2 h-3 w-3" />
             Exportar
           </Button>
+          )}
         </div>
       )}
 
@@ -188,6 +219,13 @@ const EquipantesGridDisplay = ({
             </TableRow>
           </TableHeader>
           <TableBody>
+            {linhas.length === 0 && (
+              <TableRow className="border-white/10 hover:bg-transparent">
+                <TableCell colSpan={8} className="text-center text-sm text-gray-500 py-6">
+                  Ninguém com essa cor nesta área.
+                </TableCell>
+              </TableRow>
+            )}
             {linhas.map((eq, index) => (
               <TableRow
                 key={eq.escalaId || eq.id || index}

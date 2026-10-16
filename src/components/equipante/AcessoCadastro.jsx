@@ -147,7 +147,7 @@ const AcessoCadastro = ({ cpfDigitado, onEntrarComCpf, onNao }) => {
           className="bg-white/10 border-white/20 text-white placeholder:text-white/40" />
       </div>
       {erro && <p className="text-red-300 text-sm">{erro}</p>}
-      <Button onClick={enviarPedido} disabled={enviando} className="w-full">
+      <Button onClick={enviarPedido} disabled={enviando} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
         {enviando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
         Enviar para a organização
       </Button>
@@ -167,7 +167,7 @@ const AcessoCadastro = ({ cpfDigitado, onEntrarComCpf, onNao }) => {
             Procure a organização na reunião para confirmar a sua identidade. Depois que ela colocar o
             seu CPF no cadastro, é só entrar aqui com ele.
           </p>
-          <Button variant="outline" onClick={onNao} className="border-white/20 text-gray-300 hover:text-white">Voltar</Button>
+          <Button variant="outline" onClick={onNao} className="bg-transparent border-white/20 text-gray-300 hover:bg-white/10 hover:text-white">Voltar</Button>
         </CardContent>
       </Card>
     );
@@ -188,8 +188,8 @@ const AcessoCadastro = ({ cpfDigitado, onEntrarComCpf, onNao }) => {
               Não encontramos o CPF <strong className="text-white">{cpfDigitado}</strong>. Você já tem cadastro no sistema?
             </p>
             <div className="grid grid-cols-2 gap-2">
-              <Button onClick={() => setEtapa('busca')} className="py-6">Sim</Button>
-              <Button variant="outline" onClick={onNao} className="py-6 border-white/20 text-gray-300 hover:text-white">Não</Button>
+              <Button onClick={() => setEtapa('busca')} className="py-6 bg-blue-600 hover:bg-blue-700 text-white">Sim</Button>
+              <Button variant="outline" onClick={onNao} className="py-6 bg-transparent border-white/20 text-gray-200 hover:bg-white/10 hover:text-white">Não</Button>
             </div>
           </>
         )}
@@ -224,7 +224,7 @@ const AcessoCadastro = ({ cpfDigitado, onEntrarComCpf, onNao }) => {
             {mensagem()}
 
             {resultado?.situacao !== 'limite' && (
-              <Button onClick={buscar} disabled={buscando} className="w-full">
+              <Button onClick={buscar} disabled={buscando} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                 {buscando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                 {jaAchouComCpf ? 'Entrar com este CPF' : 'Procurar'}
               </Button>

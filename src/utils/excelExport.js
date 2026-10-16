@@ -13,9 +13,21 @@ const configureWorksheet = (ws) => {
     { wch: 25 }, // Atuação / Área
     { wch: 25 }, // Atuação (na aba Geral, que tem Área antes)
     { wch: 12 }, // Cor do grupo
+    { wch: 28 }, // 1ª opção
+    { wch: 28 }, // 2ª opção
+    { wch: 28 }, // 3ª opção
   ];
   return ws;
 };
+
+// As 3 opcoes de area que a pessoa marcou na inscricao (16/10/2026, Patrick):
+// para achar quem ja esta alocado em outra area mas pediu, por exemplo,
+// Seguranca como 2a opcao.
+const opcoesDaInscricao = (eq) => ({
+  '1ª opção': eq.area_trabalho_opcao1 || '-',
+  '2ª opção': eq.area_trabalho_opcao2 || '-',
+  '3ª opção': eq.area_trabalho_opcao3 || '-',
+});
 
 // A planilha oficial das edicoes 33/35/36 tem NOME | IGREJA | ATUACAO -- a
 // atuacao (a funcao da pessoa dentro da area: Líder, Fila / Confronto,
@@ -33,14 +45,15 @@ export const exportEquipantesByArea = (areaName, equipantes) => {
     'CPF': formatCPF(eq.cpf || ''),
     'Igreja': nomeDaIgreja(eq) || '-',
     'Atuação': eq.atuacao || '-',
-    'Cor': eq.cor || '-'
+    'Cor': eq.cor || '-',
+    ...opcoesDaInscricao(eq)
   }));
 
   const ws = XLSX.utils.json_to_sheet(data);
   configureWorksheet(ws);
 
   const wb = XLSX.utils.book_new();
-  
+
   // Sheet names cannot exceed 31 characters and shouldn't have invalid chars
   const safeSheetName = areaName.substring(0, 31).replace(/[\\/?*\[\]]/g, '');
   
@@ -75,7 +88,8 @@ export const exportAllEquipantes = (allocations) => {
       'CPF': formatCPF(eq.cpf || ''),
       'Igreja': nomeDaIgreja(eq) || '-',
       'Atuação': eq.atuacao || '-',
-      'Cor': eq.cor || '-'
+      'Cor': eq.cor || '-',
+      ...opcoesDaInscricao(eq)
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -92,11 +106,14 @@ export const exportAllEquipantes = (allocations) => {
     'CPF': formatCPF(eq.cpf || ''),
     'Igreja': nomeDaIgreja(eq) || '-',
     'Atuação': eq.atuacao || '-',
-    'Cor': eq.cor || '-'
+    'Cor': eq.cor || '-',
+    ...opcoesDaInscricao(eq)
   }));
-  
+
   const wsAll = XLSX.utils.json_to_sheet(allData);
   configureWorksheet(wsAll);
+  // Filtro nos cabecalhos: dá para filtrar a 2ª opção por "Segurança".
+  wsAll['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: allData.length, c: 8 } }) };
   XLSX.utils.book_append_sheet(wb, wsAll, 'Geral');
 
   XLSX.writeFile(wb, 'Escala_Geral.xlsx');

@@ -127,6 +127,17 @@ const mapDbToFormData = (dbData) => {
   };
 };
 
+// "Não sou ... — sair" (16/10/2026): nome e primeiro sobrenome, sem expor o
+// nome completo. "Ana de Souza Lima" -> "Ana de Souza".
+const PARTICULAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e', 'di', 'du', 'del']);
+const nomeESobrenome = (nome) => {
+  const partes = String(nome || '').trim().split(/\s+/).filter(Boolean);
+  if (partes.length <= 1) return partes[0] || '';
+  const sobrenome = PARTICULAS.has(partes[1].toLowerCase()) && partes[2]
+    ? `${partes[1]} ${partes[2]}` : partes[1];
+  return `${partes[0]} ${sobrenome}`;
+};
+
 const EquipantePage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -848,7 +859,7 @@ const EquipantePage = () => {
               onClick={sairDaInscricao}
               className="text-gray-400 hover:text-white"
             >
-              Não sou {inscricaoData?.nome?.trim() || 'eu'} — sair
+              Não sou {nomeESobrenome(inscricaoData?.nome) || 'eu'} — sair
             </Button>
           </div>
         )}

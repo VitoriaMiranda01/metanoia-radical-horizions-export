@@ -363,6 +363,12 @@ export const fetchChamadaDaEscala = () => rpcOrganizador('chamada_da_escala', {}
 export const decidirAusente = (escalaId, acao) =>
   rpcOrganizador('decidir_ausente', { p_escala_id: escalaId, p_acao: acao }, 'decidir o ausente');
 export const separarTodosAusentes = () => rpcOrganizador('separar_ausentes', {}, 'separar os ausentes');
+// Chamada pela organizacao (16/10/2026): a lista de uma area, e presente /
+// ausente marcado pela organizacao (vale por cima do que o lider marcou).
+// presente: true | false | null (tira a marcacao).
+export const fetchChamadaDaArea = (area) => rpcOrganizador('chamada_da_area', { p_area: area }, 'chamada da área');
+export const marcarPresencaOrganizador = (escalaId, presente) =>
+  rpcOrganizador('organizador_marcar_presenca', { p_escala_id: escalaId, p_presente: presente }, 'presença');
 // cor: a cor do grupo na area nova (so nas areas com cor; obrigatoria para
 // Infiltrados). Sem ela a pessoa fica sem cor -- a antiga nao vai junto
 // (migration 20261012c).

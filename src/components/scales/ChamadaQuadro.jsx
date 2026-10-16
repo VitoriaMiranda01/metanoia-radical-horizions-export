@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { formatarTelefone } from '@/utils/telefone';
 import { fetchChamadaDaEscala, decidirAusente, separarTodosAusentes } from '@/services/scalesService';
+import ChamadaAreaDialog from './ChamadaAreaDialog';
 
 const ATUALIZAR_A_CADA_MS = 30000;
 
@@ -36,6 +37,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
   const [verMantidos, setVerMantidos] = useState(false);
   const [ocupado, setOcupado] = useState({});
   const [confirmandoTodos, setConfirmandoTodos] = useState(false);
+  const [areaAberta, setAreaAberta] = useState(null);
 
   const carregar = async (silencioso = false) => {
     if (!silencioso) setCarregando(true);
@@ -129,9 +131,12 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
 
       {verAreas && (
         <div className="px-4 py-3 border-b border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1 max-h-60 overflow-y-auto">
+          {/* Cada area abre a lista dela para a organizacao gerenciar (16/10/2026). */}
           {porArea.map((a) => (
-            <p key={a.area} className="text-xs text-gray-300 flex justify-between gap-2">
-              <span className="truncate">{a.area}</span>
+            <button key={a.area} type="button" onClick={() => setAreaAberta(a.area)}
+              data-dica={`Abrir a chamada de ${a.area}: marcar presença e trocar atuação e cor.`}
+              className="text-xs text-gray-300 flex justify-between gap-2 rounded px-1.5 py-0.5 -mx-1.5 text-left hover:bg-white/10 hover:text-white">
+              <span className="truncate underline decoration-white/20 underline-offset-2">{a.area}</span>
               <span className="shrink-0">
                 <span className="text-green-400">{a.presentes}</span>
                 {' / '}
@@ -139,9 +144,9 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
                 {' / '}
                 <span className="text-gray-500">{a.total}</span>
               </span>
-            </p>
+            </button>
           ))}
-          <p className="text-[10px] text-gray-500 sm:col-span-2 lg:col-span-3 mt-1">presentes / ausentes / total</p>
+          <p className="text-[10px] text-gray-500 sm:col-span-2 lg:col-span-3 mt-1">presentes / ausentes / total · clique numa área para marcar a presença e trocar atuação e cor</p>
         </div>
       )}
 
@@ -251,6 +256,11 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
           </div>
         )}
       </div>
+      {areaAberta && (
+        <ChamadaAreaDialog area={areaAberta}
+          onClose={() => { setAreaAberta(null); carregar(true); recarregarTela?.(); }}
+          onMudou={() => recarregarTudo?.()} />
+      )}
     </Card>
   );
 };

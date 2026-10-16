@@ -255,10 +255,20 @@ const PagamentosPendentesPage = () => {
   const [filterText, setFilterText] = useState('');
   const [aba, setAba] = useState('nao');
   const [tipoFiltro, setTipoFiltro] = useState('all');
+  // A coluna e o controle do grupo de WhatsApp so existem para acampantes: com o
+  // filtro em Equipantes somem (16/10/2026, Patrick).
+  const mostrarGrupo = aba === 'pagos' && tipoFiltro !== 'equipante';
   // Funil e seta de cada coluna. Cada aba tem colunas e valores diferentes,
   // entao trocar de aba comeca sem filtro e sem ordem.
   const [filtrosColuna, setFiltrosColuna] = useState({});
   const [ordem, setOrdem] = useState(null);
+  useEffect(() => {
+    if (!mostrarGrupo) {
+      setFiltroGrupo('todos');
+      setOrdem((o) => (o?.chave === 'grupo' ? null : o));
+      setFiltrosColuna((f) => { if (!f.grupo) return f; const { grupo, ...resto } = f; return resto; });
+    }
+  }, [mostrarGrupo]);
   useEffect(() => {
     setFiltrosColuna({});
     setOrdem(null);
@@ -389,13 +399,14 @@ const PagamentosPendentesPage = () => {
   const comCobranca = useMemo(() => relacao.map((i) => ({
     ...i,
     ...(i.tipo === 'acampante' && cobrancas[i.id] ? { cobranca: cobrancas[i.id] } : {}),
-    ...(gruposEnviados[i.id] ? { grupo: gruposEnviados[i.id] } : {}),
+    // Grupo de WhatsApp e so dos acampantes (16/10/2026): equipante nao tem.
+    ...(i.tipo === 'acampante' && gruposEnviados[i.id] ? { grupo: gruposEnviados[i.id] } : {}),
     ...(i.tipo === 'equipante' && areasDaEscala[i.id] ? { area_escala: areasDaEscala[i.id] } : {}),
   })), [relacao, cobrancas, gruposEnviados, areasDaEscala]);
 
   const pagos = useMemo(() => comCobranca.filter((i) => i.quitado), [comCobranca]);
   // Pagou e ainda nao recebeu o convite do grupo.
-  const semGrupo = useMemo(() => pagos.filter((i) => !i.grupo).length, [pagos]);
+  const semGrupo = useMemo(() => pagos.filter((i) => i.tipo === 'acampante' && !i.grupo).length, [pagos]);
 
   const recarregarGrupos = async () => setGruposEnviados(await fetchGruposEnviados());
 
@@ -528,7 +539,7 @@ const PagamentosPendentesPage = () => {
     // diferenca de maiuscula nem de acento ("joao" acha "João").
     const chavesBusca = [...new Set([
       ...CHAVES_SEMPRE_BUSCADAS,
-      ...(aba === 'pagos' ? ['pagamento', 'valor', 'grupo']
+      ...(aba === 'pagos' ? ['pagamento', 'valor', ...(mostrarGrupo ? ['grupo'] : [])]
         : aba === 'travados' ? ['motivo']
           : aba === 'cobranca' ? ['desde']
             : aba === 'agendado' ? ['agendado_para']
@@ -539,23 +550,23 @@ const PagamentosPendentesPage = () => {
     const filtradas = baseDaAba.filter((item) => {
       const casaBusca = casaBuscaPagamento(filterText, item, chavesBusca, valorDaColuna);
       const casaTipo = tipoFiltro === 'all' || item.tipo === tipoFiltro;
-      const casaGrupo = aba !== 'pagos' || filtroGrupo === 'todos' || !item.grupo;
+      const casaGrupo = !mostrarGrupo || filtroGrupo === 'todos' || (item.tipo === 'acampante' && !item.grupo);
       const casaColunas = Object.entries(filtrosColuna).every(([chave, valores]) =>
-        !valores || valores.length === 0 || valores.includes(valorDaColuna(item, chave)));
+        (chave === 'grupo' && !mostrarGrupo) || !valores || valores.length === 0 || valores.includes(valorDaColuna(item, chave)));
       return casaBusca && casaTipo && casaGrupo && casaColunas;
     });
     // Agendados: sem seta escolhida, a data mais proxima vem primeiro.
     const ordemFinal = ordem || (aba === 'agendado' ? { chave: 'agendado_para', direcao: 'asc' } : null);
     return ordenarLista(filtradas, ordemFinal, valorDaColuna);
-  }, [baseDaAba, filterText, tipoFiltro, filtrosColuna, ordem, aba, filtroGrupo, colunasVisiveis]);
+  }, [baseDaAba, filterText, tipoFiltro, filtrosColuna, ordem, aba, filtroGrupo, colunasVisiveis, mostrarGrupo]);
 
   // Pagina a lista já filtrada. No dia do evento essa tela pode ter centenas
   // de pendentes — desenhar tudo de uma vez trava celular mais simples.
   const paginacao = usePaginacao(linhas);
 
   // Nome + extras + coluna da aba + (Pagos: valor e grupo | demais: acoes).
-  const colunas = 1 + colunasExtras.length + 1 + (aba === 'pagos' ? 2 : 1);
-  const faltamNaLista = aba === 'pagos' ? linhas.filter((i) => !i.grupo) : [];
+  const colunas = 1 + colunasExtras.length + 1 + (aba === 'pagos' ? (mostrarGrupo ? 2 : 1) : 1);
+  const faltamNaLista = mostrarGrupo ? linhas.filter((i) => i.tipo === 'acampante' && !i.grupo) : [];
 
   const marcarLote = async () => {
     setGravandoGrupo(true);
@@ -794,8 +805,8 @@ const PagamentosPendentesPage = () => {
                   </TabsList>
                 </Tabs>
 
-                {/* Convite do grupo de WhatsApp (so na aba Pagos). */}
-                {aba === 'pagos' && (
+                {/* Convite do grupo de WhatsApp (so na aba Pagos e so para acampantes). */}
+                {mostrarGrupo && (
                   <>
                     <Tabs value={filtroGrupo} onValueChange={setFiltroGrupo} className="w-full md:w-auto">
                       <TabsList className="bg-white/5 border border-white/10 w-full md:w-auto flex">
@@ -913,7 +924,7 @@ const PagamentosPendentesPage = () => {
                     {aba === 'pagos' && (
                       <>
                         <TableHead>{cabecalho('Valor pago', 'valor')}</TableHead>
-                        <TableHead>{cabecalho('Grupo do WhatsApp', 'grupo')}</TableHead>
+                        {mostrarGrupo && <TableHead>{cabecalho('Grupo do WhatsApp', 'grupo')}</TableHead>}
                       </>
                     )}
                     {aba !== 'pagos' && <TableHead className="w-px text-gray-300">Ações</TableHead>}
@@ -980,7 +991,7 @@ const PagamentosPendentesPage = () => {
                             <TableCell key={d.key} className="text-sm">
                               <CelulaWhatsApp
                                 item={item} onCopiar={copiarNumero}
-                                onAbrir={aba === 'pagos' ? () => registrarEnvio(item) : undefined}
+                                onAbrir={aba === 'pagos' && item.tipo === 'acampante' ? () => registrarEnvio(item) : undefined}
                               />
                             </TableCell>
                           ) : d.key === 'cpf' ? (
@@ -1065,9 +1076,11 @@ const PagamentosPendentesPage = () => {
                             </TableCell>
                           </>
                         )}
-                        {aba === 'pagos' && (
+                        {mostrarGrupo && (
                           <TableCell className="text-sm">
-                            <CelulaGrupo item={item} onMarcar={registrarEnvio} onDesmarcar={desmarcarEnvio} ocupado={gravandoGrupo} />
+                            {item.tipo === 'acampante'
+                              ? <CelulaGrupo item={item} onMarcar={registrarEnvio} onDesmarcar={desmarcarEnvio} ocupado={gravandoGrupo} />
+                              : <span className="text-gray-600" data-dica="O grupo de WhatsApp é só dos acampantes.">—</span>}
                           </TableCell>
                         )}
                         {aba !== 'pagos' && (

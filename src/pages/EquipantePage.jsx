@@ -17,7 +17,7 @@ import {
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
-import { RefreshCw, Lock, CheckCircle, FlaskConical, Search } from 'lucide-react';
+import { RefreshCw, Lock, CheckCircle, FlaskConical } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import CampoDataNascimento from '@/components/inscricao/CampoDataNascimento';
@@ -33,7 +33,7 @@ import { problemaNomePessoa } from '@/utils/nomePessoa';
 import { conferirInscricao } from '@/utils/validacoesInscricao';
 import { validateCPF } from '@/utils/validation';
 import { calcularIdade } from '@/utils/formatters';
-import { getEquipanteWorkflow, reivindicarCadastroManual } from '@/services/equipantesService';
+import { getEquipanteWorkflow } from '@/services/equipantesService';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
 import { igrejaEhOutra } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
@@ -194,12 +194,6 @@ const EquipantePage = () => {
   const [buscandoFicha, setBuscandoFicha] = useState(false);
   const [erroFicha, setErroFicha] = useState('');
 
-  // Inscricao feita pela organizacao (manual): sem CPF na ficha, o CPF digitado
-  // nao acha ninguem. A pessoa acha a ficha pelo nome e completa o cadastro.
-  const [nomeManual, setNomeManual] = useState('');
-  const [erroManual, setErroManual] = useState('');
-  const [buscandoManual, setBuscandoManual] = useState(false);
-
   const [formData, setFormData] = useState({
     cpf: '', semCpf: false, nacionalidade: '', nome: '', dataNascimento: '', sexo: '',
     whatsapp: '', telefoneResidencial: '',
@@ -345,29 +339,6 @@ const EquipantePage = () => {
       handleVerificationComplete({ cpf, ...r });
     } catch (err) {
       toast({ title: 'Não deu certo', description: err.message, variant: 'destructive' });
-    }
-  };
-
-  // Acha a ficha manual pelo nome e leva ao acompanhamento, onde a janela de
-  // cadastro pede o que falta (inclusive este CPF).
-  const completarCadastroManual = async () => {
-    setErroManual('');
-    const nome = nomeManual.trim();
-    if (nome.length < 5 || !nome.includes(' ')) {
-      setErroManual('Escreva seu nome completo (nome e sobrenome).');
-      return;
-    }
-    setBuscandoManual(true);
-    try {
-      const r = await reivindicarCadastroManual(formData.cpf, nome);
-      setInscricaoData({ id: r.id, nome: r.nome, cpf: formData.cpf });
-      setFormData(prev => ({ ...prev, nome: r.nome }));
-      guardarSessao({ id: r.id, nome: r.nome, cpf: formData.cpf });
-      setCurrentStep('workflow');
-    } catch (err) {
-      setErroManual(err.message);
-    } finally {
-      setBuscandoManual(false);
     }
   };
 
@@ -755,50 +726,6 @@ const EquipantePage = () => {
             onEntrarComCpf={entrarComCpfCorreto}
             onNao={() => setCurrentStep('fechadas')}
           />
-        )}
-
-        {currentStep === 'cadastro-manual' && (
-          <Card className="glass-effect border-white/10 bg-black/40 max-w-xl mx-auto">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Search className="w-5 h-5 text-blue-400" />
-                Você foi inscrito pela organização?
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-gray-300 text-sm">
-                Não encontramos inscrição com o CPF <strong className="text-white">{formData.cpf}</strong>.
-                Se a organização fez a sua inscrição (por exemplo, na reunião de escala), digite o seu
-                nome completo para completar o seu cadastro.
-              </p>
-
-              <div className="space-y-2">
-                <Label htmlFor="nomeManual" className="text-white">Nome completo</Label>
-                <Input
-                  id="nomeManual"
-                  value={nomeManual}
-                  onChange={(e) => { setNomeManual(e.target.value); setErroManual(''); }}
-                  onKeyDown={(e) => { if (e.key === 'Enter') completarCadastroManual(); }}
-                  placeholder="Como a organização escreveu o seu nome"
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                />
-                {erroManual && <p className="text-red-300 text-sm">{erroManual}</p>}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button onClick={completarCadastroManual} disabled={buscandoManual} className="flex-1">
-                  {buscandoManual ? 'Buscando...' : 'Completar meu cadastro'}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentStep(podeCadastrar ? 'formulario' : 'fechadas')}
-                  className="flex-1 border-white/20 text-gray-300 hover:text-white"
-                >
-                  Não, fazer a minha inscrição
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         )}
 
         {currentStep === 'reinscricao' && (

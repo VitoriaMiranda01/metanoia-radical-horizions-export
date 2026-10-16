@@ -213,7 +213,7 @@ const AcessoCadastro = ({ cpfDigitado, onEntrarComCpf, onNao }) => {
                 placeholder={jaAchouComCpf || !dentroDaJanela ? '000.000.000-00' : 'CPF ou nome completo'}
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
               />
-              {erro && etapa === 'busca' && !(resultado?.situacao === 'achou_sem_cpf' || podePedir) && <p className="text-red-300 text-sm">{erro}</p>}
+              {erro && etapa === 'busca' && !(resultado?.situacao === 'achou_sem_cpf' && dentroDaJanela) && <p className="text-red-300 text-sm">{erro}</p>}
               {!dentroDaJanela && janela && !jaAchouComCpf && resultado?.situacao !== 'fora_do_horario' && (
                 <p className="text-[11px] text-gray-500">
                   A busca pelo nome só funciona no dia da Reunião de Leitura de Escala{diaLeitura ? ` (${diaLeitura})` : ''}, das 15h às 19h.

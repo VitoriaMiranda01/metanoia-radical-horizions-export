@@ -34,6 +34,8 @@ import AvisoContatoEmergencia from '@/components/gerenciar/AvisoContatoEmergenci
 import AvisoCamisas from '@/components/gerenciar/AvisoCamisas';
 import AvisoCadastro from '@/components/gerenciar/AvisoCadastro';
 import AvisoNascimento from '@/components/gerenciar/AvisoNascimento';
+import PedidosAcessoQuadro from '@/components/gerenciar/PedidosAcessoQuadro';
+import DuplicadosQuadro from '@/components/gerenciar/DuplicadosQuadro';
 import CentralNotificacoes from '@/components/gerenciar/CentralNotificacoes';
 import { useAvisosInscricoes } from '@/hooks/useAvisosInscricoes';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
@@ -47,6 +49,8 @@ const GerenciarInscricoesPage = () => {
   const { toast } = useToast();
   
   const [inscricoes, setInscricoes] = useState([]);
+  // Pedidos de acesso e duplicados (16/10/2026): resolver um pode mudar o outro.
+  const [versaoFichas, setVersaoFichas] = useState(0);
   const [acampantesList, setAcampantesList] = useState([]);
   
   const [totalAcampantes, setTotalAcampantes] = useState(0);
@@ -414,6 +418,10 @@ const GerenciarInscricoesPage = () => {
               </Button>
             )}
           </div>
+
+          {/* Pedidos de acesso ao cadastro e possiveis duplicados (16/10/2026). */}
+          <PedidosAcessoQuadro onMudou={() => { carregarEquipantes(); setVersaoFichas((v) => v + 1); }} />
+          <DuplicadosQuadro atualizar={versaoFichas} onMudou={() => carregarEquipantes()} />
 
           {/* Primeiro: data de nascimento e obrigatoria (09/10/2026). */}
           <AvisoNascimento

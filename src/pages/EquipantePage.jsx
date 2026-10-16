@@ -27,7 +27,7 @@ import InfoSaude from '@/components/inscricao/InfoSaude';
 import DadosComplementaresEquipante from '@/components/inscricao/DadosComplementaresEquipante';
 import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
-import { criarInscricao, buscarFichaAnterior } from '@/services/inscricoesService';
+import { criarInscricao, buscarFichaAnterior, verificarCPF } from '@/services/inscricoesService';
 import { problemaTelefone } from '@/utils/telefone';
 import { problemaNomePessoa } from '@/utils/nomePessoa';
 import { conferirInscricao } from '@/utils/validacoesInscricao';
@@ -39,6 +39,7 @@ import { igrejaEhOutra } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { liberacaoDeTesteValida } from '@/services/publicDataService';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
+import AcessoCadastro from '@/components/equipante/AcessoCadastro';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
 
 // O banco guarda boolean; o formulario usa 'SIM'/'NAO'. Sem esta traducao a
@@ -327,11 +328,23 @@ const EquipantePage = () => {
           setCurrentStep('workflow');
         }
       }
-    } else if (!isFound && !result.semCpf && result.cpf && result.haManuais) {
-      // CPF sem ficha, mas ha inscricoes manuais a completar: pode ser uma delas.
-      setCurrentStep('cadastro-manual');
+    } else if (!isFound && !result.semCpf && result.cpf && !podeCadastrar) {
+      // Inscricoes fechadas e CPF que nao esta na base (16/10/2026): antes de
+      // "encerradas", pergunta se a pessoa ja tem cadastro (AcessoCadastro).
+      setCurrentStep('tem-cadastro');
     } else {
       setCurrentStep(podeCadastrar ? 'formulario' : 'fechadas');
+    }
+  };
+
+  // "Você já tem cadastro?" achou o CPF certo: segue o caminho normal da
+  // verificacao, como se a pessoa tivesse digitado esse CPF na primeira tela.
+  const entrarComCpfCorreto = async (cpf) => {
+    try {
+      const r = await verificarCPF(cpf, 'equipante');
+      handleVerificationComplete({ cpf, ...r });
+    } catch (err) {
+      toast({ title: 'Não deu certo', description: err.message, variant: 'destructive' });
     }
   };
 
@@ -727,6 +740,14 @@ const EquipantePage = () => {
               </p>
             </CardContent>
           </Card>
+        )}
+
+        {currentStep === 'tem-cadastro' && (
+          <AcessoCadastro
+            cpfDigitado={formData.cpf}
+            onEntrarComCpf={entrarComCpfCorreto}
+            onNao={() => setCurrentStep('fechadas')}
+          />
         )}
 
         {currentStep === 'cadastro-manual' && (

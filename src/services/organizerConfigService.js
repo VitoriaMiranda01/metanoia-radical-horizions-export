@@ -358,9 +358,13 @@ export const fetchConfiguracoesEvento = async () => {
  * A FICHA DO EQUIPANTE NAO E APAGADA: e dela que o formulario da proxima
  * edicao se serve para vir preenchido (ver ficha_para_reinscricao).
  */
-export const resetarParaNovaEdicao = async (novaEdicao) => {
+// Desde 16/10/2026 a virada exige as datas da Reuniao de Inscricao e da
+// Reuniao de Leitura de Escala da edicao nova.
+export const resetarParaNovaEdicao = async (novaEdicao, reuniaoInscricao, reuniaoLeitura) => {
   const { data, error } = await supabase.rpc('resetar_para_nova_edicao', {
-    p_nova_edicao: Number(novaEdicao)
+    p_nova_edicao: Number(novaEdicao),
+    p_reuniao_inscricao: reuniaoInscricao || null,
+    p_reuniao_leitura: reuniaoLeitura || null
   });
   if (error) throw error;
   if (!data?.ok) throw new Error(data?.erro || 'Não foi possível resetar a edição.');

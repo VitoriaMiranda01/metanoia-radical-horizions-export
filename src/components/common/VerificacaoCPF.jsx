@@ -75,9 +75,7 @@ const VerificacaoCPF = ({
         if (!result.existe) {
           toast({
             title: "Cadastro não encontrado",
-            description: result.haManuais
-              ? "Nenhum cadastro encontrado com este CPF."
-              : "Nenhum cadastro encontrado com este CPF. Por favor, preencha o formulário para se inscrever."
+            description: "Nenhum cadastro encontrado com este CPF."
           });
         } else {
           toast({

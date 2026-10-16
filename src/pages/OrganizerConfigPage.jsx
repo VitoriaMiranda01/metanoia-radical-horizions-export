@@ -26,6 +26,7 @@ import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizador
 import BackupStatusCard from '@/components/organizer/BackupStatusCard';
 import AuditoriaCard from '@/components/organizer/AuditoriaCard';
 import AmbienteTesteCard from '@/components/organizer/AmbienteTesteCard';
+import DatasReunioesCard from '@/components/organizer/DatasReunioesCard';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
@@ -60,6 +61,9 @@ const OrganizerConfigPage = () => {
   // carrega (ver o efeito que preenche o formulario), mas fica editavel:
   // quem vira a edicao e quem decide o numero dela.
   const [novaEdicao, setNovaEdicao] = useState('');
+  // Datas das reunioes da edicao nova: obrigatorias na virada (16/10/2026).
+  const [novaReuniaoInscricao, setNovaReuniaoInscricao] = useState('');
+  const [novaReuniaoLeitura, setNovaReuniaoLeitura] = useState('');
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
   const { toast } = useToast();
   
@@ -381,7 +385,7 @@ const OrganizerConfigPage = () => {
   const handleResetInscricoes = async () => {
     setIsResettingInscricoes(true);
     try {
-      const r = await resetarParaNovaEdicao(novaEdicao);
+      const r = await resetarParaNovaEdicao(novaEdicao, novaReuniaoInscricao, novaReuniaoLeitura);
       toast({
         title: `Agora é a ${r.nova_edicao}ª edição`,
         description: `${r.equipantes_liberados} equipante(s) liberado(s) para se inscrever de novo · `
@@ -863,6 +867,10 @@ const OrganizerConfigPage = () => {
             <AmbienteTesteCard />
           </motion.div>
 
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.497 }}>
+            <DatasReunioesCard />
+          </motion.div>
+
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
             <Card className="glass-effect border-red-500/20 bg-black/40">
               <CardHeader>
@@ -928,6 +936,22 @@ const OrganizerConfigPage = () => {
               />
             </div>
 
+            {/* Obrigatorias a partir da edicao 38 (16/10/2026). */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="novaReuniaoInscricao" className="text-white">Reunião de Inscrição *</Label>
+                <Input id="novaReuniaoInscricao" type="date" value={novaReuniaoInscricao}
+                  onChange={(e) => setNovaReuniaoInscricao(e.target.value)}
+                  className="bg-white/10 border-white/20 text-white [color-scheme:dark]" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="novaReuniaoLeitura" className="text-white">Reunião de Leitura de Escala *</Label>
+                <Input id="novaReuniaoLeitura" type="date" value={novaReuniaoLeitura}
+                  onChange={(e) => setNovaReuniaoLeitura(e.target.value)}
+                  className="bg-white/10 border-white/20 text-white [color-scheme:dark]" />
+              </div>
+            </div>
+
             <div className="rounded-md border border-white/10 bg-white/5 p-3 space-y-1 text-gray-300">
               <p className="text-white font-medium">O que fica</p>
               <p>A ficha de cada equipante — é ela que o formulário da nova edição
@@ -945,7 +969,7 @@ const OrganizerConfigPage = () => {
             <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleResetInscricoes} disabled={isResettingInscricoes} className="bg-red-600 hover:bg-red-700 text-white border-none">
+            <AlertDialogAction onClick={handleResetInscricoes} disabled={isResettingInscricoes || !novaReuniaoInscricao || !novaReuniaoLeitura} className="bg-red-600 hover:bg-red-700 text-white border-none">
               {isResettingInscricoes ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Sim, Resetar Todos
             </AlertDialogAction>

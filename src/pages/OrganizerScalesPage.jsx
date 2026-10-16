@@ -38,6 +38,7 @@ import QuandoVisivel from '@/components/common/QuandoVisivel';
 import CampoBusca from '@/components/common/CampoBusca';
 import { tituloPastor } from '@/utils/pastor';
 import { seloOrganizacao } from '@/services/selosOrganizacao';
+import { configurarChamada, carregarChamada, aoMudarChamada } from '@/services/chamadaStore';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { casaBusca, casaNomeParecido, filtrarBusca } from '@/utils/busca';
 import { emTeste } from '@/services/ambiente';
@@ -160,6 +161,19 @@ const OrganizerScalesPage = () => {
   // "Escala de trabalho" concluida nem consegue pagar -- mesmo ja tendo
   // area. Quem divulga a escala e a reuniao; o site so acompanha.
   const [escala, setEscala] = useState(null);
+
+  // Chamada da reuniao de escala na tabela (16/10/2026): o icone ao lado de
+  // cada nome so existe depois da provisoria. A chamada dos lideres chega a
+  // cada 30 s; marcou aqui (ou na janela da area), o quadro acompanha.
+  useEffect(() => {
+    const ativa = !!escala?.lancada_em;
+    configurarChamada({ ativa, podeMarcar: ativa && !!escala?.pode_gerir });
+    if (!ativa) return undefined;
+    carregarChamada();
+    const t = setInterval(() => { if (!document.hidden) carregarChamada(); }, 30000);
+    const sair = aoMudarChamada(async () => { const s = await fetchSituacaoEscala(); if (s) setEscala(s); });
+    return () => { clearInterval(t); sair(); };
+  }, [escala?.lancada_em, escala?.pode_gerir]);
   const [confirmandoLancamento, setConfirmandoLancamento] = useState(false);
 
   // SO NO AMBIENTE DE TESTE (Patrick, 07/10/2026): la a escala pode ser lancada

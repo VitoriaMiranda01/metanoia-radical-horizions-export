@@ -16,6 +16,7 @@ import { WORK_AREAS, CORES_GRUPO, AREAS_AGRUPADAS_POR_COR } from '@/constants/wo
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import SeloPastor from '@/components/common/SeloPastor';
 import SeloAutomatico from '@/components/common/SeloAutomatico';
+import IconeChamada from '@/components/scales/IconeChamada';
 import SelectSobDemanda from '@/components/common/SelectSobDemanda';
 import { cn } from '@/lib/utils';
 
@@ -195,6 +196,8 @@ const EquipantesGridDisplay = ({
                 <TableCell className="font-semibold text-white min-w-[230px]">
                   <div className="flex flex-col">
                     <span className="flex items-center gap-1.5">
+                      {/* Chamada da reuniao de escala (so depois da provisoria). */}
+                      {areaName !== 'Não será escalado' && <IconeChamada escalaId={eq.escalaId} nome={eq.nome} />}
                       <NomeComBandeira nome={formatNomeExibicao(eq.nome)} nacionalidade={eq.nacionalidade} />
                       <SeloPastor pessoa={eq} />
                       {eq.automatica && <SeloAutomatico />}

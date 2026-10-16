@@ -7,6 +7,7 @@ import { nomeDaIgreja } from '@/constants/igrejas';
 import { formatarTelefone } from '@/utils/telefone';
 import { fetchChamadaDaEscala, decidirAusente, separarTodosAusentes } from '@/services/scalesService';
 import ChamadaAreaDialog from './ChamadaAreaDialog';
+import { carregarChamada } from '@/services/chamadaStore';
 
 const ATUALIZAR_A_CADA_MS = 30000;
 
@@ -121,7 +122,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
             className="text-gray-300 hover:text-white hover:bg-white/10">
             {verAreas ? 'Esconder áreas' : 'Por área'}
           </Button>
-          <Button size="sm" variant="outline" onClick={() => { carregar(); recarregarTela?.(); }} disabled={carregando}
+          <Button size="sm" variant="outline" onClick={() => { carregar(); recarregarTela?.(); carregarChamada(); }} disabled={carregando}
             data-dica="Buscar a chamada de novo (atualiza sozinha a cada 30 segundos)."
             className="border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white">
             {carregando ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -258,7 +259,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
       </div>
       {areaAberta && (
         <ChamadaAreaDialog area={areaAberta}
-          onClose={() => { setAreaAberta(null); carregar(true); recarregarTela?.(); }}
+          onClose={() => { setAreaAberta(null); carregar(true); recarregarTela?.(); carregarChamada(); }}
           onMudou={() => recarregarTudo?.()} />
       )}
     </Card>

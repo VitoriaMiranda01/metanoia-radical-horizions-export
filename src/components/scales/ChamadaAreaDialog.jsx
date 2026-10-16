@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import {
   fetchChamadaDaArea, marcarPresencaOrganizador, definirAtuacao, definirCor
 } from '@/services/scalesService';
+import { registrarChamadaLocal } from '@/services/chamadaStore';
 
 /**
  * Chamada de uma area, pela organizacao (16/10/2026, Patrick).
@@ -82,12 +83,14 @@ const ChamadaAreaDialog = ({ area, onClose, onMudou }) => {
   const agir = async (m, chave, mudanca, acao, sucesso) => {
     setOcupado((o) => ({ ...o, [m.escala_id]: chave }));
     setDados((d) => ({ ...d, membros: d.membros.map((x) => (x.escala_id === m.escala_id ? { ...x, ...mudanca } : x)) }));
-    let ok = false; let msg = '';
+    let ok = false; let msg = ''; let r = null;
     try {
-      const r = await acao();
+      r = await acao();
       ok = r?.success ?? r?.ok;
       msg = r?.error || r?.erro || '';
     } catch (e) { msg = e.message; }
+    // A tabela da escala e o quadro acompanham na hora.
+    if (ok && chave === 'p') registrarChamadaLocal(m.escala_id, mudanca.presente, r?.data?.marcado_por || '');
     setOcupado((o) => { const c = { ...o }; delete c[m.escala_id]; return c; });
     if (!ok) toast({ title: 'Não deu certo', description: msg, variant: 'destructive' });
     else {

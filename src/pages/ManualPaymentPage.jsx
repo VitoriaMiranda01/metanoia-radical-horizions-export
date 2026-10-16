@@ -54,7 +54,10 @@ const ManualPaymentPage = () => {
     if (!couponInput) return;
     setCouponMessage({ type: '', text: '' });
     
-    const { isValid, discount, error } = await validateCoupon(couponInput);
+    const { isValid, discount, error } = await validateCoupon(couponInput, {
+      tipo, id: location.state?.id,
+      cpf: location.state?.cpf, nome: location.state?.nome, nascimento: location.state?.nascimento
+    });
     if (isValid) {
       setAppliedCoupon(couponInput.trim().toUpperCase());
       setDiscountValue(discount);

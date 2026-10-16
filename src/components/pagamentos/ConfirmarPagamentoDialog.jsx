@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { cuponsDoPagamento } from '@/services/paymentService';
 
 /**
  * "Confirmar pagamento" da tela de Pagamentos (Patrick, 08/10/2026): quem
@@ -35,7 +36,7 @@ const lerValor = (texto) => {
 
 const paraTexto = (n) => (n === null || n === undefined ? '' : Number(n).toFixed(2).replace('.', ','));
 
-const ConfirmarPagamentoDialog = ({ pedido, cupons = [], onConfirmar, onFechar }) => {
+const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
   // pedido: { item, forma: 'manual' | 'pix', valorLote, valorCobrado }
   const [valor, setValor] = useState('');
   const [cupom, setCupom] = useState('');
@@ -43,7 +44,18 @@ const ConfirmarPagamentoDialog = ({ pedido, cupons = [], onConfirmar, onFechar }
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
 
-  const ativos = useMemo(() => cupons.filter((c) => c.ativo), [cupons]);
+  // Os cupons ativos como valem para ESTA pessoa (16/10/2026): o servidor ja
+  // calcula o desconto (valor fixo ou % do lote) e diz se o cupom "so para
+  // pastores" vale para ela.
+  const [ativos, setAtivos] = useState([]);
+  useEffect(() => {
+    let vivo = true;
+    setAtivos([]);
+    if (pedido?.item?.id && pedido.forma !== 'pix') {
+      cuponsDoPagamento(pedido.item.tipo, pedido.item.id).then((lista) => { if (vivo) setAtivos(lista); });
+    }
+    return () => { vivo = false; };
+  }, [pedido]);
   const lote = pedido?.valorLote ?? null;
   const ehPixTravado = pedido?.forma === 'pix';
 
@@ -64,10 +76,10 @@ const ConfirmarPagamentoDialog = ({ pedido, cupons = [], onConfirmar, onFechar }
     if (lote !== null && !ehPixTravado) {
       const atual = lerValor(valor);
       const anterior = ativos.find((c) => c.codigo === cupom);
-      const esperadoAntes = lote - (anterior ? Number(anterior.desconto_fixo) : 0);
+      const esperadoAntes = lote - (anterior ? Number(anterior.desconto) : 0);
       if (atual === null || Math.abs(atual - esperadoAntes) < 0.005) {
         const novo = ativos.find((c) => c.codigo === codigo);
-        setValor(paraTexto(Math.max(0, lote - (novo ? Number(novo.desconto_fixo) : 0))));
+        setValor(paraTexto(Math.max(0, lote - (novo ? Number(novo.desconto) : 0))));
       }
     }
   };
@@ -152,29 +164,44 @@ const ConfirmarPagamentoDialog = ({ pedido, cupons = [], onConfirmar, onFechar }
             <div className="space-y-1.5">
               <span className="text-sm text-gray-300">Cupom de desconto</span>
               <div className="flex flex-wrap gap-2" role="group" aria-label="Cupom de desconto">
-                {[{ codigo: '', rotulo: 'Sem cupom' }, ...ativos.map((c) => ({ codigo: c.codigo, rotulo: `${c.codigo} · −${formatarValor(c.desconto_fixo)}` }))]
+                {[{ codigo: '', rotulo: 'Sem cupom', vale: true },
+                  ...ativos.map((c) => ({
+                    codigo: c.codigo,
+                    vale: c.valido === true,
+                    motivo: c.motivo,
+                    rotulo: c.percentual
+                      ? `${c.codigo} · −${Number(c.percentual)}%${c.valido ? ` (−${formatarValor(c.desconto)})` : ''}`
+                      : `${c.codigo} · −${formatarValor(c.desconto)}`
+                  }))]
                   .map((op) => (
                     <button
                       key={op.codigo || 'nenhum'} type="button"
+                      disabled={!op.vale}
                       onClick={() => escolherCupom(op.codigo)}
                       aria-pressed={cupom === op.codigo}
+                      data-dica={op.vale ? undefined : 'Cupom só para pastores: esta pessoa não está registrada como pastor no sistema (cargo na igreja PASTOR(A) ou PASTOR(A) AUXILIAR, ou na lista de Pastores Parceiros).'}
                       className={cn(
                         'h-9 px-3 rounded-md border text-sm transition-colors',
-                        cupom === op.codigo
-                          ? 'border-blue-500/60 bg-blue-500/15 text-white'
-                          : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
+                        !op.vale
+                          ? 'border-white/5 bg-white/[0.02] text-gray-600 cursor-not-allowed'
+                          : cupom === op.codigo
+                            ? 'border-blue-500/60 bg-blue-500/15 text-white'
+                            : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
                       )}
                     >
-                      {op.rotulo}
+                      {op.rotulo}{!op.vale ? ' · só pastor' : ''}
                     </button>
                   ))}
               </div>
               {ativos.length === 0 && (
                 <p className="text-xs text-gray-500">Nenhum cupom ativo nesta edição.</p>
               )}
+              {ativos.some((c) => c.valido === false) && (
+                <p className="text-xs text-gray-500">Cupom em cinza: não vale para esta pessoa.</p>
+              )}
               {cupomEscolhido && lote !== null && (
                 <p className="text-xs text-gray-400">
-                  {formatarValor(lote)} − {formatarValor(cupomEscolhido.desconto_fixo)} = {formatarValor(Math.max(0, lote - Number(cupomEscolhido.desconto_fixo)))}
+                  {formatarValor(lote)} − {formatarValor(cupomEscolhido.desconto)} = {formatarValor(Math.max(0, lote - Number(cupomEscolhido.desconto)))}
                 </p>
               )}
             </div>

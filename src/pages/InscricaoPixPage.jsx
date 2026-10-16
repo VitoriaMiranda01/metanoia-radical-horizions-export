@@ -172,7 +172,14 @@ const InscricaoPixPage = () => {
     if (!couponInput) return;
     setCouponMessage({ type: '', text: '' });
     
-    const { isValid, discount, validationError } = await validateCoupon(couponInput);
+    // O cupom vale conforme quem e a pessoa (porcentagem e "so pastor"): vai a
+    // prova de dono junto.
+    const { isValid, discount, error: validationError } = await validateCoupon(couponInput, {
+      tipo, id: inscricaoId,
+      cpf: location.state?.cpf || sessaoSalva?.cpf || formData.cpf,
+      nome: location.state?.nome || sessaoSalva?.nome || formData.nome,
+      nascimento: location.state?.nascimento || sessaoSalva?.nascimento || null
+    });
     if (isValid) {
       setAppliedCoupon(couponInput.trim().toUpperCase());
       setDiscountValue(discount);

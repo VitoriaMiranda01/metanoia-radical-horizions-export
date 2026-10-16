@@ -1,5 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
-import { validarCupomPublico } from '@/services/publicDataService';
+import { validarCupomInscricao } from '@/services/publicDataService';
 import { comReenvio } from '@/services/serviceHelpers';
 
 export const fetchCoupons = async () => comReenvio(
@@ -7,8 +7,10 @@ export const fetchCoupons = async () => comReenvio(
   { rotulo: 'cupons' }
 );
 
-export const createCoupon = async ({ codigo, desconto_fixo, ativo }) => {
-  return supabase.from('cupons').insert([{ codigo, desconto_fixo, ativo }]);
+// Cupom de valor fixo (desconto_fixo em R$) OU de porcentagem (percentual, 1 a 99,
+// com desconto_fixo = 0). so_pastor: so vale para quem esta registrado como pastor.
+export const createCoupon = async ({ codigo, desconto_fixo = 0, percentual = null, so_pastor = false, ativo }) => {
+  return supabase.from('cupons').insert([{ codigo, desconto_fixo, percentual, so_pastor, ativo }]);
 };
 
 export const toggleCouponStatus = async (id, novoStatus) => {
@@ -30,15 +32,18 @@ export const deleteCoupon = async (id) => {
  *
  * O retorno mantem o formato { data, error } que a tela ja esperava.
  */
-export const findActiveCouponByCode = async (code) => {
+export const findActiveCouponByCode = async (code, dono = {}) => {
   try {
-    const resultado = await validarCupomPublico(code);
+    const resultado = await validarCupomInscricao({
+      tipo: dono.tipo, id: dono.id, codigo: code,
+      cpf: dono.cpf || null, nome: dono.nome || null, nascimento: dono.nascimento || null
+    });
 
     if (!resultado?.valido) {
-      return { data: null, error: null };
+      return { data: null, error: null, motivo: resultado?.motivo || 'inexistente' };
     }
 
-    return { data: { codigo: code, desconto_fixo: resultado.desconto }, error: null };
+    return { data: { codigo: code, desconto_fixo: resultado.desconto, percentual: resultado.percentual ?? null }, error: null };
   } catch (error) {
     console.error('couponsService - findActiveCouponByCode', error?.message || error);
     return { data: null, error };

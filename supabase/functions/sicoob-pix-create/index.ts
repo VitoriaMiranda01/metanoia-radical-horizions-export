@@ -30,6 +30,11 @@
 // 8) (08/10/2026) A COBRANCA REGISTRA O LOTE, O DESCONTO E O CUPOM USADO
 //    (valor_base, desconto, cupom_codigo em pix_sicoob), para a tela de
 //    Pagamentos mostrar quem usou qual cupom. Nada mais mudou.
+//
+// 9) (16/10/2026) O CUPOM E CONFERIDO PELA REGRA DO BANCO (_cupom_para):
+//    aceita desconto em porcentagem e o cupom "so para pastores", que so vale
+//    para quem esta registrado como pastor. Cupom que nao vale para a pessoa
+//    nao desconta nada (a cobranca sai no valor cheio).
 
 import { corsHeaders } from "./cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
@@ -217,23 +222,23 @@ Deno.serve(async (req: Request) => {
     let cupomAplicado: string | null = null;
 
     if (cupomCodigo) {
-      const { data: cupom, error: cupomError } = await db
-        .from("cupons")
-        .select("codigo, desconto_fixo")
-        .eq("codigo", cupomCodigo)
-        .eq("ativo", true)
-        .maybeSingle();
+      // A regra mora no banco (_cupom_para): valor fixo ou porcentagem, e o
+      // cupom "so para pastores" so vale para quem esta registrado como pastor.
+      const { data: res, error: cupomError } = await db.rpc("_cupom_para", {
+        p_codigo: cupomCodigo,
+        p_tipo: tipo,
+        p_id: inscricaoId,
+        p_preco: precoBase,
+      });
 
       if (cupomError) {
-        console.error("[pix] erro lendo cupons:", cupomError.message);
+        console.error("[pix] erro conferindo o cupom:", cupomError.message);
         return json({ success: false, error: "Servico de pagamento indisponivel." }, 500);
       }
-      if (cupom) {
-        const d = Number(cupom.desconto_fixo);
-        if (Number.isFinite(d) && d > 0) {
-          desconto = d;
-          cupomAplicado = String(cupom.codigo);
-        }
+      const d = Number(res?.desconto);
+      if (res?.valido === true && Number.isFinite(d) && d > 0) {
+        desconto = d;
+        cupomAplicado = String(res.codigo);
       }
       // Cupom invalido nao derruba a cobranca: so nao aplica desconto. A tela
       // ja avisa o usuario no momento em que ele clica em "Aplicar".

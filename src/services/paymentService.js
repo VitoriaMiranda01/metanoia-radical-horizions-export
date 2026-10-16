@@ -174,6 +174,14 @@ export const desfazerPagamento = async (tipo, id) => {
   return { data };
 };
 
+// Os cupons ativos como valem para ESTA pessoa (porcentagem ja calculada sobre o
+// lote do dia, e "so pastor" so liberado para quem esta registrado como pastor).
+export const cuponsDoPagamento = async (tipo, id) => {
+  const { data, error } = await supabase.rpc('cupons_do_pagamento', { p_tipo: tipo, p_id: id });
+  if (error || !Array.isArray(data)) return [];
+  return data;
+};
+
 export const confirmarPagamentoManual = async (tipo, id, valor, cupom, meio) =>
   registrarPagamento(tipo, id, 'manual', valor, cupom, meio);
 

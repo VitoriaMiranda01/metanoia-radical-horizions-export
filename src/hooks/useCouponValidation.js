@@ -4,17 +4,24 @@ import { findActiveCouponByCode } from '@/services/couponsService';
 export const useCouponValidation = () => {
   const [loading, setLoading] = useState(false);
 
-  const validateCoupon = async (code) => {
+  // dono: { tipo, id, cpf, nome, nascimento } -- o cupom vale conforme quem e a
+  // pessoa (porcentagem e o cupom "so para pastores", 16/10/2026).
+  const validateCoupon = async (code, dono = {}) => {
     if (!code || !code.trim()) {
       return { isValid: false, discount: 0, error: 'Por favor, insira um código de cupom.' };
     }
 
     setLoading(true);
     try {
-      const { data, error } = await findActiveCouponByCode(code.trim().toUpperCase());
+      const { data, error, motivo } = await findActiveCouponByCode(code.trim().toUpperCase(), dono);
 
       if (error || !data) {
-        return { isValid: false, discount: 0, error: 'Cupom inválido ou expirado' };
+        const mensagem = motivo === 'so_pastor'
+          ? 'Este cupom é exclusivo para pastores registrados como pastor no sistema. O cadastro desta inscrição não está como pastor.'
+          : motivo === 'identidade'
+            ? 'Não foi possível confirmar a sua inscrição para usar o cupom. Volte e entre novamente com o seu CPF.'
+            : 'Cupom inválido ou expirado';
+        return { isValid: false, discount: 0, error: mensagem };
       }
 
       return { 

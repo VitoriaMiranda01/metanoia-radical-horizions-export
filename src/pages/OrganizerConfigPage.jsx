@@ -69,7 +69,7 @@ const OrganizerConfigPage = () => {
   
   const [coupons, setCoupons] = useState([]);
   const [loadingCoupons, setLoadingCoupons] = useState(true);
-  const [newCoupon, setNewCoupon] = useState({ codigo: '', desconto_fixo: '', ativo: true });
+  const [newCoupon, setNewCoupon] = useState({ codigo: '', tipo_desconto: 'valor', desconto_fixo: '', so_pastor: false, ativo: true });
   const [isCreatingCoupon, setIsCreatingCoupon] = useState(false);
   const [couponToDelete, setCouponToDelete] = useState(null);
 
@@ -315,6 +315,7 @@ const OrganizerConfigPage = () => {
       return;
     }
     const desconto = parseFloat(newCoupon.desconto_fixo);
+    const porcentagem = newCoupon.tipo_desconto === 'percentual';
     if (isNaN(desconto) || desconto < 0.01) {
       toast({
         title: "Valor inválido",
@@ -323,11 +324,22 @@ const OrganizerConfigPage = () => {
       });
       return;
     }
+    // Porcentagem de 1 a 99: 100% seria isencao, e isencao e decisao do organizador.
+    if (porcentagem && (desconto < 1 || desconto > 99)) {
+      toast({
+        title: "Porcentagem inválida",
+        description: "Use de 1% a 99%. Isenção total é decisão do organizador, não de cupom.",
+        variant: "destructive"
+      });
+      return;
+    }
     setIsCreatingCoupon(true);
     try {
       const { error } = await createCoupon({
         codigo: newCoupon.codigo.trim().toUpperCase(),
-        desconto_fixo: desconto,
+        desconto_fixo: porcentagem ? 0 : desconto,
+        percentual: porcentagem ? desconto : null,
+        so_pastor: newCoupon.so_pastor,
         ativo: newCoupon.ativo
       });
       if (error) throw error;
@@ -336,7 +348,7 @@ const OrganizerConfigPage = () => {
         description: "Cupom criado com sucesso.",
         className: "bg-emerald-600 text-white"
       });
-      setNewCoupon({ codigo: '', desconto_fixo: '', ativo: true });
+      setNewCoupon({ codigo: '', tipo_desconto: 'valor', desconto_fixo: '', so_pastor: false, ativo: true });
       loadCoupons();
     } catch (error) {
       toast({
@@ -742,8 +754,33 @@ const OrganizerConfigPage = () => {
                         <Input id="codigo" placeholder="EX: LOTE1PROMO" value={newCoupon.codigo} onChange={e => setNewCoupon({ ...newCoupon, codigo: e.target.value.toUpperCase() })} className="bg-white/5 border-white/10 text-white uppercase placeholder:text-gray-600" disabled={isCreatingCoupon} maxLength={20} />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="desconto_fixo" className="text-gray-300">Valor do Desconto (R$)</Label>
-                        <Input id="desconto_fixo" type="number" step="0.01" min="0.01" placeholder="50.00" value={newCoupon.desconto_fixo} onChange={e => setNewCoupon({ ...newCoupon, desconto_fixo: e.target.value })} className="bg-white/5 border-white/10 text-white placeholder:text-gray-600" disabled={isCreatingCoupon} />
+                        <Label className="text-gray-300">Tipo de desconto</Label>
+                        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Tipo de desconto">
+                          {[['valor', 'Valor (R$)'], ['percentual', 'Porcentagem (%)']].map(([v, rotulo]) => (
+                            <button key={v} type="button" disabled={isCreatingCoupon}
+                              onClick={() => setNewCoupon({ ...newCoupon, tipo_desconto: v })}
+                              aria-pressed={newCoupon.tipo_desconto === v}
+                              className={`h-9 rounded-md border text-sm ${newCoupon.tipo_desconto === v ? 'border-purple-400/70 bg-purple-500/20 text-white' : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'}`}>
+                              {rotulo}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="desconto_fixo" className="text-gray-300">
+                          {newCoupon.tipo_desconto === 'percentual' ? 'Desconto (%)' : 'Valor do Desconto (R$)'}
+                        </Label>
+                        <Input id="desconto_fixo" type="number" step={newCoupon.tipo_desconto === 'percentual' ? '1' : '0.01'} min="0.01"
+                          max={newCoupon.tipo_desconto === 'percentual' ? '99' : undefined}
+                          placeholder={newCoupon.tipo_desconto === 'percentual' ? '50' : '50.00'}
+                          value={newCoupon.desconto_fixo} onChange={e => setNewCoupon({ ...newCoupon, desconto_fixo: e.target.value })} className="bg-white/5 border-white/10 text-white placeholder:text-gray-600" disabled={isCreatingCoupon} />
+                      </div>
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="so_pastor" className="text-gray-300">Só para pastores</Label>
+                          <p className="text-xs text-gray-500">Vale só para quem está registrado como pastor (cargo PASTOR(A) / AUXILIAR ou na lista de Pastores Parceiros)</p>
+                        </div>
+                        <Switch id="so_pastor" checked={newCoupon.so_pastor} onCheckedChange={checked => setNewCoupon({ ...newCoupon, so_pastor: checked })} disabled={isCreatingCoupon} />
                       </div>
                       <div className="flex items-center justify-between pt-2">
                         <div className="space-y-0.5">
@@ -786,7 +823,13 @@ const OrganizerConfigPage = () => {
                             coupons.map(coupon => (
                               <TableRow key={coupon.id} className="border-b border-white/5 hover:bg-white/5">
                                 <TableCell className="font-medium text-white">{coupon.codigo}</TableCell>
-                                <TableCell className="text-emerald-400 font-medium">{formatCurrency(coupon.desconto_fixo)}</TableCell>
+                                <TableCell className="text-emerald-400 font-medium">
+                                  {coupon.percentual ? `${Number(coupon.percentual)}%` : formatCurrency(coupon.desconto_fixo)}
+                                  {coupon.so_pastor && (
+                                    <span className="ml-2 rounded-full border border-sky-500/40 bg-sky-500/10 px-2 py-0.5 text-[10px] font-normal text-sky-300"
+                                      data-dica="Só vale para quem está registrado como pastor.">só pastor</span>
+                                  )}
+                                </TableCell>
                                 <TableCell className="text-gray-400" data-dica="Edição em que o cupom foi criado. Na virada de edição todos os cupons são desativados (não apagados).">{coupon.edicao_numero ? `${coupon.edicao_numero}ª` : '—'}</TableCell>
                                 <TableCell>
                                   <Badge variant={coupon.ativo ? "default" : "secondary"} className={coupon.ativo ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border-none" : "bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border-none"}>

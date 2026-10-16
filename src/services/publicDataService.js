@@ -112,9 +112,20 @@ export const buscarFichaAnteriorPublica = async (cpf, nome) =>
 /** { "NOME DA IGREJA": quantidade } -- sem baixar a base de acampantes. */
 export const fetchOcupacaoIgrejas = async () => chamar('ocupacao_igrejas');
 
-/** { valido, desconto } -- sem permitir listar os cupons. */
+/** { valido, desconto } -- sem permitir listar os cupons. So cupom aberto a todos. */
 export const validarCupomPublico = async (codigo) =>
   chamar('validar_cupom', { p_codigo: codigo });
+
+/**
+ * O cupom como vale PARA ESTA PESSOA (16/10/2026): porcentagem e o cupom "so
+ * para pastores" dependem de quem pergunta. Leva a prova de dono (CPF, ou nome
+ * + nascimento). { valido, desconto, motivo? } -- motivo: 'so_pastor' |
+ * 'identidade' | 'inexistente'.
+ */
+export const validarCupomInscricao = async ({ tipo, id, codigo, cpf = null, nome = null, nascimento = null }) =>
+  chamar('validar_cupom_inscricao', {
+    p_tipo: tipo, p_id: id, p_codigo: codigo, p_cpf: cpf, p_nome: nome, p_nascimento: nascimento
+  });
 
 /**
  * Cria a inscricao. Recebe o mesmo objeto ja mapeado que o site sempre

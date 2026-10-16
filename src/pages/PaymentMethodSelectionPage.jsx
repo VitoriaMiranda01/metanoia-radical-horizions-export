@@ -5,7 +5,7 @@ import Layout from '@/components/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { QrCode, CreditCard, ArrowRight, Zap, AlertCircle } from 'lucide-react';
+import { QrCode, CreditCard, Banknote, ArrowRight, Zap, AlertCircle } from 'lucide-react';
 import { atualizarStatusPagamento } from '@/services/inscricoesService';
 import { rotuloDoQueSePaga } from '@/utils/rotulosPagamento';
 
@@ -22,6 +22,7 @@ const PaymentMethodSelectionPage = () => {
   // cobrança), então quem se inscreveu sem CPF (documento estrangeiro) só
   // pode pagar pela opção manual.
   const hasCpf = !!location.state?.cpf;
+  const equipante = location.state?.tipo === 'equipante';
 
   const handleSelect = async (path, method) => {
     // Update the method in database before proceeding
@@ -118,18 +119,23 @@ const PaymentMethodSelectionPage = () => {
           >
             <Card className="glass-effect border-white/10 bg-black/60 h-full hover:bg-black/80 transition-all duration-300 group">
               <CardContent className="p-8 flex flex-col h-full">
-                <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 text-blue-400 group-hover:scale-110 transition-transform duration-300">
+                {/* Equipante paga direto com a Raquel na reuniao de leitura de
+                    escala (16/10/2026): cartao e cedula lado a lado. */}
+                <div className={`h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 text-blue-400 group-hover:scale-110 transition-transform duration-300 ${equipante ? 'px-6 gap-3 self-start' : 'w-16'}`}>
                   <CreditCard className="w-8 h-8" />
+                  {equipante && <Banknote className="w-8 h-8" />}
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-3">Cartão / Dinheiro</h3>
                 <p className="text-gray-400 mb-8 flex-grow">
-                  Pagamento manual com a equipe da secretaria. Aceitamos Cartão de Crédito, Débito e Dinheiro em espécie.
+                  {equipante
+                    ? 'Pagamento Manual diretamente com Raquel Gomes no dia da reunião de leitura de escala. Aceitamos cartão de crédito, débito e dinheiro em espécie.'
+                    : 'Pagamento manual com a equipe da secretaria. Aceitamos Cartão de Crédito, Débito e Dinheiro em espécie.'}
                 </p>
-                <Button 
-                  onClick={() => handleSelect('/manual-payment', 'manual')} 
+                <Button
+                  onClick={() => handleSelect('/manual-payment', 'manual')}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-lg font-semibold"
                 >
-                  Pagamento Manual
+                  {equipante ? 'Pagar com Cartão ou dinheiro' : 'Pagamento Manual'}
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </CardContent>

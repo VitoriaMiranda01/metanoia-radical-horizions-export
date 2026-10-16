@@ -240,6 +240,14 @@ const ManualPaymentPage = () => {
 
               {!isZeroValue && !loadingValue && !priceError && (
                 <div className="bg-white/5 p-6 rounded-xl border border-white/10 text-left space-y-4">
+                  {tipo === 'equipante' && (
+                    <div className="flex items-start gap-3 bg-blue-600/20 border border-blue-400/40 rounded-lg p-4" data-testid="aviso-pagamento-manual-equipante">
+                      <Info className="w-6 h-6 text-blue-300 shrink-0 mt-0.5" />
+                      <p className="text-white text-lg font-medium">
+                        Como você selecionou Pagamento manual, procure a Raquel Gomes nas mesas da entrada da Igreja para concluir o pagamento.
+                      </p>
+                    </div>
+                  )}
                   <p className="text-white text-lg">
                     Sua inscrição foi pré-aprovada, mas o pagamento precisa ser realizado <strong>presencialmente</strong> ou tratado via <strong>WhatsApp</strong>.
                   </p>
@@ -253,10 +261,12 @@ const ManualPaymentPage = () => {
                         </a>
                       </div>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                      <span>Ou procure a equipe da secretaria na reunião de escalas.</span>
-                    </li>
+                    {tipo !== 'equipante' && (
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                        <span>Ou procure a equipe da secretaria na reunião de escalas.</span>
+                      </li>
+                    )}
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
                       <span>Informe seu nome e CPF para que sua ficha seja localizada.</span>

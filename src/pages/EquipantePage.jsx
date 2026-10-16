@@ -848,7 +848,7 @@ const EquipantePage = () => {
               onClick={sairDaInscricao}
               className="text-gray-400 hover:text-white"
             >
-              Não sou {inscricaoData?.nome?.split(' ')[0] || 'eu'} — sair
+              Não sou {inscricaoData?.nome?.trim() || 'eu'} — sair
             </Button>
           </div>
         )}

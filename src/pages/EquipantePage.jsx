@@ -143,7 +143,7 @@ const EquipantePage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   // OUTRA so existe ate a virada de edicao.
-  const { permiteOutra } = useOpcoesDeIgreja();
+  const { permiteOutra, exigeFichaCompleta } = useOpcoesDeIgreja();
   const navigate = useNavigate();
   const { equipantesAbertos, loading: loadingStatus } = useInscricoesStatus();
 
@@ -535,6 +535,13 @@ const EquipantePage = () => {
     if (formData.estaAfastado === 'SIM' && igrejaEhOutra(formData.igreja)
         && (formData.igrejaOutra || '').trim().length < 3) {
       faltando.push('Qual é a sua igreja?');
+    }
+    // Ficha completa (a partir da edicao 38, 16/10/2026): quem congrega
+    // informa pastor e cargo -- o servidor tambem barra.
+    if (exigeFichaCompleta && formData.estaAfastado === 'SIM') {
+      if (!(formData.pastor || '').trim()) faltando.push('Nome do Pastor');
+      if (!formData.cargoIgreja) faltando.push('Cargo na Igreja');
+      else if (formData.cargoIgreja === 'OUTRO' && !(formData.cargoIgrejaOutro || '').trim()) faltando.push('Qual é o seu cargo?');
     }
     if (!formData.familiarTrabalhando) faltando.push('Tem algum familiar que vai trabalhar no projeto?');
     if (!formData.parentesco) faltando.push('Tem algum conhecido / familiar que vai participar como ACAMPANTE?');

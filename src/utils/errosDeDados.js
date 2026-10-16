@@ -32,6 +32,13 @@ const MENSAGENS = {
   AREAS_OBRIGATORIAS: 'Escolha as 3 opções de área de trabalho.',
   IGREJA_OUTRA_ENCERRADA: 'A opção "OUTRA" não existe mais nesta edição: escolha a sua igreja na lista.',
   IGREJA_DIVERSOS_ENCERRADA: 'A opção "DIVERSOS" não existe mais nesta edição: escolha a igreja responsável na lista.',
+  // Ficha completa, a partir da edicao 38 (migration 20261016e).
+  PASTOR_OBRIGATORIO: 'Escreva o nome do seu pastor.',
+  CARGO_OBRIGATORIO: 'Escolha o seu cargo na igreja (ou "NÃO TENHO CARGO").',
+  CARGO_OUTRO_OBRIGATORIO: 'Escreva qual é o seu cargo na igreja.',
+  RADICAL_OBRIGATORIO: 'Responda qual Radical você fez como acampante.',
+  EDICAO_ACAMPANTE_OBRIGATORIA: 'Informe o número da edição do Radical que você fez como acampante.',
+  EDICAO_EQUIPE_OBRIGATORIA: 'Informe em qual edição você trabalhou na equipe.',
 };
 
 const CAMPO_DE_TEXTO = {

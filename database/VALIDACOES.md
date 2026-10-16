@@ -31,6 +31,7 @@ Telefones têm o gatilho próprio `trg_*_telefones` (`_padronizar_telefones`, mi
 | Cidade, profissão | sem números |
 | Camisa | PP, P, M, G, GG, XG, XXG (acampante: obrigatória) |
 | Equipante, obrigatórios | igreja (ou "Não se aplica"; "OUTRA" pede o nome), conhecido/familiar acampante (e o nome dele), 3 áreas de trabalho |
+| Equipante, ficha completa (edição 38 em diante) | quem congrega: nome do pastor e cargo ("OUTRO" pede qual); todos: qual Radical fez como acampante + número da edição; quem já trabalhou: a edição. Liga sozinho na virada (`configuracoes.exige_ficha_completa`, 20261016e) |
 
 ## Códigos de erro
 
@@ -43,11 +44,16 @@ O banco levanta o código (`NOME_INVALIDO`, `CPF_INVALIDO`, `CEP_INVALIDO`...). 
 - `20261006m` nome e CPF · `20261006n` demais campos + aviso dos acampantes · `20261006o` estrangeiro
 - `20261006q` contato de emergência ≠ a pessoa · `20261006r` obrigatórios + gatilho `validar_ficha`
 - `20261009b` nascimento obrigatório no acampante (gatilho) + aviso `nascimentos_pendentes`
+- `20261016e` ficha completa na próxima edição (pastor, cargo, Radical, edições) + reinscrição de ficha manual sem as respostas "não" automáticas
 
 ## Reinscrição
 
 Quem se inscreveu e não vai nesta edição corrige as pendências **na hora de se inscrever na edição seguinte**:
 a ficha antiga volta para o formulário e o servidor confere tudo de novo antes de gravar.
+
+Ficha feita pela organização (inscrição manual) que a pessoa nunca confirmou (`equipantes.ficha_confirmada_em`
+vazio) volta **sem** as respostas que nasceram "não" sozinhas (saúde, restrição alimentar, já trabalhou,
+canta, toca, grupo de cuidado): o formulário obriga a pessoa a responder.
 
 ## Toda migration vale para os dois bancos
 

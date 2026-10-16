@@ -38,6 +38,8 @@ const carregar = () => {
           extras: Array.isArray(r?.extras) ? r.extras : [],
           permiteOutra: r?.permite_outra !== false,
           permiteDiversos: r?.permite_diversos !== false,
+          // Pastor e cargo obrigatorios na inscricao (edicao 38 em diante).
+          exigeFichaCompleta: r?.exige_ficha_completa === true,
         };
       })
       .catch((erro) => {

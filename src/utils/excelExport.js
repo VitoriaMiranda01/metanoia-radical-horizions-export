@@ -166,7 +166,9 @@ export const exportRelacaoPagamentos = (linhas) => {
     'Tipo': item.tipo === 'acampante' ? 'Acampante' : 'Equipante',
     'WhatsApp': item.whatsapp || '-',
     'Igreja': item.igreja || '-',
-    'Forma de pagamento': ({
+    'Forma de pagamento': (item.metodo_pagamento === 'manual' && item.meio_pagamento && item.quitado
+      ? ({ dinheiro: 'Dinheiro', cartao: 'Cartão' })[item.meio_pagamento]
+      : null) || ({
       pix: 'PIX',
       manual: 'Em mãos',
       isento: 'Isento',

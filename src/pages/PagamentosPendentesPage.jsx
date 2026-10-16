@@ -53,6 +53,8 @@ const formatarValor = (valor) => {
 const FORMA_DE_QUEM_DEVE = { pix: 'PIX não concluído', manual: 'Manual', isento: 'Isento' };
 // Quem ja pagou: por onde o dinheiro entrou.
 const FORMA_DE_QUEM_PAGOU = { pix: 'PIX', manual: 'Em mãos', isento: 'Isento' };
+// Em maos, o meio (16/10/2026): quem recebeu escolhe na confirmacao.
+const MEIO_DO_PAGAMENTO = { dinheiro: 'Dinheiro', cartao: 'Cartão' };
 
 // "2026-10-10" -> "10/10/2026"
 const dataBR = (iso) => (iso ? String(iso).slice(0, 10).split('-').reverse().join('/') : '');
@@ -123,7 +125,9 @@ const valorDaColuna = (item, chave) => {
       return item.nacionalidade ? String(item.whatsapp) : formatarTelefone(item.whatsapp);
     case 'forma': {
       if (!item.quitado) return FORMA_DE_QUEM_DEVE[item.metodo_pagamento] || 'Não escolheu';
-      return FORMA_DE_QUEM_PAGOU[String(item.metodo_pagamento || '').toLowerCase()] || 'Não informado';
+      const metodo = String(item.metodo_pagamento || '').toLowerCase();
+      if (metodo === 'manual' && MEIO_DO_PAGAMENTO[item.meio_pagamento]) return MEIO_DO_PAGAMENTO[item.meio_pagamento];
+      return FORMA_DE_QUEM_PAGOU[metodo] || 'Não informado';
     }
     // Aba Pagos: forma e quem confirmou numa coluna so ("Em mãos · Raquel"),
     // para a tabela caber na tela sem cortar (Patrick, 08/10/2026).
@@ -343,13 +347,13 @@ const PagamentosPendentesPage = () => {
     });
   };
 
-  const confirmarPagamento = async (pedido, valor, cupom) => {
-    const { data, error: err } = await registrarPagamento(pedido.item.tipo, pedido.item.id, pedido.forma, valor, cupom);
+  const confirmarPagamento = async (pedido, valor, cupom, meio) => {
+    const { data, error: err } = await registrarPagamento(pedido.item.tipo, pedido.item.id, pedido.forma, valor, cupom, meio);
     if (err) throw err;
     setConfirmacao(null);
     toast({
       title: 'Pagamento confirmado',
-      description: `${pedido.item.nome}: ${formatarValor(valor)}${cupom ? ` com o cupom ${cupom}` : ''}. Foi para a aba Pagos.`,
+      description: `${pedido.item.nome}: ${formatarValor(valor)}${meio ? ` em ${MEIO_DO_PAGAMENTO[meio].toLowerCase()}` : ''}${cupom ? ` com o cupom ${cupom}` : ''}. Foi para a aba Pagos.`,
       className: 'bg-emerald-600 text-white border-none'
     });
     await carregar();

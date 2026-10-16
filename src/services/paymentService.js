@@ -149,10 +149,11 @@ export const fetchEquipantesPendentesPagamento = async () => {
 // travou ou isencao. Grava valor recebido, cupom (se houve) e quem confirmou
 // -- antes era um UPDATE direto que so marcava "pago". A regra mora no banco
 // (registrar_pagamento). forma: 'manual' | 'pix' | 'isento'.
-export const registrarPagamento = async (tipo, id, forma, valor = null, cupom = null) => {
+// meio ('dinheiro' | 'cartao'): so no pagamento em maos (16/10/2026).
+export const registrarPagamento = async (tipo, id, forma, valor = null, cupom = null, meio = null) => {
   const { data, error } = await comReenvio(
     () => supabase.rpc('registrar_pagamento', {
-      p_tipo: tipo, p_id: id, p_forma: forma, p_valor: valor, p_cupom: cupom || null,
+      p_tipo: tipo, p_id: id, p_forma: forma, p_valor: valor, p_cupom: cupom || null, p_meio: meio || null,
     }),
     { rotulo: 'registrar pagamento' }
   );
@@ -173,8 +174,8 @@ export const desfazerPagamento = async (tipo, id) => {
   return { data };
 };
 
-export const confirmarPagamentoManual = async (tipo, id, valor, cupom) =>
-  registrarPagamento(tipo, id, 'manual', valor, cupom);
+export const confirmarPagamentoManual = async (tipo, id, valor, cupom, meio) =>
+  registrarPagamento(tipo, id, 'manual', valor, cupom, meio);
 
 // ---------------------------------------------------------------------------
 // Rede de seguranca de pagamento (Etapa 3 do Passo 2)
@@ -249,6 +250,7 @@ const detalheDoPagamento = (ficha, pix) => {
       cupom_usado: ficha.pagamento_cupom || null,
       desconto: ficha.pagamento_desconto !== null ? Number(ficha.pagamento_desconto) : null,
       confirmado_por: ficha.pagamento_confirmado_por || null,
+      meio_pagamento: ficha.pagamento_meio || null,
     };
   }
   if (pix && String(ficha.metodo_pagamento || '').toLowerCase() === 'pix') {
@@ -268,7 +270,7 @@ const detalheDoPagamento = (ficha, pix) => {
 export const fetchRelacaoDePagamentos = async () => {
   const colunasComuns =
     'id, nome, cpf, whatsapp, nacionalidade, status_pagamento, metodo_pagamento, data_pagamento, '
-    + 'pagamento_valor, pagamento_cupom, pagamento_desconto, pagamento_confirmado_por';
+    + 'pagamento_valor, pagamento_cupom, pagamento_desconto, pagamento_confirmado_por, pagamento_meio';
 
   const [acampantes, equipantes, pixPagos] = await Promise.all([
     // Todas as linhas: os equipantes ja passam de 900 e o corte de 1000

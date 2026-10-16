@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { Banknote, CheckCircle, CreditCard, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,16 @@ import { cn } from '@/lib/utils';
  * confirmou fica gravado pelo servidor (registrar_pagamento).
  *
  * PIX travado (aba "Precisam de atenção"): o valor vem da cobranca paga.
+ *
+ * Pagamento em maos (16/10/2026): o organizador diz se recebeu em DINHEIRO ou
+ * no CARTAO -- o financeiro precisa disso para conferir o caixa. Sem escolher,
+ * nao confirma (nenhum dos dois vem marcado de proposito).
  */
+const MEIOS = [
+  { valor: 'dinheiro', rotulo: 'Dinheiro', Icone: Banknote },
+  { valor: 'cartao', rotulo: 'Cartão', Icone: CreditCard }
+];
+
 const formatarValor = (n) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(n) || 0);
 
 // "170,50" / "170.50" / "R$ 170" -> 170.5 (null se nao for numero)
@@ -30,6 +39,7 @@ const ConfirmarPagamentoDialog = ({ pedido, cupons = [], onConfirmar, onFechar }
   // pedido: { item, forma: 'manual' | 'pix', valorLote, valorCobrado }
   const [valor, setValor] = useState('');
   const [cupom, setCupom] = useState('');
+  const [meio, setMeio] = useState('');
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -41,6 +51,7 @@ const ConfirmarPagamentoDialog = ({ pedido, cupons = [], onConfirmar, onFechar }
     if (!pedido) return;
     setValor(paraTexto(ehPixTravado ? pedido.valorCobrado : lote));
     setCupom('');
+    setMeio('');
     setErro(null);
     setSalvando(false);
   }, [pedido]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -67,10 +78,14 @@ const ConfirmarPagamentoDialog = ({ pedido, cupons = [], onConfirmar, onFechar }
       setErro('Informe o valor recebido.');
       return;
     }
+    if (!ehPixTravado && !meio) {
+      setErro('Escolha se o pagamento foi em dinheiro ou no cartão.');
+      return;
+    }
     setSalvando(true);
     setErro(null);
     try {
-      await onConfirmar(pedido, n, cupom || null);
+      await onConfirmar(pedido, n, cupom || null, ehPixTravado ? null : meio);
     } catch (e) {
       setErro(e.message || 'Não foi possível confirmar.');
       setSalvando(false);
@@ -109,6 +124,29 @@ const ConfirmarPagamentoDialog = ({ pedido, cupons = [], onConfirmar, onFechar }
               className="bg-white/5 border-white/10 text-white text-lg h-11"
             />
           </div>
+
+          {!ehPixTravado && (
+            <div className="space-y-1.5">
+              <span className="text-sm text-gray-300">Recebido em</span>
+              <div className="grid grid-cols-2 gap-2" role="group" aria-label="Recebido em">
+                {MEIOS.map(({ valor: v, rotulo, Icone }) => (
+                  <button
+                    key={v} type="button"
+                    onClick={() => { setMeio(v); setErro(null); }}
+                    aria-pressed={meio === v}
+                    className={cn(
+                      'h-11 rounded-md border text-sm font-medium inline-flex items-center justify-center gap-2 transition-colors',
+                      meio === v
+                        ? 'border-emerald-500/70 bg-emerald-500/15 text-white'
+                        : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
+                    )}
+                  >
+                    <Icone className="w-4 h-4" /> {rotulo}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {!ehPixTravado && (
             <div className="space-y-1.5">

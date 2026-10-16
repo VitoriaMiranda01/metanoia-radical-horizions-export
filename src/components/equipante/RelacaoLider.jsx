@@ -194,7 +194,7 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
       : `Líder da área extra: ${liderExtraDe.map(rotuloAreaExtra).join(', ')}`;
 
   return (
-    <div className="bg-black/40 border border-amber-500/30 rounded-xl p-4 sm:p-6">
+    <div id="relacao-lider" className="bg-black/40 border border-amber-500/30 rounded-xl p-4 sm:p-6 scroll-mt-20">
       <div className="flex flex-col gap-3">
         <div className="flex items-start gap-3">
           <Users className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Loader2, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Loader2, Sparkles, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { revelarArea } from '@/services/equipantesService';
 import AreasReveladas from './AreasReveladas';
@@ -37,7 +37,9 @@ const Brilhos = () => (
   </div>
 );
 
-const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, onPagar, onPendencias, onClose }) => {
+// temEquipe + onVerEquipe (16/10/2026): quem conduz uma equipe (lider, responsavel
+// pela reuniao, lider de area extra) vai direto para a lista dela.
+const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, temEquipe = false, onVerEquipe, onPagar, onPendencias, onClose }) => {
   const [etapa, setEtapa] = useState('buscando'); // buscando | suspense | revelado | fora | erro
   const [areas, setAreas] = useState([]);
   const [extras, setExtras] = useState([]);
@@ -147,6 +149,12 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, o
                   ? 'Esta é a escala provisória. Como líder, confirme a sua própria presença na lista da sua equipe, logo abaixo do acompanhamento.'
                   : 'Esta é a escala provisória. Confirme sua presença com o líder da sua área na reunião de escala.'}
               </p>
+            )}
+            {etapa === 'revelado' && (temEquipe || areas.some((a) => a.eh_lider)) && onVerEquipe && (
+              <Button onClick={onVerEquipe}
+                className="w-full py-6 text-base bg-amber-500/15 border border-amber-400/60 text-amber-100 hover:bg-amber-500/25">
+                <Users className="mr-2 w-5 h-5" /> Ver a lista da minha equipe
+              </Button>
             )}
             {etapa === 'revelado' && podePagar && (
               <Button onClick={onPagar} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-base">

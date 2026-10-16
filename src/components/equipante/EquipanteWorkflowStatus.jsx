@@ -49,6 +49,25 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
   const [revelando, setRevelando] = useState(false);
   const [revelouAgora, setRevelouAgora] = useState(false);
   const [verOficial, setVerOficial] = useState(false);
+  const [irParaEquipe, setIrParaEquipe] = useState(false);
+
+  // "Ver a lista da minha equipe" na revelacao: fecha e desce ate o quadro
+  // "Você é líder" (ele so monta depois que a pessoa viu a area, entao espera
+  // aparecer).
+  useEffect(() => {
+    if (!irParaEquipe) return undefined;
+    let tentativas = 0;
+    const t = setInterval(() => {
+      const alvo = document.getElementById('relacao-lider');
+      tentativas += 1;
+      if (alvo || tentativas > 20) {
+        clearInterval(t);
+        setIrParaEquipe(false);
+        alvo?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+    return () => clearInterval(t);
+  }, [irParaEquipe]);
 
   // Ao entrar no acompanhamento: se ha pendencia, abre a janela de cadastro.
   // Ela NAO fecha enquanto sobrar pendencia (a pessoa completa ou sai) -- e
@@ -417,6 +436,8 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
             dono={dono}
             podePagar={canProceedToPayment}
             provisoria={!escalaOficial}
+            temEquipe={ehOProprio && conduzEquipe}
+            onVerEquipe={ehOProprio ? () => { setRevelando(false); setRevelouAgora(true); setIrParaEquipe(true); refreshSilencioso(); } : undefined}
             onPagar={() => { setRevelando(false); onProceedToPayment?.({ nome: workflowData?.nome }); }}
             // As pendencias que o servidor acabou de devolver valem mais que as
             // da ultima leitura do acompanhamento.

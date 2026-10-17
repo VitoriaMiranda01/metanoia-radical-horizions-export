@@ -475,6 +475,31 @@ export const definirResponsavelReuniao = async (area, cor, equipanteId) => {
   return { success: true };
 };
 
+// 17/10/2026 (migration 20261017g): varios responsaveis por equipe, inclusive
+// de outra area. definirResponsavelReuniao ACRESCENTA; estas tiram um ou
+// poem uma pessoa em varias equipes de uma vez.
+export const removerResponsavelReuniao = async (area, cor, equipanteId) => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('remover_responsavel_reuniao', {
+      p_area: area, p_cor: cor || null, p_equipante_id: equipanteId
+    }),
+    { rotulo: 'responsável pela reunião' }
+  );
+  if (error) return { success: false, error: error.message || 'Erro ao tirar' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível tirar' };
+  return { success: true };
+};
+
+export const definirResponsavelEmBloco = async (equipanteId, equipes) => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('definir_responsavel_em_bloco', { p_equipante_id: equipanteId, p_equipes: equipes }),
+    { rotulo: 'responsável pela reunião' }
+  );
+  if (error) return { success: false, error: error.message || 'Erro ao salvar' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar' };
+  return { success: true, definidos: data.definidos ?? 0, falhas: data.falhas || [] };
+};
+
 // aprovado: true = conto com você · false = dispensado · null = desfaz a resposta
 export const decidirDisponibilidadeExtra = async (equipanteId, area, aprovado) => {
   const { data, error } = await comReenvio(

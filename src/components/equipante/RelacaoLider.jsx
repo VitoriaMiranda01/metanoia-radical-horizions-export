@@ -80,6 +80,9 @@ const nomeCurto = (nome) => {
   return out.join(' ');
 };
 
+// Responsaveis pela reuniao de uma equipe (lista; telas antigas tinham um so).
+const responsaveisDe = (e) => e?.delegados || (e?.delegado ? [e.delegado] : []);
+
 const tituloEquipe = (e) => `${e.area}${e.cor ? ` · ${e.cor}` : ''}`;
 
 const telefoneVisivel = (m) => (m.whatsapp ? (m.estrangeiro ? m.whatsapp : formatarTelefone(m.whatsapp)) : 'Sem telefone');
@@ -237,17 +240,23 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
             </Button>
           )}
         </div>
-        {/* Quem foi delegado, com o nome completo, logo abaixo do botao. */}
-        {podeDelegar && equipeAtual.delegado && (
-          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm">
-            <p className="text-amber-100">
-              <UserCog className="inline w-4 h-4 mr-1.5 -mt-0.5" />
-              Responsável pela reunião{abas.length > 1 ? ` (${tituloEquipe(equipeAtual)})` : ''}:{' '}
-              <strong className="text-white">{equipeAtual.delegado.nome}</strong>
-            </p>
-            {equipeAtual.delegado.definido_por && (
-              <p className="text-xs text-amber-200/70 mt-0.5">definido por {equipeAtual.delegado.definido_por}</p>
-            )}
+        {/* Quem conduz a reuniao, com o nome completo, logo abaixo do botao.
+            Pode ter mais de um, e de outra area (17/10/2026). */}
+        {podeDelegar && responsaveisDe(equipeAtual).length > 0 && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm space-y-1">
+            {responsaveisDe(equipeAtual).map((d) => (
+              <div key={d.equipante_id}>
+                <p className="text-amber-100">
+                  <UserCog className="inline w-4 h-4 mr-1.5 -mt-0.5" />
+                  Responsável pela reunião{abas.length > 1 ? ` (${tituloEquipe(equipeAtual)})` : ''}:{' '}
+                  <strong className="text-white">{d.nome}</strong>
+                  {d.de_fora && <span className="text-xs text-sky-200"> · de outra área</span>}
+                </p>
+                {d.definido_por && (
+                  <p className="text-xs text-amber-200/70 mt-0.5">definido por {d.definido_por}</p>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -470,7 +479,7 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
         {mostrados.map((m) => (
           <Membro key={m.escala_id} m={m} grupoLink={equipe.grupo_link} area={equipe.area} remetente={remetente}
             atuacoes={!m.eh_lider && m.area === equipe.area ? equipe.atuacoes : null}
-            responsavel={!!equipe.delegado && equipe.delegado.equipante_id === m.equipante_id}
+            responsavel={responsaveisDe(equipe).some((d) => d.equipante_id === m.equipante_id)}
             podeCor={equipe.pode_trocar_cor && !m.eh_lider}
             ocupadoPresenca={!!ocupado[`p-${m.escala_id}`]}
             ocupadoConvite={!!ocupado[`c-${m.escala_id}`]}
@@ -626,6 +635,9 @@ Membro.displayName = 'Membro';
 // quando o lider nao vai estar. So gente da propria equipe.
 const DelegarDialog = ({ equipe, onClose, onEscolher, ocupado }) => {
   const [busca, setBusca] = useState('');
+  // O que o lider escolhe e o responsavel de DENTRO da equipe; os de outra
+  // area, postos pela organizacao, nao mudam por aqui.
+  const doLider = responsaveisDe(equipe).find((d) => !d.de_fora) || null;
   const termo = semAcento(busca.trim());
   const candidatos = useMemo(() => (equipe.membros || [])
     .filter((m) => !m.eu && m.area === equipe.area)
@@ -655,10 +667,10 @@ const DelegarDialog = ({ equipe, onClose, onEscolher, ocupado }) => {
           </button>
         </div>
 
-        {equipe.delegado && (
+        {doLider && (
           <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
             <p className="flex-1 text-sm text-gray-200">
-              Hoje: <strong className="text-white">{equipe.delegado.nome}</strong>
+              Hoje: <strong className="text-white">{doLider.nome}</strong>
             </p>
             <Button size="sm" variant="ghost" disabled={ocupado} onClick={() => onEscolher(null)}
               className="text-red-300 hover:text-red-200 hover:bg-white/10">
@@ -677,7 +689,7 @@ const DelegarDialog = ({ equipe, onClose, onEscolher, ocupado }) => {
 
         <ul className="flex-1 overflow-y-auto p-2 space-y-1">
           {candidatos.map((m) => {
-            const atual = equipe.delegado?.equipante_id === m.equipante_id;
+            const atual = doLider?.equipante_id === m.equipante_id;
             return (
               <li key={m.escala_id}>
                 <button type="button" disabled={ocupado || atual} onClick={() => onEscolher(m)}

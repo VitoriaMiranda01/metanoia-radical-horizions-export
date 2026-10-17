@@ -465,6 +465,18 @@ const OrganizerScalesPage = () => {
   // pessoa, para responder numa linha so em vez de obrigar o organizador a
   // varrer as 40 tabelas.
   // Quem esta escalado: uma entrada por pessoa, com todas as areas dela.
+  // Todos os aprovados, com onde estao escalados -- a busca do "responsavel de
+  // outra area" mostra isso para nao escolher a pessoa errada (17/10/2026).
+  const pessoasParaResponsavel = useMemo(() => {
+    const areas = {};
+    allocations.forEach((a) => {
+      (areas[a.id] ||= []).push({ area: a.allocatedArea, atuacao: a.atuacao, cor: a.cor });
+    });
+    return (equipantesAprovados || []).map((e) => ({
+      id: e.id, nome: e.nome, cpf: e.cpf, igreja: nomeDaIgreja(e), areas: areas[e.id] || []
+    }));
+  }, [allocations, equipantesAprovados]);
+
   const escaladosPorPessoa = useMemo(() => Object.values(
     allocations.reduce((acc, a) => {
       (acc[a.id] = acc[a.id] || { id: a.id, nome: a.nome, igreja: nomeDaIgreja(a), cpf: a.cpf, areas: [],
@@ -2337,7 +2349,7 @@ const OrganizerScalesPage = () => {
         <AnimatePresence>
           {verPreEscala && <PreEscalaDialog onClose={() => setVerPreEscala(false)} />}
           {verAreasExtra && <AreasExtraDialog onClose={() => setVerAreasExtra(false)} />}
-          {verResponsaveis && <ResponsaveisReuniaoDialog onClose={() => setVerResponsaveis(false)} />}
+          {verResponsaveis && <ResponsaveisReuniaoDialog onClose={() => setVerResponsaveis(false)} pessoas={pessoasParaResponsavel} />}
           {manualAberta && (
             <InscricaoManualDialog
               key="manual"

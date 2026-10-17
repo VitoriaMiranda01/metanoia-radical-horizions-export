@@ -215,6 +215,22 @@ export const definirAtuacaoNaArea = async (equipanteId, area, atuacao) => {
   return { success: true };
 };
 
+// Cor de grupo enderecada por (pessoa, area) -- ver definirAtuacaoNaArea
+// (migration 20261017e).
+export const definirCorNaArea = async (equipanteId, area, cor) => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('definir_cor_na_area', {
+      p_equipante_id: equipanteId,
+      p_area: area,
+      p_cor: cor || null
+    }),
+    { rotulo: 'cor do grupo' }
+  );
+  if (error) return { success: false, error: error.message || 'Erro ao salvar a cor' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar a cor' };
+  return { success: true };
+};
+
 export const definirAtuacao = async (escalaId, atuacao) => {
   const { data, error } = await comReenvio(
     () => supabase.rpc('definir_atuacao_alocacao', {

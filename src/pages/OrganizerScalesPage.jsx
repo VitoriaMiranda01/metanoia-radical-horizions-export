@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { WORK_AREAS, AREAS_ESPECIAIS, AREAS_ESPECIAIS_TRANSFERIVEIS, AREAS_RECEPCAO_IGREJA, AREAS_COM_PRE_CADASTRO, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor, AREA_DISPONIVEL_QUALQUER, AREAS_SO_PREFERENCIA, ordenarComComplementares, AREA_GUIA, GUIA_TAMBEM_EM } from '@/constants/workAreas';
-import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges, fetchAtuacoesPorArea, definirAtuacao, definirAtuacaoNaArea,
+import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges, fetchAtuacoesPorArea, definirAtuacao, definirAtuacaoNaArea, definirCorNaArea,
   definirCor, contarAguardandoAprovacao, fetchSituacaoEscala, lancarEscala, desfazerLancamentoEscala,
   alocarFilaAutomaticamente, fetchEscalaOrdem, lancarEscalaOficial, desfazerEscalaOficial,
   fetchSituacaoAlocacaoAutomatica, desfazerAlocacaoAutomatica, distribuirCoresArea } from '@/services/scalesService';
@@ -252,6 +252,8 @@ const OrganizerScalesPage = () => {
   const [tambemSalvando, setTambemSalvando] = useState({});
   // Atuacao escolhida na busca ao mover (chave escalaId) ou escalar tambem (chave id da pessoa).
   const [atuacaoEscolhida, setAtuacaoEscolhida] = useState({});
+  // Cor escolhida na busca (mesmas chaves da atuacao); 'sem' = sem cor.
+  const [corEscolhida, setCorEscolhida] = useState({});
   // Na fila: alocar ja marcando como fixo 📌 (por pessoa).
   const [fixarNaFila, setFixarNaFila] = useState({});
   // Fila "A escalar" minimizada: fica so a linha do titulo, para ver a
@@ -840,14 +842,15 @@ const OrganizerScalesPage = () => {
 
   // Acrescenta uma area sem tirar das atuais. Usado pela busca e pelo chip
   // do pre-cadastro das Areas Especiais.
-  const acrescentarArea = async (equipanteId, nomeBruto, area, areasAtuais, atuacao = null) => {
+  const acrescentarArea = async (equipanteId, nomeBruto, area, areasAtuais, atuacao = null, cor = null) => {
     const nome = formatNomeExibicao(nomeBruto);
     const r = await comAvisoDeLimite((forcar) => alocarEquipanteManualmente(equipanteId, area, forcar), area, nome);
     if (r.success) {
-      const aviso = await gravarAtuacaoEscolhida(equipanteId, area, atuacao);
+      const aviso = await gravarEscolhas(equipanteId, area, atuacao, cor);
+      const detalhe = [atuacao, cor && cor !== 'sem' ? cor : null].filter(Boolean).join(' · ');
       toast({
         title: `Escalado também em ${area}`,
-        description: `${nome} agora está em ${[...areasAtuais, area].join(' + ')}${atuacao && !aviso ? ` (${atuacao})` : ''}.${aviso ? ` ${aviso}` : ''}`,
+        description: `${nome} agora está em ${[...areasAtuais, area].join(' + ')}${detalhe && !aviso ? ` (${detalhe})` : ''}.${aviso ? ` ${aviso}` : ''}`,
         className: aviso ? undefined : 'bg-green-600 text-white',
         variant: aviso ? 'destructive' : undefined
       });
@@ -860,10 +863,18 @@ const OrganizerScalesPage = () => {
 
   // Atuacao escolhida na busca: depois de mover/acrescentar, grava a atuacao
   // (a area ja nasce com a padrao). Devolve uma mensagem se nao conseguiu.
-  const gravarAtuacaoEscolhida = async (equipanteId, area, atuacao) => {
-    if (!atuacao) return null;
-    const r = await definirAtuacaoNaArea(equipanteId, area, atuacao);
-    return r.success ? null : `Mas não deu para definir a atuação “${atuacao}”: ${r.error}`;
+  // Atuacao primeiro (uma atuacao sem cor limpa a cor), depois a cor.
+  const gravarEscolhas = async (equipanteId, area, atuacao, cor) => {
+    const falhas = [];
+    if (atuacao) {
+      const r = await definirAtuacaoNaArea(equipanteId, area, atuacao);
+      if (!r.success) falhas.push(`a atuação “${atuacao}” (${r.error})`);
+    }
+    if (cor && cor !== 'sem') {
+      const r = await definirCorNaArea(equipanteId, area, cor);
+      if (!r.success) falhas.push(`a cor ${cor} (${r.error})`);
+    }
+    return falhas.length ? `Mas não deu para definir ${falhas.join(' e ')}.` : null;
   };
 
   const handleEscalarTambem = async (pessoa) => {
@@ -874,9 +885,10 @@ const OrganizerScalesPage = () => {
     }
     setTambemSalvando(prev => ({ ...prev, [pessoa.id]: true }));
     try {
-      if (await acrescentarArea(pessoa.id, pessoa.nome, area, pessoa.areas.map(x => x.area), atuacaoEscolhida[pessoa.id] || null)) {
+      if (await acrescentarArea(pessoa.id, pessoa.nome, area, pessoa.areas.map(x => x.area), atuacaoEscolhida[pessoa.id] || null, corDeDestino(area, atuacaoEscolhida[pessoa.id], corEscolhida[pessoa.id]))) {
         setTambemArea(prev => { const n = { ...prev }; delete n[pessoa.id]; return n; });
         setAtuacaoEscolhida(prev => { const n = { ...prev }; delete n[pessoa.id]; return n; });
+        setCorEscolhida(prev => { const n = { ...prev }; delete n[pessoa.id]; return n; });
       }
     } finally {
       setTambemSalvando(prev => ({ ...prev, [pessoa.id]: false }));
@@ -914,6 +926,7 @@ const OrganizerScalesPage = () => {
     setManualAreaChoice(prev => some(prev, idsEscala));
     setTambemArea(prev => some(prev, idsPessoa));
     setAtuacaoEscolhida(prev => some(prev, [...idsEscala, ...idsPessoa]));
+    setCorEscolhida(prev => some(prev, [...idsEscala, ...idsPessoa]));
     setBuscaEscalados(valor);
   };
 
@@ -949,6 +962,42 @@ const OrganizerScalesPage = () => {
         </SelectGroup>
       )}
     </>);
+  };
+
+  // Cor na area de destino (17/10/2026): so em area que trabalha por cor e se a
+  // atuacao escolhida (ou a padrao) usa cor. Cada cor mostra quantas pessoas ja
+  // tem na area.
+  const atuacaoUsaCor = (area, atuacaoEscolhidaValor) => {
+    const lista = atuacoesPorArea[area] || [];
+    const atu = atuacaoEscolhidaValor || lista.find(a => a.ehPadrao)?.atuacao;
+    return !lista.some(a => a.atuacao === atu && a.semCor);
+  };
+  const corDeDestino = (area, atuacaoEscolhidaValor, corValor) => (
+    area && areaTemCor(area) && atuacaoUsaCor(area, atuacaoEscolhidaValor) && corValor && corValor !== 'sem' ? corValor : null);
+  const TINTA_COR = { Amarelo: 'bg-yellow-400', Azul: 'bg-blue-500', Roxo: 'bg-purple-500', Verde: 'bg-green-500', Vermelho: 'bg-red-500' };
+  const seletorDeCor = (areaDestino, atuacaoEscolhidaValor, valor, aoEscolher) => {
+    if (!areaDestino || !areaTemCor(areaDestino) || !atuacaoUsaCor(areaDestino, atuacaoEscolhidaValor)) return null;
+    const contar = (cor) => allocations.filter(a => a.allocatedArea === areaDestino && a.cor === cor).length;
+    return (
+      <Select value={valor || ''} onValueChange={aoEscolher}>
+        <SelectTrigger className="h-8 w-[170px] bg-black/40 border-white/20 text-white text-xs"
+          data-dica={`Cor do grupo em ${areaDestino} (opcional). O número é quantas pessoas já estão em cada cor.`}>
+          <SelectValue placeholder="Cor (opcional)..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="sem">Sem cor</SelectItem>
+          {CORES_GRUPO.map(cor => (
+            <SelectItem key={cor} value={cor}>
+              <span className="flex items-center gap-2">
+                <span className={`inline-block w-2.5 h-2.5 rounded-full border border-black/40 ${TINTA_COR[cor] || ''}`} />
+                {cor}
+                <span className="text-gray-400">· {contar(cor)}</span>
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
   };
 
   // Atuacao na area de destino (17/10/2026): so aparece quando a area tem mais
@@ -1026,7 +1075,7 @@ const OrganizerScalesPage = () => {
             <span className="text-[11px] uppercase tracking-wider text-gray-500 shrink-0">
               Mover de <strong className="text-gray-300">{x.area}</strong> para
             </span>
-            <Select value={manualAreaChoice[x.escalaId] || ''} onValueChange={(v) => { setManualAreaChoice(prev => ({ ...prev, [x.escalaId]: v })); setAtuacaoEscolhida(prev => { const n = { ...prev }; delete n[x.escalaId]; return n; }); }}>
+            <Select value={manualAreaChoice[x.escalaId] || ''} onValueChange={(v) => { setManualAreaChoice(prev => ({ ...prev, [x.escalaId]: v })); setAtuacaoEscolhida(prev => { const n = { ...prev }; delete n[x.escalaId]; return n; }); setCorEscolhida(prev => { const n = { ...prev }; delete n[x.escalaId]; return n; }); }}>
               <SelectTrigger className="h-8 w-[210px] bg-black/40 border-white/20 text-white text-xs">
                 <SelectValue placeholder="Escolher a área..." />
               </SelectTrigger>
@@ -1035,7 +1084,8 @@ const OrganizerScalesPage = () => {
               </SelectContent>
             </Select>
             {seletorDeAtuacao(manualAreaChoice[x.escalaId], atuacaoEscolhida[x.escalaId], (v) => setAtuacaoEscolhida(prev => ({ ...prev, [x.escalaId]: v })))}
-            <Button size="sm" onClick={() => handleRealocar(x.escalaId, formatNomeExibicao(pessoa.nome), x.area, atuacaoEscolhida[x.escalaId] || null)}
+            {seletorDeCor(manualAreaChoice[x.escalaId], atuacaoEscolhida[x.escalaId], corEscolhida[x.escalaId], (v) => setCorEscolhida(prev => ({ ...prev, [x.escalaId]: v })))}
+            <Button size="sm" onClick={() => handleRealocar(x.escalaId, formatNomeExibicao(pessoa.nome), x.area, atuacaoEscolhida[x.escalaId] || null, corDeDestino(manualAreaChoice[x.escalaId], atuacaoEscolhida[x.escalaId], corEscolhida[x.escalaId]))}
               disabled={!manualAreaChoice[x.escalaId] || manualAllocating[x.escalaId]}
               data-dica={`Tirar ${formatNomeExibicao(pessoa.nome)} de ${x.area} e colocar na área escolhida.`}
               className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
@@ -1053,7 +1103,7 @@ const OrganizerScalesPage = () => {
         {podeGerir && !estaEmNaoSera && (
           <div className="flex items-center gap-2 flex-wrap border-t border-white/10 pt-2">
             <span className="text-[11px] uppercase tracking-wider text-gray-500 shrink-0">Escalar também em</span>
-            <Select value={tambemArea[pessoa.id] || ''} onValueChange={(v) => { setTambemArea(prev => ({ ...prev, [pessoa.id]: v })); setAtuacaoEscolhida(prev => { const n = { ...prev }; delete n[pessoa.id]; return n; }); }}>
+            <Select value={tambemArea[pessoa.id] || ''} onValueChange={(v) => { setTambemArea(prev => ({ ...prev, [pessoa.id]: v })); setAtuacaoEscolhida(prev => { const n = { ...prev }; delete n[pessoa.id]; return n; }); setCorEscolhida(prev => { const n = { ...prev }; delete n[pessoa.id]; return n; }); }}>
               <SelectTrigger className="h-8 w-[210px] bg-black/40 border-white/20 text-white text-xs">
                 <SelectValue placeholder="Escolher a outra área..." />
               </SelectTrigger>
@@ -1062,6 +1112,7 @@ const OrganizerScalesPage = () => {
               </SelectContent>
             </Select>
             {seletorDeAtuacao(tambemArea[pessoa.id], atuacaoEscolhida[pessoa.id], (v) => setAtuacaoEscolhida(prev => ({ ...prev, [pessoa.id]: v })))}
+            {seletorDeCor(tambemArea[pessoa.id], atuacaoEscolhida[pessoa.id], corEscolhida[pessoa.id], (v) => setCorEscolhida(prev => ({ ...prev, [pessoa.id]: v })))}
             <Button size="sm" onClick={() => handleEscalarTambem(pessoa)}
               disabled={!tambemArea[pessoa.id] || tambemSalvando[pessoa.id]}
               data-dica={`Acrescentar a área escolhida sem tirar ${formatNomeExibicao(pessoa.nome)} de ${pessoa.areas.map(x => x.area).join(' e ')}.`}
@@ -1102,7 +1153,7 @@ const OrganizerScalesPage = () => {
   // Move UMA participacao de area. Endereçada pelo id da linha em escalas
   // (escalaId): como a mesma pessoa pode estar em mais de uma area,
   // "realocar o fulano" deixou de ser sem ambiguidade.
-  const handleRealocar = async (escalaId, nomeEquipante, areaAtual, atuacao = null) => {
+  const handleRealocar = async (escalaId, nomeEquipante, areaAtual, atuacao = null, cor = null) => {
     const novaArea = manualAreaChoice[escalaId];
     if (!novaArea) {
       toast({ title: "Escolha a área de destino", variant: "destructive" });
@@ -1117,15 +1168,17 @@ const OrganizerScalesPage = () => {
     try {
       const resultado = await comAvisoDeLimite((forcar) => realocarAlocacao(escalaId, novaArea, forcar), novaArea, nomeEquipante);
       if (resultado.success) {
-        const aviso = await gravarAtuacaoEscolhida(idDaPessoa, novaArea, atuacao);
+        const aviso = await gravarEscolhas(idDaPessoa, novaArea, atuacao, cor);
+        const detalhe = [atuacao, cor && cor !== 'sem' ? cor : null].filter(Boolean).join(' · ');
         toast({
           title: "Movido",
-          description: `${nomeEquipante}: ${areaAtual} → ${novaArea}${atuacao && !aviso ? ` (${atuacao})` : ''}.${aviso ? ` ${aviso}` : ''}`,
+          description: `${nomeEquipante}: ${areaAtual} → ${novaArea}${detalhe && !aviso ? ` (${detalhe})` : ''}.${aviso ? ` ${aviso}` : ''}`,
           className: aviso ? undefined : "bg-green-600 text-white",
           variant: aviso ? "destructive" : undefined
         });
         setManualAreaChoice(prev => { const n = { ...prev }; delete n[escalaId]; return n; });
         setAtuacaoEscolhida(prev => { const n = { ...prev }; delete n[escalaId]; return n; });
+        setCorEscolhida(prev => { const n = { ...prev }; delete n[escalaId]; return n; });
         fetchBackgroundData(false);
       } else if (!resultado.cancelado) {
         toast({ title: "Não foi possível mover", description: resultado.error, variant: "destructive" });

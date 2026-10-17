@@ -1,0 +1,259 @@
+import { nomeDaIgreja } from '@/constants/igrejas';
+
+/**
+ * RELAÇÃO NOMINAL da escala (17/10/2026, Patrick): o mesmo modelo da planilha
+ * "Preliminar 23082026.xlsx - NOMINAL" -- NOME | IGREJA | ÁREA, Calibri, a
+ * faixa verde do título, bordas finas pretas -- em PDF e em Excel, de tres
+ * jeitos:
+ *   geral  -- todo mundo em ordem alfabetica;
+ *   igreja -- uma faixa verde por igreja, as pessoas em ordem alfabetica;
+ *   area   -- uma faixa verde por area, as pessoas em ordem alfabetica.
+ *
+ * Uma linha por AREA (quem esta em duas areas aparece duas vezes). A coluna
+ * Area segue o modelo: "Invisível azul", "Invisível líder azul", "Guia roxo".
+ * Quem ficou em "Não será escalado" nao entra.
+ *
+ * Medidas tiradas do PDF modelo (pagina Carta): tabela a 9,5 pt da esquerda e
+ * 36,85 pt do topo; colunas de 198,75 / 213 / 162 pt; faixa de 17,25 pt; linha
+ * de 14,25 pt; Calibri 10,7 pt (titulo 13,65 pt negrito); verde #9BBB59.
+ * O PDF usa a Carlito (public/fonts, licenca OFL), que tem as mesmas medidas
+ * da Calibri; o Excel usa a propria Calibri.
+ *
+ * As bibliotecas (jspdf, exceljs) so carregam quando alguem exporta.
+ */
+
+export const MODOS_RELACAO = {
+  geral: { rotulo: 'Escala geral', titulo: 'RELAÇÃO NOMINAL', arquivo: 'Geral' },
+  igreja: { rotulo: 'Por igreja', titulo: 'RELAÇÃO NOMINAL POR IGREJA', arquivo: 'Por_igreja' },
+  area: { rotulo: 'Por área', titulo: 'RELAÇÃO NOMINAL POR ÁREA', arquivo: 'Por_area' }
+};
+
+const VERDE = '9BBB59';
+const MAIUSC = (t) => String(t || '').toLocaleUpperCase('pt-BR');
+const compararTexto = (a, b) => String(a || '').localeCompare(String(b || ''), 'pt-BR', { sensitivity: 'base' });
+
+// "64 - METODISTA CENTENÁRIO" -> "METODISTA CENTENÁRIO"; OUTRA -> o que digitaram.
+const igrejaDaRelacao = (eq) => {
+  const n = String(nomeDaIgreja(eq) || '').trim();
+  if (/^OUTRA\b/i.test(n)) {
+    const digitada = String(eq?.igreja_outra || '').trim();
+    return digitada;
+  }
+  return n.replace(/^\d+\s*-\s*/, '').trim();
+};
+
+/**
+ * allocations: as linhas da tela de escalas ({ nome, igreja, igreja_outra,
+ * allocatedArea, atuacao, cor }). ehLider(area, atuacao) diz se a atuacao e de
+ * lider.
+ */
+export const montarLinhasRelacao = (allocations, ehLider = () => false) => (allocations || [])
+  .filter((a) => a.allocatedArea && a.allocatedArea !== 'Não será escalado')
+  .map((a) => {
+    const partes = [a.allocatedArea];
+    if (ehLider(a.allocatedArea, a.atuacao)) partes.push('líder');
+    if (a.cor) partes.push(String(a.cor).toLocaleLowerCase('pt-BR'));
+    return {
+      nome: MAIUSC(String(a.nome || '').replace(/\s+/g, ' ').trim()),
+      igreja: MAIUSC(igrejaDaRelacao(a)),
+      area: partes.join(' '),
+      areaBase: a.allocatedArea
+    };
+  })
+  .sort((x, y) => compararTexto(x.nome, y.nome) || compararTexto(x.area, y.area));
+
+export const agruparRelacao = (linhas, modo) => {
+  if (modo === 'geral') return [{ titulo: null, linhas }];
+  const chave = modo === 'igreja' ? (l) => l.igreja || 'SEM IGREJA' : (l) => MAIUSC(l.areaBase);
+  const grupos = new Map();
+  linhas.forEach((l) => {
+    const k = chave(l);
+    if (!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k).push(l);
+  });
+  return [...grupos.entries()]
+    .sort(([a], [b]) => (a === 'SEM IGREJA') - (b === 'SEM IGREJA') || compararTexto(a, b))
+    .map(([titulo, ls]) => ({ titulo, linhas: ls }));
+};
+
+const nomeDoArquivo = (modo, ext) =>
+  `Relacao_Nominal_${MODOS_RELACAO[modo].arquivo}_${new Date().toISOString().slice(0, 10)}.${ext}`;
+
+// ------------------------------------------------------------------ PDF
+
+const PT = {
+  x0: 9.505, y0: 36.85,
+  colunas: [198.75, 213, 162],
+  faixa: 17.25, linha: 14.25,
+  baseFaixa: 13.24, baseLinha: 11.2,
+  recuo: 2.6,
+  fonte: 10.725, fonteTitulo: 13.65, fonteGrupo: 11.5, fonteMinima: 8.5,
+  limite: 36.85 + 954 * 0.75
+};
+
+const paraBase64 = (buffer) => {
+  const bytes = new Uint8Array(buffer);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(bin);
+};
+
+const carregarFonte = async (doc) => {
+  try {
+    const base = import.meta.env.BASE_URL || '/';
+    const [reg, neg] = await Promise.all(['Carlito-Regular.ttf', 'Carlito-Bold.ttf'].map(async (f) => {
+      const r = await fetch(`${base}fonts/${f}`);
+      if (!r.ok) throw new Error(f);
+      return paraBase64(await r.arrayBuffer());
+    }));
+    doc.addFileToVFS('Carlito-Regular.ttf', reg);
+    doc.addFont('Carlito-Regular.ttf', 'Carlito', 'normal');
+    doc.addFileToVFS('Carlito-Bold.ttf', neg);
+    doc.addFont('Carlito-Bold.ttf', 'Carlito', 'bold');
+    return 'Carlito';
+  } catch (e) {
+    console.warn('relacaoNominal: fonte Carlito indisponivel, usando Helvetica', e);
+    return 'helvetica';
+  }
+};
+
+export const exportarRelacaoPdf = async (grupos, modo) => {
+  const { jsPDF } = await import('jspdf');
+  const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
+  const fonte = await carregarFonte(doc);
+  const largura = PT.colunas.reduce((a, b) => a + b, 0);
+  const xs = PT.colunas.reduce((acc, w, i) => [...acc, acc[i] + w], [PT.x0]);
+  let y = PT.y0;
+  let inicioPagina = PT.y0;
+
+  doc.setLineWidth(0.75);
+  doc.setDrawColor(0, 0, 0);
+
+  const textoQueCabe = (texto, max, tamanho) => {
+    let t = tamanho;
+    doc.setFontSize(t);
+    while (doc.getTextWidth(texto) > max && t > PT.fonteMinima) {
+      t -= 0.25;
+      doc.setFontSize(t);
+    }
+    let s = texto;
+    while (s.length > 1 && doc.getTextWidth(s) > max) s = s.slice(0, -1);
+    return s;
+  };
+
+  const fecharPagina = () => {
+    // linhas verticais da parte de dados desta pagina
+    if (y > inicioPagina) {
+      xs.forEach((x) => doc.line(x, inicioPagina, x, y));
+    }
+  };
+
+  const novaPagina = () => {
+    fecharPagina();
+    doc.addPage();
+    y = PT.y0;
+    inicioPagina = PT.y0;
+  };
+
+  const faixa = (texto, tamanho) => {
+    if (y + PT.faixa > PT.limite) novaPagina();
+    fecharPagina();
+    doc.setFillColor(0x9b, 0xbb, 0x59);
+    doc.rect(PT.x0, y, largura, PT.faixa, 'F');
+    doc.rect(PT.x0, y, largura, PT.faixa, 'S');
+    doc.setFont(fonte, 'bold');
+    const t = textoQueCabe(texto, largura - 2 * PT.recuo, tamanho);
+    doc.text(t, PT.x0 + largura / 2, y + PT.baseFaixa, { align: 'center' });
+    y += PT.faixa;
+    inicioPagina = y;
+  };
+
+  const linha = (l) => {
+    if (y + PT.linha > PT.limite) novaPagina();
+    doc.line(PT.x0, y, PT.x0 + largura, y);
+    doc.line(PT.x0, y + PT.linha, PT.x0 + largura, y + PT.linha);
+    doc.setFont(fonte, 'normal');
+    [l.nome, l.igreja, l.area].forEach((valor, i) => {
+      const t = textoQueCabe(String(valor || ''), PT.colunas[i] - 2 * PT.recuo, PT.fonte);
+      doc.text(t, xs[i] + PT.recuo, y + PT.baseLinha);
+    });
+    y += PT.linha;
+  };
+
+  faixa(MODOS_RELACAO[modo].titulo, PT.fonteTitulo);
+  grupos.forEach((g) => {
+    if (g.titulo) {
+      // a faixa do grupo nao fica sozinha no pe da pagina
+      if (y + PT.faixa + PT.linha > PT.limite) novaPagina();
+      faixa(`${g.titulo} (${g.linhas.length})`, PT.fonteGrupo);
+    }
+    g.linhas.forEach(linha);
+  });
+  fecharPagina();
+
+  doc.save(nomeDoArquivo(modo, 'pdf'));
+  return grupos.reduce((n, g) => n + g.linhas.length, 0);
+};
+
+// ------------------------------------------------------------------ Excel
+
+export const exportarRelacaoExcel = async (grupos, modo) => {
+  const ExcelJS = (await import('exceljs')).default;
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Metanoia Radical Serra';
+  const ws = wb.addWorksheet('NOMINAL', {
+    pageSetup: {
+      paperSize: 1, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0,
+      margins: { left: 0.13, right: 0.4, top: 0.51, bottom: 0.4, header: 0.2, footer: 0.2 }
+    },
+    views: [{ showGridLines: false }]
+  });
+  ws.columns = [{ width: 37.3 }, { width: 40 }, { width: 30.3 }];
+
+  const fino = { style: 'thin', color: { argb: 'FF000000' } };
+  const bordas = { top: fino, left: fino, bottom: fino, right: fino };
+  const fonteDados = { name: 'Calibri', size: 11, color: { argb: 'FF000000' } };
+
+  const faixa = (texto, tamanho) => {
+    const row = ws.addRow([texto, '', '']);
+    row.height = 17.25;
+    // estilo nas 3 celulas ANTES de mesclar (senao a borda some em B e C)
+    [1, 2, 3].forEach((i) => {
+      const c = row.getCell(i);
+      c.font = { name: 'Calibri', size: tamanho, bold: true, color: { argb: 'FF000000' } };
+      c.alignment = { horizontal: 'center', vertical: 'middle' };
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${VERDE}` } };
+      c.border = bordas;
+    });
+    ws.mergeCells(row.number, 1, row.number, 3);
+  };
+
+  faixa(MODOS_RELACAO[modo].titulo, 14);
+  grupos.forEach((g) => {
+    if (g.titulo) faixa(`${g.titulo} (${g.linhas.length})`, 12);
+    g.linhas.forEach((l) => {
+      const row = ws.addRow([l.nome, l.igreja, l.area]);
+      row.height = 14.25;
+      [1, 2, 3].forEach((i) => {
+        const c = row.getCell(i);
+        c.font = fonteDados;
+        c.border = bordas;
+        c.alignment = { vertical: 'bottom', shrinkToFit: true };
+      });
+    });
+  });
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeDoArquivo(modo, 'xlsx');
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return grupos.reduce((n, g) => n + g.linhas.length, 0);
+};

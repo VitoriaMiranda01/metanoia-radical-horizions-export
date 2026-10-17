@@ -27,6 +27,7 @@ import EquipantesGridDisplay from '@/components/scales/EquipantesGridDisplay';
 import CartaoFila from '@/components/scales/CartaoFila';
 import AreasExtraDialog from '@/components/scales/AreasExtraDialog';
 import ResponsaveisReuniaoDialog from '@/components/scales/ResponsaveisReuniaoDialog';
+import ExportarRelacaoMenu from '@/components/scales/ExportarRelacaoMenu';
 import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
 import PreEscalaDialog from '@/components/scales/PreEscalaDialog';
 import TrocarAreaDialog from '@/components/scales/TrocarAreaDialog';
@@ -2172,9 +2173,9 @@ const OrganizerScalesPage = () => {
                     <Undo2 className="mr-2 h-4 w-4" /> Desfazer oficial
                   </Button>
                 )}
-                <Button data-dica="Baixar a escala completa em planilha." onClick={handleExportAll} disabled={allocations.length === 0} variant="outline" className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300">
-                  <Download className="mr-2 h-4 w-4" /> Exportar
-                </Button>
+                {/* Relacao nominal em PDF/Excel (geral, por igreja, por area) -- 17/10/2026. */}
+                <ExportarRelacaoMenu allocations={allocations} ehLider={ehLiderDaArea}
+                  onPlanilhaDetalhada={handleExportAll} disabled={allocations.length === 0} />
               </div>
             </div>
           </div>

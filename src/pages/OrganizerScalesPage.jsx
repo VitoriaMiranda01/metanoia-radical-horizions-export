@@ -910,6 +910,36 @@ const OrganizerScalesPage = () => {
             ))}
           </div>
         </div>
+        {/* Gerenciar cada participacao (17/10/2026, pedido da direcao): mover
+            para outra area ou tirar da area, sem sair da busca. */}
+        {podeGerir && pessoa.areas.map(x => (
+          <div key={x.escalaId} className="flex items-center gap-2 flex-wrap border-t border-white/10 pt-2">
+            <span className="text-[11px] uppercase tracking-wider text-gray-500 shrink-0">
+              Mover de <strong className="text-gray-300">{x.area}</strong> para
+            </span>
+            <Select value={manualAreaChoice[x.escalaId] || ''} onValueChange={(v) => setManualAreaChoice(prev => ({ ...prev, [x.escalaId]: v }))}>
+              <SelectTrigger className="h-8 w-[210px] bg-black/40 border-white/20 text-white text-xs">
+                <SelectValue placeholder="Escolher a área..." />
+              </SelectTrigger>
+              <SelectContent>
+                {WORK_AREAS.filter(a => a !== x.area).map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={() => handleRealocar(x.escalaId, formatNomeExibicao(pessoa.nome), x.area)}
+              disabled={!manualAreaChoice[x.escalaId] || manualAllocating[x.escalaId]}
+              data-dica={`Tirar ${formatNomeExibicao(pessoa.nome)} de ${x.area} e colocar na área escolhida.`}
+              className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
+              {manualAllocating[x.escalaId] ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Mover'}
+            </Button>
+            <Button size="sm" variant="ghost"
+              onClick={() => handleRemover(x.escalaId, pessoa.nome, x.area)}
+              disabled={manualAllocating[x.escalaId]}
+              data-dica={`Tirar ${formatNomeExibicao(pessoa.nome)} de ${x.area}. Pede confirmação.`}
+              className="h-8 px-2 ml-auto text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10">
+              <X className="h-4 w-4 mr-1" />Remover de {x.area}
+            </Button>
+          </div>
+        ))}
         {podeGerir && !estaEmNaoSera && (
           <div className="flex items-center gap-2 flex-wrap border-t border-white/10 pt-2">
             <span className="text-[11px] uppercase tracking-wider text-gray-500 shrink-0">Escalar também em</span>

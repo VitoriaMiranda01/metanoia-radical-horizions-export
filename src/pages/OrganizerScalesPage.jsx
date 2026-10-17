@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { WORK_AREAS, AREAS_ESPECIAIS, AREAS_ESPECIAIS_TRANSFERIVEIS, AREAS_RECEPCAO_IGREJA, AREAS_COM_PRE_CADASTRO, DEFAULT_AREA_CAPACITY, CORES_GRUPO, areaTemCor, AREA_DISPONIVEL_QUALQUER, AREAS_SO_PREFERENCIA, ordenarComComplementares, AREA_GUIA, GUIA_TAMBEM_EM } from '@/constants/workAreas';
-import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges, fetchAtuacoesPorArea, definirAtuacao,
+import { fetchApprovedEquipantes, saveScales, fetchAllAllocations, detectAllocationChanges, fetchAtuacoesPorArea, definirAtuacao, definirAtuacaoNaArea,
   definirCor, contarAguardandoAprovacao, fetchSituacaoEscala, lancarEscala, desfazerLancamentoEscala,
   alocarFilaAutomaticamente, fetchEscalaOrdem, lancarEscalaOficial, desfazerEscalaOficial,
   fetchSituacaoAlocacaoAutomatica, desfazerAlocacaoAutomatica, distribuirCoresArea } from '@/services/scalesService';
@@ -250,6 +250,8 @@ const OrganizerScalesPage = () => {
   // escolhida e "salvando", por equipante.
   const [tambemArea, setTambemArea] = useState({});
   const [tambemSalvando, setTambemSalvando] = useState({});
+  // Atuacao escolhida na busca ao mover (chave escalaId) ou escalar tambem (chave id da pessoa).
+  const [atuacaoEscolhida, setAtuacaoEscolhida] = useState({});
   // Na fila: alocar ja marcando como fixo 📌 (por pessoa).
   const [fixarNaFila, setFixarNaFila] = useState({});
   // Fila "A escalar" minimizada: fica so a linha do titulo, para ver a
@@ -834,20 +836,30 @@ const OrganizerScalesPage = () => {
 
   // Acrescenta uma area sem tirar das atuais. Usado pela busca e pelo chip
   // do pre-cadastro das Areas Especiais.
-  const acrescentarArea = async (equipanteId, nomeBruto, area, areasAtuais) => {
+  const acrescentarArea = async (equipanteId, nomeBruto, area, areasAtuais, atuacao = null) => {
     const nome = formatNomeExibicao(nomeBruto);
     const r = await comAvisoDeLimite((forcar) => alocarEquipanteManualmente(equipanteId, area, forcar), area, nome);
     if (r.success) {
+      const aviso = await gravarAtuacaoEscolhida(equipanteId, area, atuacao);
       toast({
         title: `Escalado também em ${area}`,
-        description: `${nome} agora está em ${[...areasAtuais, area].join(' + ')}.`,
-        className: 'bg-green-600 text-white'
+        description: `${nome} agora está em ${[...areasAtuais, area].join(' + ')}${atuacao && !aviso ? ` (${atuacao})` : ''}.${aviso ? ` ${aviso}` : ''}`,
+        className: aviso ? undefined : 'bg-green-600 text-white',
+        variant: aviso ? 'destructive' : undefined
       });
       await fetchBackgroundData(false);
     } else if (!r.cancelado) {
       toast({ title: 'Não foi possível escalar', description: r.error, variant: 'destructive' });
     }
     return r.success;
+  };
+
+  // Atuacao escolhida na busca: depois de mover/acrescentar, grava a atuacao
+  // (a area ja nasce com a padrao). Devolve uma mensagem se nao conseguiu.
+  const gravarAtuacaoEscolhida = async (equipanteId, area, atuacao) => {
+    if (!atuacao) return null;
+    const r = await definirAtuacaoNaArea(equipanteId, area, atuacao);
+    return r.success ? null : `Mas não deu para definir a atuação “${atuacao}”: ${r.error}`;
   };
 
   const handleEscalarTambem = async (pessoa) => {
@@ -858,8 +870,9 @@ const OrganizerScalesPage = () => {
     }
     setTambemSalvando(prev => ({ ...prev, [pessoa.id]: true }));
     try {
-      if (await acrescentarArea(pessoa.id, pessoa.nome, area, pessoa.areas.map(x => x.area))) {
+      if (await acrescentarArea(pessoa.id, pessoa.nome, area, pessoa.areas.map(x => x.area), atuacaoEscolhida[pessoa.id] || null)) {
         setTambemArea(prev => { const n = { ...prev }; delete n[pessoa.id]; return n; });
+        setAtuacaoEscolhida(prev => { const n = { ...prev }; delete n[pessoa.id]; return n; });
       }
     } finally {
       setTambemSalvando(prev => ({ ...prev, [pessoa.id]: false }));
@@ -882,6 +895,25 @@ const OrganizerScalesPage = () => {
 
   // A linha "onde esta + escalar tambem em outra area". Usada na busca "Onde
   // alguem esta escalado" e no aviso da fila quando a pessoa ja tem area.
+  // Atuacao na area de destino (17/10/2026): so aparece quando a area tem mais
+  // de uma. Sem escolher, fica a padrao (a primeira da lista).
+  const seletorDeAtuacao = (areaDestino, valor, aoEscolher) => {
+    const lista = areaDestino ? (atuacoesPorArea[areaDestino] || []) : [];
+    if (lista.length < 2) return null;
+    const padrao = lista.find(a => a.ehPadrao)?.atuacao || lista[0].atuacao;
+    return (
+      <Select value={valor || padrao} onValueChange={aoEscolher}>
+        <SelectTrigger className="h-8 w-[170px] bg-black/40 border-white/20 text-white text-xs"
+          data-dica={`Atuação em ${areaDestino}. Sem escolher, fica a padrão (${padrao}).`}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {lista.map(a => <SelectItem key={a.atuacao} value={a.atuacao}>{a.ehLider ? `★ ${a.atuacao}` : a.atuacao}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    );
+  };
+
   const renderEscaladoComAcao = (pessoa) => {
     const jaEspecial = pessoa.areas.some(x => NOMES_ESPECIAIS.includes(x.area));
     const estaEmNaoSera = pessoa.areas.some(x => x.area === 'Não será escalado');
@@ -917,7 +949,7 @@ const OrganizerScalesPage = () => {
             <span className="text-[11px] uppercase tracking-wider text-gray-500 shrink-0">
               Mover de <strong className="text-gray-300">{x.area}</strong> para
             </span>
-            <Select value={manualAreaChoice[x.escalaId] || ''} onValueChange={(v) => setManualAreaChoice(prev => ({ ...prev, [x.escalaId]: v }))}>
+            <Select value={manualAreaChoice[x.escalaId] || ''} onValueChange={(v) => { setManualAreaChoice(prev => ({ ...prev, [x.escalaId]: v })); setAtuacaoEscolhida(prev => { const n = { ...prev }; delete n[x.escalaId]; return n; }); }}>
               <SelectTrigger className="h-8 w-[210px] bg-black/40 border-white/20 text-white text-xs">
                 <SelectValue placeholder="Escolher a área..." />
               </SelectTrigger>
@@ -925,7 +957,8 @@ const OrganizerScalesPage = () => {
                 {WORK_AREAS.filter(a => a !== x.area).map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button size="sm" onClick={() => handleRealocar(x.escalaId, formatNomeExibicao(pessoa.nome), x.area)}
+            {seletorDeAtuacao(manualAreaChoice[x.escalaId], atuacaoEscolhida[x.escalaId], (v) => setAtuacaoEscolhida(prev => ({ ...prev, [x.escalaId]: v })))}
+            <Button size="sm" onClick={() => handleRealocar(x.escalaId, formatNomeExibicao(pessoa.nome), x.area, atuacaoEscolhida[x.escalaId] || null)}
               disabled={!manualAreaChoice[x.escalaId] || manualAllocating[x.escalaId]}
               data-dica={`Tirar ${formatNomeExibicao(pessoa.nome)} de ${x.area} e colocar na área escolhida.`}
               className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
@@ -943,7 +976,7 @@ const OrganizerScalesPage = () => {
         {podeGerir && !estaEmNaoSera && (
           <div className="flex items-center gap-2 flex-wrap border-t border-white/10 pt-2">
             <span className="text-[11px] uppercase tracking-wider text-gray-500 shrink-0">Escalar também em</span>
-            <Select value={tambemArea[pessoa.id] || ''} onValueChange={(v) => setTambemArea(prev => ({ ...prev, [pessoa.id]: v }))}>
+            <Select value={tambemArea[pessoa.id] || ''} onValueChange={(v) => { setTambemArea(prev => ({ ...prev, [pessoa.id]: v })); setAtuacaoEscolhida(prev => { const n = { ...prev }; delete n[pessoa.id]; return n; }); }}>
               <SelectTrigger className="h-8 w-[210px] bg-black/40 border-white/20 text-white text-xs">
                 <SelectValue placeholder="Escolher a outra área..." />
               </SelectTrigger>
@@ -951,6 +984,7 @@ const OrganizerScalesPage = () => {
                 {opcoes.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
               </SelectContent>
             </Select>
+            {seletorDeAtuacao(tambemArea[pessoa.id], atuacaoEscolhida[pessoa.id], (v) => setAtuacaoEscolhida(prev => ({ ...prev, [pessoa.id]: v })))}
             <Button size="sm" onClick={() => handleEscalarTambem(pessoa)}
               disabled={!tambemArea[pessoa.id] || tambemSalvando[pessoa.id]}
               data-dica={`Acrescentar a área escolhida sem tirar ${formatNomeExibicao(pessoa.nome)} de ${pessoa.areas.map(x => x.area).join(' e ')}.`}
@@ -991,7 +1025,7 @@ const OrganizerScalesPage = () => {
   // Move UMA participacao de area. Endereçada pelo id da linha em escalas
   // (escalaId): como a mesma pessoa pode estar em mais de uma area,
   // "realocar o fulano" deixou de ser sem ambiguidade.
-  const handleRealocar = async (escalaId, nomeEquipante, areaAtual) => {
+  const handleRealocar = async (escalaId, nomeEquipante, areaAtual, atuacao = null) => {
     const novaArea = manualAreaChoice[escalaId];
     if (!novaArea) {
       toast({ title: "Escolha a área de destino", variant: "destructive" });
@@ -1006,12 +1040,15 @@ const OrganizerScalesPage = () => {
     try {
       const resultado = await comAvisoDeLimite((forcar) => realocarAlocacao(escalaId, novaArea, forcar), novaArea, nomeEquipante);
       if (resultado.success) {
+        const aviso = await gravarAtuacaoEscolhida(idDaPessoa, novaArea, atuacao);
         toast({
           title: "Movido",
-          description: `${nomeEquipante}: ${areaAtual} → ${novaArea}.`,
-          className: "bg-green-600 text-white"
+          description: `${nomeEquipante}: ${areaAtual} → ${novaArea}${atuacao && !aviso ? ` (${atuacao})` : ''}.${aviso ? ` ${aviso}` : ''}`,
+          className: aviso ? undefined : "bg-green-600 text-white",
+          variant: aviso ? "destructive" : undefined
         });
         setManualAreaChoice(prev => { const n = { ...prev }; delete n[escalaId]; return n; });
+        setAtuacaoEscolhida(prev => { const n = { ...prev }; delete n[escalaId]; return n; });
         fetchBackgroundData(false);
       } else if (!resultado.cancelado) {
         toast({ title: "Não foi possível mover", description: resultado.error, variant: "destructive" });

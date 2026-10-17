@@ -198,6 +198,23 @@ export const definirCor = async (escalaId, cor) => {
   return data;
 };
 
+// Mesma coisa, mas enderecada por (pessoa, area) -- para quando a linha de
+// escalas acabou de ser criada e a tela ainda nao sabe o id (17/10/2026,
+// migration 20261017b).
+export const definirAtuacaoNaArea = async (equipanteId, area, atuacao) => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('definir_atuacao_na_area', {
+      p_equipante_id: equipanteId,
+      p_area: area,
+      p_atuacao: atuacao
+    }),
+    { rotulo: 'atuação do equipante' }
+  );
+  if (error) return { success: false, error: error.message || 'Erro ao salvar a atuação' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar a atuação' };
+  return { success: true };
+};
+
 export const definirAtuacao = async (escalaId, atuacao) => {
   const { data, error } = await comReenvio(
     () => supabase.rpc('definir_atuacao_alocacao', {

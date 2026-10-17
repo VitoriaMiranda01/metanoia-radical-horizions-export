@@ -939,8 +939,9 @@ const OrganizerScalesPage = () => {
       a !== 'Não será escalado' && !pessoa.areas.some(x => x.area === a) && !(jaEspecial && NOMES_ESPECIAIS.includes(a)));
     return (
       <div key={pessoa.id} className="bg-white/5 border border-white/10 rounded-md p-3 flex flex-col gap-2">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          <div className="flex-1 min-w-0">
+        {/* As areas ficam coladas ao lado do nome (17/10/2026), nao la na ponta. */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-2">
+          <div className="min-w-0 sm:max-w-[60%]">
             <p className="text-white text-sm font-medium truncate flex items-center gap-1.5">
               <span className="truncate">{pessoa.nome}</span>
               {pessoa.areas.length > 1 && (

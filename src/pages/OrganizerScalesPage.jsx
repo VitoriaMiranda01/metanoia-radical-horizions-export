@@ -895,6 +895,24 @@ const OrganizerScalesPage = () => {
 
   // A linha "onde esta + escalar tambem em outra area". Usada na busca "Onde
   // alguem esta escalado" e no aviso da fila quando a pessoa ja tem area.
+  // Mudou (ou limpou) a busca: o que ficou escolhido mas nao confirmado --
+  // "mover para", "escalar tambem em" e a atuacao -- volta ao "Escolher a
+  // area..." (17/10/2026). Mexe so nas pessoas que estavam na tela.
+  const mudarBuscaEscalados = (valor) => {
+    const some = (prev, chaves) => {
+      if (!chaves.some(k => k in prev)) return prev;
+      const n = { ...prev };
+      chaves.forEach(k => { delete n[k]; });
+      return n;
+    };
+    const idsEscala = escaladosEncontrados.flatMap(p => p.areas.map(x => x.escalaId));
+    const idsPessoa = escaladosEncontrados.map(p => p.id);
+    setManualAreaChoice(prev => some(prev, idsEscala));
+    setTambemArea(prev => some(prev, idsPessoa));
+    setAtuacaoEscolhida(prev => some(prev, [...idsEscala, ...idsPessoa]));
+    setBuscaEscalados(valor);
+  };
+
   // Atuacao na area de destino (17/10/2026): so aparece quando a area tem mais
   // de uma. Sem escolher, fica a padrao (a primeira da lista).
   const seletorDeAtuacao = (areaDestino, valor, aoEscolher) => {
@@ -2164,7 +2182,7 @@ const OrganizerScalesPage = () => {
               </div>
               <CampoBusca
                 value={buscaEscalados}
-                onChange={setBuscaEscalados}
+                onChange={mudarBuscaEscalados}
                 placeholder="Buscar por nome, igreja, CPF ou área..."
                 className="h-9 w-full sm:w-96 bg-black/40 border-white/20 text-white"
               />

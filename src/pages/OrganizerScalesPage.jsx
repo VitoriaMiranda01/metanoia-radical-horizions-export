@@ -1140,7 +1140,10 @@ const OrganizerScalesPage = () => {
 
   // So quando ainda ha alguem para desfazer: se todos foram mexidos a mao (ou
   // a area foi limpa), o botao nao faria nada.
-  const autoAtivo = !!(autoSituacao?.ativo && autoSituacao?.pode_desfazer && autoSituacao?.no_lugar > 0);
+  // (17/10/2026: desfaz UMA rodada por vez, a ultima; se a ultima ja foi toda mexida
+  // a mao, ainda da para desfaze-la para chegar na anterior.)
+  const autoAtivo = !!(autoSituacao?.ativo && autoSituacao?.pode_desfazer
+    && (autoSituacao?.no_lugar > 0 || autoSituacao?.lotes > 1));
 
   const handleLimparArea = async () => {
     const area = limparAreaAberta;
@@ -1171,10 +1174,11 @@ const OrganizerScalesPage = () => {
       return;
     }
     toast({
-      title: 'Alocação automática desfeita',
+      title: r.restantes > 0 ? 'Última alocação automática desfeita' : 'Alocação automática desfeita',
       description: [
         `${r.desfeitos} ${r.desfeitos === 1 ? 'voltou' : 'voltaram'} para a fila "A escalar"`,
         r.mantidos > 0 && `${r.mantidos} ${r.mantidos === 1 ? 'ficou onde está (foi mexido' : 'ficaram onde estão (foram mexidos'} à mão depois)`,
+        r.restantes > 0 && `Ainda ${r.restantes === 1 ? 'há 1 rodada anterior' : `há ${r.restantes} rodadas anteriores`}: clique de novo para desfazer a anterior`,
       ].filter(Boolean).join('. ') + '.',
     });
     fetchBackgroundData(false);
@@ -1856,12 +1860,14 @@ const OrganizerScalesPage = () => {
                   <Button onClick={() => setConfirmandoDesfazerAuto(true)}
                     disabled={desfazendoAuto}
                     variant="outline"
-                    data-dica="Tirar da escala quem o Alocar automático colocou (e ainda está na mesma área). Quem foi mexido ou alocado à mão fica. Pede confirmação."
+                    data-dica={autoSituacao.lotes > 1
+                      ? `Desfaz só a ÚLTIMA rodada do Alocar automático (há ${autoSituacao.lotes} rodadas). Para desfazer a anterior, clique de novo depois. Quem foi mexido ou alocado à mão fica. Pede confirmação.`
+                      : 'Tirar da escala quem o Alocar automático colocou (e ainda está na mesma área). Quem foi mexido ou alocado à mão fica. Pede confirmação.'}
                     className="bg-amber-600/20 text-amber-300 border-amber-600/50 hover:bg-amber-600/40 hover:text-amber-200">
                     {desfazendoAuto
                       ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       : <Undo2 className="mr-2 h-4 w-4" />}
-                    Desfazer alocação automática{autoSituacao.no_lugar ? ` (${autoSituacao.no_lugar})` : ''}
+                    {autoSituacao.lotes > 1 ? 'Desfazer a última alocação automática' : 'Desfazer alocação automática'}{autoSituacao.no_lugar ? ` (${autoSituacao.no_lugar})` : ''}
                   </Button>
                 )}
               </div>
@@ -2236,14 +2242,15 @@ const OrganizerScalesPage = () => {
                 sexo informado só vai para área sem limite por sexo.
                 <br /><br />
                 <strong className="text-white">Pastor Invisível:</strong> completa até o limite com
-                pastores, 3 por cor, homens e mulheres misturados (o pré-cadastro entra primeiro).
-                Eles <strong className="text-white">saem das outras áreas</strong> — menos quem é
-                líder ou fixo 📌 em alguma área.
+                pastores que <strong className="text-white">ainda não têm área</strong>, 3 por cor, homens e
+                mulheres misturados (o pré-cadastro entra primeiro). Pastor que já está escalado
+                em qualquer área <strong className="text-white">nunca é tirado de lá</strong>.
                 <br /><br />
                 Invisível e Marcador já entram com cor. Fotografia, Guia, Inimigo, Espírito Santo e
                 as demais áreas que só a diretoria preenche <strong className="text-white">só recebem
                 os fixos 📌</strong> por aqui. Ninguém volta para uma área de onde foi tirado à mão.
-                Fora os pastores, quem já está escalado não sai do lugar, e você pode mudar tudo depois.
+                <strong className="text-white">Quem já está escalado nunca é movido</strong>, nem por esta
+                rodada nem pelas anteriores: o automático só coloca quem está na fila. Você pode mudar tudo depois.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -2291,18 +2298,23 @@ const OrganizerScalesPage = () => {
         <AlertDialog open={confirmandoDesfazerAuto} onOpenChange={setConfirmandoDesfazerAuto}>
           <AlertDialogContent className="bg-gray-900 border-gray-700 text-white">
             <AlertDialogHeader>
-              <AlertDialogTitle>Desfazer a alocação automática?</AlertDialogTitle>
+              <AlertDialogTitle>{autoSituacao.lotes > 1 ? 'Desfazer a última alocação automática?' : 'Desfazer a alocação automática?'}</AlertDialogTitle>
               <AlertDialogDescription className="text-gray-400">
+                {autoSituacao.lotes > 1 && (<>
+                  Há <strong className="text-white">{autoSituacao.lotes} rodadas</strong> do Alocar automático.
+                  Isto desfaz <strong className="text-white">só a última</strong>; as anteriores não são tocadas.
+                  Para desfazer a anterior, clique no botão de novo depois.
+                  <br /><br />
+                </>)}
                 {autoSituacao.no_lugar === 1
-                  ? 'A pessoa que o Alocar automático colocou volta '
-                  : `As ${autoSituacao.no_lugar || 0} pessoas que o Alocar automático colocou voltam `}
+                  ? 'A pessoa que o Alocar automático colocou nesta rodada volta '
+                  : `As ${autoSituacao.no_lugar || 0} pessoas que o Alocar automático colocou nesta rodada voltam `}
                 para a fila “A escalar”.
                 <br /><br />
                 Quem foi <strong className="text-white">mexido à mão depois</strong> fica onde está
                 {autoSituacao.total > autoSituacao.no_lugar ? ` (${autoSituacao.total - autoSituacao.no_lugar} hoje)` : ''},
                 e quem foi <strong className="text-white">alocado à mão</strong> não é tocado. Os fixos 📌
-                ficam nas suas áreas fixas. Os pastores que o automático passou para o
-                Pastor Invisível <strong className="text-white">voltam para as áreas de antes</strong>.
+                ficam nas suas áreas fixas.
                 {autoSituacao.feito_por ? <><br /><br />Última alocação automática feita por {autoSituacao.feito_por}.</> : null}
               </AlertDialogDescription>
             </AlertDialogHeader>

@@ -465,7 +465,9 @@ const OrganizerScalesPage = () => {
   // Quem esta escalado: uma entrada por pessoa, com todas as areas dela.
   const escaladosPorPessoa = useMemo(() => Object.values(
     allocations.reduce((acc, a) => {
-      (acc[a.id] = acc[a.id] || { id: a.id, nome: a.nome, igreja: nomeDaIgreja(a), cpf: a.cpf, areas: [] })
+      (acc[a.id] = acc[a.id] || { id: a.id, nome: a.nome, igreja: nomeDaIgreja(a), cpf: a.cpf, areas: [],
+        // As 3 opcoes pedidas na inscricao (17/10/2026).
+        opcoes: [a.area_trabalho_opcao1, a.area_trabalho_opcao2, a.area_trabalho_opcao3] })
         .areas.push({ area: a.allocatedArea, atuacao: a.atuacao, escalaId: a.escalaId });
       return acc;
     }, {})
@@ -960,6 +962,21 @@ const OrganizerScalesPage = () => {
               </span>
             ))}
           </div>
+        </div>
+        {/* O que a pessoa pediu na inscricao; a opcao em que ela de fato esta fica verde. */}
+        <div className="flex items-center gap-1.5 flex-wrap text-[11px]" data-testid="opcoes-da-inscricao">
+          <span className="uppercase tracking-wider text-gray-500 shrink-0">Pediu na inscrição</span>
+          {[0, 1, 2].map(i => {
+            const op = (pessoa.opcoes?.[i] || '').trim();
+            const esta = op && pessoa.areas.some(x => x.area.trim().toLowerCase() === op.toLowerCase());
+            return (
+              <span key={i}
+                className={`px-2 py-0.5 rounded border ${esta ? 'border-green-500/40 bg-green-500/10 text-green-200' : op ? 'border-white/15 bg-white/5 text-gray-300' : 'border-white/10 text-gray-600'}`}
+                data-dica={esta ? 'A pessoa está nesta área.' : undefined}>
+                <strong className="text-gray-400 font-semibold">{i + 1}ª</strong> {op || '—'}
+              </span>
+            );
+          })}
         </div>
         {/* Gerenciar cada participacao (17/10/2026, pedido da direcao): mover
             para outra area ou tirar da area, sem sair da busca. */}

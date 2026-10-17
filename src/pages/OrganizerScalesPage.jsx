@@ -983,9 +983,9 @@ const OrganizerScalesPage = () => {
               {manualAllocating[x.escalaId] ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Mover'}
             </Button>
             <Button size="sm" variant="ghost"
-              onClick={() => handleRemover(x.escalaId, pessoa.nome, x.area)}
+              onClick={() => handleRemover(x.escalaId, pessoa.nome, x.area, true)}
               disabled={manualAllocating[x.escalaId]}
-              data-dica={`Tirar ${formatNomeExibicao(pessoa.nome)} de ${x.area}. Pede confirmação.`}
+              data-dica={`Tirar ${formatNomeExibicao(pessoa.nome)} só de ${x.area}. Tira direto; só pede confirmação se for fixo 📌 nesta área.`}
               className="h-8 px-2 ml-auto text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10">
               <X className="h-4 w-4 mr-1" />Remover de {x.area}
             </Button>
@@ -1107,7 +1107,11 @@ const OrganizerScalesPage = () => {
   // duas areas saia com um clique so, sem confirmacao -- e o X aparece nas
   // duas tabelas. Agora a janela diz em que outras areas a pessoa esta e
   // pergunta se tira de la tambem (Sim / Não).
-  const handleRemover = (escalaId, nomeEquipante, areaAtual) => {
+  // daBusca (17/10/2026): no quadro "Onde alguem esta escalado" cada area tem o
+  // seu proprio "Remover de ...", entao nao pergunta das outras areas. So
+  // abre a janela de aviso se a pessoa e fixa (📌) nesta area (ou se tirar
+  // daqui quebra a regra dos Guias); fora isso, tira direto.
+  const handleRemover = (escalaId, nomeEquipante, areaAtual, daBusca = false) => {
     const idDaPessoa = allocations.find(a => a.escalaId === escalaId)?.id;
     const todasOutras = allocations
       .filter(a => a.id === idDaPessoa && a.escalaId !== escalaId)
@@ -1116,15 +1120,26 @@ const OrganizerScalesPage = () => {
     // sai junto (o banco faz) -- nao entra na pergunta "tirar de la tambem?".
     const juntoRegra = areaAtual === AREA_GUIA ? todasOutras.filter(o => o.regraGuia).map(o => o.area) : [];
     const outras = todasOutras.filter(o => !juntoRegra.includes(o.area));
+    const avisoGuia = areaAtual === GUIA_TAMBEM_EM && outras.some(o => o.area === AREA_GUIA);
+    if (daBusca) {
+      const pedido = {
+        escalaId, nome: formatNomeExibicao(nomeEquipante), area: areaAtual, outras: [], juntoRegra,
+        ficamEm: outras.map(o => o.area), soEstaArea: true, avisoGuia,
+        fixas: (fixasPorEquipante[idDaPessoa] || []).filter(a => a === areaAtual)
+      };
+      if (pedido.fixas.length === 0 && !avisoGuia) executarRemocao(false, pedido);
+      else setRemocao(pedido);
+      return;
+    }
     setRemocao({
       escalaId, nome: formatNomeExibicao(nomeEquipante), area: areaAtual, outras, juntoRegra,
-      avisoGuia: areaAtual === GUIA_TAMBEM_EM && outras.some(o => o.area === AREA_GUIA),
+      avisoGuia,
       fixas: (fixasPorEquipante[idDaPessoa] || []).filter(a => a === areaAtual || outras.some(o => o.area === a))
     });
   };
 
-  const executarRemocao = async (tambemOutras) => {
-    const r0 = remocao;
+  const executarRemocao = async (tambemOutras, pedido = null) => {
+    const r0 = pedido || remocao;
     if (!r0) return;
     const alvos = [{ escalaId: r0.escalaId, area: r0.area }, ...(tambemOutras ? r0.outras : [])];
     setRemovendo(true);
@@ -1145,7 +1160,7 @@ const OrganizerScalesPage = () => {
       toast({
         title: `Removido de ${saiu.join(', ')}`,
         description: (restam > 0
-          ? `${r0.nome} continua em ${r0.outras.filter(o => !saiu.includes(o.area)).map(o => o.area).join(', ')}.`
+          ? `${r0.nome} continua em ${(r0.ficamEm || r0.outras.map(o => o.area)).filter(a => !saiu.includes(a)).join(', ')}.`
           : `${r0.nome} voltou para a fila "A escalar".`) +
           (falhas.length ? ` Não saiu de: ${falhas.join(' · ')}` : ''),
         variant: falhas.length ? 'destructive' : undefined
@@ -2431,7 +2446,13 @@ const OrganizerScalesPage = () => {
               <AlertDialogTitle>Tirar {remocao?.nome} de {remocao?.area}?</AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div className="text-gray-400 text-sm space-y-3">
-                  {remocao?.outras.length > 0 ? (
+                  {remocao?.soEstaArea ? (
+                    <p>
+                      {remocao.ficamEm?.length > 0
+                        ? <>Só sai de <strong className="text-white">{remocao.area}</strong>; continua em {remocao.ficamEm.join(', ')}.</>
+                        : <>É a única área dessa pessoa, então ela volta para a fila “A escalar”.</>}
+                    </p>
+                  ) : remocao?.outras.length > 0 ? (
                     <p>
                       <strong className="text-white">{remocao.nome}</strong> está escalado(a) também em{' '}
                       <strong className="text-amber-300">{remocao.outras.map(o => o.area).join(', ')}</strong>.

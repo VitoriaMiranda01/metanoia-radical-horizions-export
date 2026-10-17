@@ -467,7 +467,9 @@ const OrganizerScalesPage = () => {
     allocations.reduce((acc, a) => {
       (acc[a.id] = acc[a.id] || { id: a.id, nome: a.nome, igreja: nomeDaIgreja(a), cpf: a.cpf, areas: [],
         // As 3 opcoes pedidas na inscricao (17/10/2026).
-        opcoes: [a.area_trabalho_opcao1, a.area_trabalho_opcao2, a.area_trabalho_opcao3] })
+        opcoes: [a.area_trabalho_opcao1, a.area_trabalho_opcao2, a.area_trabalho_opcao3],
+        // Inscricao feita a mao por alguem da organizacao (17/10/2026).
+        manualPor: a.inscricao_manual_em ? (a.inscricao_manual_por || 'a organização') : null })
         .areas.push({ area: a.allocatedArea, atuacao: a.atuacao, escalaId: a.escalaId });
       return acc;
     }, {})
@@ -978,6 +980,12 @@ const OrganizerScalesPage = () => {
           <div className="min-w-0 sm:max-w-[60%]">
             <p className="text-white text-sm font-medium truncate flex items-center gap-1.5">
               <span className="truncate">{pessoa.nome}</span>
+              {pessoa.manualPor && (
+                <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-200 border border-purple-500/30 whitespace-nowrap"
+                  data-dica={`Esta inscrição foi feita à mão por ${pessoa.manualPor}, não pelo link.`}>
+                  Inscrição manual · {pessoa.manualPor}
+                </span>
+              )}
               {pessoa.areas.length > 1 && (
                 <span className="shrink-0 text-[10px] px-1 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30">
                   {pessoa.areas.length} áreas
@@ -999,7 +1007,8 @@ const OrganizerScalesPage = () => {
         <div className="flex items-center gap-1.5 flex-wrap text-[11px]" data-testid="opcoes-da-inscricao">
           <span className="uppercase tracking-wider text-gray-500 shrink-0">Pediu na inscrição</span>
           {[0, 1, 2].map(i => {
-            const op = (pessoa.opcoes?.[i] || '').trim();
+            // Inscricao manual sem area: vale "Disponivel para qualquer area" nas tres.
+            const op = (pessoa.opcoes?.[i] || '').trim() || (pessoa.manualPor ? AREA_DISPONIVEL_QUALQUER : '');
             const esta = op && pessoa.areas.some(x => x.area.trim().toLowerCase() === op.toLowerCase());
             return (
               <span key={i}

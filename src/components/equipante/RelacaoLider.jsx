@@ -67,6 +67,19 @@ const Cor = ({ cor }) => cor ? (
   </span>
 ) : null;
 
+// "Maria da Silva Souza" -> "Maria da Silva" (nome e primeiro sobrenome).
+const nomeCurto = (nome) => {
+  const partes = String(nome || '').trim().split(/\s+/).filter(Boolean);
+  if (partes.length <= 1) return partes[0] || '';
+  const ligas = ['da', 'de', 'do', 'das', 'dos', 'e'];
+  const out = [partes[0]];
+  for (let i = 1; i < partes.length; i += 1) {
+    out.push(partes[i]);
+    if (!ligas.includes(partes[i].toLowerCase())) break;
+  }
+  return out.join(' ');
+};
+
 const tituloEquipe = (e) => `${e.area}${e.cor ? ` · ${e.cor}` : ''}`;
 
 const telefoneVisivel = (m) => (m.whatsapp ? (m.estrangeiro ? m.whatsapp : formatarTelefone(m.whatsapp)) : 'Sem telefone');
@@ -277,6 +290,7 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
             onConvite={onConvite}
             onAtuacao={onAtuacao}
             onCor={onCor}
+            remetente={dados.lider}
             onSalvarGrupo={(link) => agir(`g-${abaAtual.equipe.escala_id}`,
               () => salvarGrupoLider(equipanteId, dono, abaAtual.equipe.escala_id, link),
               (r) => (r.link ? 'Link do grupo salvo' : 'Link do grupo apagado'))}
@@ -321,10 +335,19 @@ const FILTROS = {
   ausentes: (m) => m.presente === false,
   sem_chamada: (m) => m.presente !== true && m.presente !== false,
   pendencia: (m) => m.pendencias?.length > 0,
-  marcadores: (m) => m.area === 'Marcador'
+  // Quem vem de outra area para a reuniao desta equipe (Marcadores na
+  // Invisivel, Perseguidos na Selva).
+  agregados: (m, equipe) => m.area !== equipe.area,
+  da_area: (m, equipe) => m.area === equipe.area
 };
 
-const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSalvarGrupo }) => {
+// Area que se reune junto com esta equipe (17/10/2026).
+const AGREGADOS = {
+  'Invisível': { area: 'Marcador', um: 'marcador', varios: 'Marcadores' },
+  'Selva': { area: 'Perseguidos', um: 'perseguido', varios: 'Perseguidos' }
+};
+
+const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSalvarGrupo, remetente }) => {
   const [busca, setBusca] = useState('');
   const [filtro, setFiltro] = useState('todos');
   const [atuacao, setAtuacao] = useState('');
@@ -333,25 +356,26 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
   const membros = useMemo(() => [...(equipe.membros || [])].sort(porNome), [equipe.membros]);
 
   const contas = useMemo(() => {
-    const c = { total: membros.length, presentes: 0, ausentes: 0, sem: 0, pend: 0, marc: 0 };
+    const c = { total: membros.length, presentes: 0, ausentes: 0, sem: 0, pend: 0, agregados: 0 };
     membros.forEach((m) => {
       if (m.presente === true) c.presentes += 1;
       else if (m.presente === false) c.ausentes += 1;
       else c.sem += 1;
       if (m.pendencias?.length) c.pend += 1;
-      if (m.area === 'Marcador') c.marc += 1;
+      if (m.area !== equipe.area) c.agregados += 1;
     });
     return c;
-  }, [membros]);
+  }, [membros, equipe.area]);
+  const agregado = AGREGADOS[equipe.area];
 
   const atuacoesNaLista = useMemo(
     () => [...new Set(membros.map((m) => m.atuacao).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')),
     [membros]);
 
-  const mostrados = useMemo(() => membros.filter((m) => FILTROS[filtro](m)
+  const mostrados = useMemo(() => membros.filter((m) => FILTROS[filtro](m, equipe)
     && (!atuacao || m.atuacao === atuacao)
     && (!termo || semAcento(`${m.nome} ${nomeDaIgreja(m) || ''} ${m.whatsapp || ''}`).includes(termo))),
-  [membros, filtro, atuacao, termo]);
+  [membros, filtro, atuacao, termo, equipe]);
 
   // O proprio lider criou o grupo -- nao precisa de convite.
   const prontosConvite = useMemo(
@@ -400,20 +424,32 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
           )}
         </div>
 
-        {(contas.pend > 0 || contas.marc > 0) && (
+        {/* Invisivel + Marcadores, Selva + Perseguidos: quantos de cada e o total. */}
+        {agregado && contas.agregados > 0 && (
+          <div className="flex flex-wrap gap-2 text-xs">
+            <button type="button" onClick={() => alternarFiltro('da_area')}
+              className={cn('rounded-full border px-3 py-1',
+                filtro === 'da_area' ? 'border-amber-400 bg-amber-400/15 text-amber-100' : 'border-white/20 text-gray-200')}>
+              {equipe.area}: <strong>{contas.total - contas.agregados}</strong>
+            </button>
+            <button type="button" onClick={() => alternarFiltro('agregados')}
+              className={cn('rounded-full border px-3 py-1',
+                filtro === 'agregados' ? 'border-sky-400 bg-sky-400/15 text-sky-100' : 'border-sky-500/30 text-sky-300')}>
+              {agregado.varios}: <strong>{contas.agregados}</strong>
+            </button>
+            <span className="rounded-full border border-white/10 px-3 py-1 text-gray-400">
+              Total: <strong className="text-white">{contas.total}</strong>
+            </span>
+          </div>
+        )}
+
+        {contas.pend > 0 && (
           <div className="flex flex-wrap gap-2">
             {contas.pend > 0 && (
               <button type="button" onClick={() => alternarFiltro('pendencia')}
                 className={cn('rounded-full border px-3 py-1 text-xs',
                   filtro === 'pendencia' ? 'border-amber-400 bg-amber-400/15 text-amber-100' : 'border-amber-500/30 text-amber-300')}>
                 {contas.pend} com pendência no cadastro
-              </button>
-            )}
-            {contas.marc > 0 && (
-              <button type="button" onClick={() => alternarFiltro('marcadores')}
-                className={cn('rounded-full border px-3 py-1 text-xs',
-                  filtro === 'marcadores' ? 'border-sky-400 bg-sky-400/15 text-sky-100' : 'border-sky-500/30 text-sky-300')}>
-                {contas.marc} {contas.marc === 1 ? 'marcador' : 'marcadores'}
               </button>
             )}
           </div>
@@ -432,7 +468,7 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
 
       <ul className="space-y-2">
         {mostrados.map((m) => (
-          <Membro key={m.escala_id} m={m} grupoLink={equipe.grupo_link} area={equipe.area}
+          <Membro key={m.escala_id} m={m} grupoLink={equipe.grupo_link} area={equipe.area} remetente={remetente}
             atuacoes={!m.eh_lider && m.area === equipe.area ? equipe.atuacoes : null}
             responsavel={!!equipe.delegado && equipe.delegado.equipante_id === m.equipante_id}
             podeCor={equipe.pode_trocar_cor && !m.eh_lider}
@@ -454,7 +490,7 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
 };
 
 const mesmasProps = (a, b) => (
-  a.grupoLink === b.grupoLink && a.area === b.area && a.podeCor === b.podeCor && a.responsavel === b.responsavel
+  a.grupoLink === b.grupoLink && a.area === b.area && a.remetente === b.remetente && a.podeCor === b.podeCor && a.responsavel === b.responsavel
   && (a.atuacoes === b.atuacoes || JSON.stringify(a.atuacoes) === JSON.stringify(b.atuacoes))
   && a.ocupadoPresenca === b.ocupadoPresenca && a.ocupadoConvite === b.ocupadoConvite
   && a.ocupadoEdicao === b.ocupadoEdicao
@@ -462,15 +498,19 @@ const mesmasProps = (a, b) => (
   && (a.m === b.m || JSON.stringify(a.m) === JSON.stringify(b.m))
 );
 
-const Membro = memo(({ m, grupoLink, area, atuacoes, podeCor, responsavel, ocupadoPresenca, ocupadoConvite, ocupadoEdicao,
+const Membro = memo(({ m, grupoLink, area, remetente, atuacoes, podeCor, responsavel, ocupadoPresenca, ocupadoConvite, ocupadoEdicao,
   onPresenca, onConvite, onAtuacao, onCor }) => {
   const pendente = m.pendencias?.length > 0;
   const zap = linkWhatsApp(m.whatsapp, m.estrangeiro);
   const podeConvidar = grupoLink && m.presente === true && !pendente && !m.eu;
-  const ehMarcador = m.area === 'Marcador' && area !== 'Marcador';
+  // Marcador na lista da Invisivel, Perseguido na lista da Selva.
+  const etiquetaAgregado = m.area !== area ? (m.area === 'Perseguidos' ? 'Perseguido' : m.area) : null;
 
+  // Sem o nome da area na mensagem (17/10/2026, Patrick): so quem esta
+  // mandando -- o lider ou o responsavel pela reuniao.
   const enviarConvite = () => {
-    const texto = `Olá, ${(m.nome || '').split(' ')[0]}! Aqui é da equipe ${area} do Metanoia Radical Serra. `
+    const quem = nomeCurto(remetente);
+    const texto = `Olá, ${(m.nome || '').split(' ')[0]}! Aqui é ${quem ? `${quem}, ` : ''}da equipe do Metanoia Radical Serra. `
       + `Entre no nosso grupo pelo link: ${grupoLink}`;
     const link = linkWhatsApp(m.whatsapp, m.estrangeiro, texto);
     if (link) window.open(link, '_blank', 'noopener,noreferrer');
@@ -489,7 +529,7 @@ const Membro = memo(({ m, grupoLink, area, atuacoes, podeCor, responsavel, ocupa
             {m.nome}
             {m.eu && <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300">você</span>}
             {m.eh_lider && !m.eu && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">líder</span>}
-            {ehMarcador && <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">Marcador</span>}
+            {etiquetaAgregado && <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">{etiquetaAgregado}</span>}
             {responsavel && (
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40">
                 responsável pela reunião

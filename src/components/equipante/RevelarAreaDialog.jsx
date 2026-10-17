@@ -147,7 +147,11 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, t
               <p className="text-center text-sm text-amber-200/90 pb-1">
                 {areas.some((a) => a.eh_lider)
                   ? 'Esta é a escala provisória. Como líder, confirme a sua própria presença na lista da sua equipe, logo abaixo do acompanhamento.'
-                  : 'Esta é a escala provisória. Confirme sua presença com o líder da sua área na reunião de escala.'}
+                  : areas.some((a) => a.area === 'Marcador')
+                    ? 'Esta é a escala provisória. Na reunião de leitura de escala, os Marcadores se reúnem com a liderança dos Invisíveis: procure-os para confirmar a sua presença.'
+                    : areas.some((a) => a.area === 'Perseguidos')
+                      ? 'Esta é a escala provisória. Na reunião de leitura de escala, os Perseguidos se reúnem com a liderança da Selva: procure-os para confirmar a sua presença.'
+                      : 'Esta é a escala provisória. Confirme sua presença com o líder da sua área na reunião de escala.'}
               </p>
             )}
             {etapa === 'revelado' && (temEquipe || areas.some((a) => a.eh_lider)) && onVerEquipe && (

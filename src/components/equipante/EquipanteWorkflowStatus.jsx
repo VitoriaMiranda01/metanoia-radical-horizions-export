@@ -13,6 +13,9 @@ import AreaOficial from './AreaOficial';
 // onSair: "Não sou eu" -- a janela de cadastro não fecha, então precisa ter saída.
 // onDonoAtualizado: o que a pessoa acabou de gravar (CPF, nascimento) e que
 // passa a servir de prova de dono nas próximas chamadas.
+// "dos Invisíveis" / "da Selva"
+export const textoLideranca = (area) => (area === 'Invisível' ? 'dos Invisíveis' : `da ${area}`);
+
 const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, onSair, onDonoAtualizado }) => {
   const {
     isMinor,
@@ -36,6 +39,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     delegadoDe,
     liderExtraDe,
     presenca,
+    reuniaoCom,
     error,
     refresh,
     refreshSilencioso
@@ -204,6 +208,10 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
       if (presenca === 'presente') return null;
       if (!viuArea) return 'A escala provisória saiu! Veja a sua área no botão abaixo. Depois, na reunião de escala, confirme sua presença.';
       if (ehLider) return 'Você é líder: confirme a sua própria presença na lista da sua equipe, aqui embaixo (botão "Presente" ao lado do seu nome).';
+      // Marcadores se reunem com a lideranca dos Invisiveis; Perseguidos, com a
+      // da Selva (17/10/2026).
+      const com = reuniaoCom.find((r) => r.com)?.com;
+      if (com) return `Na reunião de leitura de escala, procure a liderança ${textoLideranca(com)} para confirmar a sua presença. Quando marcarem, esta etapa fica concluída.`;
       return 'Confirme sua presença com o líder da sua área na reunião de escala. Quando ele marcar, esta etapa fica concluída.';
     }
     return null;

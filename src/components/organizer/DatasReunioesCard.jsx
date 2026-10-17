@@ -15,7 +15,9 @@ import { definirDatasReunioes } from '@/services/acessoCadastroService';
  * o "Não consigo acessar meu cadastro" na Area do Equipante. A virada de
  * edicao exige as duas datas da edicao nova (a partir da 38).
  */
-const DatasReunioesCard = () => {
+// embutido (17/10/2026): vira uma secao do quadro "Geral" das Configuracoes,
+// logo abaixo da Data do Evento, em vez de um quadro proprio.
+const DatasReunioesCard = ({ embutido = false }) => {
   const { toast } = useToast();
   const [inscricao, setInscricao] = useState('');
   const [leitura, setLeitura] = useState('');
@@ -39,6 +41,43 @@ const DatasReunioesCard = () => {
     toast({ title: 'Datas salvas', className: 'bg-emerald-600 text-white border-none' });
   };
 
+  const campos = (
+    <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+      <div className="space-y-1.5">
+        <Label htmlFor="reuniaoInscricao" className={embutido ? 'text-gray-300' : 'text-white'}>Reunião de Inscrição</Label>
+        <Input id="reuniaoInscricao" type="date" value={inscricao} disabled={!carregado}
+          onChange={(e) => setInscricao(e.target.value)} className="bg-white/10 border-white/20 text-white [color-scheme:dark]" />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="reuniaoLeitura" className={embutido ? 'text-gray-300' : 'text-white'}>Reunião de Leitura de Escala</Label>
+        <Input id="reuniaoLeitura" type="date" value={leitura} disabled={!carregado}
+          onChange={(e) => setLeitura(e.target.value)} className="bg-white/10 border-white/20 text-white [color-scheme:dark]" />
+      </div>
+      <Button onClick={salvar} disabled={!carregado || salvando} className="bg-sky-600 hover:bg-sky-700 text-white"
+        data-dica="Grava as datas das duas reuniões (separado do Salvar do fim do quadro).">
+        {salvando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+        Salvar datas
+      </Button>
+    </div>
+  );
+
+  if (embutido) {
+    return (
+      <div className="pt-4 border-t border-white/10 space-y-4">
+        <div>
+          <h3 className="text-lg font-medium text-white flex items-center space-x-2">
+            <CalendarDays className="w-5 h-5 text-sky-400" /><span>Reuniões da edição</span>
+          </h3>
+          <p className="text-sm text-gray-400 mt-1">
+            No dia da Reunião de Leitura de Escala, das 15h às 19h, a Área do Equipante aceita a busca pelo nome e o
+            pedido "Não consigo acessar meu cadastro". A virada de edição pede as duas datas da edição nova.
+          </p>
+        </div>
+        {campos}
+      </div>
+    );
+  }
+
   return (
     <Card className="glass-effect border-white/10 bg-black/40">
       <CardHeader>
@@ -52,22 +91,7 @@ const DatasReunioesCard = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
-          <div className="space-y-1.5">
-            <Label htmlFor="reuniaoInscricao" className="text-white">Reunião de Inscrição</Label>
-            <Input id="reuniaoInscricao" type="date" value={inscricao} disabled={!carregado}
-              onChange={(e) => setInscricao(e.target.value)} className="bg-white/10 border-white/20 text-white [color-scheme:dark]" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="reuniaoLeitura" className="text-white">Reunião de Leitura de Escala</Label>
-            <Input id="reuniaoLeitura" type="date" value={leitura} disabled={!carregado}
-              onChange={(e) => setLeitura(e.target.value)} className="bg-white/10 border-white/20 text-white [color-scheme:dark]" />
-          </div>
-          <Button onClick={salvar} disabled={!carregado || salvando} className="bg-sky-600 hover:bg-sky-700 text-white">
-            {salvando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            Salvar
-          </Button>
-        </div>
+        {campos}
       </CardContent>
     </Card>
   );

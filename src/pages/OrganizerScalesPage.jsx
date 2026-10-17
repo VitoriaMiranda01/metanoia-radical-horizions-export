@@ -2096,14 +2096,14 @@ const OrganizerScalesPage = () => {
                     <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
                   </Button>
                 )}
-                {escala?.lancada_em && (
-                  <Button onClick={() => setVerResponsaveis(true)} variant="outline"
-                    data-dica="Quem conduz a reunião da escala no lugar do líder (quando ele não pode ou não delegou): faz a chamada e o grupo do WhatsApp."
-                    className="bg-amber-600/15 text-amber-300 border-amber-600/40 hover:bg-amber-600/30 hover:text-amber-200">
-                    <UserCog className="mr-2 h-4 w-4" /> Responsáveis pela reunião
-                    <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
-                  </Button>
-                )}
+                {/* Responsaveis pela reuniao: tambem ANTES da provisoria (17/10/2026) --
+                    a organizacao ja deixa definido quem os lideres indicaram. */}
+                <Button onClick={() => setVerResponsaveis(true)} variant="outline"
+                  data-dica="Quem conduz a reunião da escala no lugar do líder (ou junto com ele): faz a chamada e o grupo do WhatsApp. Pode ser definido antes de lançar a provisória."
+                  className="bg-amber-600/15 text-amber-300 border-amber-600/40 hover:bg-amber-600/30 hover:text-amber-200">
+                  <UserCog className="mr-2 h-4 w-4" /> Responsáveis pela reunião
+                  <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
+                </Button>
                 <Button data-dica="Listas dos mutirões (caminhão, cozinha, limpeza). Não mexe na escala." onClick={() => setVerAreasExtra(true)} variant="outline"
                   className="bg-blue-600/20 text-blue-300 border-blue-600/50 hover:bg-blue-600/40 hover:text-blue-200">
                   <Truck className="mr-2 h-4 w-4" /> Áreas Extras
@@ -2111,7 +2111,7 @@ const OrganizerScalesPage = () => {
                 </Button>
                 {!escala?.lancada_em && (
                   <p className="self-center text-xs text-gray-500">
-                    Trocar de área e Responsáveis pela reunião aparecem após lançar a provisória.
+                    Trocar de área aparece após lançar a provisória.
                   </p>
                 )}
               </div>

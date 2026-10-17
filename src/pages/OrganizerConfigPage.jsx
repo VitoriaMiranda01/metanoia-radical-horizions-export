@@ -543,6 +543,9 @@ const OrganizerConfigPage = () => {
                   </div>
                 </div>
 
+                {/* Reunioes da edicao: aqui, logo abaixo da Data do Evento (17/10/2026). */}
+                <DatasReunioesCard embutido />
+
                 <div className="pt-4 border-t border-white/10 space-y-4">
                   <h3 className="text-lg font-medium text-white flex items-center space-x-2">
                     <Clock className="w-5 h-5 text-blue-400" />
@@ -908,10 +911,6 @@ const OrganizerConfigPage = () => {
           {/* Atalho para o ambiente de teste (12/10/2026). */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.495 }}>
             <AmbienteTesteCard />
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.497 }}>
-            <DatasReunioesCard />
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>

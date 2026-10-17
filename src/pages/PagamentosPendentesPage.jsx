@@ -191,9 +191,10 @@ const CelulaGrupo = ({ item, onMarcar, onDesmarcar, ocupado }) => {
       day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
     });
     return (
-      <div className="flex items-center gap-1.5 whitespace-nowrap">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs text-emerald-300">
-          <Check className="w-3.5 h-3.5" /> Enviado {quando} · {item.grupo.por}
+      <div className="flex flex-wrap items-center gap-1.5 min-w-[9rem]">
+        <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs text-emerald-300">
+          <Check className="w-3.5 h-3.5 shrink-0" />
+          <span>Enviado {quando}<span className="block text-emerald-300/70">{item.grupo.por}</span></span>
         </span>
         <Button
           type="button" variant="ghost" size="sm" disabled={ocupado}
@@ -208,8 +209,8 @@ const CelulaGrupo = ({ item, onMarcar, onDesmarcar, ocupado }) => {
     );
   }
   return (
-    <div className="flex items-center gap-1.5 whitespace-nowrap">
-      <span className="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs text-amber-300">
+    <div className="flex flex-wrap items-center gap-1.5 min-w-[9rem]">
+      <span className="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs text-amber-300 whitespace-nowrap">
         Falta enviar
       </span>
       <Button
@@ -693,7 +694,7 @@ const PagamentosPendentesPage = () => {
   };
 
   return (
-    <Layout largo>
+    <Layout largo="tela">
       <Helmet>
         <title>Pagamentos - Metanoia Radical</title>
       </Helmet>
@@ -1001,7 +1002,7 @@ const PagamentosPendentesPage = () => {
                               key={d.key}
                               className={d.key === 'observacao_cobranca'
                                 ? 'text-sm text-gray-300 min-w-[12rem] max-w-xs break-words'
-                                : 'text-sm text-gray-300 whitespace-nowrap'}
+                                : 'text-sm text-gray-300 max-w-[15rem] break-words'}
                             >
                               {valorDaColuna(item, d.key) || <span className="text-gray-600">—</span>}
                             </TableCell>

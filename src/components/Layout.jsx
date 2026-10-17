@@ -241,7 +241,9 @@ const Layout = ({ children, largo = false }) => {
       {/* So a conta Desenvolvedores chega a ver: o banco devolve nada para os outros. */}
       {isOrganizer && <AvisoBackup />}
 
-      <main className={`${largo ? 'max-w-[1600px]' : 'max-w-7xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8`}>
+      {/* largo="tela": a tela inteira do monitor (17/10/2026: Pagamentos ainda
+          pedia barra de rolagem lateral para ver o grupo do WhatsApp). */}
+      <main className={`${largo === 'tela' ? 'max-w-none' : largo ? 'max-w-[1600px]' : 'max-w-7xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8`}>
         {children}
       </main>
     </div>

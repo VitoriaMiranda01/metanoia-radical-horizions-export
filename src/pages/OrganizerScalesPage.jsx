@@ -915,6 +915,40 @@ const OrganizerScalesPage = () => {
     setBuscaEscalados(valor);
   };
 
+  // Lista de areas dos menus "Mover para" e "Escalar tambem em" da busca
+  // (17/10/2026): em tres grupos, com as areas especiais e a equipe da igreja
+  // sempre visiveis. Escolher uma delas ALOCA DIRETO (nao passa pelo
+  // pre-cadastro por CPF). bloquearEspeciais: quem ja tem uma especial nao pode
+  // ter outra (regra do banco) -- elas aparecem esmaecidas, nao somem.
+  const opcoesDeArea = ({ excluir = [], bloquearEspeciais = false, comNaoSera = false }) => {
+    const fora = new Set(excluir);
+    const comuns = AREAS_NO_CORPO.filter(a => !fora.has(a) && (comNaoSera || a !== 'Não será escalado'));
+    const especiais = NOMES_ESPECIAIS.filter(a => !fora.has(a));
+    const igreja = NOMES_RECEPCAO_IGREJA.filter(a => !fora.has(a));
+    return (<>
+      <SelectGroup>
+        <SelectLabel className="text-[10px] uppercase tracking-wider text-gray-500">Áreas</SelectLabel>
+        {comuns.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+      </SelectGroup>
+      {especiais.length > 0 && (
+        <SelectGroup>
+          <SelectLabel className="text-[10px] uppercase tracking-wider text-purple-300/80">Áreas especiais (aloca direto)</SelectLabel>
+          {especiais.map(a => (
+            <SelectItem key={a} value={a} disabled={bloquearEspeciais}>
+              {a}{bloquearEspeciais ? ' — já tem uma especial' : ''}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      )}
+      {igreja.length > 0 && (
+        <SelectGroup>
+          <SelectLabel className="text-[10px] uppercase tracking-wider text-sky-300/80">Equipe da igreja (aloca direto)</SelectLabel>
+          {igreja.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+        </SelectGroup>
+      )}
+    </>);
+  };
+
   // Atuacao na area de destino (17/10/2026): so aparece quando a area tem mais
   // de uma. Sem escolher, fica a padrao (a primeira da lista).
   const seletorDeAtuacao = (areaDestino, valor, aoEscolher) => {
@@ -937,8 +971,6 @@ const OrganizerScalesPage = () => {
   const renderEscaladoComAcao = (pessoa) => {
     const jaEspecial = pessoa.areas.some(x => NOMES_ESPECIAIS.includes(x.area));
     const estaEmNaoSera = pessoa.areas.some(x => x.area === 'Não será escalado');
-    const opcoes = WORK_AREAS.filter(a =>
-      a !== 'Não será escalado' && !pessoa.areas.some(x => x.area === a) && !(jaEspecial && NOMES_ESPECIAIS.includes(a)));
     return (
       <div key={pessoa.id} className="bg-white/5 border border-white/10 rounded-md p-3 flex flex-col gap-2">
         {/* As areas ficam coladas ao lado do nome (17/10/2026), nao la na ponta. */}
@@ -990,7 +1022,7 @@ const OrganizerScalesPage = () => {
                 <SelectValue placeholder="Escolher a área..." />
               </SelectTrigger>
               <SelectContent>
-                {WORK_AREAS.filter(a => a !== x.area).map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                {opcoesDeArea({ excluir: [x.area], comNaoSera: true })}
               </SelectContent>
             </Select>
             {seletorDeAtuacao(manualAreaChoice[x.escalaId], atuacaoEscolhida[x.escalaId], (v) => setAtuacaoEscolhida(prev => ({ ...prev, [x.escalaId]: v })))}
@@ -1017,7 +1049,7 @@ const OrganizerScalesPage = () => {
                 <SelectValue placeholder="Escolher a outra área..." />
               </SelectTrigger>
               <SelectContent>
-                {opcoes.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                {opcoesDeArea({ excluir: pessoa.areas.map(x => x.area), bloquearEspeciais: jaEspecial })}
               </SelectContent>
             </Select>
             {seletorDeAtuacao(tambemArea[pessoa.id], atuacaoEscolhida[pessoa.id], (v) => setAtuacaoEscolhida(prev => ({ ...prev, [pessoa.id]: v })))}
@@ -1027,7 +1059,7 @@ const OrganizerScalesPage = () => {
               className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs">
               {tambemSalvando[pessoa.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Plus className="h-3.5 w-3.5 mr-1" />Escalar também</>}
             </Button>
-            {jaEspecial && <span className="text-[11px] text-gray-500">Já está numa área especial: só áreas comuns aqui.</span>}
+            {jaEspecial && <span className="text-[11px] text-gray-500">Já está numa área especial: cada pessoa só pode ter uma (para trocar, use o “Mover”).</span>}
           </div>
         )}
       </div>

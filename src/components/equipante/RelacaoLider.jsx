@@ -53,6 +53,9 @@ const TEXTO_PENDENCIA = {
 };
 
 const ATUALIZAR_A_CADA_MS = 15000;
+// Equipe que mais de uma pessoa conduz (lider + responsavel, ou dois responsaveis):
+// a chamada de um tem que aparecer para o outro quase na hora (18/10/2026).
+const ATUALIZAR_COMPARTILHADA_MS = 4000;
 
 // Linhas longas so sao desenhadas quando chegam perto da tela.
 const LINHA_LEVE = { contentVisibility: 'auto', containIntrinsicSize: 'auto 104px' };
@@ -100,6 +103,8 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
   const [aba, setAba] = useState(null);
   const [delegando, setDelegando] = useState(false);
   const temDados = useRef(false);
+  const ultimo = useRef(null);
+  const meusToques = useRef(new Set());
   // Atualizacao que saiu ANTES de um toque (presenca, atuacao...) chega com
   // a lista velha: e descartada, senao o botao "voltava" por um instante.
   const versao = useRef(0);
@@ -112,6 +117,32 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
     if (!silencioso) setCarregando(false);
     if (r.ok) {
       if (silencioso && (emVoo.current > 0 || v !== versao.current)) return;
+      // O que OUTRA pessoa mudou desde a ultima leitura (presenca marcada pelo
+      // outro responsavel/lider): avisa, para ninguem achar que a tela errou.
+      if (silencioso && ultimo.current) {
+        const antes = new Map();
+        (ultimo.current.equipes || []).forEach((e) => (e.membros || []).forEach((m) => antes.set(m.escala_id, m.presente)));
+        const mudou = [];
+        (r.equipes || []).forEach((e) => (e.membros || []).forEach((m) => {
+          // So o que OUTRA pessoa mudou (nao o meu proprio toque).
+          if (antes.has(m.escala_id) && (antes.get(m.escala_id) ?? null) !== (m.presente ?? null)
+              && !meusToques.current.has(m.escala_id) && m.marcado_por !== r.lider
+              && !mudou.some((x) => x.escala_id === m.escala_id)) mudou.push({ ...m, equipe: e });
+        }));
+        if (mudou.length > 0) {
+          const por = [...new Set(mudou.map((m) => m.marcado_por).filter(Boolean))];
+          const primeiro = mudou[0];
+          toast({
+            title: mudou.length === 1
+              ? `${(primeiro.nome || '').split(' ')[0]} agora está ${primeiro.presente === true ? 'presente' : primeiro.presente === false ? 'ausente' : 'sem chamada'}`
+              : `${mudou.length} presenças atualizadas`,
+            description: `${por.length ? `Marcado por ${por.join(' e ')}. ` : ''}Equipe ${tituloEquipe(primeiro.equipe)}${mudou.length > 1 ? ' e outras' : ''}.`,
+            className: 'bg-sky-700 text-white'
+          });
+        }
+      }
+      ultimo.current = r;
+      meusToques.current.clear();
       temDados.current = true;
       setDados(r);
       setErro('');
@@ -124,14 +155,19 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
 
   // Atualiza sozinha -- mas so com a tela a vista (celular no bolso nao
   // fica baixando a lista).
+  // Mais rapido quando alguma equipe tem outra pessoa conduzindo junto.
+  const compartilhada = (dados?.equipes || []).some((e) => {
+    const delegados = e.delegados || (e.delegado ? [e.delegado] : []);
+    return delegados.length >= 2 || (delegados.length >= 1 && (e.lideres || []).length > 0);
+  });
   useEffect(() => {
     const t = setInterval(() => {
       if (typeof document === 'undefined' || !document.hidden) carregar(true);
-    }, ATUALIZAR_A_CADA_MS);
+    }, compartilhada ? ATUALIZAR_COMPARTILHADA_MS : ATUALIZAR_A_CADA_MS);
     const aoVoltar = () => { if (!document.hidden) carregar(true); };
     document.addEventListener('visibilitychange', aoVoltar);
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', aoVoltar); };
-  }, [carregar]);
+  }, [carregar, compartilhada]);
 
   // Muda um membro na tela na hora (o toque responde sem esperar o servidor).
   const ajustarMembro = useCallback((escalaId, mudanca) => {
@@ -164,6 +200,7 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
   }, [carregar, toast]);
 
   const onPresenca = useCallback((m, presente) => {
+    meusToques.current.add(m.escala_id);
     ajustarMembro(m.escala_id, { presente });
     agir(`p-${m.escala_id}`, () => marcarPresenca(equipanteId, dono, m.escala_id, presente))
       .then((r) => { if (r.ok && m.eu) onPresencaPropria?.(); });

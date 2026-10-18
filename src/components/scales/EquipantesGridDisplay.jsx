@@ -289,9 +289,11 @@ const EquipantesGridDisplay = ({
                     >
                       {(aberto) => (<>
                       <SelectTrigger
+                        data-dica={eq.peloLider?.atuacao ? `Orientação do líder: ${eq.peloLider.atuacao.por} escolheu esta atuação.` : undefined}
                         className={cn(
                           "h-8 w-full sm:w-[170px] bg-black/40 border-white/20 text-xs",
-                          ehLider(eq.atuacao) ? "text-amber-300 border-amber-500/40" : "text-white"
+                          ehLider(eq.atuacao) ? "text-amber-300 border-amber-500/40" : "text-white",
+                          eq.peloLider?.atuacao && "bg-yellow-400/15 border-yellow-400/70 text-yellow-100"
                         )}
                       >
                         {salvandoAtuacao[eq.escalaId]
@@ -323,11 +325,12 @@ const EquipantesGridDisplay = ({
                     >
                       {(aberto) => (<>
                       <SelectTrigger
-                        data-dica={eq.cor ? undefined : ehLider(eq.atuacao)
+                        data-dica={eq.peloLider?.cor ? `Orientação do líder: ${eq.peloLider.cor.por} escolheu esta cor.` : eq.cor ? undefined : ehLider(eq.atuacao)
                           ? 'Líder sem cor = líder da área inteira. Escolha uma cor só se ele for líder apenas daquela cor.'
                           : 'Sem cor: esta área é dividida por cor. Escolha a cor do grupo.'}
                         className={cn('h-8 w-full sm:w-[130px] bg-black/40 text-xs',
-                          eq.cor || ehLider(eq.atuacao) ? 'border-white/20 text-white' : 'border-amber-500/60 text-amber-300')}>
+                          eq.cor || ehLider(eq.atuacao) ? 'border-white/20 text-white' : 'border-amber-500/60 text-amber-300',
+                          eq.peloLider?.cor && 'bg-yellow-400/15 border-yellow-400/70 text-yellow-100')}>
                         {salvandoCor[eq.escalaId]
                           ? <Loader2 className="h-3 w-3 animate-spin" />
                           : (

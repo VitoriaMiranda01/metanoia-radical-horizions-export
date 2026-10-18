@@ -436,9 +436,16 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
         {/* Invisivel + Marcadores, Selva + Perseguidos: quantos de cada e o total. */}
         {agregado && contas.agregados > 0 && (
           <div className="flex flex-wrap gap-2 text-xs">
+            {/* Total primeiro e ja marcado: o lider faz a chamada de todos
+                (Perseguidos/Marcadores juntos) sem precisar descobrir o filtro. */}
+            <button type="button" onClick={() => setFiltro('todos')}
+              className={cn('rounded-full border px-3 py-1',
+                filtro === 'todos' ? 'border-amber-400 bg-amber-400/15 text-amber-100' : 'border-white/20 text-gray-200')}>
+              Total: <strong>{contas.total}</strong>
+            </button>
             <button type="button" onClick={() => alternarFiltro('da_area')}
               className={cn('rounded-full border px-3 py-1',
-                filtro === 'da_area' ? 'border-amber-400 bg-amber-400/15 text-amber-100' : 'border-white/20 text-gray-200')}>
+                filtro === 'da_area' ? 'border-amber-400 bg-amber-400/15 text-amber-100' : 'border-white/20 text-gray-300')}>
               {equipe.area}: <strong>{contas.total - contas.agregados}</strong>
             </button>
             <button type="button" onClick={() => alternarFiltro('agregados')}
@@ -446,9 +453,6 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
                 filtro === 'agregados' ? 'border-sky-400 bg-sky-400/15 text-sky-100' : 'border-sky-500/30 text-sky-300')}>
               {agregado.varios}: <strong>{contas.agregados}</strong>
             </button>
-            <span className="rounded-full border border-white/10 px-3 py-1 text-gray-400">
-              Total: <strong className="text-white">{contas.total}</strong>
-            </span>
           </div>
         )}
 

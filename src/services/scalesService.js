@@ -104,7 +104,7 @@ export const saveScales = async (allocations) => {
 };
 
 export const fetchAllAllocations = async () => {
-  const [linhas, automaticas] = await Promise.all([
+  const [linhas, automaticas, peloLider] = await Promise.all([
     lerTudoPaginado(
       () => supabase.from('escalas').select(`id, equipante_id, area_alocada, atuacao, cor, separado_de, incluido_por, equipantes!inner (${COLUNAS_EQUIPANTE})`),
       'alocações'
@@ -112,7 +112,10 @@ export const fetchAllAllocations = async () => {
     // Quem veio do "Alocar automático" e ainda esta onde ele colocou, com o
     // motivo (14/10/2026, migrations 20261014e/h): { escala_id: motivo }. So
     // organizador recebe; falhou = sem a marca, sem erro.
-    supabase.rpc('escalas_automaticas_motivos').then(({ data }) => (data && typeof data === 'object' ? data : {}), () => ({}))
+    supabase.rpc('escalas_automaticas_motivos').then(({ data }) => (data && typeof data === 'object' ? data : {}), () => ({})),
+    // O que o lider mudou (atuacao/cor) e ainda vale -- "orientação do líder"
+    // (17/10/2026, migration 20261017h).
+    supabase.rpc('alteracoes_lider_vigentes').then(({ data }) => (data && typeof data === 'object' ? data : {}), () => ({}))
   ]);
 
   // Uma linha por PARTICIPACAO, nao por pessoa: quem trabalha em duas areas
@@ -135,6 +138,8 @@ export const fetchAllAllocations = async () => {
     automatica: !!automaticas[item.id],
     // As 3 opcoes estavam cheias e o automatico sorteou outra area.
     foraDasOpcoes: automaticas[item.id] === 'fora_das_opcoes',
+    // { atuacao: {por, em}, cor: {por, em} } quando foi o lider que definiu.
+    peloLider: peloLider[item.id] || null,
     statusAllocation: 'Alocado'
   }));
 };

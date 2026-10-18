@@ -485,7 +485,7 @@ const OrganizerScalesPage = () => {
         opcoes: [a.area_trabalho_opcao1, a.area_trabalho_opcao2, a.area_trabalho_opcao3],
         // Inscricao feita a mao por alguem da organizacao (17/10/2026).
         manualPor: a.inscricao_manual_em ? (a.inscricao_manual_por || 'a organização') : null })
-        .areas.push({ area: a.allocatedArea, atuacao: a.atuacao, escalaId: a.escalaId });
+        .areas.push({ area: a.allocatedArea, atuacao: a.atuacao, escalaId: a.escalaId, peloLider: a.peloLider });
       return acc;
     }, {})
   ).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')), [allocations]);
@@ -1060,7 +1060,12 @@ const OrganizerScalesPage = () => {
             {pessoa.areas.map(x => (
               <span key={x.escalaId} className="text-[11px] px-2 py-1 rounded border border-green-500/30 bg-green-500/10 text-green-200">
                 {x.area}
-                {x.atuacao && <span className="text-green-400/70"> · {x.atuacao}</span>}
+                {x.atuacao && (
+                  <span className={x.peloLider?.atuacao ? 'ml-0.5 px-1 rounded bg-yellow-400/20 text-yellow-200' : 'text-green-400/70'}
+                    data-dica={x.peloLider?.atuacao ? `Orientação do líder: ${x.peloLider.atuacao.por}` : undefined}>
+                    {' '}· {x.atuacao}
+                  </span>
+                )}
               </span>
             ))}
           </div>
@@ -2174,7 +2179,7 @@ const OrganizerScalesPage = () => {
                   </Button>
                 )}
                 {/* Relacao nominal em PDF/Excel (geral, por igreja, por area) -- 17/10/2026. */}
-                <ExportarRelacaoMenu allocations={allocations} ehLider={ehLiderDaArea}
+               <ExportarRelacaoMenu allocations={allocations}
                   onPlanilhaDetalhada={handleExportAll} disabled={allocations.length === 0} />
               </div>
             </div>

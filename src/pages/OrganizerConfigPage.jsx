@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -225,6 +225,9 @@ const OrganizerConfigPage = () => {
     }));
   };
 
+  const salvarReunioesRef = useRef(null);
+  const registrarSalvarReunioes = useCallback((fn) => { salvarReunioesRef.current = fn; }, []);
+
   const handleSaveAll = async () => {
     if (!validateGeneralConfigFields(config)) return;
 
@@ -244,6 +247,11 @@ const OrganizerConfigPage = () => {
       };
       
       await saveConfiguracoes(payloadToSave);
+      // As datas das reunioes (secao dentro do quadro Geral) gravam juntas.
+      if (salvarReunioesRef.current) {
+        const r = await salvarReunioesRef.current();
+        if (!r.ok) throw new Error(`Datas das reuniões: ${r.erro}`);
+      }
       
       await loadData();
 
@@ -544,7 +552,7 @@ const OrganizerConfigPage = () => {
                 </div>
 
                 {/* Reunioes da edicao: aqui, logo abaixo da Data do Evento (17/10/2026). */}
-                <DatasReunioesCard embutido />
+                <DatasReunioesCard embutido registrar={registrarSalvarReunioes} />
 
                 <div className="pt-4 border-t border-white/10 space-y-4">
                   <h3 className="text-lg font-medium text-white flex items-center space-x-2">

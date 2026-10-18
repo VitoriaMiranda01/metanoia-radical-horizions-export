@@ -162,7 +162,7 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, t
             {etapa === 'revelado' && (temEquipe || areas.some((a) => a.eh_lider)) && onVerEquipe && (
               <Button onClick={onVerEquipe}
                 className="w-full py-6 text-base bg-amber-500/15 border border-amber-400/60 text-amber-100 hover:bg-amber-500/25">
-                <Users className="mr-2 w-5 h-5" /> Ver a lista da minha equipe
+                <Users className="mr-2 w-5 h-5" /> {areas.some((x) => x.eh_lider) ? 'Visualizar lista da equipe' : 'Ver a lista da minha equipe'}
               </Button>
             )}
             {etapa === 'revelado' && podePagar && (

@@ -437,8 +437,8 @@ const PagamentosPendentesPage = () => {
 
   // Quem ainda deve (opcao B, aprovada em 06/10/2026: a antiga aba
   // "Pagamentos manuais" entrou aqui -- o funil da coluna Forma separa os
-  // manuais). Acampante: todos. Equipante: todo mundo que ja pode pagar (esta
-  // na escala lancada) e nao pagou -- 19/10/2026: antes so entrava quem tinha
+  // manuais). Acampante: todos. Equipante: todo mundo escalado numa area (esta
+  // na escala, lancada ou nao -- para dar isencao antes) e nao pagou -- 19/10/2026: antes so entrava quem tinha
   // escolhido pagar em maos (71 de 942), e quem ainda nao escolheu a forma
   // (ou deixou o PIX incompleto) ficava invisivel; agora aparecem com a forma
   // "Não escolheu" / "PIX não concluído". A cobranca de equipante fica para depois.

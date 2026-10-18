@@ -452,19 +452,17 @@ export const removerCobranca = async (acampanteId) => {
 };
 
 /**
- * Equipantes que ja podem pagar: a escala saiu (provisoria ou oficial) e a
- * pessoa esta numa area de verdade -- a mesma regra do banco
- * (_equipante_pode_pagar). Antes disso, equipante nao aparece em "Nao
- * pagaram": nao tem como cobrar de quem ainda nem pode pagar.
+ * Equipantes que aparecem em Pagamentos: quem esta escalado numa area de
+ * verdade (qualquer uma, menos "Não será escalado").
  *
- * Devolve um Set com os ids (vazio enquanto a escala nao sai).
+ * 19/10/2026 (Patrick): NAO espera mais a escala ser lancada -- a organizacao
+ * precisa dar as isencoes ANTES de lancar a provisoria. O pagamento do lado
+ * do equipante continua so abrindo com a escala lancada (_equipante_pode_pagar);
+ * isto e so a lista dos organizadores.
+ *
+ * Devolve um Set com os ids.
  */
 export const fetchEquipantesComPagamentoAberto = async () => {
-  const { data: config, error: errConfig } = await supabase
-    .from('configuracoes').select('escala_lancada_em').limit(1).maybeSingle();
-  if (errConfig) throw errConfig;
-  if (!config?.escala_lancada_em) return new Set();
-
   const { data, error } = await lerTodasAsLinhas(
     () => supabase.from('escalas').select('id, equipante_id, area_alocada').neq('area_alocada', 'Não será escalado').order('id'),
     { rotulo: 'escala' }

@@ -185,6 +185,8 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     // Com que lideranca a pessoa se reune na Leitura de Escala (Marcador ->
     // Invisível, Perseguidos -> Selva). So vem depois que ela viu a area.
     reuniaoCom: workflowData?.reuniao_com || [],
+    // Responsavel(is) pela reuniao da equipe, se ja definido(s) (18/10/2026).
+    responsaveisReuniao: workflowData?.responsaveis_reuniao || [],
     pago: !!workflowData?.pago,
     // Problemas na ficha que a propria pessoa corrige (igreja que faltou,
     // WhatsApp fora do padrao) e se ela ja viu a area revelada.

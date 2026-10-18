@@ -4,6 +4,7 @@ import { ArrowRight, Loader2, Sparkles, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { revelarArea } from '@/services/equipantesService';
 import AreasReveladas from './AreasReveladas';
+import { listaDeResponsaveis } from '@/utils/formatters';
 
 /**
  * "Ver qual área fui escalado": a revelacao animada da area, que substitui o
@@ -43,6 +44,8 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, t
   const [etapa, setEtapa] = useState('buscando'); // buscando | suspense | revelado | fora | erro
   const [areas, setAreas] = useState([]);
   const [extras, setExtras] = useState([]);
+  // Quem conduz a reuniao da equipe da pessoa, se ja foi definido (18/10/2026).
+  const [responsaveis, setResponsaveis] = useState([]);
   const [erro, setErro] = useState('');
   // O servidor ja respondeu com a area (e gravou que a pessoa viu).
   const viu = etapa === 'suspense' || etapa === 'revelado';
@@ -70,6 +73,7 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, t
         }
         setAreas(r.areas);
         setExtras(r.extras || []);
+        setResponsaveis(r.responsaveis || []);
         setEtapa('suspense');
         timer = setTimeout(() => { if (vivo) setEtapa('revelado'); }, SUSPENSE_MS);
       } catch (e) {
@@ -126,8 +130,7 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, t
 
             {etapa === 'fora' && (
               <motion.div key="fora" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3 text-gray-200">
-                <p className="text-lg font-semibold text-white">Sua escala ainda precisa ser conversada</p>
-                <p className="text-sm text-gray-300">Por favor, verifique a sua escala com o Dudu.</p>
+                <p className="text-lg font-semibold text-white">Seu nome não saiu na escala preliminar, procure a coordenação do projeto.</p>
               </motion.div>
             )}
 
@@ -147,6 +150,8 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, t
               <p className="text-center text-sm text-amber-200/90 pb-1">
                 {areas.some((a) => a.eh_lider)
                   ? 'Esta é a escala provisória. Como líder, confirme a sua própria presença na lista da sua equipe, logo abaixo do acompanhamento.'
+                  : responsaveis.length > 0
+                    ? `Esta é a escala provisória. Confirme sua presença com o(a) ${listaDeResponsaveis(responsaveis)} na reunião da sua área.`
                   : areas.some((a) => a.area === 'Marcador')
                     ? 'Esta é a escala provisória. Na reunião de leitura de escala, os Marcadores se reúnem com a liderança dos Invisíveis: procure-os para confirmar a sua presença.'
                     : areas.some((a) => a.area === 'Perseguidos')

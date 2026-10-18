@@ -1,3 +1,4 @@
+import { listaDeResponsaveis } from '@/utils/formatters';
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEquipanteWorkflow } from '@/hooks/useEquipanteWorkflow';
@@ -40,6 +41,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     liderExtraDe,
     presenca,
     reuniaoCom,
+    responsaveisReuniao,
     error,
     refresh,
     refreshSilencioso
@@ -210,6 +212,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
       if (ehLider) return 'Você é líder: confirme a sua própria presença na lista da sua equipe, aqui embaixo (botão "Presente" ao lado do seu nome).';
       // Marcadores se reunem com a lideranca dos Invisiveis; Perseguidos, com a
       // da Selva (17/10/2026).
+      if (responsaveisReuniao.length > 0) return `Esta é a escala provisória. Confirme sua presença com o(a) ${listaDeResponsaveis(responsaveisReuniao)} na reunião da sua área. Quando marcar, esta etapa fica concluída.`;
       const com = reuniaoCom.find((r) => r.com)?.com;
       if (com) return `Na reunião de leitura de escala, procure a liderança ${textoLideranca(com)} para confirmar a sua presença. Quando marcarem, esta etapa fica concluída.`;
       return 'Confirme sua presença com o líder da sua área na reunião de escala. Quando ele marcar, esta etapa fica concluída.';
@@ -233,8 +236,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
             <p className="text-red-300 text-sm flex items-start">
               <XCircle className="w-5 h-5 mr-2 shrink-0" />
               <span>
-                <strong>Sua escala ainda precisa ser conversada.</strong> Por favor, verifique a
-                sua escala com o Dudu.
+                <strong>Seu nome não saiu na escala preliminar, procure a coordenação do projeto.</strong>
               </span>
             </p>
           </div>

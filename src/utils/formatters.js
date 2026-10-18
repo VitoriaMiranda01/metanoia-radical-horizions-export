@@ -79,3 +79,25 @@ export function calcularIdade(dataNascimento) {
 
   return idade >= 0 && idade < 130 ? idade : null;
 }
+
+
+// "Maria da Silva Souza" -> "Maria da Silva" (nome e primeiro sobrenome, com o
+// "da/de/do" junto). Usado nos avisos para o equipante (18/10/2026).
+export const nomeESobrenome = (nome) => {
+  const partes = String(nome || '').trim().split(/\s+/).filter(Boolean);
+  if (partes.length <= 1) return partes[0] || '';
+  const ligas = ['da', 'de', 'do', 'das', 'dos', 'e'];
+  const out = [partes[0]];
+  for (let i = 1; i < partes.length; i += 1) {
+    out.push(partes[i]);
+    if (!ligas.includes(partes[i].toLowerCase())) break;
+  }
+  return out.join(' ');
+};
+
+// ["Ana Lima Souza", "Bia Rocha"] -> "Ana Lima ou Bia Rocha"
+export const listaDeResponsaveis = (nomes = []) => {
+  const curtos = [...new Set(nomes.map(nomeESobrenome).filter(Boolean))];
+  if (curtos.length <= 1) return curtos[0] || '';
+  return `${curtos.slice(0, -1).join(', ')} ou ${curtos[curtos.length - 1]}`;
+};

@@ -212,8 +212,9 @@ const InscricaoPixPage = () => {
   const finalValue = Math.max(0, (inscriptionValue || 0) - discountValue);
   const isZeroValue = finalValue <= 0;
 
+  // Devolve true se o cupom ficou aplicado (usado tambem pelo "Gerar PIX").
   const handleApplyCoupon = async () => {
-    if (!couponInput) return;
+    if (!couponInput) return false;
     setCouponMessage({ type: '', text: '' });
     
     // O cupom vale conforme quem e a pessoa (porcentagem e "so pastor"): vai a
@@ -233,16 +234,42 @@ const InscricaoPixPage = () => {
         description: `Desconto aplicado com sucesso ${tipo === 'equipante' ? 'à taxa de alimentação' : 'ao valor da inscrição'}.`,
         className: "bg-emerald-600 text-white"
       });
-    } else {
-      setAppliedCoupon(null);
-      setDiscountValue(0);
-      setCouponMessage({ type: 'error', text: validationError || 'Cupom inválido ou expirado' });
-      toast({
-        title: "Erro ao aplicar cupom",
-        description: validationError || 'Cupom inválido ou expirado',
-        variant: "destructive"
-      });
+      return true;
     }
+    setAppliedCoupon(null);
+    setDiscountValue(0);
+    setCouponMessage({ type: 'error', text: validationError || 'Cupom inválido ou expirado' });
+    toast({
+      title: "Erro ao aplicar cupom",
+      description: validationError || 'Cupom inválido ou expirado',
+      variant: "destructive"
+    });
+    return false;
+  };
+
+  // "Tenho cupom de desconto" na tela do QR (19/10/2026): descarta a cobranca
+  // gerada sem cupom e volta ao formulario para gerar outra com o desconto.
+  const voltarParaUsarCupom = () => {
+    setPixData(null);
+    setStatusPagamento('aguardando');
+    setError(null);
+    salvarSessao({
+      id: inscricaoId,
+      tipo,
+      nome: formData.nome,
+      cpf: formData.cpf.replace(/\D/g, ''),
+      nascimento: location.state?.nascimento || sessaoSalva?.nascimento || null,
+      // salvarSessao mescla: sem isto o QR descartado voltava ao recarregar.
+      cobranca: null
+    });
+    toast({
+      title: 'QR Code descartado',
+      description: 'Digite o cupom, clique em Aplicar e gere o PIX de novo. Não pague o código anterior.'
+    });
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.getElementById('coupon')?.focus();
+    });
   };
 
   const handleFinalizeZeroValue = async () => {
@@ -302,6 +329,21 @@ const InscricaoPixPage = () => {
       return;
     }
 
+    // Cupom digitado e nao aplicado (19/10/2026): antes o PIX saia no valor
+    // cheio sem avisar. Agora aplica primeiro e para, para a pessoa conferir o
+    // novo valor; cupom invalido nao gera nada.
+    if (couponInput.trim() && !appliedCoupon) {
+      const aplicado = await handleApplyCoupon();
+      if (aplicado) {
+        toast({
+          title: 'Confira o novo valor',
+          description: 'O cupom foi aplicado. Clique de novo em Gerar PIX para gerar no valor com desconto.',
+          className: 'bg-emerald-600 text-white'
+        });
+      }
+      return;
+    }
+
     if (!validateForm()) return;
     setLoading(true);
     setError(null);
@@ -330,7 +372,13 @@ const InscricaoPixPage = () => {
         // valor ficava undefined, a consulta de status nem chegava a comecar
         // e a tela ficava parada para sempre, mesmo com o pagamento pago.
         // Era exatamente o sintoma relatado no teste de R$1.
-        const cobranca = { qrcode, pixCopiaECola, txid: data.sicoob_id ?? data.txid };
+        // Valor e cupom que o SERVIDOR cobrou: a tela do QR mostra estes (e
+        // continuam certos quando a pessoa volta do banco).
+        const cobranca = {
+          qrcode, pixCopiaECola, txid: data.sicoob_id ?? data.txid,
+          valor: Number.isFinite(Number(data.valor_cobrado)) ? Number(data.valor_cobrado) : finalValue,
+          cupom: data.coupon_code || null
+        };
         setPixData(cobranca);
 
         // Grava para a pessoa reencontrar este mesmo QR Code ao voltar do
@@ -438,34 +486,8 @@ const InscricaoPixPage = () => {
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <Label htmlFor="nome" className="text-gray-300">Nome Completo</Label>
-                    <Input 
-                      id="nome" 
-                      name="nome" 
-                      placeholder="Ex: João da Silva" 
-                      value={formData.nome} 
-                      onChange={handleInputChange} 
-                      disabled={loading || isFinalizingZero} 
-                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-500 focus:ring-emerald-500" 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cpf" className="text-gray-300">CPF</Label>
-                    <Input 
-                      id="cpf" 
-                      name="cpf" 
-                      placeholder="000.000.000-00" 
-                      value={formData.cpf} 
-                      onChange={handleInputChange} 
-                      maxLength={14} 
-                      disabled={loading || isFinalizingZero} 
-                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-500 focus:ring-emerald-500" 
-                    />
-                  </div>
-
-                  <div className="space-y-4 pt-2">
+                  {/* Cupom primeiro (19/10/2026): o PIX sai no valor ja com o desconto. */}
+                  <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="coupon" className="text-gray-300 flex items-center gap-2"><Tag className="w-4 h-4" /> Cupom de Desconto</Label>
                       <div className="flex gap-2">
@@ -530,6 +552,33 @@ const InscricaoPixPage = () => {
                     </div>
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="nome" className="text-gray-300">Nome Completo</Label>
+                    <Input 
+                      id="nome" 
+                      name="nome" 
+                      placeholder="Ex: João da Silva" 
+                      value={formData.nome} 
+                      onChange={handleInputChange} 
+                      disabled={loading || isFinalizingZero} 
+                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-500 focus:ring-emerald-500" 
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cpf" className="text-gray-300">CPF</Label>
+                    <Input 
+                      id="cpf" 
+                      name="cpf" 
+                      placeholder="000.000.000-00" 
+                      value={formData.cpf} 
+                      onChange={handleInputChange} 
+                      maxLength={14} 
+                      disabled={loading || isFinalizingZero} 
+                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-500 focus:ring-emerald-500" 
+                    />
+                  </div>
+
                   {isZeroValue && !loadingValue ? (
                     <Button 
                       type="button" 
@@ -555,7 +604,9 @@ const InscricaoPixPage = () => {
                           <Loader2 className="w-6 h-6 mr-2 animate-spin" />
                           Gerando PIX...
                         </>
-                      ) : "Gerar Pagamento PIX"}
+                      ) : couponInput.trim() && !appliedCoupon
+                        ? "Aplicar cupom e conferir o valor"
+                        : `Gerar PIX de ${loadingValue ? '...' : formatCurrency(finalValue)}`}
                     </Button>
                   )}
                 </form>
@@ -658,8 +709,13 @@ const InscricaoPixPage = () => {
                     Valor a Pagar
                   </p>
                   <p className="text-4xl font-bold text-emerald-400">
-                    {formatCurrency(finalValue)}
+                    {formatCurrency(pixData.valor ?? finalValue)}
                   </p>
+                  {pixData.cupom && (
+                    <p className="text-emerald-300 text-sm flex items-center justify-center gap-1.5">
+                      <Tag className="w-4 h-4" /> Cupom {pixData.cupom} aplicado
+                    </p>
+                  )}
                   <p className="text-gray-400 text-sm">Titular: {formData.nome}</p>
                 </div>
 
@@ -705,6 +761,20 @@ const InscricaoPixPage = () => {
                       className="w-full bg-orange-500 hover:bg-orange-600 text-black font-semibold"
                     >
                       Simular pagamento (teste)
+                    </Button>
+                  </div>
+                )}
+
+                {/* Gerou sem cupom e tinha um: descarta este QR e gera outro com o desconto. */}
+                {!pixData.cupom && statusPagamento === 'aguardando' && (
+                  <div className="max-w-md mx-auto rounded-lg border border-blue-500/40 bg-blue-500/10 p-4 space-y-2">
+                    <p className="text-sm text-blue-100">
+                      Tem cupom de desconto? Gere o PIX de novo com o cupom, antes de pagar.
+                      Este código será descartado — não pague ele.
+                    </p>
+                    <Button type="button" onClick={voltarParaUsarCupom}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                      <Tag className="w-4 h-4 mr-2" /> Tenho cupom de desconto
                     </Button>
                   </div>
                 )}

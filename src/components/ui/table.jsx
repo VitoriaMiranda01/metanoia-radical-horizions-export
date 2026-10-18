@@ -7,7 +7,10 @@ import React from 'react';
 // sticky so gruda no primeiro ancestral que rola. As celulas fixas nas laterais
 // (Nome a esquerda, Acoes a direita) ficam por cima das outras do cabecalho.
 const Table = React.forwardRef(({ className, cabecalhoFixo = false, ...props }, ref) => (
-  <div className={cn('relative w-full overflow-auto', cabecalhoFixo && 'max-h-[calc(100dvh-9rem)] overscroll-contain')}>
+  // 19/10/2026: 65% da altura da tela (antes quase a tela toda) e sem
+  // "prender" a rolagem -- ao chegar no fim da tabela a roda do mouse volta a
+  // rolar a pagina, e sobra margem acima e abaixo para rolar a pagina.
+  <div className={cn('relative w-full overflow-auto', cabecalhoFixo && 'max-h-[65dvh]')}>
     <table
       ref={ref}
       className={cn(

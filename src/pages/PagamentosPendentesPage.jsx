@@ -437,12 +437,13 @@ const PagamentosPendentesPage = () => {
 
   // Quem ainda deve (opcao B, aprovada em 06/10/2026: a antiga aba
   // "Pagamentos manuais" entrou aqui -- o funil da coluna Forma separa os
-  // manuais). Acampante: todos. Equipante: so quem ja pode pagar (esta na
-  // escala lancada) e escolheu pagar em maos -- antes da escala o pagamento
-  // nem abriu para ele. A cobranca de equipante fica para depois.
+  // manuais). Acampante: todos. Equipante: todo mundo que ja pode pagar (esta
+  // na escala lancada) e nao pagou -- 19/10/2026: antes so entrava quem tinha
+  // escolhido pagar em maos (71 de 942), e quem ainda nao escolheu a forma
+  // (ou deixou o PIX incompleto) ficava invisivel; agora aparecem com a forma
+  // "Não escolheu" / "PIX não concluído". A cobranca de equipante fica para depois.
   const devendo = useMemo(() => comCobranca.filter((i) => !i.quitado
-    && (i.tipo === 'acampante'
-      || (equipantesLiberados.has(i.id) && ['manual', 'isento'].includes(i.metodo_pagamento)))),
+    && (i.tipo === 'acampante' || equipantesLiberados.has(i.id))),
   [comCobranca, equipantesLiberados]);
   const naoPagaram = useMemo(() => devendo.filter((i) => !i.cobranca), [devendo]);
   const emCobranca = useMemo(() => devendo.filter((i) => i.cobranca?.status === 'em_cobranca'), [devendo]);
@@ -750,7 +751,7 @@ const PagamentosPendentesPage = () => {
                 <TabsList className="bg-white/5 border border-white/10 w-full md:w-auto h-auto flex flex-wrap">
                   <TabsTrigger
                     value="nao"
-                    data-dica="Quem ainda não pagou e ninguém está cobrando ainda. Inclui quem escolheu pagar em mãos."
+                    data-dica="Quem ainda não pagou e ninguém está cobrando ainda. Inclui equipantes escalados que ainda não escolheram a forma de pagamento."
                     className="flex-1 md:flex-none data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400"
                   >
                     Não pagaram ({naoPagaram.length})

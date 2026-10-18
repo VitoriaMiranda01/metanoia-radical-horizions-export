@@ -243,7 +243,7 @@ const AprovacoesTable = ({
   const filteredData = useMemo(() => ordenarLista(filtrados, ordem, getColumnValue), [filtrados, ordem]);
 
   // Pagina a lista JA filtrada -- busca e filtros seguem valendo sobre tudo.
-  const paginacao = usePaginacao(filteredData);
+  const paginacao = usePaginacao(filteredData, 10);
   
   const getColDef = (key) => COLUMN_DEFINITIONS[tableType].find(c => c.key === key);
 
@@ -369,9 +369,9 @@ const AprovacoesTable = ({
                 Há mais colunas à direita — role a tabela para o lado (ou Shift + roda do mouse) →
               </p>
             )}
-            <div ref={tabelaRef} className="hidden md:block overflow-x-auto relative max-h-[600px]">
-              <Table>
-                <TableHeader className="bg-slate-900/90 backdrop-blur supports-[backdrop-filter]:bg-slate-900/50 sticky top-0 z-20">
+            <div ref={tabelaRef} className="hidden md:block relative">
+              <Table cabecalhoFixo>
+                <TableHeader>
                   <TableRow className="hover:bg-transparent border-white/10">
                     <TableHead className="min-w-[200px] h-12 sticky left-0 z-20 bg-neutral-900">
                        <ColumnHeader ordem={ordem} onOrdenar={setOrdem}

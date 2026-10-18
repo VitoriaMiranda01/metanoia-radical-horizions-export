@@ -12,12 +12,13 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
  * computador (1,6s), mas e justamente o tipo de coisa que trava celular mais
  * simples, que e onde a equipe vai usar no dia do evento.
  *
- * Padrao de 50 por pagina, com opcao de 100. A busca e os filtros continuam
+ * Opcoes de 5, 10, 25, 50 e 100 por pagina (cada tela escolhe o padrao;
+ * Pagamentos e Gerenciar Inscricoes abrem em 10). A busca e os filtros continuam
  * valendo sobre a lista TODA, nao so sobre a pagina aberta -- quem procura um
  * nome encontra, esteja ele na primeira pagina ou na ultima.
  */
 
-export const OPCOES_POR_PAGINA = [50, 100];
+export const OPCOES_POR_PAGINA = [5, 10, 25, 50, 100];
 
 /**
  * Recebe a lista ja filtrada e devolve a fatia da pagina atual.
@@ -114,7 +115,7 @@ const Paginacao = ({ pagina, setPagina, porPagina, setPorPagina, totalPaginas, t
         </Button>
       </div>
 
-      <div className="flex items-center gap-2 order-3">
+      <div className="flex items-center gap-1.5 flex-wrap justify-center order-3">
         <span className="text-sm text-gray-400">Por página:</span>
         {OPCOES_POR_PAGINA.map((n) => (
           <Button
@@ -122,7 +123,7 @@ const Paginacao = ({ pagina, setPagina, porPagina, setPorPagina, totalPaginas, t
             size="sm"
             onClick={() => setPorPagina(n)}
             data-dica="Quantas linhas mostrar por página."
-            className={`h-9 px-3 ${
+            className={`h-9 min-w-9 px-2.5 ${
               n === porPagina
                 ? 'bg-white/15 text-white border border-white/20'
                 : 'bg-transparent border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'

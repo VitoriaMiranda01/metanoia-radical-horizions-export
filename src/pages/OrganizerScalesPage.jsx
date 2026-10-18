@@ -2367,6 +2367,7 @@ const OrganizerScalesPage = () => {
             <TrocarAreaDialog
               key="troca"
               allocations={allocations}
+              atuacoesPorArea={atuacoesPorArea}
               inicial={trocaAberta.inicial}
               onClose={() => setTrocaAberta(null)}
               onTrocado={() => fetchBackgroundData(false)}

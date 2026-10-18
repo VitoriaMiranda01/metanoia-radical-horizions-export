@@ -176,7 +176,7 @@ const AcampantesTable = ({
 
   // Pagina a lista JA filtrada. A busca e os filtros continuam valendo sobre
   // tudo; a paginacao so decide quanto se desenha na tela de uma vez.
-  const paginacao = usePaginacao(filteredData);
+  const paginacao = usePaginacao(filteredData, 10);
 
   const handleExport = () => {
     if (filteredData.length === 0) {
@@ -366,11 +366,11 @@ const AcampantesTable = ({
             </div>
 
             {/* Desktop View (Table) */}
-            <div className="hidden md:block overflow-x-auto relative scroll-smooth">
-              <Table>
+            <div className="hidden md:block relative">
+              <Table cabecalhoFixo>
                 <TableHeader className="bg-white/5">
                   <TableRow className="hover:bg-transparent border-white/10">
-                        <TableHead className="text-white md:sticky md:left-0 md:z-20 min-w-[140px] md:min-w-[200px] md:bg-neutral-900 p-2 md:p-4">
+                        <TableHead className="text-white md:sticky md:left-0 md:z-30 min-w-[140px] md:min-w-[200px] md:bg-neutral-900 p-2 md:p-4">
                       <ColumnHeader ordem={ordem} onOrdenar={setOrdem}
                         title="Nome" 
                         filterKey="nome" 

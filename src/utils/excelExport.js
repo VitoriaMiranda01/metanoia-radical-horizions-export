@@ -184,7 +184,7 @@ export const exportRelacaoPagamentos = (linhas) => {
     'WhatsApp': item.whatsapp || '-',
     'Igreja': item.igreja || '-',
     'Forma de pagamento': (item.metodo_pagamento === 'manual' && item.meio_pagamento && item.quitado
-      ? ({ dinheiro: 'Dinheiro', cartao: 'Cartão' })[item.meio_pagamento]
+      ? ({ dinheiro: 'Dinheiro', cartao: 'Cartão', pix: 'PIX (conferido)' })[item.meio_pagamento]
       : null) || ({
       pix: 'PIX',
       manual: 'Em mãos',

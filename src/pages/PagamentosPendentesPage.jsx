@@ -54,7 +54,7 @@ const FORMA_DE_QUEM_DEVE = { pix: 'PIX não concluído', manual: 'Manual', isent
 // Quem ja pagou: por onde o dinheiro entrou.
 const FORMA_DE_QUEM_PAGOU = { pix: 'PIX', manual: 'Em mãos', isento: 'Isento' };
 // Em maos, o meio (16/10/2026): quem recebeu escolhe na confirmacao.
-const MEIO_DO_PAGAMENTO = { dinheiro: 'Dinheiro', cartao: 'Cartão' };
+const MEIO_DO_PAGAMENTO = { dinheiro: 'Dinheiro', cartao: 'Cartão', pix: 'PIX (conferido)' };
 
 // "2026-10-10" -> "10/10/2026"
 const dataBR = (iso) => (iso ? String(iso).slice(0, 10).split('-').reverse().join('/') : '');
@@ -364,7 +364,7 @@ const PagamentosPendentesPage = () => {
     setConfirmacao(null);
     toast({
       title: 'Pagamento confirmado',
-      description: `${pedido.item.nome}: ${formatarValor(valor)}${meio ? ` em ${MEIO_DO_PAGAMENTO[meio].toLowerCase()}` : ''}${cupom ? ` com o cupom ${cupom}` : ''}. Foi para a aba Pagos.`,
+      description: `${pedido.item.nome}: ${formatarValor(valor)}${meio ? (meio === 'pix' ? ' por PIX' : ` em ${MEIO_DO_PAGAMENTO[meio].toLowerCase()}`) : ''}${cupom ? ` com o cupom ${cupom}` : ''}. Foi para a aba Pagos.`,
       className: 'bg-emerald-600 text-white border-none'
     });
     await carregar();
@@ -563,7 +563,7 @@ const PagamentosPendentesPage = () => {
 
   // Pagina a lista já filtrada. No dia do evento essa tela pode ter centenas
   // de pendentes — desenhar tudo de uma vez trava celular mais simples.
-  const paginacao = usePaginacao(linhas);
+  const paginacao = usePaginacao(linhas, 10);
 
   // Nome + extras + coluna da aba + (Pagos: valor e grupo | demais: acoes).
   const colunas = 1 + colunasExtras.length + 1 + (aba === 'pagos' ? (mostrarGrupo ? 2 : 1) : 1);
@@ -903,8 +903,8 @@ const PagamentosPendentesPage = () => {
               />
             )}
 
-            <div className="p-0 overflow-x-auto">
-              <Table>
+            <div className="p-0">
+              <Table cabecalhoFixo>
                 <TableHeader className="bg-white/5">
                   <TableRow className="border-white/10 hover:bg-transparent">
                     <TableHead className="min-w-[13rem]">{cabecalho('Nome', 'nome')}</TableHead>

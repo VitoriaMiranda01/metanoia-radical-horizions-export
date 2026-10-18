@@ -48,7 +48,7 @@ const TotalEdicaoTable = ({ acampantes, equipantesConfirmados, confirmadosDispon
     && casaBusca(busca, [p.nome, p.cpf, p.whatsapp, igrejaDe(p), p.igreja_outra])
   ), [pessoas, tipo, busca]);
 
-  const paginacao = usePaginacao(filtradas);
+  const paginacao = usePaginacao(filtradas, 10);
 
   return (
     <Card className="bg-black/60 glass-effect border-white/10">
@@ -108,8 +108,8 @@ const TotalEdicaoTable = ({ acampantes, equipantesConfirmados, confirmadosDispon
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border border-white/10">
-              <Table>
+            <div className="rounded-lg border border-white/10 overflow-hidden">
+              <Table cabecalhoFixo>
                 <TableHeader>
                   <TableRow className="border-white/10 bg-white/5 hover:bg-white/5">
                     <TableHead className="text-white">Nome</TableHead>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Banknote, CheckCircle, CreditCard, Loader2 } from 'lucide-react';
+import { Banknote, CheckCircle, CreditCard, Loader2, QrCode } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,11 +17,14 @@ import { cuponsDoPagamento } from '@/services/paymentService';
  *
  * Pagamento em maos (16/10/2026): o organizador diz se recebeu em DINHEIRO ou
  * no CARTAO -- o financeiro precisa disso para conferir o caixa. Sem escolher,
- * nao confirma (nenhum dos dois vem marcado de proposito).
+ * nao confirma (nenhum vem marcado de proposito). 18/10/2026: terceira opcao,
+ * PIX recebido direto e conferido a mao (meio 'pix', metodo continua 'manual'
+ * -- separado do PIX automatico do Sicoob).
  */
 const MEIOS = [
   { valor: 'dinheiro', rotulo: 'Dinheiro', Icone: Banknote },
-  { valor: 'cartao', rotulo: 'Cartão', Icone: CreditCard }
+  { valor: 'cartao', rotulo: 'Cartão', Icone: CreditCard },
+  { valor: 'pix', rotulo: 'PIX', Icone: QrCode }
 ];
 
 const formatarValor = (n) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(n) || 0);
@@ -91,7 +94,7 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
       return;
     }
     if (!ehPixTravado && !meio) {
-      setErro('Escolha se o pagamento foi em dinheiro ou no cartão.');
+      setErro('Escolha se o pagamento foi em dinheiro, no cartão ou por PIX.');
       return;
     }
     setSalvando(true);
@@ -140,7 +143,7 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
           {!ehPixTravado && (
             <div className="space-y-1.5">
               <span className="text-sm text-gray-300">Recebido em</span>
-              <div className="grid grid-cols-2 gap-2" role="group" aria-label="Recebido em">
+              <div className="grid grid-cols-3 gap-2" role="group" aria-label="Recebido em">
                 {MEIOS.map(({ valor: v, rotulo, Icone }) => (
                   <button
                     key={v} type="button"
@@ -157,6 +160,11 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
                   </button>
                 ))}
               </div>
+              {meio === 'pix' && (
+                <p className="text-xs text-gray-400">
+                  PIX recebido direto, conferido por você. Fica separado do PIX automático do banco nos relatórios.
+                </p>
+              )}
             </div>
           )}
 

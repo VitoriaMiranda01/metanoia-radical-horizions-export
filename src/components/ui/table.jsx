@@ -1,11 +1,20 @@
 import { cn } from '@/lib/utils';
 import React from 'react';
 
-const Table = React.forwardRef(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+// cabecalhoFixo: a linha de titulos (Nome, CPF, Igreja...) fica presa no topo
+// ao rolar a lista. Como a tabela tambem rola para o lado, quem rola para
+// baixo precisa ser a propria moldura (altura da tela), nao a pagina -- o
+// sticky so gruda no primeiro ancestral que rola. As celulas fixas nas laterais
+// (Nome a esquerda, Acoes a direita) ficam por cima das outras do cabecalho.
+const Table = React.forwardRef(({ className, cabecalhoFixo = false, ...props }, ref) => (
+  <div className={cn('relative w-full overflow-auto', cabecalhoFixo && 'max-h-[calc(100dvh-9rem)] overscroll-contain')}>
     <table
       ref={ref}
-      className={cn('w-full caption-bottom text-sm', className)}
+      className={cn(
+        'w-full caption-bottom text-sm',
+        cabecalhoFixo && '[&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-20 [&_thead_th]:bg-neutral-900 [&_thead_th.left-0]:z-30 [&_thead_th.right-0]:z-30 [&_thead_th]:shadow-[inset_0_-1px_0_rgba(255,255,255,0.1)]',
+        className
+      )}
       {...props}
     />
   </div>

@@ -9,7 +9,7 @@ import { WORK_AREAS, CORES_GRUPO, areaTemCor } from '@/constants/workAreas';
 import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { casaBusca } from '@/utils/busca';
-import { trocarAreaEscala } from '@/services/scalesService';
+import { trocarAreaEscala, definirAtuacao, definirCor } from '@/services/scalesService';
 import { cn } from '@/lib/utils';
 
 /**
@@ -28,8 +28,13 @@ import { cn } from '@/lib/utils';
  * escolhida aqui, na mesma troca -- a da area antiga nao vai junto. Sem cor
  * e permitido (13/10/2026: aviso, nao bloqueio), mas a tela avisa -- e no
  * Infiltrados a pessoa so entra nos grupos de trilha e nos onibus com cor.
+ *
+ * Atuacao e cor (18/10/2026): a atuacao da area nova tambem e escolhida aqui
+ * (quando a area tem mais de uma), e cada cor mostra quantas pessoas ja tem.
+ * Escolhendo a MESMA area, a pessoa fica onde esta e so muda a atuacao e/ou a
+ * cor (a chamada nao se perde).
  */
-const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) => {
+const TrocarAreaDialog = ({ allocations, atuacoesPorArea = {}, inicial = null, onClose, onTrocado }) => {
   const { toast } = useToast();
   const [busca, setBusca] = useState('');
   const [escolhido, setEscolhido] = useState(inicial);
@@ -37,10 +42,30 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
   const sugestao = (a) => (a?.separadoDe && WORK_AREAS.includes(a.separadoDe) ? a.separadoDe : '');
   const [destino, setDestino] = useState(() => sugestao(inicial));
   const [cor, setCor] = useState('');
+  const [atuacao, setAtuacao] = useState('');
   const [salvando, setSalvando] = useState(false);
-  const destinoTemCor = areaTemCor(destino);
+  const mesmaArea = !!escolhido && destino === escolhido.allocatedArea;
+  const atuacoesDestino = destino ? (atuacoesPorArea[destino] || []) : [];
+  const atuacaoPadrao = atuacoesDestino.find((a) => a.ehPadrao)?.atuacao || atuacoesDestino[0]?.atuacao || '';
+  const atuacaoFinal = atuacao || atuacaoPadrao;
+  const atuacaoSemCor = atuacoesDestino.some((a) => a.atuacao === atuacaoFinal && a.semCor);
+  const destinoTemCor = areaTemCor(destino) && !atuacaoSemCor;
   const ehInfiltrados = destino === 'Infiltrados';
-  const mudarDestino = (area) => { setDestino(area); setCor(''); };
+  const mudarDestino = (area) => {
+    setDestino(area);
+    // Mesma area: parte do que a pessoa ja tem; area nova: padrao e sem cor.
+    if (escolhido && area === escolhido.allocatedArea) {
+      setAtuacao(escolhido.atuacao || '');
+      setCor(escolhido.cor || '');
+    } else {
+      setAtuacao('');
+      setCor('');
+    }
+  };
+  const contarCor = (c) => allocations.filter((a) => a.allocatedArea === destino && a.cor === c).length;
+  const nadaMudou = mesmaArea
+    && (atuacaoFinal || '') === (escolhido.atuacao || atuacaoPadrao || '')
+    && (destinoTemCor ? (cor || '') === (escolhido.cor || '') : true);
 
   useEffect(() => {
     const aoTeclar = (e) => { if (e.key === 'Escape') onClose(); };
@@ -56,8 +81,47 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
       .slice(0, 30);
   }, [busca, allocations]);
 
+  const limpar = () => {
+    setEscolhido(null);
+    setDestino('');
+    setCor('');
+    setAtuacao('');
+    setBusca('');
+    onTrocado?.();
+  };
+
+  // Mesma area: so atuacao e/ou cor, sem trocar a linha da escala.
+  const ajustarNaMesmaArea = async () => {
+    setSalvando(true);
+    const falhas = [];
+    try {
+      if ((atuacaoFinal || '') !== (escolhido.atuacao || '')) {
+        const r = await definirAtuacao(escolhido.escalaId, atuacaoFinal);
+        if (!r.success) falhas.push(`a atuação (${r.error})`);
+      }
+      if (destinoTemCor && (cor || '') !== (escolhido.cor || '')) {
+        const r = await definirCor(escolhido.escalaId, cor || null);
+        if (!r?.ok) falhas.push(`a cor (${r?.erro || 'erro'})`);
+      }
+    } catch (e) {
+      falhas.push(e?.message || 'erro de conexão');
+    }
+    setSalvando(false);
+    if (falhas.length) {
+      toast({ title: 'Não foi possível salvar', description: `Não deu para mudar ${falhas.join(' e ')}.`, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: 'Atualizado',
+      description: `${escolhido.nome}: ${destino}${atuacaoFinal ? ` · ${atuacaoFinal}` : ''}${destinoTemCor && cor ? ` (${cor})` : ''}. Já está na relação do líder.`,
+      className: 'bg-green-600 text-white'
+    });
+    limpar();
+  };
+
   const trocar = async () => {
     if (!escolhido || !destino) return;
+    if (mesmaArea) { await ajustarNaMesmaArea(); return; }
     setSalvando(true);
     let r = await trocarAreaEscala(escolhido.escalaId, destino, destinoTemCor ? cor : null);
     // Area cheia (13/10/2026): no manual o limite so avisa.
@@ -69,21 +133,25 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
       setSalvando(false);
       return;
     }
-    setSalvando(false);
     if (!r.success) {
+      setSalvando(false);
       toast({ title: 'Não foi possível trocar', description: r.error, variant: 'destructive' });
       return;
     }
+    // A troca deixa a atuacao padrao da area nova; se escolheu outra, grava.
+    let aviso = '';
+    if (atuacao && atuacao !== atuacaoPadrao) {
+      const ra = await definirAtuacao(escolhido.escalaId, atuacao);
+      if (!ra.success) aviso = ` Mas a atuação ficou a padrão (${ra.error}).`;
+    }
+    setSalvando(false);
     toast({
       title: 'Área trocada',
-      description: `${escolhido.nome}: ${escolhido.allocatedArea} → ${destino}${destinoTemCor && cor ? ` (${cor})` : ''}. Já está na relação do líder.`,
-      className: 'bg-green-600 text-white'
+      description: `${escolhido.nome}: ${escolhido.allocatedArea} → ${destino}${atuacaoFinal ? ` · ${aviso ? atuacaoPadrao : atuacaoFinal}` : ''}${destinoTemCor && cor ? ` (${cor})` : ''}. Já está na relação do líder.${aviso}`,
+      className: aviso ? undefined : 'bg-green-600 text-white',
+      variant: aviso ? 'destructive' : undefined
     });
-    setEscolhido(null);
-    setDestino('');
-    setCor('');
-    setBusca('');
-    onTrocado?.();
+    limpar();
   };
 
   return (
@@ -115,7 +183,7 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
                   <p className="text-sm text-gray-500 text-center py-4">Ninguém escalado corresponde a “{busca}”.</p>
                 )}
                 {encontrados.map((a) => (
-                  <button key={a.escalaId} type="button" onClick={() => { setEscolhido(a); setDestino(sugestao(a)); setCor(''); }}
+                  <button key={a.escalaId} type="button" onClick={() => { setEscolhido(a); setDestino(sugestao(a)); setCor(''); setAtuacao(''); }}
                     className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 rounded-md p-3 flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">{a.nome}</p>
@@ -149,6 +217,11 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
                       <SelectValue placeholder="Escolher a nova área" />
                     </SelectTrigger>
                     <SelectContent>
+                      {escolhido.allocatedArea !== 'Não será escalado' && WORK_AREAS.includes(escolhido.allocatedArea) && (
+                        <SelectItem value={escolhido.allocatedArea}>
+                          {escolhido.allocatedArea} (mesma área — só atuação/cor)
+                        </SelectItem>
+                      )}
                       {WORK_AREAS
                         .filter((area) => area !== escolhido.allocatedArea)
                         .map((area) => <SelectItem key={area} value={area}>{area}</SelectItem>)}
@@ -156,18 +229,39 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
                   </Select>
                 </div>
               </div>
+              {atuacoesDestino.length > 1 && (
+                <div className="space-y-1.5">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500">Atuação</p>
+                  <Select value={atuacaoFinal} onValueChange={setAtuacao}>
+                    <SelectTrigger className="h-10 bg-black/40 border-white/20 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {atuacoesDestino.map((a) => (
+                        <SelectItem key={a.atuacao} value={a.atuacao}>
+                          {a.ehLider ? `★ ${a.atuacao}` : a.atuacao}{a.atuacao === atuacaoPadrao ? ' (padrão)' : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {destino && areaTemCor(destino) && atuacaoSemCor && (
+                <p className="text-xs text-gray-500">A atuação “{atuacaoFinal}” não usa cor de grupo.</p>
+              )}
               {destinoTemCor && (
                 <div className="space-y-1.5">
                   <p className="text-[11px] uppercase tracking-wider text-gray-500">
-                    Cor do grupo
+                    Cor do grupo <span className="normal-case tracking-normal text-gray-600">· o número é quantos já estão em cada cor</span>
                   </p>
                   <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Cor do grupo">
                     {CORES_GRUPO.map((c) => (
                       <button
                         key={c} type="button" role="radio" aria-checked={cor === c} onClick={() => setCor(c)}
-                        className={cn('rounded-full p-0.5 border-2 transition-colors', cor === c ? 'border-white' : 'border-transparent hover:border-white/30')}
+                        className={cn('rounded-full pl-0.5 pr-2 py-0.5 border-2 transition-colors inline-flex items-center gap-1', cor === c ? 'border-white' : 'border-transparent hover:border-white/30')}
                       >
                         <GrupoTrilhaTag grupo={c} />
+                        <span className="text-xs text-gray-400 tabular-nums">{contarCor(c)}</span>
                       </button>
                     ))}
                     <button
@@ -188,18 +282,22 @@ const TrocarAreaDialog = ({ allocations, inicial = null, onClose, onTrocado }) =
                 </div>
               )}
               <p className="text-xs text-gray-500">
-                {escolhido.allocatedArea === 'Não será escalado'
-                  ? <>A pessoa volta para a escala e entra na relação do líder da nova área.{escolhido.separadoDe ? ` Ela saiu de ${escolhido.separadoDe} por ausência na chamada.` : ''}</>
-                  : `A pessoa sai da relação do líder de ${escolhido.allocatedArea} e entra na do líder da nova área.`}
-                {' '}A atuação volta para a padrão da área nova{destinoTemCor ? ' e a cor é a escolhida acima (a da área antiga não vai junto)' : ''}.
+                {mesmaArea
+                  ? `A pessoa continua em ${destino} (a presença marcada pelo líder não se perde); muda só a atuação e/ou a cor.`
+                  : <>
+                      {escolhido.allocatedArea === 'Não será escalado'
+                        ? <>A pessoa volta para a escala e entra na relação do líder da nova área.{escolhido.separadoDe ? ` Ela saiu de ${escolhido.separadoDe} por ausência na chamada.` : ''}</>
+                        : `A pessoa sai da relação do líder de ${escolhido.allocatedArea} e entra na do líder da nova área.`}
+                      {' '}A atuação é a escolhida acima{destinoTemCor ? ' e a cor também (a da área antiga não vai junto)' : ''}.
+                    </>}
               </p>
               <div className="flex justify-end gap-2">
                 <Button variant="ghost" onClick={() => setEscolhido(null)} className="text-gray-400 hover:text-white hover:bg-white/10">
                   Escolher outra pessoa
                 </Button>
-                <Button onClick={trocar} disabled={!destino || salvando}
+                <Button onClick={trocar} disabled={!destino || salvando || nadaMudou}
                   className={cn('bg-cyan-600 hover:bg-cyan-700 text-white')}>
-                  {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Trocar'}
+                  {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : mesmaArea ? 'Salvar' : 'Trocar'}
                 </Button>
               </div>
             </div>

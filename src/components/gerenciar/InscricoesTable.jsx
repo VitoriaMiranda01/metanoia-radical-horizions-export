@@ -223,7 +223,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
   const filteredData = useMemo(() => ordenarLista(filtrados, ordem, getColumnValue), [filtrados, ordem]);
 
   // Pagina a lista JA filtrada -- busca e filtros seguem valendo sobre tudo.
-  const paginacao = usePaginacao(filteredData);
+  const paginacao = usePaginacao(filteredData, 10);
   
   const getColDef = (key) => {
     const defs = COLUMN_DEFINITIONS[safeTipo] || [];
@@ -409,8 +409,8 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
             </div>
 
             {/* Desktop View - Table (md+) */}
-            <div className="hidden md:block overflow-x-auto relative">
-              <Table>
+            <div className="hidden md:block relative">
+              <Table cabecalhoFixo>
                 <TableHeader className="bg-white/5">
                   <TableRow className="hover:bg-transparent border-white/10">
                     {/* Fixed Name Column */}

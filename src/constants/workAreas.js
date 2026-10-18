@@ -298,7 +298,8 @@ export const DEFAULT_AREA_CAPACITY = 5;
 export const AREAS_SECUNDARIAS = [
   'Ataque / Madrugada', 'Recepção Sítio',
   'Recepção Igreja', 'Cozinha Igreja', 'Som / Multimídia', 'Estacionamento', 'Mesa crachá',
-  'Família muçulmana', 'Apresentadores', 'Equipe de Manutenção'
+  'Família muçulmana', 'Apresentadores', 'Equipe de Manutenção',
+  'Base Operacional', 'Contêiner'
 ];
 
 export const ehAreaPrincipal = (area) => !!area && !AREAS_SECUNDARIAS.includes(area);

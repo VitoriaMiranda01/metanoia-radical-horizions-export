@@ -223,6 +223,9 @@ const EquipantePage = () => {
 
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  // Primeiro nome para a tela "Inscrição Confirmada!" (quem concluiu nao
+  // recebe a ficha, so isto).
+  const [primeiroNome, setPrimeiroNome] = useState('');
 
   // Quem já se identificou nesta sessão não recomeça do CPF.
   //
@@ -302,6 +305,7 @@ const EquipantePage = () => {
     }
 
     if (isFound && hasPaid) {
+      setPrimeiroNome(result.primeiroNome || '');
       setCurrentStep('sucesso');
     } else if (isFound && loadedData) {
       setInscricaoData(loadedData);
@@ -857,7 +861,12 @@ const EquipantePage = () => {
               <CheckCircle className="w-10 h-10 text-green-500" />
             </div>
             <h2 className="text-3xl font-bold text-white">Inscrição Confirmada!</h2>
-            <p className="text-green-100 text-lg">Parabéns, {inscricaoData?.nome?.split(' ')[0] || 'Equipante'}! Sua inscrição está confirmada.</p>
+            <div className="text-green-100 text-lg space-y-3 max-w-xl mx-auto">
+              <p>Parabéns, {primeiroNome || inscricaoData?.nome?.split(' ')[0] || 'Equipante'}! Sua inscrição está confirmada.</p>
+              <p>Se sua área tem grupo no WhatsApp, fique atento às mensagens e informações passadas.</p>
+              <p>Sua primeira tarefa já começa hoje: <strong className="text-white">ORAI SEM CESSAR!</strong></p>
+              <p>Nos vemos no dia da nossa edição.</p>
+            </div>
             <Button variant="outline" className="mt-4" onClick={() => navigate('/')}>Voltar para o Início</Button>
           </motion.div>
         )}

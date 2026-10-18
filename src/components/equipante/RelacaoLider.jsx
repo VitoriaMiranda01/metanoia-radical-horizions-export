@@ -203,11 +203,13 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
   const equipeAtual = abaAtual?.tipo === 'equipe' ? abaAtual.equipe : null;
   const podeDelegar = equipeAtual?.papel === 'lider';
 
+  // Muitas equipes (ex.: responsavel por 13): so a quantidade -- as abas listam cada uma.
+  const resumo = (lista, rotulo) => (lista.length > 4 ? `${lista.length} equipes` : lista.map(rotulo).join(', '));
   const titulo = liderDe.length > 0
-    ? `Você é líder: ${liderDe.map(tituloEquipe).join(', ')}`
+    ? `Você é líder: ${resumo(liderDe, tituloEquipe)}`
     : delegadoDe.length > 0
-      ? `Responsável pela reunião: ${delegadoDe.map(tituloEquipe).join(', ')}`
-      : `Líder da área extra: ${liderExtraDe.map(rotuloAreaExtra).join(', ')}`;
+      ? `Responsável pela reunião: ${resumo(delegadoDe, tituloEquipe)}`
+      : `Líder da área extra: ${resumo(liderExtraDe, rotuloAreaExtra)}`;
 
   return (
     <div id="relacao-lider" className="bg-black/40 border border-amber-500/30 rounded-xl p-4 sm:p-6 scroll-mt-20">
@@ -267,6 +269,13 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
         </div>
       )}
 
+      {aberta && dados && equipes.length > 3 && (
+        <p className="mt-3 text-xs text-amber-200/90">
+          Você conduz a reunião de {equipes.length} equipes. Cada uma tem a sua lista, a sua chamada e o seu grupo de
+          WhatsApp: escolha a equipe nas abas abaixo e confira o nome dela antes de marcar a presença ou mandar convite.
+        </p>
+      )}
+
       {aberta && dados && abas.length > 1 && (
         <div className="mt-4 -mx-1 flex gap-2 overflow-x-auto pb-1 px-1" role="tablist">
           {abas.map((a) => {
@@ -300,6 +309,7 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
             onAtuacao={onAtuacao}
             onCor={onCor}
             remetente={dados.lider}
+            mostrarEquipe={abas.length > 1}
             onSalvarGrupo={(link) => agir(`g-${abaAtual.equipe.escala_id}`,
               () => salvarGrupoLider(equipanteId, dono, abaAtual.equipe.escala_id, link),
               (r) => (r.link ? 'Link do grupo salvo' : 'Link do grupo apagado'))}
@@ -356,7 +366,7 @@ const AGREGADOS = {
   'Selva': { area: 'Perseguidos', um: 'perseguido', varios: 'Perseguidos' }
 };
 
-const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSalvarGrupo, remetente }) => {
+const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSalvarGrupo, remetente, mostrarEquipe }) => {
   const [busca, setBusca] = useState('');
   const [filtro, setFiltro] = useState('todos');
   const [atuacao, setAtuacao] = useState('');
@@ -496,7 +506,7 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
 
       {equipe.escala_id && (
         <GrupoWhatsApp equipe={equipe} prontos={prontosConvite} ocupado={!!ocupado[`g-${equipe.escala_id}`]}
-          onSalvar={onSalvarGrupo} />
+          onSalvar={onSalvarGrupo} mostrarEquipe={mostrarEquipe} />
       )}
     </section>
   );
@@ -848,7 +858,7 @@ const EquipeExtra = ({ extra, equipanteId, dono, onMudou }) => {
   );
 };
 
-const GrupoWhatsApp = ({ equipe, prontos, ocupado, onSalvar }) => {
+const GrupoWhatsApp = ({ equipe, prontos, ocupado, onSalvar, mostrarEquipe }) => {
   const { toast } = useToast();
   const [editando, setEditando] = useState(!equipe.grupo_link);
   const [link, setLink] = useState(equipe.grupo_link || '');
@@ -875,6 +885,13 @@ const GrupoWhatsApp = ({ equipe, prontos, ocupado, onSalvar }) => {
       <p className="text-white font-medium flex items-center gap-2">
         <MessageCircle className="w-4 h-4 text-[#25D366]" /> Grupo de WhatsApp da equipe
       </p>
+      {/* Quem conduz varias equipes: cada grupo diz de qual equipe e, para nao misturar. */}
+      {mostrarEquipe && (
+        <p className="rounded-md border border-[#25D366]/40 bg-black/30 px-3 py-1.5 text-sm text-white flex items-center gap-2 flex-wrap">
+          Este grupo é da equipe <strong>{equipe.area}</strong>
+          {equipe.cor && <Cor cor={equipe.cor} />}
+        </p>
+      )}
 
       {editando ? (
         <>

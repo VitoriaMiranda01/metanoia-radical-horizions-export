@@ -13,7 +13,7 @@ import { areaExtraPorChave, rotuloAreaExtra } from '@/constants/areasExtra';
 import { formatarTelefone } from '@/utils/telefone';
 import { cn } from '@/lib/utils';
 import {
-  fetchRelacaoLider, marcarPresenca, salvarGrupoLider, marcarConviteLider, linkWhatsApp,
+  fetchRelacaoLider, fetchAssinaturaRelacao, marcarPresenca, salvarGrupoLider, marcarConviteLider, linkWhatsApp,
   trocarAtuacaoLider, definirCorLider, delegarReuniao,
   buscarParaAreaExtra, incluirNaAreaExtra, removerDaAreaExtra
 } from '@/services/liderService';
@@ -52,10 +52,14 @@ const TEXTO_PENDENCIA = {
   autorizacao: 'falta a autorização dos pais (menor de idade)'
 };
 
-const ATUALIZAR_A_CADA_MS = 15000;
-// Equipe que mais de uma pessoa conduz (lider + responsavel, ou dois responsaveis):
-// a chamada de um tem que aparecer para o outro quase na hora (18/10/2026).
-const ATUALIZAR_COMPARTILHADA_MS = 4000;
+// 18/10/2026 (dia de ~1000 acessos): o celular pergunta so a ASSINATURA das
+// suas equipes (62 bytes) e baixa a lista inteira (50-70 KB) apenas quando ela
+// muda -- ou a cada 60 s, por garantia (ex.: pendencia corrigida na ficha).
+const CONFERIR_A_CADA_MS = 10000;
+// Equipe que mais de uma pessoa conduz (lider + responsavel, ou dois
+// responsaveis): a chamada de um aparece para o outro em poucos segundos.
+const CONFERIR_COMPARTILHADA_MS = 4000;
+const RECARREGAR_SEMPRE_MS = 60000;
 
 // Linhas longas so sao desenhadas quando chegam perto da tela.
 const LINHA_LEVE = { contentVisibility: 'auto', containIntrinsicSize: 'auto 104px' };
@@ -109,6 +113,9 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
   // a lista velha: e descartada, senao o botao "voltava" por um instante.
   const versao = useRef(0);
   const emVoo = useRef(0);
+  const assinatura = useRef(null);
+  const carregadoEm = useRef(0);
+  const conferindo = useRef(false);
 
   const carregar = useCallback(async (silencioso = false) => {
     const v = versao.current;
@@ -142,6 +149,8 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
         }
       }
       ultimo.current = r;
+      assinatura.current = r.assinatura || null;
+      carregadoEm.current = Date.now();
       meusToques.current.clear();
       temDados.current = true;
       setDados(r);
@@ -160,14 +169,31 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
     const delegados = e.delegados || (e.delegado ? [e.delegado] : []);
     return delegados.length >= 2 || (delegados.length >= 1 && (e.lideres || []).length > 0);
   });
+  // Confere a assinatura; so recarrega a lista se algo mudou (ou deu 60 s).
+  const conferir = useCallback(async () => {
+    if (conferindo.current || emVoo.current > 0) return;
+    conferindo.current = true;
+    try {
+      if (!assinatura.current || Date.now() - carregadoEm.current > RECARREGAR_SEMPRE_MS) {
+        await carregar(true);
+        return;
+      }
+      const r = await fetchAssinaturaRelacao(equipanteId, dono);
+      // Sem resposta valida (rede, servidor antigo): recarrega do jeito antigo.
+      if (!r.ok || !r.assinatura || r.assinatura !== assinatura.current) await carregar(true);
+    } finally {
+      conferindo.current = false;
+    }
+  }, [carregar, equipanteId, dono]);
+
   useEffect(() => {
     const t = setInterval(() => {
-      if (typeof document === 'undefined' || !document.hidden) carregar(true);
-    }, compartilhada ? ATUALIZAR_COMPARTILHADA_MS : ATUALIZAR_A_CADA_MS);
-    const aoVoltar = () => { if (!document.hidden) carregar(true); };
+      if (typeof document === 'undefined' || !document.hidden) conferir();
+    }, compartilhada ? CONFERIR_COMPARTILHADA_MS : CONFERIR_A_CADA_MS);
+    const aoVoltar = () => { if (!document.hidden) conferir(); };
     document.addEventListener('visibilitychange', aoVoltar);
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', aoVoltar); };
-  }, [carregar, compartilhada]);
+  }, [conferir, compartilhada]);
 
   // Muda um membro na tela na hora (o toque responde sem esperar o servidor).
   const ajustarMembro = useCallback((escalaId, mudanca) => {

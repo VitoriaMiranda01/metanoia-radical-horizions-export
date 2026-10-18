@@ -32,6 +32,15 @@ const chamar = async (funcao, params, rotulo) => {
 export const fetchRelacaoLider = (equipanteId, dono) =>
   chamar('relacao_lider', credenciais(equipanteId, dono), 'relação do líder');
 
+// So a assinatura do estado das equipes (62 bytes): o celular compara e so
+// baixa a relacao inteira quando mudou (18/10/2026, migration 20261018c).
+// Sem reenvio: se falhar, a proxima conferencia tenta de novo.
+export const fetchAssinaturaRelacao = async (equipanteId, dono) => {
+  const { data, error } = await supabase.rpc('relacao_lider_assinatura', credenciais(equipanteId, dono));
+  if (error || !data) return { ok: false };
+  return data;
+};
+
 // presente: true | false | null (desmarca)
 export const marcarPresenca = (equipanteId, dono, escalaId, presente) =>
   chamar('lider_marcar_presenca', {

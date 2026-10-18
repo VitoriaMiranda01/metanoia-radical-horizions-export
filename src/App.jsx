@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
@@ -10,21 +10,43 @@ import ApoioProtectedRoute from '@/components/route-guards/ApoioProtectedRoute';
 import LoginPage from '@/pages/LoginPage';
 import AcampantePage from '@/pages/AcampantePage';
 import EquipantePage from '@/pages/EquipantePage';
-import GerenciarInscricoesPage from '@/pages/GerenciarInscricoesPage';
-import AprovacoesPage from '@/pages/AprovacoesPage';
-import ParceirosPage from '@/pages/ParceirosPage';
 import HomePage from '@/pages/HomePage';
-import OrganizerConfigPage from '@/pages/OrganizerConfigPage';
-import OrganizerScalesPage from '@/pages/OrganizerScalesPage';
 import PaymentMethodSelectionPage from '@/pages/PaymentMethodSelectionPage';
 import InscricaoPixPage from '@/pages/InscricaoPixPage';
 import ManualPaymentPage from '@/pages/ManualPaymentPage';
-import AdminWorkflowsPage from '@/pages/AdminWorkflowsPage';
-import PagamentosPendentesPage from '@/pages/PagamentosPendentesPage';
-import SenhasParceirosPage from '@/pages/SenhasParceirosPage';
-import SaudePage from '@/pages/SaudePage';
 import Layout from '@/components/Layout';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
+
+// Telas dos organizadores em arquivos separados (18/10/2026): o celular de
+// quem so abre a Area do Equipante nao baixa a Geracao de Escalas, os
+// Pagamentos etc. Se um arquivo antigo sumir depois de um deploy, recarrega a
+// pagina uma vez (pega a versao nova).
+const carregarPagina = (importar) => lazy(() => importar().then((m) => {
+  try { sessionStorage.removeItem('recarregou-pagina'); } catch { /* sem storage */ }
+  return m;
+}).catch((erro) => {
+  let jaRecarregou = false;
+  try { jaRecarregou = sessionStorage.getItem('recarregou-pagina') === '1'; } catch { /* sem storage */ }
+  if (!jaRecarregou) {
+    try { sessionStorage.setItem('recarregou-pagina', '1'); } catch { /* sem storage */ }
+    window.location.reload();
+    return new Promise(() => {});
+  }
+  throw erro;
+}));
+const GerenciarInscricoesPage = carregarPagina(() => import('@/pages/GerenciarInscricoesPage'));
+const AprovacoesPage = carregarPagina(() => import('@/pages/AprovacoesPage'));
+const ParceirosPage = carregarPagina(() => import('@/pages/ParceirosPage'));
+const OrganizerConfigPage = carregarPagina(() => import('@/pages/OrganizerConfigPage'));
+const OrganizerScalesPage = carregarPagina(() => import('@/pages/OrganizerScalesPage'));
+const AdminWorkflowsPage = carregarPagina(() => import('@/pages/AdminWorkflowsPage'));
+const PagamentosPendentesPage = carregarPagina(() => import('@/pages/PagamentosPendentesPage'));
+const SenhasParceirosPage = carregarPagina(() => import('@/pages/SenhasParceirosPage'));
+const SaudePage = carregarPagina(() => import('@/pages/SaudePage'));
+
+const Carregando = () => (
+  <div className="min-h-screen flex items-center justify-center bg-black text-gray-400 text-sm">Carregando...</div>
+);
 
 function EquipanteWorkflowRoute() {
   const { equipante_id } = useParams();
@@ -52,6 +74,7 @@ function App() {
     <AuthProvider>
       <Router>
         <div className="min-h-screen">
+          <Suspense fallback={<Carregando />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
@@ -158,6 +181,7 @@ function App() {
             <Route path="/organizador" element={<Navigate to="/gerenciar" replace />} />
             <Route path="/inscricao" element={<InscricaoRedirect />} />
           </Routes>
+          </Suspense>
           <Toaster />
           <FaixaAmbienteTeste />
           <DicasMouse />

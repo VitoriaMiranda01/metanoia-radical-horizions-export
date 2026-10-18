@@ -4,7 +4,7 @@ import { normalizarBusca } from '@/utils/busca';
 import { motion } from 'framer-motion';
 import {
   KeyRound, Search, RefreshCw, AlertCircle, AlertTriangle, CheckCircle,
-  Lock, Unlock, Copy, Check, MessageSquare, X
+  Lock, Unlock, Copy, Check, MessageSquare, X, Link2
 } from 'lucide-react';
 import Layout from '@/components/Layout';
 import {
@@ -15,8 +15,10 @@ import {
   souOrganizadorMaximo,
   listarLoginsBloqueados,
   chaveBloqueio,
-  liberarLogin
+  liberarLogin,
+  listarVinculosResponsavel
 } from '@/services/senhasParceirosService';
+import VincularIgrejasDialog from '@/components/organizer/VincularIgrejasDialog';
 import BloqueioLogin from '@/components/organizer/BloqueioLogin';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
@@ -90,14 +92,21 @@ const SenhasParceirosPage = () => {
   const [souMaximo, setSouMaximo] = useState(false);
   const [bloqueios, setBloqueios] = useState({});
   const [liberando, setLiberando] = useState(null);
+  // Pastor de mais de uma igreja (19/10/2026): vinculos conta -> igrejas extras.
+  const [vinculos, setVinculos] = useState([]);
+  const [vinculando, setVinculando] = useState(null); // conta com o dialogo aberto
   const { toast } = useToast();
 
   const carregar = async () => {
     setLoading(true);
     setError(null);
     try {
-      const dados = await listarContasParceiros();
+      const [dados, vinc] = await Promise.all([
+        listarContasParceiros(),
+        listarVinculosResponsavel().catch(() => []),
+      ]);
       setContas(dados || []);
+      setVinculos(Array.isArray(vinc) ? vinc : []);
       const maximo = (await souOrganizadorMaximo().catch(() => false)) === true;
       setSouMaximo(maximo);
       if (maximo) setBloqueios(await listarLoginsBloqueados().catch(() => ({})));
@@ -253,6 +262,14 @@ const SenhasParceirosPage = () => {
             : conta.acesso_liberado
               ? <><Lock className="w-4 h-4 mr-1.5" />Bloquear</>
               : <><Unlock className="w-4 h-4 mr-1.5" />Liberar</>}
+        </Button>
+
+        <Button size="sm" variant="outline" disabled={processando}
+          onClick={() => setVinculando(conta)}
+          data-dica="Este pastor responde por mais de uma igreja? Vincule as outras igrejas a esta conta: com o mesmo código e senha ele vê e aprova as inscrições de todas."
+          className="h-8 px-3 bg-transparent border-sky-500/30 text-sky-300 hover:text-sky-200 hover:bg-sky-500/10">
+          <Link2 className="w-4 h-4 mr-1.5" />
+          Igrejas{vinculos.some((v) => v.conta_codigo === conta.codigo) ? ` (+${vinculos.filter((v) => v.conta_codigo === conta.codigo).length})` : ''}
         </Button>
 
         <Button size="sm" disabled={processando}
@@ -451,6 +468,19 @@ const SenhasParceirosPage = () => {
                                 {conta.primeiro_acesso_em ? ` em ${formatarData(conta.primeiro_acesso_em)}` : ''}
                               </span>
                             )}
+                            {/* Pastor de mais de uma igreja (19/10/2026). */}
+                            {vinculos.some((v) => v.conta_codigo === conta.codigo) && (
+                              <span className="block text-xs text-sky-300 mt-0.5">
+                                também responde por{' '}
+                                {vinculos.filter((v) => v.conta_codigo === conta.codigo)
+                                  .map((v) => `${v.igreja_codigo} - ${v.igreja_nome || ''}`).join(', ')}
+                              </span>
+                            )}
+                            {vinculos.filter((v) => v.igreja_codigo === conta.codigo).map((v) => (
+                              <span key={v.conta_codigo} className="block text-xs text-sky-300 mt-0.5">
+                                respondida também pela conta {v.conta_codigo}{v.responsavel ? ` (${v.responsavel})` : ''}
+                              </span>
+                            ))}
                             {conta.pedido_aberto_em && (
                               <span className="block text-xs text-amber-400 mt-0.5">
                                 pediu senha nova em {formatarData(conta.pedido_aberto_em)}
@@ -489,6 +519,13 @@ const SenhasParceirosPage = () => {
           </motion.div>
         )}
       </div>
+      <VincularIgrejasDialog
+        conta={vinculando}
+        contas={contas}
+        vinculos={vinculos}
+        onFechar={() => setVinculando(null)}
+        onSalvo={() => { setVinculando(null); carregar(); }}
+      />
     </Layout>
   );
 };

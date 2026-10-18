@@ -213,3 +213,27 @@ export const liberarLogin = async (tipo, identificador) =>
     p_tipo: tipo,
     p_identificador: String(identificador || '').trim(),
   }, 'liberação do login');
+
+// ---------------------------------------------------------------------------
+// Pastor responsavel por mais de uma igreja (19/10/2026)
+//
+// A conta (login) de uma igreja passa a responder tambem por outras: quem
+// entra com aquele codigo ve e aprova as inscricoes de todas elas. Uma igreja
+// so pode estar vinculada a UMA conta. A regra mora no banco
+// (definir_igrejas_da_conta, igrejas_do_parceiro).
+// ---------------------------------------------------------------------------
+
+/** Organizador: todos os vinculos [{ igreja_codigo, igreja_nome, conta_codigo, conta_nome, responsavel }]. */
+export const listarVinculosResponsavel = async () =>
+  chamar('vinculos_responsavel_igrejas', undefined, 'igrejas vinculadas');
+
+/** Organizador: a lista COMPLETA de igrejas extras da conta (as que sairem sao desvinculadas). */
+export const definirIgrejasDaConta = async (conta, igrejas) =>
+  chamar('definir_igrejas_da_conta', {
+    p_conta: String(conta || '').trim(),
+    p_igrejas: (igrejas || []).map((c) => String(c).trim()),
+  }, 'vincular igrejas');
+
+/** Parceiro logado: as igrejas pelas quais ele responde [{ codigo, nome }]. */
+export const minhasIgrejasParceiro = async () =>
+  chamar('minhas_igrejas_parceiro', undefined, 'igrejas do parceiro');

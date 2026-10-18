@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { minhasIgrejasParceiro } from '@/services/senhasParceirosService';
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnimatePresence } from 'framer-motion';
@@ -104,11 +105,16 @@ const ApprovalsView = ({
       // Parceiro sem codigo de igreja nao ve nada (nunca "tudo"): quem ve
       // todas as igrejas e so o organizador. O banco ja barra por RLS
       // (policy "parceiro ve so a propria igreja"); isto e a segunda trava.
+      // Pastor de mais de uma igreja (19/10/2026): a conta pode responder
+      // tambem por igrejas vinculadas -- a lista vem do servidor; sem ela,
+      // so a da propria conta.
       if (isParceiro) {
-        const prefixoIgreja = `${igrejaUser?.codigo} - `;
-        mappedEquipantes = igrejaUser?.codigo
-          ? mappedEquipantes.filter(e => e.igreja && e.igreja.startsWith(prefixoIgreja))
-          : [];
+        let codigos = igrejaUser?.codigo ? [String(igrejaUser.codigo)] : [];
+        try {
+          const minhas = await minhasIgrejasParceiro();
+          if (Array.isArray(minhas) && minhas.length) codigos = minhas.map((i) => String(i.codigo));
+        } catch { /* fica so a propria igreja */ }
+        mappedEquipantes = mappedEquipantes.filter(e => e.igreja && codigos.some((c) => e.igreja.startsWith(`${c} - `)));
       }
 
       setInscricoes(mappedEquipantes);

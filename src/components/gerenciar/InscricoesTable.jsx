@@ -161,7 +161,9 @@ const SITUACOES = [
   { valor: 'todos', rotulo: 'Todos', ativo: 'bg-white/20 text-white border-white/40', dica: 'Todas as inscrições de equipante desta edição.' },
 ];
 
-const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchTerm, onSearchChange, situacao, onSituacaoChange, contagemSituacao }) => {
+// antesDeColunas (18/10/2026): o botao "Cadastros com pendencias" dos
+// equipantes, a esquerda de "Colunas".
+const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchTerm, onSearchChange, situacao, onSituacaoChange, contagemSituacao, antesDeColunas = null }) => {
   const { toast } = useToast();
   const [filters, setFilters] = useState({});
   // Ordenacao pela seta do cabecalho (utils/ordenacao.js).
@@ -317,6 +319,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                     Limpar Filtros
                   </Button>
                 )}
+                {antesDeColunas}
                 <div className="hidden md:block">
                   <ColumnVisibilityDropdown 
                     type={safeTipo}

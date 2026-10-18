@@ -37,6 +37,8 @@ import AvisoNascimento from '@/components/gerenciar/AvisoNascimento';
 import PedidosAcessoQuadro from '@/components/gerenciar/PedidosAcessoQuadro';
 import DuplicadosQuadro from '@/components/gerenciar/DuplicadosQuadro';
 import CentralNotificacoes from '@/components/gerenciar/CentralNotificacoes';
+import PendenciasEquipantes, { BotaoPendencias } from '@/components/gerenciar/PendenciasEquipantes';
+import { fichasComPendencias } from '@/utils/pendenciasEquipante';
 import { useAvisosInscricoes } from '@/hooks/useAvisosInscricoes';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import { deleteAcampante, getAcampantes, countAcampantes, realocarGrupoTrailha, salvarObservacaoAcampante, updateAcampante } from '@/services/acampantesService';
@@ -83,6 +85,10 @@ const GerenciarInscricoesPage = () => {
   const [statsModalData, setStatsModalData] = useState([]);
   // Ficha aberta a partir da lista de uma metrica: ao fechar, a lista volta.
   const [voltarParaMetrica, setVoltarParaMetrica] = useState(false);
+  // Cadastros com pendencias dos equipantes (18/10/2026). Ao abrir uma ficha
+  // a partir dela, a janela fecha e volta quando a ficha fecha.
+  const [pendenciasAberto, setPendenciasAberto] = useState(false);
+  const [voltarParaPendencias, setVoltarParaPendencias] = useState(false);
   
   const [refreshReports, setRefreshReports] = useState(0);
 
@@ -235,6 +241,8 @@ const GerenciarInscricoesPage = () => {
       filteredEquipantes: filterInscricoes(daSituacao, searchTermEquipantes),
     };
   }, [inscricoes, searchTermEquipantes, situacaoEquipantes, idsConfirmados]);
+
+  const fichasPendentes = useMemo(() => fichasComPendencias(equipantes), [equipantes]);
 
   // Clique nos quadros de cima: abre a aba (e a situacao) e desce ate ela.
   const abrirPeloQuadro = (chave) => {
@@ -393,7 +401,7 @@ const GerenciarInscricoesPage = () => {
         <meta name="description" content="Gerencie todas as inscrições do projeto Metanoia Radical" />
       </Helmet>
 
-      <Layout>
+      <Layout largo="tela">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <div className="relative text-center mb-8">
             {/* Central de notificacoes: so para quem ve os avisos. */}
@@ -559,6 +567,7 @@ const GerenciarInscricoesPage = () => {
                 situacao={situacaoEquipantes}
                 onSituacaoChange={setSituacaoEquipantes}
                 contagemSituacao={contagemSituacao}
+                antesDeColunas={<BotaoPendencias total={fichasPendentes.length} onClick={() => setPendenciasAberto(true)} />}
               />
             </TabsContent>
 
@@ -579,6 +588,7 @@ const GerenciarInscricoesPage = () => {
               onClose={() => {
                 setSelectedInscricao(null);
                 if (voltarParaMetrica) { setVoltarParaMetrica(false); setIsStatsModalOpen(true); }
+                if (voltarParaPendencias) { setVoltarParaPendencias(false); setPendenciasAberto(true); }
               }}
             />
           )}
@@ -586,13 +596,24 @@ const GerenciarInscricoesPage = () => {
           {inscricaoParaEditar && (
             <EditarInscricaoModal
               inscricao={inscricaoParaEditar}
-              onClose={() => setInscricaoParaEditar(null)}
+              onClose={() => {
+                setInscricaoParaEditar(null);
+                if (voltarParaPendencias) { setVoltarParaPendencias(false); setPendenciasAberto(true); }
+              }}
               onSave={handleSalvarEdicaoInscricao}
               avisoDoGrupo={avisoDoGrupo}
               vinc={vinc}
               onRealocar={handleRealocarGrupoTrailha}
             />
           )}
+
+          <PendenciasEquipantes
+            aberto={pendenciasAberto}
+            onFechar={() => setPendenciasAberto(false)}
+            lista={fichasPendentes}
+            onEditar={(ficha) => { setPendenciasAberto(false); setVoltarParaPendencias(true); setInscricaoParaEditar(ficha); }}
+            onVer={(ficha) => { setPendenciasAberto(false); setVoltarParaPendencias(true); setSelectedInscricao(ficha); }}
+          />
 
           {manualAberta && (
             <InscricaoManualDialog

@@ -218,7 +218,9 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
           <div>
             <h3 className="text-xl font-bold text-white">Complete o seu cadastro</h3>
             <p className="text-sm text-amber-100/90 mt-1">
-              {antesDeRevelar
+              {pendencias.length > 0 && pendencias.every((p) => p.tipo === 'especialidade_saude')
+                ? 'Para continuar, conte para a equipe de Saúde qual é a sua especialidade.'
+                : antesDeRevelar
                 ? 'Antes de revelarmos qual foi a sua área, precisamos de algumas informações que estão faltando na sua inscrição.'
                 : 'Faltam algumas informações na sua inscrição. Complete abaixo para continuar — leva poucos minutos.'}
             </p>

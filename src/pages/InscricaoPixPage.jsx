@@ -129,22 +129,32 @@ const InscricaoPixPage = () => {
     nascimento: location.state?.nascimento || sessaoSalva?.nascimento || null
   });
   const [presencaConfirmada, setPresencaConfirmada] = useState(null);
-  // true/false; null se a consulta falhar (ai a tela nao afirma nada).
+  // Lider/responsavel/lider de area extra: sempre tem o botao de voltar ao
+  // acompanhamento, onde fica a relacao da equipe (19/10/2026).
+  const [conduzEquipe, setConduzEquipe] = useState(false);
+  // presente: true/false; null se a consulta falhar (ai a tela nao afirma nada).
   const consultarPresenca = async () => {
     try {
       const situacao = await getEquipanteWorkflow(inscricaoId, donoEquipante());
-      return situacao?.presenca === 'presente';
+      const conduz = (situacao?.lider_de?.length || 0) + (situacao?.delegado_de?.length || 0)
+        + (situacao?.lider_extra_de?.length || 0) > 0;
+      return { presente: situacao?.presenca === 'presente', conduz };
     } catch {
-      return null;
+      return { presente: null, conduz: false };
     }
   };
 
   useEffect(() => {
     if (statusPagamento !== 'confirmado' || tipo !== 'equipante' || !inscricaoId) return;
     let ativo = true;
-    consultarPresenca().then((ok) => { if (ativo) setPresencaConfirmada(ok); });
+    consultarPresenca().then((r) => {
+      if (!ativo) return;
+      setPresencaConfirmada(r.presente);
+      setConduzEquipe(r.conduz);
+    });
     return () => { ativo = false; };
   }, [statusPagamento, tipo, inscricaoId]);
+  const mostrarVoltarAcompanhamento = tipo === 'equipante' && (presencaConfirmada === false || conduzEquipe);
 
   // O pagamento confirmado limpa a sessao; grava de novo so o necessario para
   // a pagina do equipante abrir direto no acompanhamento.
@@ -269,7 +279,8 @@ const InscricaoPixPage = () => {
         description: "Sua inscrição gratuita foi confirmada.",
         className: "bg-emerald-600 text-white"
       });
-      if (tipo === 'equipante' && (await consultarPresenca()) !== true) {
+      const situacaoEq = tipo === 'equipante' ? await consultarPresenca() : null;
+      if (situacaoEq && (situacaoEq.presente !== true || situacaoEq.conduz)) {
         voltarAoAcompanhamento();
       } else {
         navigate('/');
@@ -586,7 +597,7 @@ const InscricaoPixPage = () => {
                   <p className="text-white font-medium">{formData.nome}</p>
                 </div>
 
-                {tipo === 'equipante' && presencaConfirmada === false && (
+                {mostrarVoltarAcompanhamento && (
                   <Button
                     onClick={voltarAoAcompanhamento}
                     className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
@@ -596,8 +607,8 @@ const InscricaoPixPage = () => {
                 )}
                 <Button
                   onClick={() => navigate('/')}
-                  variant={tipo === 'equipante' && presencaConfirmada === false ? 'outline' : 'default'}
-                  className={tipo === 'equipante' && presencaConfirmada === false
+                  variant={mostrarVoltarAcompanhamento ? 'outline' : 'default'}
+                  className={mostrarVoltarAcompanhamento
                     ? 'w-full h-12'
                     : 'w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold'}
                 >

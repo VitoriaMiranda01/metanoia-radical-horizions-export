@@ -433,7 +433,11 @@ const EquipantePage = () => {
         nascimento: nascimentoDigitado
       });
 
-      if (situacao?.pago && situacao?.presenca === 'presente') {
+      // Lider (ou responsavel, ou lider de area extra) sempre volta ao
+      // acompanhamento: precisa da relacao da equipe mesmo com tudo pago.
+      const conduzEquipe = (situacao?.lider_de?.length || 0) + (situacao?.delegado_de?.length || 0)
+        + (situacao?.lider_extra_de?.length || 0) > 0;
+      if (situacao?.pago && situacao?.presenca === 'presente' && !conduzEquipe) {
         setCurrentStep('sucesso');
       } else if (verificacao?.inscrito) {
         setCurrentStep('workflow');

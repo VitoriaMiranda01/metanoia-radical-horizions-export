@@ -124,7 +124,7 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, t
                   <Sparkles className="w-4 h-4 text-yellow-400" />
                   {areas.length > 1 ? 'Suas áreas' : 'Sua área'}
                 </motion.div>
-                <AreasReveladas areas={areas} extras={extras} />
+                <AreasReveladas areas={areas} extras={extras} mostrarLocal={provisoria} />
               </motion.div>
             )}
 

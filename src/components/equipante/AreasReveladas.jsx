@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Crown, Truck } from 'lucide-react';
+import { Crown, MapPin, Truck } from 'lucide-react';
 import { ehAreaPrincipal } from '@/constants/workAreas';
 import { rotuloAreaExtra } from '@/constants/areasExtra';
+import { textoLocalReuniao } from '@/constants/locaisReuniao';
 
 /**
  * As areas de uma pessoa, como aparecem na revelacao (15/10/2026, Patrick):
@@ -55,7 +56,21 @@ const SeloLider = ({ animado, atraso }) => {
   );
 };
 
-const AreasReveladas = ({ areas = [], extras = [], animado = true }) => {
+// Local da reuniao de leitura de escala (19/10/2026): so na provisoria.
+const LocalReuniao = ({ area, pequeno = false }) => {
+  const texto = textoLocalReuniao(area);
+  if (!texto) return null;
+  return (
+    <span className={pequeno
+      ? 'mt-1 inline-flex items-center justify-center gap-1 text-xs text-sky-200'
+      : 'mt-3 inline-flex items-center gap-1.5 rounded-lg border border-sky-400/40 bg-sky-500/10 px-3 py-1.5 text-sm text-sky-100 text-left'}>
+      <MapPin className={pequeno ? 'w-3 h-3 shrink-0' : 'w-4 h-4 shrink-0'} />
+      <span>Local da reunião: <strong className="font-semibold">{texto}</strong></span>
+    </span>
+  );
+};
+
+const AreasReveladas = ({ areas = [], extras = [], animado = true, mostrarLocal = false }) => {
   let principais = areas.filter((a) => a.principal ?? ehAreaPrincipal(a.area));
   let secundarias = areas.filter((a) => !(a.principal ?? ehAreaPrincipal(a.area)));
   if (principais.length === 0) { principais = secundarias; secundarias = []; }
@@ -78,6 +93,7 @@ const AreasReveladas = ({ areas = [], extras = [], animado = true }) => {
           </span>
           {a.eh_lider && <SeloLider animado={animado} atraso={0.75 + i * 0.25} />}
           <Detalhe a={a} />
+          {mostrarLocal && <LocalReuniao area={a.area} />}
         </Bloco>
       ))}
 
@@ -97,6 +113,7 @@ const AreasReveladas = ({ areas = [], extras = [], animado = true }) => {
                   {a.cor && <>{atuacaoVisivel(a) ? '·' : ''}<BolinhaCor cor={a.cor} /></>}
                 </p>
               )}
+              {mostrarLocal && <LocalReuniao area={a.area} pequeno />}
             </div>
           ))}
           {extras.map((chave) => (

@@ -1,10 +1,11 @@
+import { textoLocalReuniao } from '@/constants/locaisReuniao';
 import TagEspecialidade from '@/components/common/TagEspecialidade';
 import { ESPECIALIDADE_OUTRO } from '@/constants/especialidadesSaude';
 import React, {
   memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState
 } from 'react';
 import {
-  AlertTriangle, Check, CheckCircle2, ChevronDown, ChevronUp, Copy, Loader2, MessageCircle,
+  AlertTriangle, Check, CheckCircle2, ChevronDown, ChevronUp, Copy, Loader2, MapPin, MessageCircle,
   Plus, RefreshCw, Search, Send, Trash2, Truck, UserCog, Users, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -474,6 +475,13 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
         <h4 className="text-xl font-bold text-white flex items-center gap-2 flex-wrap">
           {equipe.area} <Cor cor={equipe.cor} />
         </h4>
+        {/* Local da reuniao de leitura de escala (19/10/2026). */}
+        {textoLocalReuniao(equipe.area) && (
+          <p className="text-sm text-sky-200 flex items-center gap-1.5">
+            <MapPin className="w-4 h-4 shrink-0" />
+            Local da reunião: <strong className="font-semibold">{textoLocalReuniao(equipe.area)}</strong>
+          </p>
+        )}
 
         {equipe.papel === 'delegado' ? (
           <p className="text-xs text-amber-200/90">

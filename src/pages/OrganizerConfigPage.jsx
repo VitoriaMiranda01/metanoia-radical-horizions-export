@@ -28,6 +28,7 @@ import AuditoriaCard from '@/components/organizer/AuditoriaCard';
 import AmbienteTesteCard from '@/components/organizer/AmbienteTesteCard';
 import DatasReunioesCard from '@/components/organizer/DatasReunioesCard';
 import ExcluirCadastroCard from '@/components/organizer/ExcluirCadastroCard';
+import LocaisReuniaoCard from '@/components/organizer/LocaisReuniaoCard';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
@@ -593,6 +594,11 @@ const OrganizerConfigPage = () => {
                 </Button>
               </CardFooter>
             </Card>
+          </motion.div>
+
+          {/* Locais da reuniao de leitura de escala (19/10/2026). */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+            <LocaisReuniaoCard />
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>

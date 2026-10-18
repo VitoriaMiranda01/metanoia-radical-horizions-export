@@ -1,4 +1,4 @@
-import { textoLocalReuniao } from '@/constants/locaisReuniao';
+import { useLocaisReuniao } from '@/constants/locaisReuniao';
 import TagEspecialidade from '@/components/common/TagEspecialidade';
 import { ESPECIALIDADE_OUTRO } from '@/constants/especialidadesSaude';
 import React, {
@@ -468,6 +468,7 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
 
   const alternarFiltro = (f) => setFiltro((atual) => (atual === f ? 'todos' : f));
   const filtrando = filtro !== 'todos' || atuacao || termo;
+  const textoLocalReuniao = useLocaisReuniao();
 
   return (
     <section className="space-y-4">

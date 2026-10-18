@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Crown, MapPin, Truck } from 'lucide-react';
 import { ehAreaPrincipal } from '@/constants/workAreas';
 import { rotuloAreaExtra } from '@/constants/areasExtra';
-import { textoLocalReuniao } from '@/constants/locaisReuniao';
+import { useLocaisReuniao } from '@/constants/locaisReuniao';
 
 /**
  * As areas de uma pessoa, como aparecem na revelacao (15/10/2026, Patrick):
@@ -58,6 +58,7 @@ const SeloLider = ({ animado, atraso }) => {
 
 // Local da reuniao de leitura de escala (19/10/2026): so na provisoria.
 const LocalReuniao = ({ area, pequeno = false }) => {
+  const textoLocalReuniao = useLocaisReuniao();
   const texto = textoLocalReuniao(area);
   if (!texto) return null;
   return (

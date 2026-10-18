@@ -133,9 +133,18 @@ const agruparTrilhaPorCor = (equipes) => {
   const grupos = ordem.filter((c) => porCor.has(c)).map((cor) => {
     const g = porCor.get(cor);
     const origens = [...g.origens];
+    // UM grupo de WhatsApp por cor (19/10/2026, Patrick), nao por area. O link
+    // fica gravado nas equipes daquela cor (Guia Amarelo, Invisivel Amarelo):
+    // o lider de cada uma ve o mesmo link. Espirito Santo, Inimigo e Pastor
+    // Invisivel sao uma equipe so para todas as cores, entao nao guardam o
+    // link da cor -- o convite deles usa o link do grupo da cor da pessoa.
+    const guardam = origens.filter((e) => e.cor && e.escala_id);
+    const ondeGuardar = guardam.length > 0 ? guardam : origens.filter((e) => e.escala_id);
+    const link = ondeGuardar.map((e) => e.grupo_link).find(Boolean) || null;
     return {
       chave: `cor:${cor}`, area: cor === 'Sem cor' ? 'Sem cor' : `Grupo ${cor}`, cor: CORES[cor] ? cor : null,
-      papel: 'delegado', porCor: true, membros: [...g.membros.values()], origens,
+      papel: 'delegado', porCor: true, origens, ondeGuardar, grupo_link: link,
+      membros: [...g.membros.values()].map((m) => ({ ...m, _grupo_link: link })),
       lideres: [...new Set(origens.flatMap((e) => e.lideres || []))]
     };
   });
@@ -440,6 +449,15 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
             onSalvarGrupo={(eq, link) => agir(`g-${eq.escala_id}`,
               () => salvarGrupoLider(equipanteId, dono, eq.escala_id, link),
               (r) => (r.link ? 'Link do grupo salvo' : 'Link do grupo apagado'))}
+            onSalvarGrupoCor={(g, link) => agir(`g-${g.chave}`, async () => {
+              // O mesmo link em todas as equipes da cor (Guia e Invisivel da cor).
+              let r = { ok: true };
+              for (const eq of g.ondeGuardar) {
+                r = await salvarGrupoLider(equipanteId, dono, eq.escala_id, link);
+                if (!r.ok) return r;
+              }
+              return r;
+            }, (r) => (r.link ? `Link do ${g.area} salvo` : `Link do ${g.area} apagado`))}
           />
         </div>
       )}
@@ -493,7 +511,7 @@ const AGREGADOS = {
   'Selva': { area: 'Perseguidos', um: 'perseguido', varios: 'Perseguidos' }
 };
 
-const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSalvarGrupo, remetente, mostrarEquipe }) => {
+const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSalvarGrupo, onSalvarGrupoCor, remetente, mostrarEquipe }) => {
   const [busca, setBusca] = useState('');
   const [filtro, setFiltro] = useState('todos');
   const [atuacao, setAtuacao] = useState('');
@@ -677,23 +695,10 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
           onSalvar={(link) => onSalvarGrupo(equipe, link)} mostrarEquipe={mostrarEquipe} />
       )}
 
-      {/* Grupo por cor: o grupo de WhatsApp continua sendo de cada equipe
-          (Guia Amarelo, Invisivel Amarelo, Espirito Santo de todas as cores...). */}
-      {equipe.porCor && (
-        <details className="rounded-lg border border-[#25D366]/30 bg-[#25D366]/5 p-3">
-          <summary className="cursor-pointer text-white font-medium flex items-center gap-2">
-            <MessageCircle className="w-4 h-4 text-[#25D366]" />
-            Grupos de WhatsApp das equipes ({equipe.origens.filter((o) => o.escala_id).length})
-          </summary>
-          <div className="mt-3 space-y-3">
-            {equipe.origens.filter((o) => o.escala_id).map((o) => (
-              <GrupoWhatsApp key={o.chave} equipe={o}
-                prontos={(o.membros || []).filter((m) => m.presente === true && !m.eu)}
-                ocupado={!!ocupado[`g-${o.escala_id}`]}
-                onSalvar={(link) => onSalvarGrupo(o, link)} mostrarEquipe />
-            ))}
-          </div>
-        </details>
+      {/* Grupo por cor: UM grupo de WhatsApp para a cor inteira. */}
+      {equipe.porCor && equipe.ondeGuardar.length > 0 && (
+        <GrupoWhatsApp equipe={equipe} prontos={prontosConvite} ocupado={!!ocupado[`g-${equipe.chave}`]}
+          onSalvar={(link) => onSalvarGrupoCor(equipe, link)} mostrarEquipe={mostrarEquipe} />
       )}
     </section>
   );
@@ -1084,10 +1089,16 @@ const GrupoWhatsApp = ({ equipe, prontos, ocupado, onSalvar, mostrarEquipe }) =>
   return (
     <div className="rounded-lg border border-[#25D366]/30 bg-[#25D366]/5 p-4 space-y-3">
       <p className="text-white font-medium flex items-center gap-2">
-        <MessageCircle className="w-4 h-4 text-[#25D366]" /> Grupo de WhatsApp da equipe
+        <MessageCircle className="w-4 h-4 text-[#25D366]" />
+        {equipe.porCor ? `Grupo de WhatsApp do ${equipe.area}` : 'Grupo de WhatsApp da equipe'}
       </p>
+      {equipe.porCor && (
+        <p className="text-xs text-gray-300">
+          Um grupo só para a cor inteira: Guias, Invisíveis, Marcadores, Pastores Invisíveis, Espírito Santo e Inimigo.
+        </p>
+      )}
       {/* Quem conduz varias equipes: cada grupo diz de qual equipe e, para nao misturar. */}
-      {mostrarEquipe && (
+      {mostrarEquipe && !equipe.porCor && (
         <p className="rounded-md border border-[#25D366]/40 bg-black/30 px-3 py-1.5 text-sm text-white flex items-center gap-2 flex-wrap">
           Este grupo é da equipe <strong>{equipe.area}</strong>
           {equipe.cor && <Cor cor={equipe.cor} />}

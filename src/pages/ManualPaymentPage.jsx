@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
 import { CreditCard, CheckCircle2, Info, ArrowLeft, ExternalLink, Tag, Loader2, AlertTriangle } from 'lucide-react';
 import { useCurrentPrice } from '@/hooks/useCurrentPrice';
+import { useDescontoAutomatico, rotuloMotivoDesconto } from '@/hooks/useDescontoAutomatico';
 import { useCouponValidation } from '@/hooks/useCouponValidation';
 import { finalizeZeroValuePayment } from '@/services/paymentService';
 import { updateEquipantePaymentStatus, updateAcampantePaymentStatus } from '@/services/inscricoesService';
@@ -41,13 +42,19 @@ const ManualPaymentPage = () => {
   const [discountValue, setDiscountValue] = useState(0);
   const [couponMessage, setCouponMessage] = useState({ type: '', text: '' });
   const { validateCoupon, loading: validatingCoupon } = useCouponValidation();
-  
+  // Pastor e infiltrado: 50% automatico do preco do dia (19/10/2026).
+  const descontoAuto = useDescontoAutomatico(tipo, location.state?.id, {
+    cpf: location.state?.cpf, nome: location.state?.nome, nascimento: location.state?.nascimento
+  });
+
   // If accessed directly without state, redirect to home
   if (!location.state) {
     return <Navigate to="/" replace />;
   }
 
-  const finalValue = Math.max(0, (baseInscriptionValue || 0) - discountValue);
+  const usaAutomatico = !!descontoAuto && Number(descontoAuto.desconto) >= discountValue;
+  const descontoEfetivo = usaAutomatico ? Number(descontoAuto.desconto) : discountValue;
+  const finalValue = Math.max(0, (baseInscriptionValue || 0) - descontoEfetivo);
   const isZeroValue = finalValue <= 0;
 
   const handleApplyCoupon = async () => {
@@ -178,14 +185,20 @@ const ManualPaymentPage = () => {
                 <p className="text-gray-300 text-sm uppercase tracking-wider font-semibold">
                   {rotuloValor(tipo)}
                 </p>
-                {discountValue > 0 && (
-                  <p className="text-lg text-gray-400 line-through">
-                    {loadingValue ? "..." : formatCurrency(baseInscriptionValue)}
+                {descontoEfetivo > 0 && (
+                  <p className="text-base text-gray-400">
+                    Preço oficial de hoje:{' '}
+                    <span className="line-through">{loadingValue ? "..." : formatCurrency(baseInscriptionValue)}</span>
                   </p>
                 )}
                 <p className="text-4xl font-bold text-blue-400">
                   {loadingValue ? "Carregando..." : (isZeroValue ? "R$ 0,00" : formatCurrency(finalValue))}
                 </p>
+                {usaAutomatico && (
+                  <p className="text-emerald-400 text-sm font-medium">
+                    {rotuloMotivoDesconto(descontoAuto)} já aplicado: -{formatCurrency(descontoEfetivo)}
+                  </p>
+                )}
                 <p className="text-gray-400 text-sm">Titular: {nome}</p>
               </div>
 

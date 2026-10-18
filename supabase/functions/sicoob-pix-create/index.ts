@@ -35,6 +35,9 @@
 //    aceita desconto em porcentagem e o cupom "so para pastores", que so vale
 //    para quem esta registrado como pastor. Cupom que nao vale para a pessoa
 //    nao desconta nada (a cobranca sai no valor cheio).
+//
+// 10) (19/10/2026) DESCONTO AUTOMATICO: pastor e infiltrado pagam 50% do
+//    preco do dia sem cupom (_desconto_automatico). Vale o maior desconto.
 
 import { corsHeaders } from "./cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
@@ -242,6 +245,25 @@ Deno.serve(async (req: Request) => {
       }
       // Cupom invalido nao derruba a cobranca: so nao aplica desconto. A tela
       // ja avisa o usuario no momento em que ele clica em "Aplicar".
+    }
+
+    // --- 3b. Desconto automatico (19/10/2026) ---------------------------
+    // Pastor e infiltrado pagam 50% do preco do DIA sem digitar cupom
+    // (_desconto_automatico, a partir dos cupons restritos PASTOR e
+    // INFILTRADO). Vale o MAIOR entre ele e o cupom digitado.
+    const { data: auto, error: autoError } = await db.rpc("_desconto_automatico", {
+      p_tipo: tipo,
+      p_id: inscricaoId,
+      p_preco: precoBase,
+    });
+    if (autoError) {
+      console.error("[pix] erro conferindo o desconto automatico:", autoError.message);
+      return json({ success: false, error: "Servico de pagamento indisponivel." }, 500);
+    }
+    const descontoAuto = Number(auto?.desconto);
+    if (Number.isFinite(descontoAuto) && descontoAuto > desconto && auto?.codigo) {
+      desconto = descontoAuto;
+      cupomAplicado = String(auto.codigo);
     }
 
     const valorFinal = Math.max(0, precoBase - desconto);

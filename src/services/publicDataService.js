@@ -96,6 +96,18 @@ export const verificarInscricaoPublica = async ({ tipo, cpf = null, nome = null 
   chamar('verificar_inscricao', { p_tipo: tipo, p_cpf: cpf, p_nome: nome });
 
 /**
+ * Desconto automatico (19/10/2026): pastor e infiltrado pagam 50% do preco do
+ * dia sem digitar cupom. Devolve { ok, preco_oficial, desconto, valor_final,
+ * codigo, percentual, motivo: 'pastor' | 'infiltrado' | null }. Com prova de
+ * dono (CPF, ou nome + nascimento).
+ */
+export const meuDescontoAutomatico = async ({ tipo, id, cpf = null, nome = null, nascimento = null }) =>
+  chamar('meu_desconto_automatico', {
+    p_tipo: tipo, p_id: id,
+    p_cpf: cpf ? String(cpf).replace(/\D/g, '') : null, p_nome: nome || null, p_nascimento: nascimento || null
+  });
+
+/**
  * A ficha da edicao passada, para o formulario da nova edicao ja vir
  * preenchido em vez de a pessoa digitar tudo de novo.
  *

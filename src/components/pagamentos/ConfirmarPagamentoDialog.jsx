@@ -89,6 +89,17 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
     }
   };
 
+  // Pastor e infiltrado (19/10/2026): o desconto e automatico, entao o cupom
+  // restrito que vale para a pessoa ja vem marcado (e o valor ja desconta).
+  // O organizador ainda pode trocar.
+  useEffect(() => {
+    if (ehPixTravado || cupom) return;
+    const automatico = ativos
+      .filter((c) => c.valido && (c.so_pastor || c.so_infiltrado) && Number(c.desconto) > 0)
+      .sort((a, b) => Number(b.desconto) - Number(a.desconto))[0];
+    if (automatico) escolherCupom(automatico.codigo);
+  }, [ativos]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const confirmar = async () => {
     const n = lerValor(valor);
     if (n === null || n < 0) {
@@ -189,7 +200,9 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
                       disabled={!op.vale}
                       onClick={() => escolherCupom(op.codigo)}
                       aria-pressed={cupom === op.codigo}
-                      data-dica={op.vale ? undefined : 'Cupom só para pastores: esta pessoa não está registrada como pastor no sistema (cargo na igreja PASTOR(A) ou PASTOR(A) AUXILIAR, ou na lista de Pastores Parceiros).'}
+                      data-dica={op.vale ? undefined : op.motivo === 'so_infiltrado'
+                        ? 'Cupom só para infiltrados: esta pessoa não está escalada em Infiltrados.'
+                        : 'Cupom só para pastores: esta pessoa não está registrada como pastor no sistema (cargo na igreja PASTOR(A) ou PASTOR(A) AUXILIAR, ou na lista de Pastores Parceiros).'}
                       className={cn(
                         'h-9 px-3 rounded-md border text-sm transition-colors',
                         !op.vale
@@ -199,7 +212,7 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
                             : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
                       )}
                     >
-                      {op.rotulo}{!op.vale ? ' · só pastor' : ''}
+                      {op.rotulo}{!op.vale ? (op.motivo === 'so_infiltrado' ? ' · só infiltrado' : ' · só pastor') : ''}
                     </button>
                   ))}
               </div>

@@ -23,6 +23,7 @@ import { supabase } from '@/services/supabaseClient';
 import { rotuloValor, rotuloValorEmFrase } from '@/utils/rotulosPagamento';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
 import { getEquipanteWorkflow } from '@/services/equipantesService';
+import { useDescontoAutomatico, rotuloMotivoDesconto } from '@/hooks/useDescontoAutomatico';
 
 const formatCurrency = value => {
   if (value === null || value === undefined) return 'R$ 0,00';
@@ -209,7 +210,16 @@ const InscricaoPixPage = () => {
     return true;
   };
 
-  const finalValue = Math.max(0, (inscriptionValue || 0) - discountValue);
+  // Pastor e infiltrado: 50% automatico do preco do dia (19/10/2026). Vale o
+  // maior entre ele e o cupom -- a mesma conta que o servidor faz ao cobrar.
+  const descontoAuto = useDescontoAutomatico(tipo, inscricaoId, {
+    cpf: location.state?.cpf || sessaoSalva?.cpf || null,
+    nome: location.state?.nome || sessaoSalva?.nome || null,
+    nascimento: location.state?.nascimento || sessaoSalva?.nascimento || null
+  });
+  const usaAutomatico = !!descontoAuto && Number(descontoAuto.desconto) >= discountValue;
+  const descontoEfetivo = usaAutomatico ? Number(descontoAuto.desconto) : discountValue;
+  const finalValue = Math.max(0, (inscriptionValue || 0) - descontoEfetivo);
   const isZeroValue = finalValue <= 0;
 
   // Devolve true se o cupom ficou aplicado (usado tambem pelo "Gerar PIX").
@@ -535,17 +545,18 @@ const InscricaoPixPage = () => {
                     <div className="bg-white/5 p-4 rounded-lg border border-white/10 space-y-1">
                       <Label className="text-gray-400 text-sm">{rotuloValor(tipo)}</Label>
                       <div className="flex flex-col">
-                        {discountValue > 0 && (
-                          <span className="text-sm text-gray-500 line-through">
-                            {loadingValue ? "..." : formatCurrency(inscriptionValue)}
+                        {descontoEfetivo > 0 && (
+                          <span className="text-sm text-gray-400">
+                            Preço oficial de hoje:{' '}
+                            <span className="line-through">{loadingValue ? "..." : formatCurrency(inscriptionValue)}</span>
                           </span>
                         )}
                         <span className="text-2xl font-bold text-emerald-400">
                           {loadingValue ? "Carregando..." : (isZeroValue ? "R$ 0,00" : formatCurrency(finalValue))}
                         </span>
-                        {discountValue > 0 && (
+                        {descontoEfetivo > 0 && (
                           <span className="text-emerald-500 text-sm font-medium mt-1">
-                            Desconto: -{formatCurrency(discountValue)}
+                            {usaAutomatico ? `${rotuloMotivoDesconto(descontoAuto)} já aplicado` : 'Desconto do cupom'}: -{formatCurrency(descontoEfetivo)}
                           </span>
                         )}
                       </div>

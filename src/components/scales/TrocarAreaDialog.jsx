@@ -62,6 +62,19 @@ const TrocarAreaDialog = ({ allocations, atuacoesPorArea = {}, inicial = null, o
       setCor('');
     }
   };
+  // Todas as areas em que a pessoa esta (a mesma pessoa aparece uma vez por area).
+  const participacoes = useMemo(() => (escolhido
+    ? allocations.filter((a) => a.id === escolhido.id)
+      .sort((a, b) => String(a.allocatedArea).localeCompare(String(b.allocatedArea), 'pt-BR'))
+    : []), [allocations, escolhido]);
+  const trocarParticipacao = (escalaId) => {
+    const p = participacoes.find((x) => x.escalaId === escalaId);
+    if (!p) return;
+    setEscolhido(p);
+    setDestino(sugestao(p));
+    setCor('');
+    setAtuacao('');
+  };
   const contarCor = (c) => allocations.filter((a) => a.allocatedArea === destino && a.cor === c).length;
   const nadaMudou = mesmaArea
     && (atuacaoFinal || '') === (escolhido.atuacao || atuacaoPadrao || '')
@@ -205,9 +218,31 @@ const TrocarAreaDialog = ({ allocations, atuacoesPorArea = {}, inicial = null, o
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex-1">
                   <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">De</p>
-                  <div className="h-10 px-3 flex items-center rounded-md border border-white/10 bg-black/30 text-gray-200 text-sm">
-                    {escolhido.allocatedArea}
-                  </div>
+                  {/* Pessoa em mais de uma area (19/10/2026): escolhe qual
+                      participacao vai trocar. */}
+                  {participacoes.length > 1 ? (
+                    <Select value={escolhido.escalaId} onValueChange={trocarParticipacao}>
+                      <SelectTrigger className="bg-black/40 border-white/20 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                        {participacoes.map((p) => (
+                          <SelectItem key={p.escalaId} value={p.escalaId}>
+                            {p.allocatedArea}{p.atuacao ? ` · ${p.atuacao}` : ''}{p.cor ? ` · ${p.cor}` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="h-10 px-3 flex items-center rounded-md border border-white/10 bg-black/30 text-gray-200 text-sm">
+                      {escolhido.allocatedArea}
+                    </div>
+                  )}
+                  {participacoes.length > 1 && (
+                    <p className="text-[11px] text-cyan-300 mt-1">
+                      Está em {participacoes.length} áreas: escolha qual vai trocar.
+                    </p>
+                  )}
                 </div>
                 <ArrowRight className="hidden sm:block w-5 h-5 text-gray-500 mt-5" />
                 <div className="flex-1">

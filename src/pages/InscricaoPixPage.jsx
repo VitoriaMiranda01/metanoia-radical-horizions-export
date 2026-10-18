@@ -22,6 +22,7 @@ import { emTeste } from '@/services/ambiente';
 import { supabase } from '@/services/supabaseClient';
 import { rotuloValor, rotuloValorEmFrase } from '@/utils/rotulosPagamento';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
+import { getEquipanteWorkflow } from '@/services/equipantesService';
 
 const formatCurrency = value => {
   if (value === null || value === undefined) return 'R$ 0,00';
@@ -118,6 +119,38 @@ const InscricaoPixPage = () => {
       clearInterval(intervalo);
     };
   }, [pixData?.txid, statusPagamento, toast]);
+
+  // Equipante que pagou sem ter a presenca confirmada na reuniao de escala
+  // (19/10/2026): a inscricao ainda nao esta concluida, entao a tela oferece
+  // voltar ao Acompanhamento da Inscricao. null = ainda nao sabemos.
+  const donoEquipante = () => ({
+    cpf: formData.cpf.replace(/\D/g, '') || null,
+    nome: formData.nome,
+    nascimento: location.state?.nascimento || sessaoSalva?.nascimento || null
+  });
+  const [presencaConfirmada, setPresencaConfirmada] = useState(null);
+  const consultarPresenca = async () => {
+    try {
+      const situacao = await getEquipanteWorkflow(inscricaoId, donoEquipante());
+      return situacao?.presenca === 'presente';
+    } catch {
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (statusPagamento !== 'confirmado' || tipo !== 'equipante' || !inscricaoId) return;
+    let ativo = true;
+    consultarPresenca().then((ok) => { if (ativo) setPresencaConfirmada(ok); });
+    return () => { ativo = false; };
+  }, [statusPagamento, tipo, inscricaoId]);
+
+  // O pagamento confirmado limpa a sessao; grava de novo so o necessario para
+  // a pagina do equipante abrir direto no acompanhamento.
+  const voltarAoAcompanhamento = () => {
+    salvarSessao({ tipo: 'equipante', id: inscricaoId, ...donoEquipante() });
+    navigate('/equipante');
+  };
 
   // Show toast if there's an error loading the pricing configuration
   useEffect(() => {
@@ -235,7 +268,11 @@ const InscricaoPixPage = () => {
         description: "Sua inscrição gratuita foi confirmada.",
         className: "bg-emerald-600 text-white"
       });
-      navigate('/');
+      if (tipo === 'equipante' && !(await consultarPresenca())) {
+        voltarAoAcompanhamento();
+      } else {
+        navigate('/');
+      }
     } else {
       toast({
         title: "Erro ao finalizar",
@@ -531,9 +568,16 @@ const InscricaoPixPage = () => {
                   <p className="text-gray-300">
                     Recebemos o seu PIX de <strong className="text-emerald-400">{formatCurrency(finalValue)}</strong>.
                   </p>
-                  <p className="text-gray-400 text-sm">
-                    Sua inscrição está garantida. Nos vemos no Metanoia! 🙌
-                  </p>
+                  {tipo === 'equipante' && presencaConfirmada === false ? (
+                    <p className="text-amber-200 text-sm">
+                      Falta confirmar a sua presença na reunião de leitura de escala.
+                      Depois disso, a sua inscrição fica concluída.
+                    </p>
+                  ) : (
+                    <p className="text-gray-400 text-sm">
+                      Sua inscrição está garantida. Nos vemos no Metanoia! 🙌
+                    </p>
+                  )}
                 </div>
 
                 <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-left space-y-1">
@@ -541,9 +585,20 @@ const InscricaoPixPage = () => {
                   <p className="text-white font-medium">{formData.nome}</p>
                 </div>
 
+                {tipo === 'equipante' && presencaConfirmada === false && (
+                  <Button
+                    onClick={voltarAoAcompanhamento}
+                    className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                  >
+                    Voltar ao Acompanhamento da Inscrição
+                  </Button>
+                )}
                 <Button
                   onClick={() => navigate('/')}
-                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                  variant={tipo === 'equipante' && presencaConfirmada === false ? 'outline' : 'default'}
+                  className={tipo === 'equipante' && presencaConfirmada === false
+                    ? 'w-full h-12'
+                    : 'w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold'}
                 >
                   Voltar para o início
                 </Button>

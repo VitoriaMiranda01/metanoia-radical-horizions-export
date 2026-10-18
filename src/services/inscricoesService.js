@@ -149,8 +149,11 @@ const montarResultadoVerificacao = (resultado, cpfDigitado) => {
   }
 
   // "dados" agora e o minimo necessario para seguir ao pagamento, nao mais a
-  // ficha completa. Quem ja pagou nao recebe id nem nome.
-  const dados = resultado.pago
+  // ficha completa. Quem ja concluiu nao recebe id nem nome.
+  // Concluido (19/10/2026): equipante = pagou E confirmou presenca na reuniao
+  // de escala; acampante = pagou. Servidor antigo sem o campo: vale o pago.
+  const concluido = resultado.concluido ?? !!resultado.pago;
+  const dados = concluido
     ? null
     : { id: resultado.id, nome: resultado.nome, cpf: cpfDigitado ?? null };
 
@@ -161,6 +164,7 @@ const montarResultadoVerificacao = (resultado, cpfDigitado) => {
     data: dados,
     inscrito: !!resultado.inscrito,
     pagou: !!resultado.pago,
+    concluido: !!concluido,
     // Ficha manual ainda sem CPF e sem nascimento: nao ha data para confirmar;
     // a pessoa entra pelo nome e completa o cadastro (migration 20261006l).
     completarManual: !!resultado.completar_manual,

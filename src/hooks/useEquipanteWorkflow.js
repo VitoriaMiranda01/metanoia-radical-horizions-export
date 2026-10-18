@@ -140,7 +140,7 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     // "presenca confirmada". A escala OFICIAL ganha uma linha propria.
     const provisoriaLabel = workflowData.presenca === 'presente'
       ? 'Escala de trabalho (provisória) — presença confirmada'
-      : 'Escala de trabalho (provisória)';
+      : 'Escala de trabalho (provisória) - Confirme sua presença';
     stages.push({
       id: 'scale',
       label: workflowData.escalado ? provisoriaLabel : 'Escala de trabalho',

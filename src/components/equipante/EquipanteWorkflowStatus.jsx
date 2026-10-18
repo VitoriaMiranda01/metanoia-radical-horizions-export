@@ -46,6 +46,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     refresh,
     refreshSilencioso
   } = useEquipanteWorkflow(equipanteId, age, dono);
+  const concluida = pago && presenca === 'presente';
 
   // So o proprio equipante (que provou ser dono) ve a janela de correcao
   // sozinha; o organizador abrindo a ficha pela tela dele, nao.
@@ -194,7 +195,9 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
 
   // O que falta, em uma frase, para a pessoa saber o que esperar.
   const oQueFalta = () => {
-    if (pago) return null;
+    // Concluida so com pagamento + presenca confirmada (19/10/2026): quem
+    // pagou antes da chamada continua vendo o que falta.
+    if (concluida) return null;
     // A Direcao decidiu que esta pessoa nao entra na escala (excesso de
     // gente, por exemplo). So aparece depois do lancamento -- antes disso
     // nada foi anunciado.
@@ -242,7 +245,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
           </div>
         )}
 
-        {pago && (
+        {concluida && (
           <div className="mb-6 bg-green-500/10 border border-green-500/25 p-4 rounded-lg">
             <p className="text-green-300 text-sm flex items-start">
               <CheckCircle2 className="w-5 h-5 mr-2 shrink-0" />

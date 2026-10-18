@@ -271,7 +271,8 @@ const EquipantePage = () => {
 
     const isFound = result.found || result.existe;
     const isEnrolled = result.inscrito;
-    const hasPaid = result.pagou;
+    // "Inscrição Confirmada" so com pagamento + presenca confirmada (19/10/2026).
+    const hasPaid = result.concluido ?? result.pagou;
     const loadedData = result.data || result.dados;
 
     // Quem JA PAGOU nao recebe id nem nome do servidor (verificar_inscricao
@@ -428,7 +429,7 @@ const EquipantePage = () => {
         nascimento: nascimentoDigitado
       });
 
-      if (situacao?.pago) {
+      if (situacao?.pago && situacao?.presenca === 'presente') {
         setCurrentStep('sucesso');
       } else if (verificacao?.inscrito) {
         setCurrentStep('workflow');

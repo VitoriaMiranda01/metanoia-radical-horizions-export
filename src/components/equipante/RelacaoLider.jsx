@@ -112,8 +112,11 @@ const ETIQUETA_TRILHA = {
 };
 
 const agruparTrilhaPorCor = (equipes) => {
-  const daTrilha = equipes.filter((e) => e.papel === 'delegado' && AREAS_TRILHA.includes(e.area));
-  if (daTrilha.length < 2) return { grupos: [], resto: equipes };
+  // Entra tambem a equipe em que a pessoa e LIDER (19/10/2026: o Mauricio e
+  // lider do Guia Roxo e responsavel pelo resto -- o Guia Roxo ficava numa aba
+  // separada, fora do Grupo Roxo). So agrupa quem e responsavel de alguma.
+  const daTrilha = equipes.filter((e) => AREAS_TRILHA.includes(e.area));
+  if (daTrilha.length < 2 || !daTrilha.some((e) => e.papel === 'delegado')) return { grupos: [], resto: equipes };
   const porCor = new Map();
   daTrilha.forEach((e) => (e.membros || []).forEach((m) => {
     const cor = e.cor || m.cor || 'Sem cor';

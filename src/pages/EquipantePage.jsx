@@ -26,6 +26,7 @@ import InfoEclesiasticas from '@/components/inscricao/InfoEclesiasticas';
 import InfoSaude from '@/components/inscricao/InfoSaude';
 import DadosComplementaresEquipante from '@/components/inscricao/DadosComplementaresEquipante';
 import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
+import { escolheuSaude, problemaEspecialidade } from '@/constants/especialidadesSaude';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao, buscarFichaAnterior, verificarCPF } from '@/services/inscricoesService';
 import { problemaTelefone } from '@/utils/telefone';
@@ -122,6 +123,8 @@ const mapDbToFormData = (dbData) => {
     areaTrabalhoOpcao3: dbData.area_trabalho_opcao3 || '',
     areaTrabalhoExtra: dbData.area_trabalho_extra || '',
     areasTrabalhoExtra: dbData.area_trabalho_extra || [],
+    especialidadeSaude: dbData.especialidade_saude || '',
+    especialidadeSaudeOutro: dbData.especialidade_saude_outro || '',
 
     // Outros
     metodoPagamento: dbData.metodo_pagamento || '',
@@ -214,6 +217,7 @@ const EquipantePage = () => {
     contatoEmergencia: '', telefoneEmergencia: '',
     areaTrabalhoOpcao1: '', areaTrabalhoOpcao2: '', areaTrabalhoOpcao3: '',
     areasTrabalhoExtra: [],
+    especialidadeSaude: '', especialidadeSaudeOutro: '',
     metodoPagamento: '',
   });
 
@@ -557,6 +561,15 @@ const EquipantePage = () => {
         variant: "destructive"
       });
       return;
+    }
+    // Saude em alguma opcao: a especialidade e obrigatoria (18/10/2026).
+    if (escolheuSaude(formData)) {
+      const problema = problemaEspecialidade(formData.especialidadeSaude, formData.especialidadeSaudeOutro);
+      if (problema) {
+        toast({ title: 'Sua especialidade na saúde', description: problema, variant: 'destructive' });
+        document.getElementById('inscricao-especialidade-outro')?.focus();
+        return;
+      }
     }
 
     setShowConfirmDialog(true);

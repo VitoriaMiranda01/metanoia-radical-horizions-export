@@ -246,7 +246,8 @@ export const corrigirMinhaInscricao = async (equipante_id, dono = {}, { igreja, 
  * pode ser gravado e o servidor (completar_minha_inscricao, migration
  * 20261006l): so o que esta pendente, validando tudo antes de gravar.
  * `dados`: nome, pastor, igreja, igrejaOutra, cpf, semCpf, nacionalidade, nascimento,
- * sexo, whatsapp, parentesco, familiarNome, area1, area2, area3.
+ * sexo, whatsapp, parentesco, familiarNome, area1, area2, area3,
+ * especialidadeSaude, especialidadeSaudeOutro (18/10/2026).
  * Devolve { pendencias, salvo: { cpf, nascimento } }.
  */
 export const completarMinhaInscricao = async (equipante_id, dono = {}, dados = {}) => {
@@ -271,6 +272,8 @@ export const completarMinhaInscricao = async (equipante_id, dono = {}, dados = {
       area1: dados.area1 ?? undefined,
       area2: dados.area2 ?? undefined,
       area3: dados.area3 ?? undefined,
+      especialidade_saude: dados.especialidadeSaude ?? undefined,
+      especialidade_saude_outro: dados.especialidadeSaudeOutro ?? undefined,
     },
   });
   // Recusa de dado do gatilho validar_ficha chega como erro: vira a frase

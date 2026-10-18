@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
 import Layout from '@/components/Layout';
 import ExportarSaudeDialog from '@/components/saude/ExportarSaudeDialog';
+import EquipeSaude from '@/components/saude/EquipeSaude';
 import { fetchSaudeAcampantes } from '@/services/saudeService';
 import { linkWhatsApp } from '@/services/liderService';
 import { formatarTelefone } from '@/utils/telefone';
@@ -130,6 +131,9 @@ const SaudePage = () => {
   const [termos, setTermos] = useState([]); // [{ tipo, chave, rotulo }]
   const [selecionados, setSelecionados] = useState(() => new Set());
   const [exportando, setExportando] = useState(false);
+  // Aba (18/10/2026): acampantes ou a equipe da Saude (escalados na area).
+  const [aba, setAba] = useState('acampantes');
+  const [totalEquipe, setTotalEquipe] = useState(null);
 
   const nomeDaConta = apoioUser?.nome || organizadorUser?.nome || user?.nome || '';
   const ehOrganizador = !apoioUser && (!!organizadorUser || ['organizador', 'organizador-aprovador'].includes(user?.role));
@@ -254,7 +258,7 @@ const SaudePage = () => {
   });
   const listaSelecionados = lista.filter((p) => selecionados.has(p.id));
 
-  const conteudo = (
+  const conteudoAcampantes = (
     <>
       {carregando && lista.length === 0 ? (
         <div className="py-24 text-center text-gray-400">
@@ -526,6 +530,33 @@ const SaudePage = () => {
             )}
           </section>
         </>
+      )}
+    </>
+  );
+
+
+  const abas = (
+    <div className="flex gap-1 p-1 rounded-lg border border-white/10 bg-black/50 w-full sm:w-fit" role="tablist">
+      {[['acampantes', 'Acampantes'], ['equipe', `Equipe da Saúde${totalEquipe != null ? ` · ${totalEquipe}` : ''}`]].map(([v, r]) => (
+        <button key={v} type="button" role="tab" aria-selected={aba === v} onClick={() => setAba(v)}
+          className={`flex-1 sm:flex-none min-h-[40px] px-4 rounded-md text-sm font-medium transition-colors ${
+            aba === v ? 'bg-emerald-600 text-white' : 'text-gray-300 hover:bg-white/10'}`}>
+          {r}
+        </button>
+      ))}
+    </div>
+  );
+
+  // A equipe fica montada (escondida) depois de aberta, para nao recarregar a
+  // cada troca de aba.
+  const conteudo = (
+    <>
+      {abas}
+      <div className={aba === 'acampantes' ? 'space-y-5' : 'hidden'}>{conteudoAcampantes}</div>
+      {(aba === 'equipe' || totalEquipe != null) && (
+        <div className={aba === 'equipe' ? '' : 'hidden'}>
+          <EquipeSaude ehOrganizador={ehOrganizador} onTotal={setTotalEquipe} />
+        </div>
       )}
     </>
   );

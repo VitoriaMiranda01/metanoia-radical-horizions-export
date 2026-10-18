@@ -358,8 +358,8 @@ const PagamentosPendentesPage = () => {
     });
   };
 
-  const confirmarPagamento = async (pedido, valor, cupom, meio) => {
-    const { data, error: err } = await registrarPagamento(pedido.item.tipo, pedido.item.id, pedido.forma, valor, cupom, meio);
+  const confirmarPagamento = async (pedido, valor, cupom, meio, observacao) => {
+    const { data, error: err } = await registrarPagamento(pedido.item.tipo, pedido.item.id, pedido.forma, valor, cupom, meio, observacao);
     if (err) throw err;
     setConfirmacao(null);
     toast({
@@ -1072,6 +1072,11 @@ const PagamentosPendentesPage = () => {
                                   <Badge variant="outline" className="border-pink-500/40 bg-pink-500/10 text-pink-300 text-[11px] px-2 py-0">
                                     {item.cupom_usado}{item.desconto ? ` · −${formatarValor(item.desconto)}` : ''}
                                   </Badge>
+                                )}
+                                {item.observacao_pagamento && (
+                                  <span className="text-[11px] italic text-gray-400 whitespace-normal max-w-[16rem]" title={item.observacao_pagamento}>
+                                    “{item.observacao_pagamento}”
+                                  </span>
                                 )}
                               </div>
                             </TableCell>

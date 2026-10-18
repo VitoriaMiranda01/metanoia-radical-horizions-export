@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabaseClient';
+import { ESPECIALIDADE_OUTRO, escolheuSaude } from '@/constants/especialidadesSaude';
 import { mensagemDeErro } from '@/utils/errosDeDados';
 import { ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
 import { OUTRA_IGREJA } from '@/constants/igrejas';
@@ -107,6 +108,12 @@ const mapEquipanteToDb = (formData) => ({
   area_trabalho_opcao1: formData.areaTrabalhoOpcao1,
   area_trabalho_opcao2: formData.areaTrabalhoOpcao2,
   area_trabalho_opcao3: formData.areaTrabalhoOpcao3,
+  // Especialidade da Saude (18/10/2026): so vai quem escolheu Saude em
+  // alguma opcao -- sem a chave, a reinscricao mantem a que ja existia.
+  ...(escolheuSaude(formData) ? {
+    especialidade_saude: formData.especialidadeSaude || null,
+    especialidade_saude_outro: formData.especialidadeSaude === ESPECIALIDADE_OUTRO ? (formData.especialidadeSaudeOutro || '').trim() : null,
+  } : {}),
   // Bug corrigido em 2026-09-01: o formulario grava a escolha em
   // formData.areasTrabalhoExtra (plural, array de ate 3 opcoes via
   // checkbox — ver AreasDeTrabalho.jsx), mas aqui lia areaTrabalhoExtra

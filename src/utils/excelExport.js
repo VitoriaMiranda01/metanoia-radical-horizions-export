@@ -202,6 +202,7 @@ export const exportRelacaoPagamentos = (linhas) => {
     'Cupom': (item.quitado && item.cupom_usado) || '-',
     'Desconto do cupom': item.quitado && item.cupom_usado && item.desconto ? Number(item.desconto) : '-',
     'Confirmado por': (item.quitado && item.confirmado_por) || '-',
+    'Observação do pagamento': (item.quitado && item.observacao_pagamento) || '-',
     // Cobranca de quem nao pagou (aba Cobranca em andamento / Pagamento agendado).
     'Cobrança': item.quitado || !item.cobranca ? '-'
       : item.cobranca.status === 'agendado'

@@ -1,0 +1,376 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, Copy, Loader2, MessageCircle, Pencil, Phone, RefreshCw, Search, Send, Star } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
+import TagEspecialidade from '@/components/common/TagEspecialidade';
+import CampoEspecialidadeSaude from '@/components/inscricao/CampoEspecialidadeSaude';
+import { nomeDaIgreja } from '@/constants/igrejas';
+import { ESPECIALIDADE_OUTRO, problemaEspecialidade } from '@/constants/especialidadesSaude';
+import { linkWhatsApp } from '@/services/liderService';
+import {
+  fetchSaudeEquipe, definirEspecialidadeSaude, fetchEspecialidadesOutros, tornarEspecialidadeFixa,
+} from '@/services/saudeService';
+import { formatarTelefone } from '@/utils/telefone';
+import { contemTexto } from '@/utils/saude';
+import { cn } from '@/lib/utils';
+
+/**
+ * "Equipe da Saúde" na tela da Saude (18/10/2026, pedido da Verinha via
+ * Patrick): quem esta escalado em Primeiros socorros - Saude, com idade,
+ * especialidade (tag), WhatsApp para chamar, o link do grupo da equipe para
+ * enviar e o contato de emergencia. Busca, filtro por especialidade e
+ * ordenacao. A lider corrige a especialidade de alguem pelo lapis.
+ *
+ * Organizador ve tambem o quadro do "Outro": o que foi escrito, quantas vezes
+ * e por quem -- e pode tornar uma resposta opcao fixa da lista.
+ */
+
+const primeiroNome = (nome) => String(nome || '').trim().split(/\s+/)[0] || '';
+
+const Ordenar = ({ coluna, ordem, setOrdem, children }) => {
+  const ativa = ordem.coluna === coluna;
+  const Icone = !ativa ? ArrowUpDown : ordem.asc ? ArrowUp : ArrowDown;
+  return (
+    <button type="button" onClick={() => setOrdem({ coluna, asc: ativa ? !ordem.asc : true })}
+      className={cn('inline-flex items-center gap-1 uppercase tracking-wide', ativa ? 'text-white' : 'hover:text-gray-300')}>
+      {children}<Icone className="w-3 h-3" />
+    </button>
+  );
+};
+
+const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
+  const { toast } = useToast();
+  const [dados, setDados] = useState({ equipe: [], grupoLink: null, lancada: true });
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
+  const [busca, setBusca] = useState('');
+  const [filtro, setFiltro] = useState('todas'); // 'todas' | 'sem' | nome da especialidade | 'Outro'
+  const [ordem, setOrdem] = useState({ coluna: 'nome', asc: true });
+  const [editando, setEditando] = useState(null); // { id, esp, outro }
+  const [salvando, setSalvando] = useState(false);
+  const [outros, setOutros] = useState([]);
+  const [fixando, setFixando] = useState(null);
+
+  const carregar = async () => {
+    setCarregando(true);
+    setErro('');
+    try {
+      const r = await fetchSaudeEquipe();
+      setDados(r);
+      onTotal?.(r.equipe.length);
+      if (ehOrganizador) setOutros(await fetchEspecialidadesOutros().catch(() => []));
+    } catch (e) {
+      setErro(e?.message || 'Não foi possível carregar a equipe.');
+    } finally {
+      setCarregando(false);
+    }
+  };
+  useEffect(() => { carregar(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { equipe, grupoLink, lancada } = dados;
+
+  // Quantos de cada especialidade (para os botoes de filtro).
+  const contagem = useMemo(() => {
+    const c = new Map();
+    equipe.forEach((p) => { if (p.especialidade) c.set(p.especialidade, (c.get(p.especialidade) || 0) + 1); });
+    return [...c.entries()].sort((a, b) => (a[0] === ESPECIALIDADE_OUTRO) - (b[0] === ESPECIALIDADE_OUTRO) || b[1] - a[1]);
+  }, [equipe]);
+  const semEspecialidade = equipe.filter((p) => !p.especialidade).length;
+
+  const visiveis = useMemo(() => {
+    const q = busca.trim();
+    const lista = equipe.filter((p) => {
+      if (filtro === 'sem' && p.especialidade) return false;
+      if (filtro !== 'todas' && filtro !== 'sem' && p.especialidade !== filtro) return false;
+      if (q && ![p.nome, nomeDaIgreja(p), p.especialidade, p.especialidade_outro, p.whatsapp].some((c) => contemTexto(c, q))) return false;
+      return true;
+    });
+    const chave = {
+      nome: (p) => (p.nome || '').toLowerCase(),
+      idade: (p) => (p.idade == null ? 999 : p.idade),
+      especialidade: (p) => `${p.especialidade ? '' : '~'}${p.especialidade || ''} ${p.especialidade_outro || ''}`.toLowerCase(),
+      igreja: (p) => nomeDaIgreja(p).toLowerCase(),
+    }[ordem.coluna];
+    return [...lista].sort((a, b) => {
+      const x = chave(a); const y = chave(b);
+      const r = typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'pt-BR');
+      return ordem.asc ? r : -r;
+    });
+  }, [equipe, busca, filtro, ordem]);
+
+  const textoGrupo = (p) => `Olá, ${primeiroNome(p.nome)}! Este é o grupo da equipe de Saúde do Metanoia Radical Serra: ${grupoLink}`;
+
+  const copiarGrupo = async () => {
+    try {
+      await navigator.clipboard.writeText(grupoLink);
+      toast({ title: 'Link do grupo copiado', className: 'bg-emerald-600 text-white' });
+    } catch {
+      toast({ title: 'Não deu para copiar', description: grupoLink });
+    }
+  };
+
+  const salvarEspecialidade = async () => {
+    const problema = problemaEspecialidade(editando.esp, editando.outro);
+    if (problema) { toast({ title: 'Confira', description: problema, variant: 'destructive' }); return; }
+    setSalvando(true);
+    try {
+      await definirEspecialidadeSaude(editando.id, editando.esp, editando.esp === ESPECIALIDADE_OUTRO ? editando.outro.trim() : null);
+      setDados((d) => ({
+        ...d,
+        equipe: d.equipe.map((p) => (p.id === editando.id
+          ? { ...p, especialidade: editando.esp, especialidade_outro: editando.esp === ESPECIALIDADE_OUTRO ? editando.outro.trim() : null }
+          : p)),
+      }));
+      setEditando(null);
+      toast({ title: 'Especialidade salva', className: 'bg-emerald-600 text-white' });
+      if (ehOrganizador) setOutros(await fetchEspecialidadesOutros().catch(() => []));
+    } catch (e) {
+      toast({ title: 'Não foi possível salvar', description: e.message, variant: 'destructive' });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const fixar = async (texto) => {
+    if (!window.confirm(`Tornar “${texto}” uma opção fixa da lista?\n\nQuem escreveu isso em "Outro" passa para a opção nova, e as próximas pessoas já encontram “${texto}” para escolher.`)) return;
+    setFixando(texto);
+    try {
+      const r = await tornarEspecialidadeFixa(texto);
+      toast({ title: `“${r.nome}” agora é opção da lista`, description: `${r.pessoas} ${r.pessoas === 1 ? 'pessoa passou' : 'pessoas passaram'} para ela.`, className: 'bg-emerald-600 text-white' });
+      await carregar();
+    } catch (e) {
+      toast({ title: 'Não foi possível', description: e.message, variant: 'destructive' });
+    } finally {
+      setFixando(null);
+    }
+  };
+
+  if (carregando && equipe.length === 0) {
+    return <div className="py-20 text-center text-gray-400"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-3" />Carregando a equipe...</div>;
+  }
+  if (erro) {
+    return (
+      <div className="py-16 text-center">
+        <p className="text-red-300 mb-4">{erro}</p>
+        <Button onClick={carregar} className="bg-white/10 hover:bg-white/20 text-white"><RefreshCw className="w-4 h-4 mr-1.5" />Tentar de novo</Button>
+      </div>
+    );
+  }
+  if (!lancada) {
+    return <p className="py-16 text-center text-gray-400">A equipe aparece aqui quando a escala for divulgada.</p>;
+  }
+
+  // Funcoes de desenho (nao componentes): um componente criado dentro do
+  // render remontaria a cada tecla e o campo da especialidade perderia o foco.
+  const nome = (p) => (
+    <p className="font-medium text-white flex flex-wrap items-center gap-x-1.5 gap-y-1">
+      {p.eh_lider && <Star className="w-3.5 h-3.5 text-amber-300 shrink-0" aria-label="Líder" />}
+      <span>{p.nome}</span>
+      <TagEspecialidade especialidade={p.especialidade} outro={p.especialidade_outro} semEspecialidade />
+    </p>
+  );
+
+  const acoes = (p) => {
+    const zap = linkWhatsApp(p.whatsapp, p.estrangeiro);
+    const zapGrupo = grupoLink ? linkWhatsApp(p.whatsapp, p.estrangeiro, textoGrupo(p)) : null;
+    return (
+      <div className="flex flex-wrap items-center gap-1.5">
+        {zap ? (
+          <a href={zap} target="_blank" rel="noreferrer" title="Mandar mensagem no WhatsApp"
+            className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-200 text-xs hover:bg-emerald-500/20">
+            <MessageCircle className="w-3.5 h-3.5" />Mensagem
+          </a>
+        ) : <span className="text-xs text-gray-500">Sem WhatsApp</span>}
+        {zapGrupo && (
+          <a href={zapGrupo} target="_blank" rel="noreferrer" title="Enviar o link do grupo da equipe para esta pessoa"
+            className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-sky-500/40 bg-sky-500/10 text-sky-200 text-xs hover:bg-sky-500/20">
+            <Send className="w-3.5 h-3.5" />Enviar grupo
+          </a>
+        )}
+        <button type="button" onClick={() => setEditando({ id: p.id, esp: p.especialidade || '', outro: p.especialidade_outro || '' })}
+          title="Corrigir a especialidade"
+          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-white/15 bg-white/5 text-gray-300 text-xs hover:bg-white/10">
+          <Pencil className="w-3.5 h-3.5" />Especialidade
+        </button>
+      </div>
+    );
+  };
+
+  const edicao = (p) => (editando?.id === p.id ? (
+    <div className="mt-2 p-3 rounded-md border border-white/15 bg-black/40 space-y-3">
+      <CampoEspecialidadeSaude id={`esp-${p.id}`} rotulo={`Especialidade de ${primeiroNome(p.nome)}`} compacto
+        valor={editando.esp} outro={editando.outro}
+        onChange={(v, o) => setEditando((e) => ({ ...e, esp: v, outro: o }))} />
+      <div className="flex justify-end gap-2">
+        <Button size="sm" variant="ghost" onClick={() => setEditando(null)} className="text-gray-400 hover:text-white hover:bg-white/10">Cancelar</Button>
+        <Button size="sm" onClick={salvarEspecialidade} disabled={salvando} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 mr-1" />Salvar</>}
+        </Button>
+      </div>
+    </div>
+  ) : null);
+
+  return (
+    <div className="space-y-4">
+      {/* Grupo do WhatsApp da equipe */}
+      <section className="rounded-xl border border-white/10 bg-black/50 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-white">Grupo do WhatsApp da equipe de Saúde</p>
+          {grupoLink
+            ? <p className="text-xs text-gray-400 truncate">{grupoLink}</p>
+            : <p className="text-xs text-amber-300/90">O líder da equipe ainda não cadastrou o link do grupo na relação dele.</p>}
+        </div>
+        {grupoLink && (
+          <div className="flex gap-2 shrink-0">
+            <Button size="sm" variant="outline" onClick={copiarGrupo} className="h-9 border-white/15 bg-white/5 text-gray-200 hover:bg-white/10">
+              <Copy className="w-4 h-4 mr-1.5" />Copiar link
+            </Button>
+            <a href={grupoLink} target="_blank" rel="noreferrer"
+              className="inline-flex items-center h-9 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-sm">Abrir grupo</a>
+          </div>
+        )}
+      </section>
+
+      {/* Busca e filtros */}
+      <section className="rounded-xl border border-white/10 bg-black/50 p-4 space-y-3">
+        <div className="relative">
+          <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nome, igreja, especialidade, telefone..."
+            className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500" />
+        </div>
+        <div className="flex flex-wrap gap-1.5 text-xs">
+          {[['todas', `Todos · ${equipe.length}`], ...contagem.map(([esp, n]) => [esp, `${esp} · ${n}`]),
+            ...(semEspecialidade ? [['sem', `Sem especialidade · ${semEspecialidade}`]] : [])].map(([v, rot]) => (
+            <button key={v} type="button" onClick={() => setFiltro(v)}
+              className={cn('px-3 py-1.5 rounded-full border font-medium whitespace-nowrap transition-colors',
+                filtro === v ? 'border-emerald-400 bg-emerald-500/20 text-white'
+                  : v === 'sem' ? 'border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20'
+                    : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10')}>
+              {rot}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Lista */}
+      <section className="rounded-xl border border-white/10 bg-black/50">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
+          <p className="text-sm text-gray-300"><strong className="text-white tabular-nums">{visiveis.length}</strong> {visiveis.length === 1 ? 'pessoa' : 'pessoas'}</p>
+          {(busca || filtro !== 'todas') && (
+            <button type="button" onClick={() => { setBusca(''); setFiltro('todas'); }} className="text-xs text-gray-400 hover:text-white underline underline-offset-2">limpar filtros</button>
+          )}
+          <Button size="sm" variant="ghost" onClick={carregar} disabled={carregando} className="ml-auto h-8 text-gray-400 hover:text-white hover:bg-white/10" aria-label="Recarregar">
+            <RefreshCw className={cn('w-4 h-4', carregando && 'animate-spin')} />
+          </Button>
+        </div>
+
+        {visiveis.length === 0 ? (
+          <p className="py-12 text-center text-gray-500 text-sm">Ninguém com esses filtros.</p>
+        ) : (
+          <>
+            {/* Computador */}
+            <div className="hidden md:block overflow-auto max-h-[calc(100dvh-12rem)]">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-10 bg-neutral-900">
+                  <tr className="text-left text-xs text-gray-500 border-b border-white/10">
+                    <th className="px-3 py-2 min-w-[240px]"><Ordenar coluna="nome" ordem={ordem} setOrdem={setOrdem}>Nome</Ordenar></th>
+                    <th className="px-3 py-2"><Ordenar coluna="idade" ordem={ordem} setOrdem={setOrdem}>Idade</Ordenar></th>
+                    <th className="px-3 py-2"><Ordenar coluna="especialidade" ordem={ordem} setOrdem={setOrdem}>Especialidade</Ordenar></th>
+                    <th className="px-3 py-2 min-w-[160px]"><Ordenar coluna="igreja" ordem={ordem} setOrdem={setOrdem}>Igreja</Ordenar></th>
+                    <th className="px-3 py-2 min-w-[170px] uppercase tracking-wide">Emergência</th>
+                    <th className="px-3 py-2 uppercase tracking-wide">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visiveis.map((p) => {
+                    const zapEm = linkWhatsApp(p.contato_emergencia_telefone);
+                    return (
+                      <tr key={p.escala_id} className="border-b border-white/5 align-top hover:bg-white/[0.03]">
+                        <td className="px-3 py-2.5">
+                          {nome(p)}
+                          <p className="text-xs text-gray-500">{p.whatsapp ? formatarTelefone(p.whatsapp) : 'Sem WhatsApp'}{p.eh_lider ? ' · Líder' : ''}</p>
+                          {edicao(p)}
+                        </td>
+                        <td className="px-3 py-2.5 text-gray-200 tabular-nums whitespace-nowrap">{p.idade != null ? `${p.idade} anos` : '—'}<p className="text-xs text-gray-500">{p.sexo || ''}</p></td>
+                        <td className="px-3 py-2.5">
+                          {p.especialidade === ESPECIALIDADE_OUTRO
+                            ? <span className="text-gray-200">{p.especialidade_outro}</span>
+                            : <TagEspecialidade especialidade={p.especialidade} semEspecialidade />}
+                        </td>
+                        <td className="px-3 py-2.5 text-xs text-gray-300 max-w-[220px] truncate" title={nomeDaIgreja(p)}>{nomeDaIgreja(p) || '—'}</td>
+                        <td className="px-3 py-2.5 text-xs">
+                          <p className="text-gray-200">{p.contato_emergencia_nome || '—'}</p>
+                          {p.contato_emergencia_telefone && (zapEm
+                            ? <a href={zapEm} target="_blank" rel="noreferrer" className="text-emerald-300 hover:underline inline-flex items-center gap-1"><Phone className="w-3 h-3" />{formatarTelefone(p.contato_emergencia_telefone)}</a>
+                            : <span className="text-gray-400">{p.contato_emergencia_telefone}</span>)}
+                        </td>
+                        <td className="px-3 py-2.5">{acoes(p)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Celular */}
+            <div className="md:hidden">
+              <div className="flex gap-2 px-4 py-2 text-[11px] text-gray-500 border-b border-white/5 overflow-x-auto">
+                Ordenar:
+                {[['nome', 'Nome'], ['idade', 'Idade'], ['especialidade', 'Especialidade']].map(([c, r]) => (
+                  <Ordenar key={c} coluna={c} ordem={ordem} setOrdem={setOrdem}>{r}</Ordenar>
+                ))}
+              </div>
+              <div className="divide-y divide-white/5">
+                {visiveis.map((p) => (
+                  <div key={p.escala_id} className="p-4 space-y-2">
+                    {nome(p)}
+                    <p className="text-xs text-gray-500">
+                      {p.idade != null ? `${p.idade} anos` : 'sem idade'}{p.sexo ? ` · ${p.sexo}` : ''}{p.eh_lider ? ' · Líder' : ''}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{nomeDaIgreja(p) || '—'}</p>
+                    {p.contato_emergencia_nome && (
+                      <p className="text-xs"><span className="text-gray-500">Emergência: </span><span className="text-gray-300">{p.contato_emergencia_nome}{p.contato_emergencia_telefone ? ` · ${formatarTelefone(p.contato_emergencia_telefone)}` : ''}</span></p>
+                    )}
+                    {acoes(p)}
+                    {edicao(p)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </section>
+
+      {/* Quadro do "Outro" (organizador) */}
+      {ehOrganizador && (
+        <section className="rounded-xl border border-white/10 bg-black/50 p-4 space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-white">Especialidades escritas em “Outro”</p>
+            <p className="text-xs text-gray-500">De todos os equipantes. “Tornar fixa” põe a resposta na lista de opções e passa quem a escreveu para ela.</p>
+          </div>
+          {outros.length === 0 ? (
+            <p className="text-xs text-gray-600">Ninguém escreveu nada em “Outro” ainda.</p>
+          ) : (
+            <div className="divide-y divide-white/5">
+              {outros.map((o) => (
+                <div key={o.texto} className="py-2 flex flex-col sm:flex-row sm:items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white">{o.texto} <span className="text-xs text-gray-500">· {o.quantos} {o.quantos === 1 ? 'pessoa' : 'pessoas'}</span></p>
+                    <p className="text-xs text-gray-500 truncate" title={(o.nomes || []).join(', ')}>{(o.nomes || []).join(', ')}</p>
+                  </div>
+                  <Button size="sm" variant="outline" disabled={!!fixando} onClick={() => fixar(o.texto)}
+                    className="h-8 shrink-0 border-emerald-500/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20">
+                    {fixando === o.texto ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Tornar fixa'}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  );
+};
+
+export default EquipeSaude;

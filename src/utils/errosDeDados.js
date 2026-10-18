@@ -30,6 +30,8 @@ const MENSAGENS = {
   PARENTESCO_OBRIGATORIO: 'Responda se tem algum conhecido ou familiar que vai como acampante.',
   FAMILIAR_OBRIGATORIO: 'Escreva o nome do conhecido ou familiar.',
   AREAS_OBRIGATORIAS: 'Escolha as 3 opções de área de trabalho.',
+  ESPECIALIDADE_SAUDE_OBRIGATORIA: 'Você escolheu Primeiros socorros - Saúde: informe a sua especialidade na área da saúde.',
+  ESPECIALIDADE_SAUDE_INVALIDA: 'Confira a especialidade na área da saúde: escolha uma da lista (em "Outro", escreva só com letras).',
   IGREJA_OUTRA_ENCERRADA: 'A opção "OUTRA" não existe mais nesta edição: escolha a sua igreja na lista.',
   IGREJA_DIVERSOS_ENCERRADA: 'A opção "DIVERSOS" não existe mais nesta edição: escolha a igreja responsável na lista.',
   // Ficha completa, a partir da edicao 38 (migration 20261016e).

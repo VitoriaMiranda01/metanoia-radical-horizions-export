@@ -2,10 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { limparNomeSimples } from '@/utils/validacoesInscricao';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
 import IgrejaSelect from './IgrejaSelect';
+import CampoPastor from './CampoPastor';
 import { OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 
@@ -107,17 +107,11 @@ const InfoEclesiasticas = ({
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <Label htmlFor="pastor" className="text-white">Nome do Pastor</Label>
-                    <Input 
-                      id="pastor" 
-                      name="pastor" 
-                      value={formData.pastor} 
-                      onChange={(e) => handleChange({ target: { name: 'pastor', value: limparNomeSimples(e.target.value) } })} 
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
-                      placeholder="Nome do pastor" 
-                    />
-                  </div>
+                  <CampoPastor
+                    igreja={formData.igreja}
+                    value={formData.pastor}
+                    onChange={(v) => handleChange({ target: { name: 'pastor', value: v } })}
+                  />
 
                   {/* Equipante specific Cargo options */}
                   <div className="space-y-2">
@@ -272,17 +266,13 @@ const InfoEclesiasticas = ({
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="pastor" className="text-white">Nome do Pastor</Label>
-                  <Input 
-                    id="pastor" 
-                    name="pastor" 
-                    value={formData.pastor} 
-                    onChange={(e) => handleChange({ target: { name: 'pastor', value: limparNomeSimples(e.target.value) } })} 
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50" 
-                    placeholder="Nome do pastor" 
-                  />
-                </div>
+                {/* A igreja aqui e escrita a mao: espera a pessoa parar de digitar. */}
+                <CampoPastor
+                  igreja={formData.igreja}
+                  value={formData.pastor}
+                  onChange={(v) => handleChange({ target: { name: 'pastor', value: v } })}
+                  esperar={600}
+                />
 
                 {/* Acampante specific fields */}
                 <div className="space-y-2">

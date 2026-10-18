@@ -44,6 +44,7 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
   const [valor, setValor] = useState('');
   const [cupom, setCupom] = useState('');
   const [meio, setMeio] = useState('');
+  const [observacao, setObservacao] = useState('');
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -67,6 +68,7 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
     setValor(paraTexto(ehPixTravado ? pedido.valorCobrado : lote));
     setCupom('');
     setMeio('');
+    setObservacao('');
     setErro(null);
     setSalvando(false);
   }, [pedido]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -100,7 +102,7 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
     setSalvando(true);
     setErro(null);
     try {
-      await onConfirmar(pedido, n, cupom || null, ehPixTravado ? null : meio);
+      await onConfirmar(pedido, n, cupom || null, ehPixTravado ? null : meio, observacao.trim() || null);
     } catch (e) {
       setErro(e.message || 'Não foi possível confirmar.');
       setSalvando(false);
@@ -214,6 +216,18 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
               )}
             </div>
           )}
+
+          <div className="space-y-1">
+            <label htmlFor="pg-obs" className="text-sm text-gray-300">
+              Observação <span className="text-gray-500">(opcional)</span>
+            </label>
+            <textarea
+              id="pg-obs" rows={2} maxLength={300} value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              placeholder="Ex.: PIX feito pela mãe, pagou na mesa da entrada..."
+              className="w-full rounded-md bg-white/5 border border-white/10 text-white text-sm px-3 py-2 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            />
+          </div>
         </div>
 
         {erro && <p className="text-sm text-red-400">{erro}</p>}

@@ -4,6 +4,8 @@ import FormSection from './FormSection';
 import { cn } from '@/lib/utils';
 import { AREAS_INSCRICAO, AREA_DISPONIVEL_QUALQUER } from '@/constants/workAreas';
 import { FRASES_AREAS_EXTRA } from '@/constants/areasExtra';
+import { escolheuSaude } from '@/constants/especialidadesSaude';
+import CampoEspecialidadeSaude from './CampoEspecialidadeSaude';
 
 // A lista de areas NAO mora mais aqui: mora em src/constants/workAreas.js,
 // junto com a lista que a tela de Geracao de Escalas usa. Eram duas listas
@@ -110,6 +112,20 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange, semExtras
         {renderRadioGroup("Opção 1 (Prioridade)", "areaTrabalhoOpcao1", formData.areaTrabalhoOpcao1)}
         {renderRadioGroup("Opção 2", "areaTrabalhoOpcao2", formData.areaTrabalhoOpcao2)}
         {renderRadioGroup("Opção 3", "areaTrabalhoOpcao3", formData.areaTrabalhoOpcao3)}
+
+        {/* Escolheu Saude em alguma opcao: a especialidade e obrigatoria
+            (18/10/2026). Nao aparece ao completar o cadastro (semExtras). */}
+        {!semExtras && escolheuSaude(formData) && (
+          <div className="p-4 rounded-md border border-emerald-500/30 bg-emerald-500/5">
+            <CampoEspecialidadeSaude
+              id="inscricao-especialidade"
+              rotulo="Você escolheu Primeiros socorros – Saúde. Qual é a sua especialidade?"
+              valor={formData.especialidadeSaude}
+              outro={formData.especialidadeSaudeOutro}
+              onChange={(v, o) => { handleSelectChange('especialidadeSaude', v); handleSelectChange('especialidadeSaudeOutro', o); }}
+            />
+          </div>
+        )}
 
         {!semExtras && <div className="pt-6 border-t border-white/10 mt-6">
            <Label className="text-white block mb-4 text-md font-medium">Áreas de Trabalho Extra (opcional)</Label>

@@ -150,10 +150,11 @@ export const fetchEquipantesPendentesPagamento = async () => {
 // -- antes era um UPDATE direto que so marcava "pago". A regra mora no banco
 // (registrar_pagamento). forma: 'manual' | 'pix' | 'isento'.
 // meio ('dinheiro' | 'cartao'): so no pagamento em maos (16/10/2026).
-export const registrarPagamento = async (tipo, id, forma, valor = null, cupom = null, meio = null) => {
+export const registrarPagamento = async (tipo, id, forma, valor = null, cupom = null, meio = null, observacao = null) => {
   const { data, error } = await comReenvio(
     () => supabase.rpc('registrar_pagamento', {
       p_tipo: tipo, p_id: id, p_forma: forma, p_valor: valor, p_cupom: cupom || null, p_meio: meio || null,
+      p_observacao: observacao || null,
     }),
     { rotulo: 'registrar pagamento' }
   );
@@ -259,6 +260,7 @@ const detalheDoPagamento = (ficha, pix) => {
       desconto: ficha.pagamento_desconto !== null ? Number(ficha.pagamento_desconto) : null,
       confirmado_por: ficha.pagamento_confirmado_por || null,
       meio_pagamento: ficha.pagamento_meio || null,
+      observacao_pagamento: ficha.pagamento_observacao || null,
     };
   }
   if (pix && String(ficha.metodo_pagamento || '').toLowerCase() === 'pix') {
@@ -278,7 +280,7 @@ const detalheDoPagamento = (ficha, pix) => {
 export const fetchRelacaoDePagamentos = async () => {
   const colunasComuns =
     'id, nome, cpf, whatsapp, nacionalidade, status_pagamento, metodo_pagamento, data_pagamento, '
-    + 'pagamento_valor, pagamento_cupom, pagamento_desconto, pagamento_confirmado_por, pagamento_meio';
+    + 'pagamento_valor, pagamento_cupom, pagamento_desconto, pagamento_confirmado_por, pagamento_meio, pagamento_observacao';
 
   const [acampantes, equipantes, pixPagos] = await Promise.all([
     // Todas as linhas: os equipantes ja passam de 900 e o corte de 1000

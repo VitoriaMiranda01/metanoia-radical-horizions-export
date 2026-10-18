@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, CalendarDays, Church, Fingerprint, Loader2, Phone, Users, Briefcase, User } from 'lucide-react';
+import { AlertTriangle, CalendarDays, Church, Fingerprint, HeartPulse, Loader2, Phone, Users, Briefcase, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,8 @@ import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
 import TelefoneInput from '@/components/inscricao/TelefoneInput';
 import CampoDataNascimento from '@/components/inscricao/CampoDataNascimento';
 import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
+import CampoEspecialidadeSaude from '@/components/inscricao/CampoEspecialidadeSaude';
+import { problemaEspecialidade } from '@/constants/especialidadesSaude';
 import { NAO_CONGREGA, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
 import { NACIONALIDADES, bandeiraDoPais } from '@/constants/nacionalidades';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
@@ -38,6 +40,8 @@ import { validateCPF } from '@/utils/validation';
  *   { tipo: 'telefone', valor, estrangeiro }   WhatsApp vazio ou fora do padrao
  *   { tipo: 'parentesco' }    conhecido / familiar que vai como acampante
  *   { tipo: 'areas' }         as 3 opcoes de area (so de quem nao foi escalado)
+ *   { tipo: 'especialidade_saude', valor, outro }   escalado na Saude, depois
+ *                             de ver a area (18/10/2026)
  *
  * Cada pergunta usa o MESMO componente e as mesmas opcoes do formulario de
  * inscricao. O servidor so grava o que esta pendente.
@@ -68,6 +72,7 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
   const pTelefone = pendencias.find((p) => p.tipo === 'telefone');
   const temParentesco = tem('parentesco');
   const temAreas = tem('areas');
+  const pEspecialidade = pendencias.find((p) => p.tipo === 'especialidade_saude');
 
   const cpfDoDono = (dono?.cpf || '').replace(/\D/g, '');
 
@@ -86,6 +91,8 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
   const [parentesco, setParentesco] = useState('');
   const [familiarNome, setFamiliarNome] = useState('');
   const [areas, setAreas] = useState({ areaTrabalhoOpcao1: '', areaTrabalhoOpcao2: '', areaTrabalhoOpcao3: '', areasTrabalhoExtra: [] });
+  const [especialidade, setEspecialidade] = useState(pEspecialidade?.valor || '');
+  const [especialidadeOutro, setEspecialidadeOutro] = useState(pEspecialidade?.outro || '');
   const [salvando, setSalvando] = useState(false);
 
   const opcoesDeIgreja = useMemo(
@@ -153,6 +160,10 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
       const { areaTrabalhoOpcao1: a1, areaTrabalhoOpcao2: a2, areaTrabalhoOpcao3: a3 } = areas;
       if (!a1 || !a2 || !a3) return erro('Áreas de trabalho', 'Escolha as 3 opções (1ª, 2ª e 3ª).');
     }
+    if (pEspecialidade) {
+      const problema = problemaEspecialidade(especialidade, especialidadeOutro);
+      if (problema) return erro('Sua especialidade na saúde', problema);
+    }
     return true;
   };
 
@@ -172,6 +183,7 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
         ...(pTelefone ? { whatsapp } : {}),
         ...(temParentesco ? { parentesco, familiarNome: parentesco === 'NÃO TENHO' ? '' : familiarNome } : {}),
         ...(temAreas ? { area1: areas.areaTrabalhoOpcao1, area2: areas.areaTrabalhoOpcao2, area3: areas.areaTrabalhoOpcao3 } : {}),
+        ...(pEspecialidade ? { especialidadeSaude: especialidade, especialidadeSaudeOutro: especialidadeOutro.trim() } : {}),
       });
       toast({
         title: sobraram.length === 0 ? 'Cadastro completo' : 'Quase lá',
@@ -406,6 +418,18 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
                   </div>
                 )}
               </div>
+            </Secao>
+          )}
+
+          {pEspecialidade && (
+            <Secao Icone={HeartPulse} texto="Você está na equipe de Saúde. Qual é a sua especialidade? A líder da Saúde precisa saber para organizar a equipe.">
+              <CampoEspecialidadeSaude
+                id="correcao-especialidade"
+                rotulo={null}
+                valor={especialidade}
+                outro={especialidadeOutro}
+                onChange={(v, o) => { setEspecialidade(v); setEspecialidadeOutro(o); }}
+              />
             </Secao>
           )}
 

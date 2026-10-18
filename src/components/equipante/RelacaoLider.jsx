@@ -1,3 +1,5 @@
+import TagEspecialidade from '@/components/common/TagEspecialidade';
+import { ESPECIALIDADE_OUTRO } from '@/constants/especialidadesSaude';
 import React, {
   memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState
 } from 'react';
@@ -612,7 +614,13 @@ const Membro = memo(({ m, grupoLink, area, remetente, atuacoes, podeCor, respons
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-white font-medium flex items-center gap-2 flex-wrap">
-            {m.nome}
+            {/* Especialidade da Saude (18/10/2026): opcao da lista vira tag;
+                o que a pessoa escreveu em "Outro" vai ao lado do nome. */}
+            <span>
+              {m.nome}
+              {m.especialidade_saude === ESPECIALIDADE_OUTRO && <TagEspecialidade especialidade={ESPECIALIDADE_OUTRO} outro={m.especialidade_saude_outro} />}
+            </span>
+            {m.especialidade_saude && m.especialidade_saude !== ESPECIALIDADE_OUTRO && <TagEspecialidade especialidade={m.especialidade_saude} />}
             {m.eu && <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300">você</span>}
             {m.eh_lider && !m.eu && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">líder</span>}
             {etiquetaAgregado && <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">{etiquetaAgregado}</span>}

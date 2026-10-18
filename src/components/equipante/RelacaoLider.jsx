@@ -95,6 +95,53 @@ const responsaveisDe = (e) => e?.delegados || (e?.delegado ? [e.delegado] : []);
 
 const tituloEquipe = (e) => `${e.area}${e.cor ? ` · ${e.cor}` : ''}`;
 
+// Grupos de trilha (19/10/2026, Patrick): o RESPONSAVEL pela reuniao de varias
+// destas equipes ve uma aba por COR ("Grupo Amarelo"...), com todas as areas
+// da cor juntas, separadas em blocos nesta ordem e com a etiqueta da area em
+// cada pessoa. O lider continua vendo a sua equipe como antes. So a tela
+// muda: presenca, convite e grupo continuam por equipe no servidor.
+const AREAS_TRILHA = ['Guia', 'Invisível', 'Marcador', 'Pastor Invisível', 'Espírito Santo', 'Inimigo'];
+const ORDEM_CORES_TRILHA = ['Amarelo', 'Azul', 'Vermelho', 'Verde', 'Roxo'];
+const ETIQUETA_TRILHA = {
+  'Guia': 'bg-teal-500/15 text-teal-200',
+  'Invisível': 'bg-violet-500/15 text-violet-200',
+  'Marcador': 'bg-pink-500/15 text-pink-200',
+  'Pastor Invisível': 'bg-orange-500/15 text-orange-200',
+  'Espírito Santo': 'bg-sky-500/15 text-sky-200',
+  'Inimigo': 'bg-zinc-500/25 text-zinc-200'
+};
+
+const agruparTrilhaPorCor = (equipes) => {
+  const daTrilha = equipes.filter((e) => e.papel === 'delegado' && AREAS_TRILHA.includes(e.area));
+  if (daTrilha.length < 2) return { grupos: [], resto: equipes };
+  const porCor = new Map();
+  daTrilha.forEach((e) => (e.membros || []).forEach((m) => {
+    const cor = e.cor || m.cor || 'Sem cor';
+    if (!porCor.has(cor)) porCor.set(cor, { membros: new Map(), origens: new Set() });
+    const g = porCor.get(cor);
+    g.origens.add(e);
+    if (!g.membros.has(m.escala_id)) {
+      g.membros.set(m.escala_id, {
+        ...m,
+        _grupo_link: e.grupo_link || null,
+        _atuacoes: !m.eh_lider && m.area === e.area ? e.atuacoes : null,
+        _responsavel: responsaveisDe(e).some((d) => d.equipante_id === m.equipante_id)
+      });
+    }
+  }));
+  const ordem = [...ORDEM_CORES_TRILHA, ...[...porCor.keys()].filter((c) => !ORDEM_CORES_TRILHA.includes(c))];
+  const grupos = ordem.filter((c) => porCor.has(c)).map((cor) => {
+    const g = porCor.get(cor);
+    const origens = [...g.origens];
+    return {
+      chave: `cor:${cor}`, area: cor === 'Sem cor' ? 'Sem cor' : `Grupo ${cor}`, cor: CORES[cor] ? cor : null,
+      papel: 'delegado', porCor: true, membros: [...g.membros.values()], origens,
+      lideres: [...new Set(origens.flatMap((e) => e.lideres || []))]
+    };
+  });
+  return { grupos, resto: equipes.filter((e) => !daTrilha.includes(e)) };
+};
+
 const telefoneVisivel = (m) => (m.whatsapp ? (m.estrangeiro ? m.whatsapp : formatarTelefone(m.whatsapp)) : 'Sem telefone');
 
 const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe = [], liderExtraDe = [], onPresencaPropria }) => {
@@ -254,8 +301,13 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
   const equipes = dados?.equipes || [];
   const extras = dados?.extras || [];
 
+  const trilha = useMemo(() => agruparTrilhaPorCor(equipes), [equipes]);
+
   const abas = useMemo(() => [
-    ...equipes.map((e) => ({
+    ...trilha.grupos.map((g) => ({
+      chave: g.chave, tipo: 'equipe', equipe: g, rotulo: g.area, corDot: g.cor, qtd: g.membros.length
+    })),
+    ...trilha.resto.map((e) => ({
       chave: `e:${e.chave}`, tipo: 'equipe', equipe: e,
       rotulo: tituloEquipe(e), selo: e.papel === 'delegado' ? 'reunião' : null
     })),
@@ -263,7 +315,7 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
       chave: `x:${x.area}`, tipo: 'extra', extra: x,
       rotulo: rotuloAreaExtra(x.area), selo: 'extra'
     }))
-  ], [equipes, extras]);
+  ], [trilha, extras]);
 
   const abaAtual = abas.find((a) => a.chave === aba) || abas[0] || null;
   const equipeAtual = abaAtual?.tipo === 'equipe' ? abaAtual.equipe : null;
@@ -335,7 +387,14 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
         </div>
       )}
 
-      {aberta && dados && equipes.length > 3 && (
+      {aberta && dados && trilha.grupos.length > 0 && (
+        <p className="mt-3 text-xs text-amber-200/90">
+          Os grupos de trilha estão juntos por cor: cada aba traz Guias, Invisíveis, Marcadores, Pastores
+          Invisíveis, Espírito Santo e Inimigo daquela cor, separados por área. Confira a cor antes de marcar a presença.
+        </p>
+      )}
+
+      {aberta && dados && trilha.grupos.length === 0 && equipes.length > 3 && (
         <p className="mt-3 text-xs text-amber-200/90">
           Você conduz a reunião de {equipes.length} equipes. Cada uma tem a sua lista, a sua chamada e o seu grupo de
           WhatsApp: escolha a equipe nas abas abaixo e confira o nome dela antes de marcar a presença ou mandar convite.
@@ -352,7 +411,9 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
                 className={cn('shrink-0 rounded-full border px-3 py-2 text-sm font-medium flex items-center gap-1.5',
                   ativa ? 'border-amber-400 bg-amber-400/15 text-amber-100' : 'border-white/15 bg-white/5 text-gray-300')}>
                 {a.tipo === 'extra' && <Truck className="w-3.5 h-3.5" />}
+                {a.corDot && <span className="h-2.5 w-2.5 rounded-full" style={{ background: CORES[a.corDot] }} />}
                 {a.rotulo}
+                {a.qtd != null && <span className="text-xs text-gray-400">{a.qtd}</span>}
                 {a.selo === 'reunião' && <span className="text-[10px] uppercase text-amber-300/80">reunião</span>}
               </button>
             );
@@ -376,8 +437,8 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
             onCor={onCor}
             remetente={dados.lider}
             mostrarEquipe={abas.length > 1}
-            onSalvarGrupo={(link) => agir(`g-${abaAtual.equipe.escala_id}`,
-              () => salvarGrupoLider(equipanteId, dono, abaAtual.equipe.escala_id, link),
+            onSalvarGrupo={(eq, link) => agir(`g-${eq.escala_id}`,
+              () => salvarGrupoLider(equipanteId, dono, eq.escala_id, link),
               (r) => (r.link ? 'Link do grupo salvo' : 'Link do grupo apagado'))}
           />
         </div>
@@ -469,24 +530,54 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
   const alternarFiltro = (f) => setFiltro((atual) => (atual === f ? 'todos' : f));
   const filtrando = filtro !== 'todos' || atuacao || termo;
   const textoLocalReuniao = useLocaisReuniao();
+  const locais = equipe.porCor
+    ? [...new Set(AREAS_TRILHA.filter((a) => membros.some((m) => m.area === a)).map(textoLocalReuniao).filter(Boolean))]
+    : [textoLocalReuniao(equipe.area)].filter(Boolean);
+
+  // Grupo por cor: blocos por area, na ordem dos grupos de trilha.
+  const blocos = useMemo(() => {
+    if (!equipe.porCor) return null;
+    const ordem = [...AREAS_TRILHA, ...new Set(mostrados.map((m) => m.area).filter((a) => !AREAS_TRILHA.includes(a)))];
+    return ordem.map((area) => ({
+      area,
+      total: membros.filter((m) => m.area === area).length,
+      lista: mostrados.filter((m) => m.area === area)
+    })).filter((b) => b.lista.length > 0);
+  }, [equipe.porCor, membros, mostrados]);
+
+  const linha = (m) => (
+    <Membro key={m.escala_id} m={m} grupoLink={equipe.porCor ? m._grupo_link : equipe.grupo_link}
+      area={equipe.porCor ? m.area : equipe.area} remetente={remetente}
+      etiquetaArea={equipe.porCor ? m.area : null}
+      atuacoes={equipe.porCor ? m._atuacoes : (!m.eh_lider && m.area === equipe.area ? equipe.atuacoes : null)}
+      responsavel={equipe.porCor ? m._responsavel : responsaveisDe(equipe).some((d) => d.equipante_id === m.equipante_id)}
+      podeCor={!equipe.porCor && equipe.pode_trocar_cor && !m.eh_lider}
+      ocupadoPresenca={!!ocupado[`p-${m.escala_id}`]}
+      ocupadoConvite={!!ocupado[`c-${m.escala_id}`]}
+      ocupadoEdicao={!!ocupado[`e-${m.escala_id}`]}
+      onPresenca={onPresenca} onConvite={onConvite} onAtuacao={onAtuacao} onCor={onCor} />
+  );
 
   return (
     <section className="space-y-4">
       <div className="border-b border-white/10 pb-3 space-y-3">
         <h4 className="text-xl font-bold text-white flex items-center gap-2 flex-wrap">
-          {equipe.area} <Cor cor={equipe.cor} />
+          {equipe.porCor
+            ? <>{equipe.cor && <span className="h-3.5 w-3.5 rounded-full" style={{ background: CORES[equipe.cor] }} />}{equipe.area}</>
+            : <>{equipe.area} <Cor cor={equipe.cor} /></>}
         </h4>
-        {/* Local da reuniao de leitura de escala (19/10/2026). */}
-        {textoLocalReuniao(equipe.area) && (
+        {/* Local da reuniao de leitura de escala (19/10/2026). No grupo por
+            cor, os locais das areas que estao nele (sem repetir). */}
+        {locais.length > 0 && (
           <p className="text-sm text-sky-200 flex items-center gap-1.5">
             <MapPin className="w-4 h-4 shrink-0" />
-            Local da reunião: <strong className="font-semibold">{textoLocalReuniao(equipe.area)}</strong>
+            Local da reunião: <strong className="font-semibold">{locais.join(' · ')}</strong>
           </p>
         )}
 
         {equipe.papel === 'delegado' ? (
           <p className="text-xs text-amber-200/90">
-            Você é o <strong>responsável pela reunião</strong> desta equipe
+            Você é o <strong>responsável pela reunião</strong> {equipe.porCor ? 'deste grupo' : 'desta equipe'}
             {equipe.lideres?.length ? ` (líder: ${equipe.lideres.join(', ')})` : ''}. Faça a chamada e mande o convite do grupo.
           </p>
         ) : null}
@@ -564,30 +655,52 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
       </div>
 
       <ul className="space-y-2">
-        {mostrados.map((m) => (
-          <Membro key={m.escala_id} m={m} grupoLink={equipe.grupo_link} area={equipe.area} remetente={remetente}
-            atuacoes={!m.eh_lider && m.area === equipe.area ? equipe.atuacoes : null}
-            responsavel={responsaveisDe(equipe).some((d) => d.equipante_id === m.equipante_id)}
-            podeCor={equipe.pode_trocar_cor && !m.eh_lider}
-            ocupadoPresenca={!!ocupado[`p-${m.escala_id}`]}
-            ocupadoConvite={!!ocupado[`c-${m.escala_id}`]}
-            ocupadoEdicao={!!ocupado[`e-${m.escala_id}`]}
-            onPresenca={onPresenca} onConvite={onConvite} onAtuacao={onAtuacao} onCor={onCor} />
-        ))}
+        {blocos
+          ? blocos.map((b) => (
+            <li key={b.area} className="space-y-2">
+              <p className="pt-2 flex items-center justify-between text-sm text-gray-300 border-b border-white/10 pb-1">
+                <span className="font-semibold text-white">{b.area}</span>
+                <span className="text-xs text-gray-400">
+                  {b.lista.length === b.total ? b.total : `${b.lista.length} de ${b.total}`}
+                </span>
+              </p>
+              <ul className="space-y-2">{b.lista.map(linha)}</ul>
+            </li>
+          ))
+          : mostrados.map(linha)}
         {membros.length === 0 && <li className="text-sm text-gray-500">Ninguém nesta equipe ainda.</li>}
         {membros.length > 0 && mostrados.length === 0 && <li className="text-sm text-gray-500">Ninguém com esse filtro.</li>}
       </ul>
 
       {equipe.escala_id && (
         <GrupoWhatsApp equipe={equipe} prontos={prontosConvite} ocupado={!!ocupado[`g-${equipe.escala_id}`]}
-          onSalvar={onSalvarGrupo} mostrarEquipe={mostrarEquipe} />
+          onSalvar={(link) => onSalvarGrupo(equipe, link)} mostrarEquipe={mostrarEquipe} />
+      )}
+
+      {/* Grupo por cor: o grupo de WhatsApp continua sendo de cada equipe
+          (Guia Amarelo, Invisivel Amarelo, Espirito Santo de todas as cores...). */}
+      {equipe.porCor && (
+        <details className="rounded-lg border border-[#25D366]/30 bg-[#25D366]/5 p-3">
+          <summary className="cursor-pointer text-white font-medium flex items-center gap-2">
+            <MessageCircle className="w-4 h-4 text-[#25D366]" />
+            Grupos de WhatsApp das equipes ({equipe.origens.filter((o) => o.escala_id).length})
+          </summary>
+          <div className="mt-3 space-y-3">
+            {equipe.origens.filter((o) => o.escala_id).map((o) => (
+              <GrupoWhatsApp key={o.chave} equipe={o}
+                prontos={(o.membros || []).filter((m) => m.presente === true && !m.pendencias?.length && !m.eu)}
+                ocupado={!!ocupado[`g-${o.escala_id}`]}
+                onSalvar={(link) => onSalvarGrupo(o, link)} mostrarEquipe />
+            ))}
+          </div>
+        </details>
       )}
     </section>
   );
 };
 
 const mesmasProps = (a, b) => (
-  a.grupoLink === b.grupoLink && a.area === b.area && a.remetente === b.remetente && a.podeCor === b.podeCor && a.responsavel === b.responsavel
+  a.grupoLink === b.grupoLink && a.area === b.area && a.etiquetaArea === b.etiquetaArea && a.remetente === b.remetente && a.podeCor === b.podeCor && a.responsavel === b.responsavel
   && (a.atuacoes === b.atuacoes || JSON.stringify(a.atuacoes) === JSON.stringify(b.atuacoes))
   && a.ocupadoPresenca === b.ocupadoPresenca && a.ocupadoConvite === b.ocupadoConvite
   && a.ocupadoEdicao === b.ocupadoEdicao
@@ -595,7 +708,7 @@ const mesmasProps = (a, b) => (
   && (a.m === b.m || JSON.stringify(a.m) === JSON.stringify(b.m))
 );
 
-const Membro = memo(({ m, grupoLink, area, remetente, atuacoes, podeCor, responsavel, ocupadoPresenca, ocupadoConvite, ocupadoEdicao,
+const Membro = memo(({ m, grupoLink, area, etiquetaArea, remetente, atuacoes, podeCor, responsavel, ocupadoPresenca, ocupadoConvite, ocupadoEdicao,
   onPresenca, onConvite, onAtuacao, onCor }) => {
   const pendente = m.pendencias?.length > 0;
   const zap = linkWhatsApp(m.whatsapp, m.estrangeiro);
@@ -630,6 +743,12 @@ const Membro = memo(({ m, grupoLink, area, remetente, atuacoes, podeCor, respons
               {m.especialidade_saude === ESPECIALIDADE_OUTRO && <TagEspecialidade especialidade={ESPECIALIDADE_OUTRO} outro={m.especialidade_saude_outro} />}
             </span>
             {m.especialidade_saude && m.especialidade_saude !== ESPECIALIDADE_OUTRO && <TagEspecialidade especialidade={m.especialidade_saude} />}
+            {/* Grupo por cor: a area de cada pessoa como etiqueta. */}
+            {etiquetaArea && (
+              <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full', ETIQUETA_TRILHA[etiquetaArea] || 'bg-white/10 text-gray-200')}>
+                {etiquetaArea}
+              </span>
+            )}
             {m.eu && <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300">você</span>}
             {m.eh_lider && !m.eu && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">líder</span>}
             {etiquetaAgregado && <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">{etiquetaAgregado}</span>}
@@ -649,7 +768,7 @@ const Membro = memo(({ m, grupoLink, area, remetente, atuacoes, podeCor, respons
               </a>
             )}
             {!atuacoes && m.atuacao && <span className="text-xs text-gray-500">· {m.atuacao}</span>}
-            {!podeCor && m.cor && <Cor cor={m.cor} />}
+            {!podeCor && !etiquetaArea && m.cor && <Cor cor={m.cor} />}
           </p>
 
           {(atuacoes || podeCor) && (

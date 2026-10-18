@@ -125,7 +125,9 @@ const agruparTrilhaPorCor = (equipes) => {
         ...m,
         _grupo_link: e.grupo_link || null,
         _atuacoes: !m.eh_lider && m.area === e.area ? e.atuacoes : null,
-        _responsavel: responsaveisDe(e).some((d) => d.equipante_id === m.equipante_id)
+        _responsavel: responsaveisDe(e).some((d) => d.equipante_id === m.equipante_id),
+        // 19/10/2026: o responsavel/lider da trilha troca a cor (mesma area).
+        _podeCor: !!e.pode_trocar_cor && !m.eh_lider
       });
     }
   }));
@@ -569,7 +571,7 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
       etiquetaArea={equipe.porCor ? m.area : null}
       atuacoes={equipe.porCor ? m._atuacoes : (!m.eh_lider && m.area === equipe.area ? equipe.atuacoes : null)}
       responsavel={equipe.porCor ? m._responsavel : responsaveisDe(equipe).some((d) => d.equipante_id === m.equipante_id)}
-      podeCor={!equipe.porCor && equipe.pode_trocar_cor && !m.eh_lider}
+      podeCor={equipe.porCor ? m._podeCor : (equipe.pode_trocar_cor && !m.eh_lider)}
       ocupadoPresenca={!!ocupado[`p-${m.escala_id}`]}
       ocupadoConvite={!!ocupado[`c-${m.escala_id}`]}
       ocupadoEdicao={!!ocupado[`e-${m.escala_id}`]}
@@ -792,7 +794,8 @@ const Membro = memo(({ m, grupoLink, area, etiquetaArea, remetente, atuacoes, po
                 <select value={m.cor || ''} disabled={ocupadoEdicao}
                   onChange={(e) => onCor(m, e.target.value)} aria-label={`Cor de ${m.nome}`}
                   className="h-9 rounded-md border border-white/20 bg-black/50 px-2 text-sm text-white">
-                  <option value="">Sem cor</option>
+                  {/* Grupo de trilha: cor obrigatoria (o servidor tambem recusa). */}
+                  {(!AREAS_TRILHA.includes(m.area) || !m.cor) && <option value="">Sem cor</option>}
                   {LISTA_CORES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               )}

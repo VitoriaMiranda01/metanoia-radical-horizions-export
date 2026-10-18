@@ -525,7 +525,7 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
 
   // O proprio lider criou o grupo -- nao precisa de convite.
   const prontosConvite = useMemo(
-    () => membros.filter((m) => m.presente === true && !m.pendencias?.length && !m.eu), [membros]);
+    () => membros.filter((m) => m.presente === true && !m.eu), [membros]);
 
   const alternarFiltro = (f) => setFiltro((atual) => (atual === f ? 'todos' : f));
   const filtrando = filtro !== 'todos' || atuacao || termo;
@@ -688,7 +688,7 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
           <div className="mt-3 space-y-3">
             {equipe.origens.filter((o) => o.escala_id).map((o) => (
               <GrupoWhatsApp key={o.chave} equipe={o}
-                prontos={(o.membros || []).filter((m) => m.presente === true && !m.pendencias?.length && !m.eu)}
+                prontos={(o.membros || []).filter((m) => m.presente === true && !m.eu)}
                 ocupado={!!ocupado[`g-${o.escala_id}`]}
                 onSalvar={(link) => onSalvarGrupo(o, link)} mostrarEquipe />
             ))}
@@ -712,7 +712,9 @@ const Membro = memo(({ m, grupoLink, area, etiquetaArea, remetente, atuacoes, po
   onPresenca, onConvite, onAtuacao, onCor }) => {
   const pendente = m.pendencias?.length > 0;
   const zap = linkWhatsApp(m.whatsapp, m.estrangeiro);
-  const podeConvidar = grupoLink && m.presente === true && !pendente && !m.eu;
+  // 19/10/2026 (Patrick): pendencia no cadastro nao trava mais o convite --
+  // basta estar presente. So precisa de um WhatsApp que abra a conversa.
+  const podeConvidar = grupoLink && m.presente === true && !m.eu && !!zap;
   // Marcador na lista da Invisivel, Perseguido na lista da Selva.
   const etiquetaAgregado = m.area !== area ? (m.area === 'Perseguidos' ? 'Perseguido' : m.area) : null;
 
@@ -1097,7 +1099,7 @@ const GrupoWhatsApp = ({ equipe, prontos, ocupado, onSalvar, mostrarEquipe }) =>
           <ol className="text-xs text-gray-300 list-decimal pl-4 space-y-0.5">
             <li>Crie o grupo no seu WhatsApp.</li>
             <li>No grupo, toque em “Convidar via link” e copie o link.</li>
-            <li>Cole aqui. O botão de convite aparece para quem estiver <strong>presente e sem pendência</strong>.</li>
+            <li>Cole aqui. O botão de convite aparece para quem estiver <strong>presente</strong>.</li>
           </ol>
           <div className="flex flex-col sm:flex-row gap-2">
             <Input value={link} onChange={(e) => setLink(e.target.value)}
@@ -1121,7 +1123,7 @@ const GrupoWhatsApp = ({ equipe, prontos, ocupado, onSalvar, mostrarEquipe }) =>
           <p className="text-xs text-gray-300 break-all">{equipe.grupo_link}</p>
           <p className="text-xs text-gray-400">
             {prontos.length === 0
-              ? 'Ninguém liberado ainda: o convite aparece para quem for marcado presente e estiver sem pendência.'
+              ? 'Ninguém liberado ainda: o convite aparece para quem for marcado presente.'
               : `${prontos.length} liberados para o convite · ${enviados} já enviados.`}
           </p>
           <div className="flex flex-wrap gap-2">

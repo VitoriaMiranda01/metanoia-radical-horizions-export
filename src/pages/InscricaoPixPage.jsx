@@ -129,12 +129,13 @@ const InscricaoPixPage = () => {
     nascimento: location.state?.nascimento || sessaoSalva?.nascimento || null
   });
   const [presencaConfirmada, setPresencaConfirmada] = useState(null);
+  // true/false; null se a consulta falhar (ai a tela nao afirma nada).
   const consultarPresenca = async () => {
     try {
       const situacao = await getEquipanteWorkflow(inscricaoId, donoEquipante());
       return situacao?.presenca === 'presente';
     } catch {
-      return false;
+      return null;
     }
   };
 
@@ -268,7 +269,7 @@ const InscricaoPixPage = () => {
         description: "Sua inscrição gratuita foi confirmada.",
         className: "bg-emerald-600 text-white"
       });
-      if (tipo === 'equipante' && !(await consultarPresenca())) {
+      if (tipo === 'equipante' && (await consultarPresenca()) !== true) {
         voltarAoAcompanhamento();
       } else {
         navigate('/');

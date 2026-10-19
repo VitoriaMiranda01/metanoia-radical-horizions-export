@@ -10,7 +10,7 @@ import { nomeDaIgreja } from '@/constants/igrejas';
  *   area   -- uma faixa verde por area, as pessoas em ordem alfabetica.
  *
  * Uma linha por AREA (quem esta em duas areas aparece duas vezes). A coluna
- * Area traz so o nome da area (Guia, Invisível, Fotografia), sem cor.
+ * A coluna Area traz o nome da area e, se a pessoa tem cor, a cor (Guia azul).
  * Quem ficou em "Não será escalado" nao entra.
  *
  * Medidas tiradas do PDF modelo (pagina Carta): tabela a 9,5 pt da esquerda e
@@ -49,11 +49,14 @@ const igrejaDaRelacao = (eq) => {
 export const montarLinhasRelacao = (allocations) => (allocations || [])
   .filter((a) => a.allocatedArea && a.allocatedArea !== 'Não será escalado')
   .map((a) => {
-    // So o nome da area (17/10/2026, Patrick: "tire a cor das areas").
+    // Area + cor (19/10/2026, Patrick, voltando atras do pedido de 17/10):
+    // "Guia azul", "Invisível vermelho"... para quem tem cor. Area sem cor
+    // (ou atuacao que nao usa cor) fica so com o nome. O agrupamento "por
+    // area" continua pelo nome da area, sem a cor.
     return {
       nome: MAIUSC(String(a.nome || '').replace(/\s+/g, ' ').trim()),
       igreja: MAIUSC(igrejaDaRelacao(a)),
-      area: a.allocatedArea,
+      area: a.cor ? `${a.allocatedArea} ${String(a.cor).toLocaleLowerCase('pt-BR')}` : a.allocatedArea,
       areaBase: a.allocatedArea
     };
   })

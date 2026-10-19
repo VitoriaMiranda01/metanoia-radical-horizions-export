@@ -435,9 +435,11 @@ const erroDeCobranca = (error) => {
   return new Error(codigo ? ERROS_COBRANCA[codigo] : 'Não foi possível salvar a cobrança.');
 };
 
-export const definirCobranca = async (acampanteId, status, agendadoPara, observacao) => {
-  const { error } = await supabase.rpc('cobranca_definir', {
-    p_acampante_id: acampanteId,
+// tipo: 'acampante' | 'equipante' (equipante desde 19/10/2026).
+export const definirCobranca = async (tipo, id, status, agendadoPara, observacao) => {
+  const { error } = await supabase.rpc('cobranca_definir_inscricao', {
+    p_tipo: tipo,
+    p_id: id,
     p_status: status,
     p_agendado_para: status === 'agendado' ? agendadoPara : null,
     p_observacao: observacao || null,
@@ -446,8 +448,8 @@ export const definirCobranca = async (acampanteId, status, agendadoPara, observa
 };
 
 /** Volta a pessoa para "Nao pagaram". */
-export const removerCobranca = async (acampanteId) => {
-  const { error } = await supabase.rpc('cobranca_remover', { p_acampante_id: acampanteId });
+export const removerCobranca = async (tipo, id) => {
+  const { error } = await supabase.rpc('cobranca_remover_inscricao', { p_tipo: tipo, p_id: id });
   if (error) throw erroDeCobranca(error);
 };
 

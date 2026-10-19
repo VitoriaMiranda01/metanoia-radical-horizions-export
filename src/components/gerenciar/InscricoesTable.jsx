@@ -413,7 +413,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
 
             {/* Desktop View - Table (md+) */}
             <div className="hidden md:block relative">
-              <Table cabecalhoFixo>
+              <Table cabecalhoFixo porPagina={paginacao.porPagina}>
                 <TableHeader className="bg-white/5">
                   <TableRow className="hover:bg-transparent border-white/10">
                     {/* Fixed Name Column */}

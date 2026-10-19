@@ -370,7 +370,7 @@ const AprovacoesTable = ({
               </p>
             )}
             <div ref={tabelaRef} className="hidden md:block relative">
-              <Table cabecalhoFixo>
+              <Table cabecalhoFixo porPagina={paginacao.porPagina}>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-white/10">
                     <TableHead className="min-w-[200px] h-12 sticky left-0 z-20 bg-neutral-900">

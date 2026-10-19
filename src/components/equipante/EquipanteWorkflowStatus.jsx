@@ -2,7 +2,7 @@ import { listaDeResponsaveis } from '@/utils/formatters';
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEquipanteWorkflow } from '@/hooks/useEquipanteWorkflow';
-import { CheckCircle2, Clock, AlertCircle, XCircle, ArrowRight, Hand, Undo2, Sparkles, ChevronUp, Eye } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, XCircle, ArrowRight, Hand, Undo2, Sparkles, ChevronUp, Eye, CalendarClock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import ParentalAuthUpload from './ParentalAuthUpload';
 import { Button } from '@/components/ui/button';
@@ -176,6 +176,9 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
   // sozinho -- era assim que a pessoa ia parar no pagamento logo depois de
   // se inscrever. Quem autoriza e o servidor, em situacao_inscricao.
   const canProceedToPayment = podePagar;
+  // Pagamento combinado com a organizacao: { agendado_para, observacao } ou null.
+  const agendado = workflowData?.pagamento_agendado || null;
+  const dataCurta = (iso) => { const [a, m, d] = String(iso).slice(0, 10).split('-'); return d && m ? `${d}/${m}${a ? `/${a}` : ''}` : iso; };
 
   const viuArea = areaVista || revelouAgora;
   const ehLider = liderDe.length > 0;
@@ -411,7 +414,19 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
         )}
 
         {canProceedToPayment && (viuArea || !ehOProprio) && (
-          <div className="mt-8 pt-6 border-t border-white/10">
+          <div className="mt-8 pt-6 border-t border-white/10 space-y-3">
+            {/* Pagamento combinado com a organizacao (19/10/2026): a etapa
+                continua pendente ate pagar. */}
+            {agendado?.agendado_para && (
+              <div className="rounded-lg border border-violet-500/40 bg-violet-500/10 p-4 text-sm text-violet-100 flex items-start gap-2">
+                <CalendarClock className="w-5 h-5 shrink-0 text-violet-300" />
+                <span>
+                  Seu pagamento está <strong>agendado para {dataCurta(agendado.agendado_para)}</strong>.
+                  Realize o pagamento até essa data — enquanto não pagar, a etapa continua pendente.
+                  {agendado.observacao ? <span className="block mt-1 text-violet-200/80">Combinado: {agendado.observacao}</span> : null}
+                </span>
+              </div>
+            )}
             <Button
               onClick={() => onProceedToPayment?.({ nome: workflowData?.nome })}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg"

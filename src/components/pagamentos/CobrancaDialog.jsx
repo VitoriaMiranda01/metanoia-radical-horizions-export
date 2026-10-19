@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 /**
- * Janela de "situacao da cobranca" de um acampante (pedido da Raquel,
+ * Janela de "situacao da cobranca" de um acampante ou equipante (pedido da Raquel,
  * 06/10/2026): Cobranca em andamento ou Pagamento agendado (com a data
  * combinada), mais uma observacao curta. Quem ja esta em cobranca tambem
  * pode voltar para "Nao pagaram" (marcou errado).

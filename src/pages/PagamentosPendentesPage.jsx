@@ -399,13 +399,18 @@ const PagamentosPendentesPage = () => {
   // Todo mundo com a cobranca junto (so acampante tem cobranca).
   const comCobranca = useMemo(() => relacao.map((i) => ({
     ...i,
-    ...(i.tipo === 'acampante' && cobrancas[i.id] ? { cobranca: cobrancas[i.id] } : {}),
+    // Cobranca/agendamento: acampante e, desde 19/10/2026, equipante tambem.
+    ...(cobrancas[i.id] ? { cobranca: cobrancas[i.id] } : {}),
     // Grupo de WhatsApp e so dos acampantes (16/10/2026): equipante nao tem.
     ...(i.tipo === 'acampante' && gruposEnviados[i.id] ? { grupo: gruposEnviados[i.id] } : {}),
     ...(i.tipo === 'equipante' && areasDaEscala[i.id] ? { area_escala: areasDaEscala[i.id] } : {}),
   })), [relacao, cobrancas, gruposEnviados, areasDaEscala]);
 
-  const pagos = useMemo(() => comCobranca.filter((i) => i.quitado), [comCobranca]);
+  // Isentos ficam na aba propria (19/10/2026): "Pagos" e quem pagou de fato.
+  const ehIsento = (i) => String(i.metodo_pagamento || '').toLowerCase() === 'isento';
+  const quitados = useMemo(() => comCobranca.filter((i) => i.quitado), [comCobranca]);
+  const pagos = useMemo(() => quitados.filter((i) => !ehIsento(i)), [quitados]);
+  const isentos = useMemo(() => quitados.filter(ehIsento), [quitados]);
   // Pagou e ainda nao recebeu o convite do grupo.
   const semGrupo = useMemo(() => pagos.filter((i) => i.tipo === 'acampante' && !i.grupo).length, [pagos]);
 
@@ -441,7 +446,7 @@ const PagamentosPendentesPage = () => {
   // na escala, lancada ou nao -- para dar isencao antes) e nao pagou -- 19/10/2026: antes so entrava quem tinha
   // escolhido pagar em maos (71 de 942), e quem ainda nao escolheu a forma
   // (ou deixou o PIX incompleto) ficava invisivel; agora aparecem com a forma
-  // "Não escolheu" / "PIX não concluído". A cobranca de equipante fica para depois.
+  // "Não escolheu" / "PIX não concluído". Cobranca/agendamento de equipante: 19/10/2026.
   const devendo = useMemo(() => comCobranca.filter((i) => !i.quitado
     && (i.tipo === 'acampante' || equipantesLiberados.has(i.id))),
   [comCobranca, equipantesLiberados]);
@@ -451,7 +456,7 @@ const PagamentosPendentesPage = () => {
   const vencidos = useMemo(() => agendados.filter((i) => diasAte(i.cobranca.agendado_para) < 0).length, [agendados]);
 
   const salvarCobranca = async (item, status, data, obs) => {
-    await definirCobranca(item.id, status, data, obs);
+    await definirCobranca(item.tipo, item.id, status, data, obs);
     setCobrancas(await fetchCobrancas());
     setDialogo(null);
     toast({
@@ -462,7 +467,7 @@ const PagamentosPendentesPage = () => {
   };
 
   const tirarDaCobranca = async (item) => {
-    await removerCobranca(item.id);
+    await removerCobranca(item.tipo, item.id);
     setCobrancas(await fetchCobrancas());
     setDialogo(null);
     toast({ title: 'Voltou para Não pagaram', description: item.nome, className: 'bg-emerald-600 text-white border-none' });
@@ -507,6 +512,7 @@ const PagamentosPendentesPage = () => {
     cobranca: emCobranca,
     agendado: agendados,
     pagos,
+    isentos,
     travados: travadosComFicha,
   }[aba] || naoPagaram;
 
@@ -542,6 +548,7 @@ const PagamentosPendentesPage = () => {
     const chavesBusca = [...new Set([
       ...CHAVES_SEMPRE_BUSCADAS,
       ...(aba === 'pagos' ? ['pagamento', 'valor', ...(mostrarGrupo ? ['grupo'] : [])]
+        : aba === 'isentos' ? ['pagamento']
         : aba === 'travados' ? ['motivo']
           : aba === 'cobranca' ? ['desde']
             : aba === 'agendado' ? ['agendado_para']
@@ -567,7 +574,7 @@ const PagamentosPendentesPage = () => {
   const paginacao = usePaginacao(linhas, 10);
 
   // Nome + extras + coluna da aba + (Pagos: valor e grupo | demais: acoes).
-  const colunas = 1 + colunasExtras.length + 1 + (aba === 'pagos' ? (mostrarGrupo ? 2 : 1) : 1);
+  const colunas = 1 + colunasExtras.length + 1 + (aba === 'pagos' ? (mostrarGrupo ? 2 : 1) : aba === 'isentos' ? 0 : 1);
   const faltamNaLista = mostrarGrupo ? linhas.filter((i) => i.tipo === 'acampante' && !i.grupo) : [];
 
   const marcarLote = async () => {
@@ -631,7 +638,7 @@ const PagamentosPendentesPage = () => {
     // Pagamento.
 
     const botaoCobranca = 'h-8 px-2.5 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10';
-    const cobravel = item.tipo === 'acampante' && aba !== 'travados';
+    const cobravel = aba !== 'travados';
 
     return (
       <div className="flex flex-wrap 2xl:flex-nowrap items-center gap-x-2 gap-y-1.5">
@@ -788,6 +795,13 @@ const PagamentosPendentesPage = () => {
                     )}
                   </TabsTrigger>
                   <TabsTrigger
+                    value="isentos"
+                    data-dica="Quem foi dispensado da taxa (isenção dada pela organização)."
+                    className="flex-1 md:flex-none data-[state=active]:bg-sky-500/20 data-[state=active]:text-sky-300 text-gray-400"
+                  >
+                    Isentos ({isentos.length})
+                  </TabsTrigger>
+                  <TabsTrigger
                     value="travados"
                     data-dica="PIX que pode ter sido pago mas não confirmou sozinho. Confira e confirme o pagamento."
                     className="flex-1 md:flex-none data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300 text-gray-400"
@@ -905,7 +919,7 @@ const PagamentosPendentesPage = () => {
             )}
 
             <div className="p-0">
-              <Table cabecalhoFixo>
+              <Table cabecalhoFixo porPagina={paginacao.porPagina}>
                 <TableHeader className="bg-white/5">
                   <TableRow className="border-white/10 hover:bg-transparent">
                     <TableHead className="min-w-[13rem]">{cabecalho('Nome', 'nome')}</TableHead>
@@ -913,8 +927,8 @@ const PagamentosPendentesPage = () => {
                       <TableHead key={d.key}>{cabecalho(d.titulo || d.label, d.key)}</TableHead>
                     ))}
                     <TableHead>
-                      {aba === 'pagos'
-                        ? cabecalho('Pagamento', 'pagamento')
+                      {aba === 'pagos' || aba === 'isentos'
+                        ? cabecalho(aba === 'isentos' ? 'Isenção' : 'Pagamento', 'pagamento')
                         : aba === 'travados'
                         ? cabecalho('Motivo', 'motivo')
                         : aba === 'cobranca'
@@ -929,7 +943,7 @@ const PagamentosPendentesPage = () => {
                         {mostrarGrupo && <TableHead>{cabecalho('Grupo do WhatsApp', 'grupo')}</TableHead>}
                       </>
                     )}
-                    {aba !== 'pagos' && <TableHead className="w-px text-gray-300">Ações</TableHead>}
+                    {aba !== 'pagos' && aba !== 'isentos' && <TableHead className="w-px text-gray-300">Ações</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -947,6 +961,8 @@ const PagamentosPendentesPage = () => {
                           ? 'Nenhuma cobrança travada. Tudo certo por aqui.'
                           : aba === 'pagos'
                             ? 'Ninguém pagou ainda para os filtros atuais.'
+                            : aba === 'isentos'
+                            ? 'Ninguém isento para os filtros atuais.'
                             : aba === 'cobranca'
                               ? 'Ninguém em cobrança. Use "Em cobrança" na aba Não pagaram.'
                               : aba === 'agendado'
@@ -1026,7 +1042,7 @@ const PagamentosPendentesPage = () => {
                             </span>
                           ) : aba === 'agendado' ? (
                             <DataCombinada iso={item.cobranca?.agendado_para} />
-                          ) : aba === 'pagos' ? (
+                          ) : aba === 'pagos' || aba === 'isentos' ? (
                             <div className="flex flex-col whitespace-nowrap">
                               <span className="text-gray-300">{valorDaColuna(item, 'pagamento')}</span>
                               <span className="text-gray-500 text-xs mt-0.5">{dataHoraBR(item.data_pagamento) || '—'}</span>
@@ -1090,7 +1106,7 @@ const PagamentosPendentesPage = () => {
                               : <span className="text-gray-600" data-dica="O grupo de WhatsApp é só dos acampantes.">—</span>}
                           </TableCell>
                         )}
-                        {aba !== 'pagos' && (
+                        {aba !== 'pagos' && aba !== 'isentos' && (
                           <TableCell>
                             <Acoes item={item} />
                           </TableCell>

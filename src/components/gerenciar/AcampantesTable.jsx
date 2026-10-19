@@ -367,7 +367,7 @@ const AcampantesTable = ({
 
             {/* Desktop View (Table) */}
             <div className="hidden md:block relative">
-              <Table cabecalhoFixo>
+              <Table cabecalhoFixo porPagina={paginacao.porPagina}>
                 <TableHeader className="bg-white/5">
                   <TableRow className="hover:bg-transparent border-white/10">
                         <TableHead className="text-white md:sticky md:left-0 md:z-30 min-w-[140px] md:min-w-[200px] md:bg-neutral-900 p-2 md:p-4">

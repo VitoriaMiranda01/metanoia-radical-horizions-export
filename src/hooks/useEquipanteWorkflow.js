@@ -157,7 +157,10 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
 
     stages.push({
       id: 'payment',
-      label: 'Pagamento da taxa de alimentação',
+      // Combinado com a organizacao (19/10/2026): mostra a data e segue pendente.
+      label: !workflowData.pago && workflowData.pagamento_agendado?.agendado_para
+        ? `Pagamento da taxa de alimentação — agendado para ${String(workflowData.pagamento_agendado.agendado_para).slice(0, 10).split('-').reverse().join('/')}`
+        : 'Pagamento da taxa de alimentação',
       status: workflowData.pago ? 'ok' : 'pendente',
     });
 

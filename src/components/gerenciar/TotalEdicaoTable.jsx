@@ -109,7 +109,7 @@ const TotalEdicaoTable = ({ acampantes, equipantesConfirmados, confirmadosDispon
         ) : (
           <>
             <div className="rounded-lg border border-white/10 overflow-hidden">
-              <Table cabecalhoFixo>
+              <Table cabecalhoFixo porPagina={paginacao.porPagina}>
                 <TableHeader>
                   <TableRow className="border-white/10 bg-white/5 hover:bg-white/5">
                     <TableHead className="text-white">Nome</TableHead>

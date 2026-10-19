@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { formatarTelefone } from '@/utils/telefone';
-import { fetchChamadaDaEscala, decidirAusente, separarTodosAusentes } from '@/services/scalesService';
+import { fetchChamadaDaEscala, decidirAusente } from '@/services/scalesService';
 import ChamadaAreaDialog from './ChamadaAreaDialog';
 import { carregarChamada } from '@/services/chamadaStore';
 
@@ -37,7 +37,6 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
   const [verAreas, setVerAreas] = useState(false);
   const [verMantidos, setVerMantidos] = useState(false);
   const [ocupado, setOcupado] = useState({});
-  const [confirmandoTodos, setConfirmandoTodos] = useState(false);
   const [areaAberta, setAreaAberta] = useState(null);
 
   const carregar = async (silencioso = false) => {
@@ -70,26 +69,6 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
       title: acao === 'manter' ? `${p.nome} fica em ${p.area}` : `${p.nome} foi separado`,
       description: acao === 'manter' ? undefined : 'Está em “Não será escalado”. Dá para trazer de volta em Separados.',
       className: 'bg-green-600 text-white'
-    });
-    await carregar(true);
-    recarregarTudo?.();
-  };
-
-  const separarTodos = async () => {
-    setConfirmandoTodos(false);
-    setOcupado((o) => ({ ...o, todos: true }));
-    const r = await separarTodosAusentes();
-    setOcupado((o) => ({ ...o, todos: false }));
-    if (!r.success) {
-      toast({ title: 'Não deu certo', description: r.error, variant: 'destructive' });
-      return;
-    }
-    const erros = r.data?.erros || [];
-    toast({
-      title: `${r.data?.separados ?? 0} ausente(s) separado(s)`,
-      description: erros.length ? `Não deu para: ${erros.join('; ')}` : undefined,
-      variant: erros.length ? 'destructive' : undefined,
-      className: erros.length ? undefined : 'bg-green-600 text-white'
     });
     await carregar(true);
     recarregarTudo?.();
@@ -158,22 +137,6 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
             <p className="text-sm text-white font-medium flex items-center gap-2 flex-1">
               <UserX className="h-4 w-4 text-red-400" /> Ausentes a definir ({ausentes.length})
             </p>
-            {ausentes.length > 1 && (
-              confirmandoTodos ? (
-                <span className="flex items-center gap-2 text-xs text-gray-300">
-                  Enviar os {ausentes.length} para o Não será escalado?
-                  <Button size="sm" onClick={separarTodos} className="h-7 bg-red-600 hover:bg-red-700 text-white">Sim</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setConfirmandoTodos(false)}
-                    className="h-7 text-gray-400 hover:text-white hover:bg-white/10">Não</Button>
-                </span>
-              ) : (
-                <Button size="sm" variant="outline" onClick={() => setConfirmandoTodos(true)} disabled={ocupado.todos}
-                  data-dica="Enviar de uma vez para o Não será escalado todos os ausentes que ainda estão a definir."
-                  className="h-7 border-red-500/40 bg-transparent text-red-300 hover:bg-red-500/15 hover:text-red-200">
-                  {ocupado.todos ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Enviar todos para o Não será escalado'}
-                </Button>
-              )
-            )}
           </div>
           {ausentes.length === 0 ? (
             <p className="text-xs text-gray-500">Nenhum ausente para decidir agora.</p>

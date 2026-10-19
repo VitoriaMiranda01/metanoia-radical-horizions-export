@@ -161,16 +161,16 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
             {ausentes.length > 1 && (
               confirmandoTodos ? (
                 <span className="flex items-center gap-2 text-xs text-gray-300">
-                  Separar os {ausentes.length}?
+                  Enviar os {ausentes.length} para o Não será escalado?
                   <Button size="sm" onClick={separarTodos} className="h-7 bg-red-600 hover:bg-red-700 text-white">Sim</Button>
                   <Button size="sm" variant="ghost" onClick={() => setConfirmandoTodos(false)}
                     className="h-7 text-gray-400 hover:text-white hover:bg-white/10">Não</Button>
                 </span>
               ) : (
                 <Button size="sm" variant="outline" onClick={() => setConfirmandoTodos(true)} disabled={ocupado.todos}
-                  data-dica="Separar de uma vez todos os ausentes que ainda estão a definir."
+                  data-dica="Enviar de uma vez para o Não será escalado todos os ausentes que ainda estão a definir."
                   className="h-7 border-red-500/40 bg-transparent text-red-300 hover:bg-red-500/15 hover:text-red-200">
-                  {ocupado.todos ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Separar todos'}
+                  {ocupado.todos ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Enviar todos para o Não será escalado'}
                 </Button>
               )
             )}
@@ -199,7 +199,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
                     <Button size="sm" variant="outline" onClick={() => decidir(p, 'separar')} disabled={!!ocupado[p.escala_id]}
                       data-dica="Tirar da área: vai para Não será escalado, guardando de onde saiu. Dá para trazer de volta."
                       className="h-8 border-red-500/40 bg-transparent text-red-300 hover:bg-red-500/15 hover:text-red-200">
-                      {ocupado[p.escala_id] === 'separar' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserMinus className="h-3.5 w-3.5 mr-1" /> Separar</>}
+                      {ocupado[p.escala_id] === 'separar' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserMinus className="h-3.5 w-3.5 mr-1" /> Enviar para o Não será escalado</>}
                     </Button>
                   </div>
                 </li>

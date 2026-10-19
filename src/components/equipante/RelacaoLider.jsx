@@ -401,6 +401,13 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
         </div>
       )}
 
+      {aberta && dados && dados.presenca_aberta === false && (
+        <p className="mt-3 text-sm text-amber-200 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
+          A chamada só podia ser feita no dia da reunião de leitura da escala e já foi encerrada.
+          Você continua com a lista e o WhatsApp da sua equipe para entrar em contato.
+        </p>
+      )}
+
       {aberta && dados && trilha.grupos.length > 0 && (
         <p className="mt-3 text-xs text-amber-200/90">
           Os grupos de trilha estão juntos por cor: cada aba traz Guias, Invisíveis, Marcadores, Pastores
@@ -443,6 +450,7 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
         <div className="mt-5">
           <Equipe
             key={abaAtual.chave}
+            presencaAberta={dados.presenca_aberta !== false}
             equipe={abaAtual.equipe}
             ocupado={ocupado}
             onPresenca={onPresenca}
@@ -516,7 +524,7 @@ const AGREGADOS = {
   'Selva': { area: 'Perseguidos', um: 'perseguido', varios: 'Perseguidos' }
 };
 
-const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSalvarGrupo, onSalvarGrupoCor, remetente, mostrarEquipe }) => {
+const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSalvarGrupo, onSalvarGrupoCor, remetente, mostrarEquipe }) => {
   const [busca, setBusca] = useState('');
   const [filtro, setFiltro] = useState('todos');
   const [atuacao, setAtuacao] = useState('');
@@ -569,7 +577,7 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
   }, [equipe.porCor, membros, mostrados]);
 
   const linha = (m) => (
-    <Membro key={m.escala_id} m={m} grupoLink={equipe.porCor ? m._grupo_link : equipe.grupo_link}
+    <Membro key={m.escala_id} m={m} presencaAberta={presencaAberta} grupoLink={equipe.porCor ? m._grupo_link : equipe.grupo_link}
       area={equipe.porCor ? m.area : equipe.area} remetente={remetente}
       etiquetaArea={equipe.porCor ? m.area : null}
       atuacoes={equipe.porCor ? m._atuacoes : (!m.eh_lider && m.area === equipe.area ? equipe.atuacoes : null)}
@@ -601,7 +609,7 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
         {equipe.papel === 'delegado' ? (
           <p className="text-xs text-amber-200/90">
             Você é o <strong>responsável pela reunião</strong> {equipe.porCor ? 'deste grupo' : 'desta equipe'}
-            {equipe.lideres?.length ? ` (líder: ${equipe.lideres.join(', ')})` : ''}. Faça a chamada e mande o convite do grupo.
+            {equipe.lideres?.length ? ` (líder: ${equipe.lideres.join(', ')})` : ''}. {presencaAberta ? 'Faça a chamada e mande o convite do grupo.' : 'Mande o convite do grupo e fale com a equipe pelo WhatsApp.'}
           </p>
         ) : null}
 
@@ -710,7 +718,7 @@ const Equipe = ({ equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSa
 };
 
 const mesmasProps = (a, b) => (
-  a.grupoLink === b.grupoLink && a.area === b.area && a.etiquetaArea === b.etiquetaArea && a.remetente === b.remetente && a.podeCor === b.podeCor && a.responsavel === b.responsavel
+  a.presencaAberta === b.presencaAberta && a.grupoLink === b.grupoLink && a.area === b.area && a.etiquetaArea === b.etiquetaArea && a.remetente === b.remetente && a.podeCor === b.podeCor && a.responsavel === b.responsavel
   && (a.atuacoes === b.atuacoes || JSON.stringify(a.atuacoes) === JSON.stringify(b.atuacoes))
   && a.ocupadoPresenca === b.ocupadoPresenca && a.ocupadoConvite === b.ocupadoConvite
   && a.ocupadoEdicao === b.ocupadoEdicao
@@ -718,7 +726,7 @@ const mesmasProps = (a, b) => (
   && (a.m === b.m || JSON.stringify(a.m) === JSON.stringify(b.m))
 );
 
-const Membro = memo(({ m, grupoLink, area, etiquetaArea, remetente, atuacoes, podeCor, responsavel, ocupadoPresenca, ocupadoConvite, ocupadoEdicao,
+const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remetente, atuacoes, podeCor, responsavel, ocupadoPresenca, ocupadoConvite, ocupadoEdicao,
   onPresenca, onConvite, onAtuacao, onCor }) => {
   const pendente = m.pendencias?.length > 0;
   const zap = linkWhatsApp(m.whatsapp, m.estrangeiro);
@@ -808,6 +816,15 @@ const Membro = memo(({ m, grupoLink, area, etiquetaArea, remetente, atuacoes, po
           )}
         </div>
 
+        {!presencaAberta ? (
+          // Depois do dia da reuniao: so o resultado, sem botoes (o servidor tambem recusa).
+          <span className={cn('shrink-0 rounded-md border px-3 py-2 text-sm font-medium text-center',
+            m.presente === true ? 'border-green-600/50 text-green-300'
+              : m.presente === false ? 'border-red-600/50 text-red-300'
+                : 'border-white/15 text-gray-400')}>
+            {m.presente === true ? 'Presente' : m.presente === false ? 'Ausente' : 'Sem chamada'}
+          </span>
+        ) : (
         <div className="grid grid-cols-2 gap-2 shrink-0">
           <Button size="sm" disabled={ocupadoPresenca}
             onClick={() => onPresenca(m, m.presente === true ? null : true)}
@@ -824,6 +841,7 @@ const Membro = memo(({ m, grupoLink, area, etiquetaArea, remetente, atuacoes, po
             <X className="w-4 h-4 mr-1" /> Ausente
           </Button>
         </div>
+        )}
       </div>
 
       {pendente && (

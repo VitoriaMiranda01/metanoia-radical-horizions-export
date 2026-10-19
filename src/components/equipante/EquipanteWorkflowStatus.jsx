@@ -215,7 +215,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
       if (presenca === 'ausente') return 'Você ficou como ausente na chamada da reunião de escala. Procure o líder da sua área ou a organização.';
       if (presenca === 'presente') return null;
       if (!viuArea) return 'A escala provisória saiu! Veja a sua área no botão abaixo. Depois, na reunião de escala, confirme sua presença.';
-      if (ehLider) return 'Você é líder: confirme a sua própria presença na lista da sua equipe, aqui embaixo (botão "Presente" ao lado do seu nome).';
+      if (ehLider) return 'Você é líder: confirme a sua própria presença na lista da sua equipe, aqui embaixo (botão "Presente" ao lado do seu nome). A chamada só fica aberta no dia da reunião de leitura da escala; depois disso, peça à organização.';
       // Marcadores se reunem com a lideranca dos Invisiveis; Perseguidos, com a
       // da Selva (17/10/2026).
       if (responsaveisReuniao.length > 0) return `Esta é a escala provisória. Confirme sua presença com o(a) ${listaDeResponsaveis(responsaveisReuniao)} na reunião da sua área. Quando marcar, esta etapa fica concluída.`;

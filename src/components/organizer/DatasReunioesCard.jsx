@@ -86,7 +86,8 @@ const DatasReunioesCard = ({ embutido = false, registrar }) => {
           </h3>
           <p className="text-sm text-gray-400 mt-1">
             No dia da Reunião de Leitura de Escala, das 15h às 19h, a Área do Equipante aceita a busca pelo nome e o
-            pedido "Não consigo acessar meu cadastro". A virada de edição pede as duas datas da edição nova.
+            pedido "Não consigo acessar meu cadastro". Líderes e responsáveis só marcam presença nesse dia (o dia
+            inteiro); a organização marca sempre. A virada de edição pede as duas datas da edição nova.
           </p>
         </div>
         {campos}
@@ -103,7 +104,8 @@ const DatasReunioesCard = ({ embutido = false, registrar }) => {
         </CardTitle>
         <CardDescription className="text-gray-400">
           No dia da Reunião de Leitura de Escala, das 15h às 19h, a Área do Equipante aceita a busca pelo nome e o
-          pedido "Não consigo acessar meu cadastro". A virada de edição pede as duas datas da edição nova.
+          pedido "Não consigo acessar meu cadastro". Líderes e responsáveis só marcam presença nesse dia (o dia
+          inteiro); a organização marca sempre. A virada de edição pede as duas datas da edição nova.
         </CardDescription>
       </CardHeader>
       <CardContent>

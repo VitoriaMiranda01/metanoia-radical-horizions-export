@@ -23,6 +23,7 @@ import { supabase } from '@/services/supabaseClient';
 import { rotuloValor, rotuloValorEmFrase } from '@/utils/rotulosPagamento';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
 import { getEquipanteWorkflow } from '@/services/equipantesService';
+import { TEXTO_PRESENCA_APOS_REUNIAO } from '@/constants/textosPresenca';
 import { useDescontoAutomatico, rotuloMotivoDesconto } from '@/hooks/useDescontoAutomatico';
 
 const formatCurrency = value => {
@@ -133,15 +134,16 @@ const InscricaoPixPage = () => {
   // Lider/responsavel/lider de area extra: sempre tem o botao de voltar ao
   // acompanhamento, onde fica a relacao da equipe (19/10/2026).
   const [conduzEquipe, setConduzEquipe] = useState(false);
+  const [reuniaoPassou, setReuniaoPassou] = useState(false);
   // presente: true/false; null se a consulta falhar (ai a tela nao afirma nada).
   const consultarPresenca = async () => {
     try {
       const situacao = await getEquipanteWorkflow(inscricaoId, donoEquipante());
       const conduz = (situacao?.lider_de?.length || 0) + (situacao?.delegado_de?.length || 0)
         + (situacao?.lider_extra_de?.length || 0) > 0;
-      return { presente: situacao?.presenca === 'presente', conduz };
+      return { presente: situacao?.presenca === 'presente', conduz, reuniaoPassou: !!situacao?.reuniao_leitura_passou };
     } catch {
-      return { presente: null, conduz: false };
+      return { presente: null, conduz: false, reuniaoPassou: false };
     }
   };
 
@@ -152,6 +154,7 @@ const InscricaoPixPage = () => {
       if (!ativo) return;
       setPresencaConfirmada(r.presente);
       setConduzEquipe(r.conduz);
+      setReuniaoPassou(r.reuniaoPassou);
     });
     return () => { ativo = false; };
   }, [statusPagamento, tipo, inscricaoId]);
@@ -644,8 +647,9 @@ const InscricaoPixPage = () => {
                   </p>
                   {tipo === 'equipante' && presencaConfirmada === false ? (
                     <p className="text-amber-200 text-sm">
-                      Falta confirmar a sua presença na reunião de leitura de escala.
-                      Depois disso, a sua inscrição fica concluída.
+                      {reuniaoPassou
+                        ? `${TEXTO_PRESENCA_APOS_REUNIAO} Depois disso, a sua inscrição fica concluída.`
+                        : 'Falta confirmar a sua presença na reunião de leitura de escala. Depois disso, a sua inscrição fica concluída.'}
                     </p>
                   ) : (
                     <p className="text-gray-400 text-sm">

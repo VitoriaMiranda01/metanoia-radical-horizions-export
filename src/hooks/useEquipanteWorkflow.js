@@ -178,6 +178,7 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     naoSeraEscalado: !!workflowData?.nao_sera_escalado,
     escalaLancada: !!workflowData?.escala_lancada,
     escalaOficial: !!workflowData?.escala_oficial,
+    reuniaoLeituraPassou: !!workflowData?.reuniao_leitura_passou,
     // Areas em que a pessoa e lider (so depois da provisoria) e como ficou
     // a chamada dela na reuniao de escala: 'presente' | 'ausente' | null.
     liderDe: workflowData?.lider_de || [],

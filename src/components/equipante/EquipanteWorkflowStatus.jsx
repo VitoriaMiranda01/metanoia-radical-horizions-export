@@ -8,6 +8,7 @@ import ParentalAuthUpload from './ParentalAuthUpload';
 import { Button } from '@/components/ui/button';
 import CorrecaoCadastroDialog from './CorrecaoCadastroDialog';
 import RevelarAreaDialog from './RevelarAreaDialog';
+import { TEXTO_PRESENCA_APOS_REUNIAO } from '@/constants/textosPresenca';
 import RelacaoLider from './RelacaoLider';
 import AreaOficial from './AreaOficial';
 
@@ -40,6 +41,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     delegadoDe,
     liderExtraDe,
     presenca,
+    reuniaoLeituraPassou,
     reuniaoCom,
     responsaveisReuniao,
     error,
@@ -216,6 +218,8 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
       if (presenca === 'presente') return null;
       if (!viuArea) return 'A escala provisória saiu! Veja a sua área no botão abaixo. Depois, na reunião de escala, confirme sua presença.';
       if (ehLider) return 'Você é líder: confirme a sua própria presença na lista da sua equipe, aqui embaixo (botão "Presente" ao lado do seu nome). A chamada só fica aberta no dia da reunião de leitura da escala; depois disso, peça à organização.';
+      // Passado o dia da reuniao a chamada fechou (19/10/2026).
+      if (reuniaoLeituraPassou) return TEXTO_PRESENCA_APOS_REUNIAO;
       // Marcadores se reunem com a lideranca dos Invisiveis; Perseguidos, com a
       // da Selva (17/10/2026).
       if (responsaveisReuniao.length > 0) return `Esta é a escala provisória. Confirme sua presença com o(a) ${listaDeResponsaveis(responsaveisReuniao)} na reunião da sua área. Quando marcar, esta etapa fica concluída.`;
@@ -464,6 +468,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
             dono={dono}
             podePagar={canProceedToPayment}
             provisoria={!escalaOficial}
+            reuniaoPassou={reuniaoLeituraPassou}
             temEquipe={ehOProprio && conduzEquipe}
             onVerEquipe={ehOProprio ? () => { setRevelando(false); setRevelouAgora(true); setIrParaEquipe(true); refreshSilencioso(); } : undefined}
             onPagar={() => { setRevelando(false); onProceedToPayment?.({ nome: workflowData?.nome }); }}

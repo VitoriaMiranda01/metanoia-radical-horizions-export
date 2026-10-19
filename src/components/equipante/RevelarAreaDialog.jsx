@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { revelarArea } from '@/services/equipantesService';
 import AreasReveladas from './AreasReveladas';
 import { listaDeResponsaveis } from '@/utils/formatters';
+import { TEXTO_PRESENCA_APOS_REUNIAO } from '@/constants/textosPresenca';
 
 /**
  * "Ver qual área fui escalado": a revelacao animada da area, que substitui o
@@ -40,7 +41,7 @@ const Brilhos = () => (
 
 // temEquipe + onVerEquipe (16/10/2026): quem conduz uma equipe (lider, responsavel
 // pela reuniao, lider de area extra) vai direto para a lista dela.
-const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, temEquipe = false, onVerEquipe, onPagar, onPendencias, onClose }) => {
+const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, reuniaoPassou = false, temEquipe = false, onVerEquipe, onPagar, onPendencias, onClose }) => {
   const [etapa, setEtapa] = useState('buscando'); // buscando | suspense | revelado | fora | erro
   const [areas, setAreas] = useState([]);
   const [extras, setExtras] = useState([]);
@@ -150,6 +151,8 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, t
               <p className="text-center text-sm text-amber-200/90 pb-1">
                 {areas.some((a) => a.eh_lider)
                   ? 'Esta é a escala provisória. Como líder, confirme a sua própria presença na lista da sua equipe, logo abaixo do acompanhamento.'
+                  : reuniaoPassou
+                    ? TEXTO_PRESENCA_APOS_REUNIAO
                   : responsaveis.length > 0
                     ? `Esta é a escala provisória. Confirme sua presença com o(a) ${listaDeResponsaveis(responsaveis)} na reunião da sua área.`
                   : areas.some((a) => a.area === 'Marcador')

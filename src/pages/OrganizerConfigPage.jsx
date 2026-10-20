@@ -28,6 +28,7 @@ import AuditoriaCard from '@/components/organizer/AuditoriaCard';
 import AmbienteTesteCard from '@/components/organizer/AmbienteTesteCard';
 import DatasReunioesCard from '@/components/organizer/DatasReunioesCard';
 import ExcluirCadastroCard from '@/components/organizer/ExcluirCadastroCard';
+import DesistentesCard from '@/components/organizer/DesistentesCard';
 import LocaisReuniaoCard from '@/components/organizer/LocaisReuniaoCard';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -923,6 +924,11 @@ const OrganizerConfigPage = () => {
             <AuditoriaCard />
           </motion.div>
 
+          {/* Acampantes que desistiram -- 20/10/2026. */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
+            <DesistentesCard />
+          </motion.div>
+
           {/* Excluir cadastro (duplicados) -- 18/10/2026. */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
             <ExcluirCadastroCard />
@@ -946,7 +952,7 @@ const OrganizerConfigPage = () => {
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                     <h4 className="text-white font-medium mb-1">Resetar Inscrições para Nova Edição</h4>
-                    <p className="text-sm text-gray-400">Marca todos os equipantes atuais como "não inscritos" (forçando todos a passarem pelo fluxo de inscrição novamente) e apaga permanentemente todos os registros de acampantes. Esta ação não pode ser desfeita.</p>
+                    <p className="text-sm text-gray-400">Marca todos os equipantes atuais como "não inscritos" (forçando todos a passarem pelo fluxo de inscrição novamente) e apaga permanentemente todos os registros de acampantes (os acampantes que desistiram ficam guardados até completar 180 dias da inscrição). Esta ação não pode ser desfeita.</p>
                   </div>
                   <Button data-dica="Começar uma edição nova: apaga acampantes e escala e libera os equipantes para se inscreverem de novo. Pede confirmação." onClick={() => setShowResetConfirmDialog(true)} variant="destructive" className="bg-red-600 hover:bg-red-700 text-white font-bold whitespace-nowrap">
                     <RefreshCw className="w-4 h-4 mr-2" />
@@ -1025,6 +1031,8 @@ const OrganizerConfigPage = () => {
               <p>Todos os acampantes (dados pessoais inclusive) · a escala inteira ·
                  as 3 áreas de trabalho de cada equipante · os pagamentos e cobranças PIX
                  da edição que acabou.</p>
+              <p className="text-red-200/80">Não some: os acampantes que desistiram (Acampantes que
+                 desistiram) — ficam até completar 180 dias da inscrição.</p>
             </div>
           </div>
           <AlertDialogFooter>

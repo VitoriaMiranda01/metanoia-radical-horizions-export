@@ -13,6 +13,7 @@ import { formatCPF } from '@/utils/formatters';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { buscarCadastrosParaExcluir, fichaParaExclusao, excluirCadastro } from '@/services/exclusaoCadastroService';
 import { cn } from '@/lib/utils';
+import RemoverAcampanteDialog from '@/components/gerenciar/RemoverAcampanteDialog';
 
 /**
  * Excluir cadastro (18/10/2026, Patrick): para os duplicados que nao saiam.
@@ -75,6 +76,8 @@ const ExcluirCadastroCard = () => {
   const [perguntando, setPerguntando] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
   const [versao, setVersao] = useState(0);
+  // Acampante sai pela mesma janela de Gerenciar Inscricoes (20/10/2026).
+  const [removendoAcampante, setRemovendoAcampante] = useState(null);
 
   // Busca: espera a pessoa parar de digitar.
   useEffect(() => {
@@ -141,8 +144,9 @@ const ExcluirCadastroCard = () => {
         </CardTitle>
         <CardDescription className="text-gray-400">
           Para cadastros duplicados ou feitos por engano. Busque pelo nome ou CPF, confira tudo da pessoa e exclua.
-          Quem já pagou não pode ser excluído (desfaça o pagamento antes). Só Desenvolvedores, Raquel e Dudu excluem,
-          e a ficha inteira fica guardada no registro de exclusões.
+          Quem já pagou não pode ser excluído (desfaça o pagamento antes). Equipante: só Desenvolvedores, Raquel e
+          Dudu excluem, e a ficha inteira fica guardada no registro de exclusões. Acampante: abre a mesma janela do
+          botão Remover (desistência ou exclusão completa).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -272,14 +276,22 @@ const ExcluirCadastroCard = () => {
                 )}
 
                 <div className="rounded-md border border-red-500/40 bg-red-500/5 p-3 space-y-3">
-                  <p className="text-sm text-red-200 flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span>
-                      Excluir apaga a ficha{ficha.tipo === 'equipante' ? ', as áreas em que está escalado, as marcas de fixo e de responsável' : ''} e
-                      as cobranças PIX não pagas. Não tem volta pela tela (a ficha fica guardada no registro de exclusões).
-                    </span>
-                  </p>
-                  {ficha.pago ? (
+                  {ficha.tipo !== 'acampante' && (
+                    <p className="text-sm text-red-200 flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                      <span>
+                        Excluir apaga a ficha{ficha.tipo === 'equipante' ? ', as áreas em que está escalado, as marcas de fixo e de responsável' : ''} e
+                        as cobranças PIX não pagas. Não tem volta pela tela (a ficha fica guardada no registro de exclusões).
+                      </span>
+                    </p>
+                  )}
+                  {ficha.tipo === 'acampante' ? (
+                    <Button onClick={() => setRemovendoAcampante({ id: ficha.id, nome: f.nome,
+                      status_pagamento: f.status_pagamento, metodo_pagamento: f.metodo_pagamento })}
+                      className="bg-red-600 hover:bg-red-700 text-white">
+                      <Trash2 className="h-4 w-4 mr-1.5" /> Remover este acampante
+                    </Button>
+                  ) : ficha.pago ? (
                     <p className="text-sm text-amber-200">Este cadastro já tem pagamento confirmado: desfaça o pagamento em Pagamentos antes de excluir.</p>
                   ) : !ficha.pode_excluir ? (
                     <p className="text-sm text-amber-200">Só Desenvolvedores, Raquel e Dudu podem excluir cadastros.</p>
@@ -307,6 +319,12 @@ const ExcluirCadastroCard = () => {
           </div>
         )}
       </CardContent>
+
+      <RemoverAcampanteDialog
+        acampante={removendoAcampante}
+        onClose={() => setRemovendoAcampante(null)}
+        onRemovido={() => { setAberto(null); setFicha(null); setVersao((v) => v + 1); }}
+      />
 
       <AlertDialog open={perguntando} onOpenChange={(v) => { if (!excluindo) setPerguntando(v); }}>
         <AlertDialogContent className="bg-gray-900 border-gray-700 text-white">

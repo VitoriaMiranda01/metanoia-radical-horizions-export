@@ -358,7 +358,7 @@ const AcampantesTable = ({
                       className="flex-1 h-11 bg-transparent border-white/20 text-red-400 hover:text-red-300 hover:bg-red-500/20"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
-                      Excluir
+                      Remover
                     </Button>
                   </div>
                 </div>
@@ -441,7 +441,7 @@ const AcampantesTable = ({
                             variant="ghost" 
                             size="sm" 
                             onClick={() => onDelete(item)}
-                            data-dica="Excluir esta inscrição (pede confirmação)."
+                            data-dica="Remover esta inscrição: desistência (guarda os dados) ou exclusão completa."
                             className="hover:bg-red-500/20 text-red-300 transition-colors h-7 w-7 md:h-8 md:w-8 p-0"
                           >
                             <Trash2 className="w-3 h-3 md:w-4 md:h-4" />

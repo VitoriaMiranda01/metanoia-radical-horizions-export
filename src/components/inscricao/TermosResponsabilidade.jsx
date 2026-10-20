@@ -1,7 +1,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, ExternalLink } from 'lucide-react';
+import { FileText, ExternalLink, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/services/supabaseClient';
+
+// O mesmo "Fale conosco" da tela inicial (WhatsApp da Raquel).
+const WHATSAPP_CONTATO = 'https://wa.me/5521976225702';
 
 const TermosResponsabilidade = ({ formData, handleChange, handleCheckboxChange }) => {
   // Monta a URL publica do PDF a partir do cliente Supabase ja configurado
@@ -55,11 +58,44 @@ const TermosResponsabilidade = ({ formData, handleChange, handleCheckboxChange }
            </a>
         </div>
 
+        {/* Aviso de LGPD (Patrick, 20/10/2026). Os 180 dias valem de verdade
+            para quem desiste: o arquivo de desistentes apaga sozinho
+            (migration 20261020a). */}
+        <div className="space-y-3 rounded-md border border-white/10 bg-white/5 p-4 text-sm leading-relaxed text-white/85">
+          <p className="flex items-center gap-2 font-semibold text-white">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            Privacidade e proteção de dados (LGPD)
+          </p>
+          <p>
+            Os dados pessoais informados nesta inscrição serão usados somente para a organização e a realização do
+            Projeto Metanoia Radical Serra: identificação do acampante, controle de inscrição e pagamento, logística
+            de transporte e alimentação e contato em caso de necessidade.
+          </p>
+          <p>
+            Seus dados serão mantidos por 6 meses (180 dias) após o envio da inscrição e depois serão excluídos,
+            salvo se a lei exigir a guarda por período maior. Não vendemos seus dados e só os compartilhamos com
+            terceiros quando necessário para o evento ou para cumprir obrigação legal.
+          </p>
+          <p>
+            Você pode solicitar acesso, correção ou exclusão dos seus dados a qualquer momento pelo{' '}
+            <a href={WHATSAPP_CONTATO} target="_blank" rel="noopener noreferrer"
+               className="text-emerald-400 hover:text-emerald-300 underline font-medium">
+              WhatsApp da organização
+            </a>.
+          </p>
+        </div>
+
         <div className="space-y-4">
           <p className="text-white/90 text-sm leading-relaxed border-l-4 border-blue-500 pl-4 py-1">
-            Declaro estar ciente do conteúdo deste termo e da essência do trabalho do Metanóia Radical Serra, responsabilizando-me pela veracidade das informações preenchidas na ficha de inscrição.
+            Ao clicar em “Estou Ciente”, você declara que leu este aviso e concorda com o tratamento dos seus dados
+            pessoais nos termos acima, conforme a Lei nº 13.709/2018 (LGPD). Se o acampante for menor de 18 anos, o
+            responsável legal declara estar ciente e de acordo.
           </p>
-          
+          <p className="text-white/90 text-sm leading-relaxed border-l-4 border-blue-500 pl-4 py-1">
+            E também declaro estar ciente do conteúdo deste termo e da essência do trabalho do Metanoia Radical Serra,
+            responsabilizando-me pela veracidade das informações preenchidas na ficha de inscrição.
+          </p>
+
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="flex items-center space-x-3 bg-white/5 p-3 rounded-md w-fit">
               <input

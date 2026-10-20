@@ -3,25 +3,8 @@ import { mensagemDeErro } from '@/utils/errosDeDados';
 import { toast } from '@/components/ui/use-toast';
 import { comReenvio } from '@/services/serviceHelpers';
 
-// Deleta um acampante
-export const deleteAcampante = async (acampanteId, user) => {
-  try {
-    if (!navigator.onLine) {
-      throw new Error("Você está offline. Verifique sua conexão.");
-    }
-
-    const { error } = await supabase
-      .from('acampantes')
-      .delete()
-      .eq('id', acampanteId);
-
-    if (error) throw error;
-    return { success: true };
-  } catch (error) {
-    console.error('Erro ao deletar acampante:', error);
-    return { success: false, error: error.message || "Erro ao excluir registro." };
-  }
-};
+// Remover acampante: ver desistenciaService.js (20/10/2026). O delete direto
+// que ficava aqui apagava tudo sem guardar nada.
 
 export const getAcampantes = async () => {
   try {

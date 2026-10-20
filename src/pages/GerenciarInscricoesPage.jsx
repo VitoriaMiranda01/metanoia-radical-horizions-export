@@ -4,15 +4,6 @@ import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { AlertCircle, RefreshCw, UserPlus } from 'lucide-react';
 import Layout from '@/components/Layout';
 import InscricoesStatsCards from '@/components/gerenciar/InscricoesStatsCards';
@@ -41,7 +32,8 @@ import PendenciasEquipantes, { BotaoPendencias } from '@/components/gerenciar/Pe
 import { fichasComPendencias } from '@/utils/pendenciasEquipante';
 import { useAvisosInscricoes } from '@/hooks/useAvisosInscricoes';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
-import { deleteAcampante, getAcampantes, countAcampantes, realocarGrupoTrailha, salvarObservacaoAcampante, updateAcampante } from '@/services/acampantesService';
+import RemoverAcampanteDialog from '@/components/gerenciar/RemoverAcampanteDialog';
+import { getAcampantes, countAcampantes, realocarGrupoTrailha, salvarObservacaoAcampante, updateAcampante } from '@/services/acampantesService';
 import { fetchEquipantesDaEdicao, fetchIdsEquipantesConfirmados, updateEquipante, podeInscreverManual } from '@/services/equipantesService';
 import { fetchInfiltradosNosGrupos } from '@/services/infiltradosService';
 import { definirCor } from '@/services/scalesService';
@@ -177,37 +169,6 @@ const GerenciarInscricoesPage = () => {
 
   const handleDeleteAcampante = (acampante) => {
     setAcampanteToDeactivate(acampante);
-  };
-
-  const confirmarDesativacaoAcampante = async () => {
-    if (!acampanteToDeactivate) return;
-
-    setLoadingAcampantes(true);
-
-    try {
-      const result = await deleteAcampante(acampanteToDeactivate.id);
-
-      if (result.success) {
-        setAcampanteToDeactivate(null);
-
-        toast({
-          title: "Sucesso",
-          description: "Acampante desativado.",
-        });
-
-        fetchAcampantesSupabase();
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (err) {
-      toast({
-        title: "Erro",
-        description: err.message || "Falha ao desativar acampante.",
-        variant: "destructive",
-      });
-
-      setLoadingAcampantes(false);
-    }
   };
 
   // A exportacao de acampantes e equipantes agora e feita dentro de cada
@@ -661,46 +622,13 @@ const GerenciarInscricoesPage = () => {
             }}
           />
 
-          <AlertDialog
-            open={!!acampanteToDeactivate}
-            onOpenChange={(open) => {
-              if (!open) setAcampanteToDeactivate(null);
-            }}
-          >
-            <AlertDialogContent className="bg-zinc-900 border border-gray-800 text-white">
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  Desativar inscrição
-                </AlertDialogTitle>
-
-                <AlertDialogDescription className="text-gray-400">
-                  Tem certeza que deseja desativar a inscrição
-                  {acampanteToDeactivate?.nome && (
-                    <>
-                      {' do acampante '}
-                      <strong className="text-white">
-                        {acampanteToDeactivate.nome}
-                      </strong>
-                    </>
-                  )}
-                  ? Esta ação removerá o acampante da lista de inscritos.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-
-              <AlertDialogFooter>
-                <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
-                  Cancelar
-                </AlertDialogCancel>
-
-                <AlertDialogAction
-                  onClick={confirmarDesativacaoAcampante}
-                  className="bg-red-600 hover:bg-red-700 text-white border-none"
-                >
-                  Desativar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          {/* Remover acampante (20/10/2026): desistencia (guarda os dados) ou
+              exclusao completa. Antes apagava direto, sem guardar nada. */}
+          <RemoverAcampanteDialog
+            acampante={acampanteToDeactivate}
+            onClose={() => setAcampanteToDeactivate(null)}
+            onRemovido={fetchAcampantesSupabase}
+          />
 
         </motion.div>
       </Layout>

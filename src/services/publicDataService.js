@@ -121,6 +121,17 @@ export const meuDescontoAutomatico = async ({ tipo, id, cpf = null, nome = null,
 export const buscarFichaAnteriorPublica = async (cpf, nome) =>
   chamar('ficha_para_reinscricao', { p_cpf: cpf, p_nome: nome });
 
+/**
+ * Acampante que desistiu (20/10/2026): o CPF sozinho so diz se existe ficha
+ * guardada; os dados (so pessoais e endereco) saem com CPF **e** nome
+ * completo, pelo mesmo motivo de buscarFichaAnteriorPublica.
+ */
+export const acampanteTemFichaAnterior = async (cpf) =>
+  chamar('acampante_tem_ficha_anterior', { p_cpf: cpf });
+
+export const fichaAcampanteParaReinscricao = async (cpf, nome) =>
+  chamar('ficha_acampante_para_reinscricao', { p_cpf: cpf, p_nome: nome });
+
 /** { "NOME DA IGREJA": quantidade } -- sem baixar a base de acampantes. */
 export const fetchOcupacaoIgrejas = async () => chamar('ocupacao_igrejas');
 

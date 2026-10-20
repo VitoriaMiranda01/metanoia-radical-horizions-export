@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +42,7 @@ import { fetchLimitesIgrejas, fetchOcupacaoIgrejasAcampantes } from '@/services/
 import { fetchLimiteAcampantesPorIgrejaPadrao } from '@/services/organizerConfigService';
 import { IGREJA_RADICAL_36, IGREJA_DIVERSOS } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
-import { liberacaoDeTesteValida } from '@/services/publicDataService';
+import { liberacaoDeTesteValida, acampanteTemFichaAnterior, fichaAcampanteParaReinscricao } from '@/services/publicDataService';
 
 const AcampantePage = () => {
   const { user } = useAuth();
@@ -97,6 +99,11 @@ const AcampantePage = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  // Reinscricao de quem desistiu (20/10/2026): CPF + nome completo trazem so
+  // os dados pessoais e o endereco; o resto e preenchido de novo.
+  const [nomeConfirmacao, setNomeConfirmacao] = useState('');
+  const [erroFicha, setErroFicha] = useState('');
+  const [buscandoFicha, setBuscandoFicha] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [igrejasEsgotadas, setIgrejasEsgotadas] = useState(new Set());
 
@@ -131,7 +138,7 @@ const AcampantePage = () => {
     carregarLimitesIgrejas();
   }, [igrejasDoBanco]);
 
-  const handleVerificationComplete = (result) => {
+  const handleVerificationComplete = async (result) => {
     if (result.cpf) setFormData(prev => ({ ...prev, cpf: result.cpf }));
     if (result.nome) setFormData(prev => ({ ...prev, nome: result.nome }));
     if (result.semCpf) setFormData(prev => ({ ...prev, semCpf: true }));
@@ -160,8 +167,62 @@ const AcampantePage = () => {
           cpf: result.dados.cpf
         }
       });
+    } else if (podeCadastrar && result.cpf && !result.semCpf) {
+      // Desistiu antes (nesta ou noutra edicao, ate 180 dias da inscricao)?
+      // O CPF so diz se existe; os dados pedem o nome completo.
+      let existe = false;
+      try {
+        existe = !!(await acampanteTemFichaAnterior(result.cpf))?.existe;
+      } catch (err) {
+        console.error('acampanteTemFichaAnterior', err?.message || err);
+      }
+      setCurrentStep(existe ? 'reinscricao' : 'formulario');
     } else {
       setCurrentStep(podeCadastrar ? 'formulario' : 'fechadas');
+    }
+  };
+
+  // Mesmo comportamento do equipante: nome errado recebe a mesma mensagem de
+  // CPF inexistente, para nao confirmar CPFs a quem esta chutando.
+  const trazerDadosAnteriores = async () => {
+    setErroFicha('');
+    const nome = nomeConfirmacao.trim();
+    if (nome.length < 5 || !nome.includes(' ')) {
+      setErroFicha('Escreva seu nome completo (nome e sobrenome).');
+      return;
+    }
+    setBuscandoFicha(true);
+    try {
+      const r = await fichaAcampanteParaReinscricao(formData.cpf, nome);
+      if (!r?.ok) {
+        setErroFicha(r?.erro || 'Não foi possível trazer seus dados.');
+        return;
+      }
+      const f = r.ficha || {};
+      setFormData(prev => ({
+        ...prev,
+        nome: f.nome || prev.nome,
+        sexo: f.sexo || '',
+        dataNascimento: f.data_nascimento || '',
+        whatsapp: f.whatsapp || '',
+        email: f.email || '',
+        estadoCivil: f.estado_civil || '',
+        profissao: f.profissao || '',
+        cep: f.cep || '',
+        endereco: f.endereco || '',
+        numero: f.numero || '',
+        complemento: f.complemento || '',
+        bairro: f.bairro || '',
+        cidade: f.cidade || '',
+        estado: f.estado || '',
+      }));
+      toast({ title: 'Dados recuperados', description: 'Confira seus dados pessoais e o endereço e preencha o restante da ficha.' });
+      setCurrentStep('formulario');
+    } catch (err) {
+      console.error('fichaAcampanteParaReinscricao', err?.message || err);
+      setErroFicha('Não foi possível trazer seus dados agora. Tente de novo.');
+    } finally {
+      setBuscandoFicha(false);
     }
   };
 
@@ -342,6 +403,47 @@ const AcampantePage = () => {
             )}
             <VerificacaoCPF onVerificationComplete={handleVerificationComplete} tipo="acampante" />
           </div>
+        )}
+
+        {currentStep === 'reinscricao' && (
+          <Card className="glass-effect border-white/10 bg-black/40 max-w-xl mx-auto">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <RefreshCw className="w-5 h-5 text-blue-400" />
+                Você já se inscreveu antes
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-300 text-sm">
+                Encontramos uma inscrição anterior com este CPF. Digite seu nome completo e trazemos
+                seus dados pessoais e o endereço já preenchidos — o restante da ficha você preenche de novo.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="nomeConfirmacao" className="text-white">Nome completo</Label>
+                <Input
+                  id="nomeConfirmacao"
+                  value={nomeConfirmacao}
+                  onChange={(e) => { setNomeConfirmacao(e.target.value); setErroFicha(''); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') trazerDadosAnteriores(); }}
+                  placeholder="Como estava na inscrição anterior"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                />
+                {erroFicha && <p className="text-red-300 text-sm">{erroFicha}</p>}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={trazerDadosAnteriores} disabled={buscandoFicha} className="flex-1">
+                  {buscandoFicha ? 'Buscando...' : 'Trazer meus dados'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep('formulario')}
+                  className="flex-1 border-white/20 text-gray-300 hover:text-white"
+                >
+                  Preencher do zero
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {currentStep === 'fechadas' && (

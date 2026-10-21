@@ -24,6 +24,20 @@ import { marcarChamada } from '@/services/chamadaStore';
 export const FORA_DA_CHAMADA = ['Recepção Sítio', 'Recepção Igreja', 'Equipe de Manutenção'];
 export const contaNaChamada = (area) => !FORA_DA_CHAMADA.includes(area);
 
+// "Manter na Copa", "Manter no Guia", "Manter nos Infiltrados" (21/10/2026).
+// Area nova fora da lista sai com "em".
+const NO = ['Ataque / Madrugada', 'Contêiner', 'Dia do arrebatamento da igreja', 'Espírito Santo', 'Estacionamento',
+  'Guia', 'Hospital (Cena teatral)', 'Inimigo', 'Invisível', 'Marcador', 'Pastor Enforcado', 'Pastor Invisível',
+  'Presídio', 'Som / Multimídia', 'Som / Projeção', 'Túmulo'];
+const NOS = ['Apresentadores', 'Infiltrados', 'Perseguidos', 'Primeiros socorros - Saúde'];
+const NA = ['Base Operacional', 'Copa', 'Cozinha', 'Cozinha Igreja', 'Cracolândia', 'Cristolândia', 'Depressão',
+  'Equipe de Manutenção', 'Falsa baiana', 'Família', 'Família muçulmana', 'Fotografia', 'Igreja subterrânea',
+  'Logística', 'Mesa crachá', 'Recepção Igreja', 'Recepção Sítio', 'Secretaria', 'Segurança', 'Selva'];
+export const manterEm = (area) => {
+  const prep = NO.includes(area) ? 'no' : NOS.includes(area) ? 'nos' : NA.includes(area) ? 'na' : 'em';
+  return `Manter ${prep} ${area}`;
+};
+
 const semAcento = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 export const SITUACOES = {
@@ -145,7 +159,7 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir }) =
                             <Button size="sm" variant="outline" onClick={() => decidir(p, 'manter')} disabled={!!emVoo}
                               data-dica="A pessoa continua na área mesmo ausente na chamada."
                               className="h-8 border-green-600/40 bg-transparent text-green-300 hover:bg-green-600/15 hover:text-green-200">
-                              {emVoo === 'manter' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserCheck className="h-3.5 w-3.5 mr-1" /> Manter em {p.area}</>}
+                              {emVoo === 'manter' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserCheck className="h-3.5 w-3.5 mr-1" /> {manterEm(p.area)}</>}
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => decidir(p, 'separar')} disabled={!!emVoo}
                               data-dica="Tirar da área: vai para Não será escalado, guardando de onde saiu. Dá para trazer de volta."

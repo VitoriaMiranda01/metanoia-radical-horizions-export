@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, ExternalLink, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/services/supabaseClient';
 
-// O mesmo "Fale conosco" da tela inicial (WhatsApp da Raquel).
-const WHATSAPP_CONTATO = 'https://wa.me/5521976225702';
+import { WHATSAPP_ORGANIZACAO as WHATSAPP_CONTATO } from '@/constants/contato';
 
 const TermosResponsabilidade = ({ formData, handleChange, handleCheckboxChange }) => {
   // Monta a URL publica do PDF a partir do cliente Supabase ja configurado

@@ -26,6 +26,7 @@ import InfoEclesiasticas from '@/components/inscricao/InfoEclesiasticas';
 import InfoSaude from '@/components/inscricao/InfoSaude';
 import DadosComplementaresEquipante from '@/components/inscricao/DadosComplementaresEquipante';
 import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
+import AvisoPrivacidadeEquipante from '@/components/inscricao/AvisoPrivacidadeEquipante';
 import { escolheuSaude, problemaEspecialidade } from '@/constants/especialidadesSaude';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao, buscarFichaAnterior, verificarCPF } from '@/services/inscricoesService';
@@ -818,6 +819,7 @@ const EquipantePage = () => {
                 <InfoEclesiasticas formData={formData} handleChange={handleChange} isEquipante={true} />
                 <DadosComplementaresEquipante formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} />
                 <AreasDeTrabalho formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
+                <AvisoPrivacidadeEquipante />
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg" disabled={loading}>
                   {loading ? <RefreshCw className="animate-spin mr-2" /> : "Enviar Inscrição"}
                 </Button>

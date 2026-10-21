@@ -6,10 +6,19 @@ import { useToast } from '@/components/ui/use-toast';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { formatarTelefone } from '@/utils/telefone';
 import { fetchChamadaDaEscala, decidirAusente } from '@/services/scalesService';
+import { cn } from '@/lib/utils';
 import ChamadaAreaDialog from './ChamadaAreaDialog';
+import ChamadaSituacaoLista, { SITUACOES } from './ChamadaSituacaoLista';
 import { carregarChamada } from '@/services/chamadaStore';
 
 const ATUALIZAR_A_CADA_MS = 30000;
+
+// Os numeros do topo viram abas: cada um abre a lista de quem esta nele (21/10/2026).
+const ABAS = [
+  ['presentes', 'presentes', { ativo: 'border-green-400 bg-green-500/20 text-green-100', normal: 'border-green-500/30 text-green-300 hover:bg-green-500/10' }],
+  ['ausentes', 'ausentes', { ativo: 'border-red-400 bg-red-500/20 text-red-100', normal: 'border-red-500/30 text-red-300 hover:bg-red-500/10' }],
+  ['sem', 'sem_chamada', { ativo: 'border-amber-300 bg-amber-400/20 text-amber-100', normal: 'border-amber-400/30 text-amber-300 hover:bg-amber-400/10' }]
+];
 
 const SeloPago = ({ pago }) => pago ? (
   <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-300 border border-green-500/30">pago</span>
@@ -38,12 +47,15 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
   const [verMantidos, setVerMantidos] = useState(false);
   const [ocupado, setOcupado] = useState({});
   const [areaAberta, setAreaAberta] = useState(null);
+  const [situacao, setSituacao] = useState(null);
+  const [tique, setTique] = useState(0);
 
   const carregar = async (silencioso = false) => {
     if (!silencioso) setCarregando(true);
     const r = await fetchChamadaDaEscala();
     if (!silencioso) setCarregando(false);
     if (r.success) setDados(r.data);
+    setTique((n) => n + 1);
   };
 
   useEffect(() => {
@@ -86,15 +98,20 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
           <ClipboardList className="h-5 w-5 text-cyan-400 shrink-0" />
           <div>
             <h3 className="font-semibold text-white">Chamada da reunião de escala</h3>
-            {resumo && (
-              <p className="text-xs text-gray-400">
-                <span className="text-green-400">{resumo.presentes ?? 0} presentes</span> ·{' '}
-                <span className="text-red-400">{resumo.ausentes ?? 0} ausentes</span> ·{' '}
-                {resumo.sem_chamada ?? 0} sem chamada
-              </p>
-            )}
+            <p className="text-xs text-gray-400">Clique num número para ver quem está nele.</p>
           </div>
         </div>
+        {resumo && (
+          <div className="flex flex-wrap gap-1.5">
+            {ABAS.map(([chave, conta, cores]) => (
+              <button key={chave} type="button" onClick={() => setSituacao((s) => (s === chave ? null : chave))}
+                data-dica={situacao === chave ? 'Esconder a lista.' : `Ver quem está em ${SITUACOES[chave].rotulo}.`}
+                className={cn('rounded-full border px-3 py-1 text-xs', situacao === chave ? cores.ativo : cores.normal)}>
+                <span className="font-semibold">{resumo[conta] ?? 0}</span> {SITUACOES[chave].rotulo.toLowerCase()}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex gap-2">
           <Button size="sm" variant="ghost" onClick={() => setVerAreas((v) => !v)}
             data-dica="Ver quantos presentes e ausentes cada área já marcou."
@@ -122,11 +139,20 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
                 {' / '}
                 <span className="text-red-400">{a.ausentes}</span>
                 {' / '}
+                <span className={a.total - a.presentes - a.ausentes > 0 ? 'text-amber-300' : 'text-gray-500'}>{a.total - a.presentes - a.ausentes}</span>
+                {' / '}
                 <span className="text-gray-500">{a.total}</span>
               </span>
             </button>
           ))}
-          <p className="text-[10px] text-gray-500 sm:col-span-2 lg:col-span-3 mt-1">presentes / ausentes / total · clique numa área para marcar a presença e trocar atuação e cor</p>
+          <p className="text-[10px] text-gray-500 sm:col-span-2 lg:col-span-3 mt-1">presentes / ausentes / <span className="text-amber-300">sem chamada</span> / total · clique numa área para marcar a presença e trocar atuação e cor</p>
+        </div>
+      )}
+
+      {situacao && (
+        <div className="px-4 py-3 border-b border-white/10">
+          <p className="text-sm text-white font-medium mb-2">{SITUACOES[situacao].rotulo}</p>
+          <ChamadaSituacaoLista situacao={situacao} atualizar={tique} onAbrirArea={setAreaAberta} />
         </div>
       )}
 

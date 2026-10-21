@@ -407,6 +407,10 @@ export const separarTodosAusentes = () => rpcOrganizador('separar_ausentes', {},
 // ausente marcado pela organizacao (vale por cima do que o lider marcou).
 // presente: true | false | null (tira a marcacao).
 export const fetchChamadaDaArea = (area) => rpcOrganizador('chamada_da_area', { p_area: area }, 'chamada da área');
+// Quem esta em cada situacao da chamada, todas as areas (21/10/2026).
+// situacao: 'presentes' | 'ausentes' | 'sem'
+export const fetchChamadaPorSituacao = (situacao) =>
+  rpcOrganizador('chamada_por_situacao', { p_situacao: situacao }, 'lista da chamada');
 export const marcarPresencaOrganizador = (escalaId, presente) =>
   rpcOrganizador('organizador_marcar_presenca', { p_escala_id: escalaId, p_presente: presente }, 'presença');
 // cor: a cor do grupo na area nova (so nas areas com cor; obrigatoria para

@@ -8,7 +8,7 @@ import { formatarTelefone } from '@/utils/telefone';
 import { fetchChamadaDaEscala, decidirAusente } from '@/services/scalesService';
 import { cn } from '@/lib/utils';
 import ChamadaAreaDialog from './ChamadaAreaDialog';
-import ChamadaSituacaoLista, { SITUACOES } from './ChamadaSituacaoLista';
+import ChamadaSituacaoLista, { SITUACOES, contaNaChamada } from './ChamadaSituacaoLista';
 import { carregarChamada } from '@/services/chamadaStore';
 
 const ATUALIZAR_A_CADA_MS = 30000;
@@ -86,10 +86,19 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
     recarregarTudo?.();
   };
 
-  const ausentes = dados?.ausentes || [];
+  const ausentes = (dados?.ausentes || []).filter((p) => contaNaChamada(p.area));
   const separados = dados?.separados || [];
-  const mantidos = dados?.mantidos || [];
-  const porArea = dados?.por_area || [];
+  const mantidos = (dados?.mantidos || []).filter((p) => contaNaChamada(p.area));
+  const porArea = (dados?.por_area || []).filter((a) => contaNaChamada(a.area));
+  // As contas do topo saem das areas que contam (sem Recepcao); antes de a
+  // lista chegar, usa os numeros da tela.
+  const contas = dados
+    ? porArea.reduce((c, a) => ({
+      presentes: c.presentes + a.presentes,
+      ausentes: c.ausentes + a.ausentes,
+      sem_chamada: c.sem_chamada + a.total - a.presentes - a.ausentes
+    }), { presentes: 0, ausentes: 0, sem_chamada: 0 })
+    : resumo;
 
   return (
     <Card className="bg-black/40 border-white/10">
@@ -101,13 +110,13 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
             <p className="text-xs text-gray-400">Clique num número para ver quem está nele.</p>
           </div>
         </div>
-        {resumo && (
+        {contas && (
           <div className="flex flex-wrap gap-1.5">
             {ABAS.map(([chave, conta, cores]) => (
               <button key={chave} type="button" onClick={() => setSituacao((s) => (s === chave ? null : chave))}
                 data-dica={situacao === chave ? 'Esconder a lista.' : `Ver quem está em ${SITUACOES[chave].rotulo}.`}
                 className={cn('rounded-full border px-3 py-1 text-xs', situacao === chave ? cores.ativo : cores.normal)}>
-                <span className="font-semibold">{resumo[conta] ?? 0}</span> {SITUACOES[chave].rotulo.toLowerCase()}
+                <span className="font-semibold">{contas[conta] ?? 0}</span> {SITUACOES[chave].rotulo.toLowerCase()}
               </button>
             ))}
           </div>

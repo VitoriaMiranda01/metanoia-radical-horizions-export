@@ -17,6 +17,11 @@ import { marcarChamada } from '@/services/chamadaStore';
  * marcacao da janela da area: vale por cima do lider) e a pessoa muda de lista.
  */
 
+// Areas que nao passam pela chamada da reuniao: ficam fora do quadro, das
+// contas e das listas (21/10/2026, Patrick).
+export const FORA_DA_CHAMADA = ['Recepção Sítio', 'Recepção Igreja'];
+export const contaNaChamada = (area) => !FORA_DA_CHAMADA.includes(area);
+
 const semAcento = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 export const SITUACOES = {
@@ -38,7 +43,7 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea }) => {
     const r = await fetchChamadaPorSituacao(situacao);
     if (!r.success) { setErro(r.error); return; }
     setErro('');
-    setPessoas(r.data.pessoas || []);
+    setPessoas((r.data.pessoas || []).filter((p) => contaNaChamada(p.area)));
   };
 
   // Troca de situacao comeca do zero; `atualizar` muda quando os numeros do

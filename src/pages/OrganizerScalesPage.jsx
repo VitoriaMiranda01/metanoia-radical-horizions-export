@@ -1876,7 +1876,10 @@ const OrganizerScalesPage = () => {
       ? CORES_GRUPO.filter(cor => areaEquipantes.some(eq => eq.cor === cor))
       : [];
     // Um lider sem cor e o lider da area inteira: cobre todas as cores.
-    const temLiderGeral = areaEquipantes.some(eq => !eq.cor && atuacoesDeLider.includes(eq.atuacao));
+    // Fotografia e uma equipe so (19/10/2026): um lider de QUALQUER cor vale
+    // para a area toda.
+    const temLiderGeral = areaEquipantes.some(eq =>
+      (area === 'Fotografia' || !eq.cor) && atuacoesDeLider.includes(eq.atuacao));
     const coresSemLider = temLiderGeral ? [] : coresEmUso.filter(cor =>
       !areaEquipantes.some(eq => eq.cor === cor && atuacoesDeLider.includes(eq.atuacao)));
 

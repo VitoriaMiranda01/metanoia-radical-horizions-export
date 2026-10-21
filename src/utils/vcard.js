@@ -29,7 +29,7 @@ export const baixarVcf = (texto, nomeArquivo) => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${nomeArquivo.replace(/[^a-zA-Z0-9-_]+/g, '-')}.vcf`;
+  a.download = `${nomeArquivo.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9-_]+/g, '-')}.vcf`;
   document.body.appendChild(a);
   a.click();
   a.remove();

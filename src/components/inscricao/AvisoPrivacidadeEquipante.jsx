@@ -14,29 +14,19 @@ const AvisoPrivacidadeEquipante = () => (
       Privacidade e proteção de dados (LGPD)
     </p>
     <p>
-      Os dados pessoais informados nesta inscrição serão usados somente para a organização e a realização do
-      Projeto Metanoia Radical Serra: identificação do equipante, montagem da escala de trabalho, controle de
-      inscrição e pagamento, logística do evento e contato em caso de necessidade.
-    </p>
-    <p>
-      Seus dados de cadastro (nome, CPF, contato e igreja) serão mantidos enquanto seu cadastro estiver ativo e
-      por até 24 meses após a sua última participação, para facilitar futuras inscrições. As informações
-      específicas de cada edição (como dados de saúde, alergias, áreas de trabalho e a autorização do
-      responsável, no caso de menor de idade) serão mantidas por até 12 meses após o evento e depois excluídas.
-      Podemos guardar por mais tempo apenas o que a lei exigir. Não vendemos seus dados e só os compartilhamos
-      com terceiros quando necessário para o evento ou para cumprir obrigação legal.
-    </p>
-    <p>
-      Você pode solicitar acesso, correção ou exclusão dos seus dados a qualquer momento pelo{' '}
+      Usamos seus dados só para organizar o Metanoia Radical Serra: inscrição, escala, pagamento, logística e
+      contato. O cadastro (nome, CPF, contato e igreja) fica guardado por até 24 meses após a sua última
+      participação; os dados de cada edição (saúde, áreas de trabalho e autorização do responsável) por até 12
+      meses após o evento. Não vendemos seus dados. Para acessar, corrigir ou excluir, fale com a organização
+      pelo{' '}
       <a href={WHATSAPP_ORGANIZACAO} target="_blank" rel="noopener noreferrer"
          className="text-emerald-400 hover:text-emerald-300 underline font-medium">
-        WhatsApp da organização
+        WhatsApp
       </a>.
     </p>
     <p className="text-white/90 border-l-4 border-blue-500 pl-4 py-1">
-      Ao clicar em “Enviar Inscrição”, você declara que leu este aviso e concorda com o tratamento dos seus dados
-      pessoais nos termos acima, conforme a Lei nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais — LGPD).
-      Se o equipante for menor de 18 anos, o responsável legal declara estar ciente e de acordo.
+      Ao enviar a inscrição, você concorda com este aviso, conforme a Lei nº 13.709/2018 (LGPD). Se for menor
+      de 18 anos, seu responsável legal também concorda.
     </p>
   </div>
 );

@@ -221,7 +221,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
                     <Button size="sm" variant="outline" onClick={() => decidir(p, 'manter')} disabled={!!ocupado[p.escala_id]}
                       data-dica="A pessoa continua na área mesmo ausente na chamada."
                       className="h-8 border-green-600/40 bg-transparent text-green-300 hover:bg-green-600/15 hover:text-green-200">
-                      {ocupado[p.escala_id] === 'manter' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserCheck className="h-3.5 w-3.5 mr-1" /> Manter na área</>}
+                      {ocupado[p.escala_id] === 'manter' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserCheck className="h-3.5 w-3.5 mr-1" /> Manter em {p.area}</>}
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => decidir(p, 'separar')} disabled={!!ocupado[p.escala_id]}
                       data-dica="Tirar da área: vai para Não será escalado, guardando de onde saiu. Dá para trazer de volta."

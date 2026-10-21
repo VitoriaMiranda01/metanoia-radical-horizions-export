@@ -145,7 +145,7 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir }) =
                             <Button size="sm" variant="outline" onClick={() => decidir(p, 'manter')} disabled={!!emVoo}
                               data-dica="A pessoa continua na área mesmo ausente na chamada."
                               className="h-8 border-green-600/40 bg-transparent text-green-300 hover:bg-green-600/15 hover:text-green-200">
-                              {emVoo === 'manter' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserCheck className="h-3.5 w-3.5 mr-1" /> Manter na área</>}
+                              {emVoo === 'manter' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserCheck className="h-3.5 w-3.5 mr-1" /> Manter em {p.area}</>}
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => decidir(p, 'separar')} disabled={!!emVoo}
                               data-dica="Tirar da área: vai para Não será escalado, guardando de onde saiu. Dá para trazer de volta."

@@ -1,5 +1,5 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { Check, Loader2, Search, X } from 'lucide-react';
+import { Check, Loader2, Search, UserCheck, UserMinus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -15,11 +15,13 @@ import { marcarChamada } from '@/services/chamadaStore';
  * do quadro da chamada. Agrupada por area; busca por nome, igreja ou telefone
  * e filtro por area. A organizacao marca presente/ausente ali mesmo (mesma
  * marcacao da janela da area: vale por cima do lider) e a pessoa muda de lista.
+ * Nos ausentes, em vez de presente/ausente, ficam as decisoes dos "Ausentes a
+ * definir" (manter na area / enviar para o Nao sera escalado) -- onDecidir.
  */
 
 // Areas que nao passam pela chamada da reuniao: ficam fora do quadro, das
 // contas e das listas (21/10/2026, Patrick).
-export const FORA_DA_CHAMADA = ['Recepção Sítio', 'Recepção Igreja'];
+export const FORA_DA_CHAMADA = ['Recepção Sítio', 'Recepção Igreja', 'Equipe de Manutenção'];
 export const contaNaChamada = (area) => !FORA_DA_CHAMADA.includes(area);
 
 const semAcento = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -30,7 +32,7 @@ export const SITUACOES = {
   sem: { rotulo: 'Sem chamada', vazio: 'Todo mundo já tem a chamada marcada.' }
 };
 
-const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea }) => {
+const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir }) => {
   const { toast } = useToast();
   const [pessoas, setPessoas] = useState(null);
   const [erro, setErro] = useState('');
@@ -70,6 +72,13 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea }) => {
     const r = await marcarChamada(p.escala_id, valor);
     setOcupado((o) => { const c = { ...o }; delete c[p.escala_id]; return c; });
     if (!r.success) toast({ title: 'Não deu certo', description: r.error, variant: 'destructive' });
+    carregar();
+  };
+
+  const decidir = async (p, acao) => {
+    setOcupado((o) => ({ ...o, [p.escala_id]: acao }));
+    await onDecidir?.(p, acao);
+    setOcupado((o) => { const c = { ...o }; delete c[p.escala_id]; return c; });
     carregar();
   };
 
@@ -130,6 +139,22 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea }) => {
                           {p.marcado_por ? ` · marcado por ${p.marcado_por}` : ''}
                         </p>
                       </div>
+                      {situacao === 'ausentes' ? (
+                        !p.mantido && (
+                          <div className="flex gap-1.5 shrink-0">
+                            <Button size="sm" variant="outline" onClick={() => decidir(p, 'manter')} disabled={!!emVoo}
+                              data-dica="A pessoa continua na área mesmo ausente na chamada."
+                              className="h-8 border-green-600/40 bg-transparent text-green-300 hover:bg-green-600/15 hover:text-green-200">
+                              {emVoo === 'manter' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserCheck className="h-3.5 w-3.5 mr-1" /> Manter na área</>}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => decidir(p, 'separar')} disabled={!!emVoo}
+                              data-dica="Tirar da área: vai para Não será escalado, guardando de onde saiu. Dá para trazer de volta."
+                              className="h-8 border-red-500/40 bg-transparent text-red-300 hover:bg-red-500/15 hover:text-red-200">
+                              {emVoo === 'separar' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserMinus className="h-3.5 w-3.5 mr-1" /> Enviar para o Não será escalado</>}
+                            </Button>
+                          </div>
+                        )
+                      ) : (
                       <div className="flex gap-1.5 shrink-0">
                         <Button size="sm" disabled={!!emVoo} onClick={() => presenca(p, p.presente === true ? null : true)}
                           data-dica={p.presente === true ? 'Tirar a marcação.' : 'Marcar presente.'}
@@ -146,6 +171,7 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea }) => {
                           <X className="w-3.5 h-3.5 mr-1" /> Ausente
                         </Button>
                       </div>
+                      )}
                     </li>
                   );
                 })}
@@ -157,7 +183,8 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea }) => {
       {pessoas && (
         <p className="text-[10px] text-gray-500">
           {mostrados === pessoas.length ? `${pessoas.length} na lista` : `${mostrados} de ${pessoas.length} na lista`}
-          {' · '}clique no nome da área para abrir a chamada dela · clicar de novo no botão marcado tira a marcação
+          {' · '}clique no nome da área para abrir a chamada dela
+          {situacao !== 'ausentes' && ' · clicar de novo no botão marcado tira a marcação'}
         </p>
       )}
     </div>

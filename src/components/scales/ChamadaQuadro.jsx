@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { ClipboardList, Loader2, RefreshCw, Repeat, Undo2, UserCheck, UserMinus, UserX } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ChevronDown, ChevronUp, ClipboardList, Loader2, RefreshCw, Repeat, Undo2, UserCheck, UserMinus, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
@@ -49,6 +49,15 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
   const [areaAberta, setAreaAberta] = useState(null);
   const [situacao, setSituacao] = useState(null);
   const [tique, setTique] = useState(0);
+  // Minimizado: fica so a linha do titulo, como a fila "A escalar".
+  // Lembrado neste navegador.
+  const [minimizado, setMinimizado] = useState(() => {
+    try { return localStorage.getItem('chamada_quadro_minimizado') === '1'; } catch { return false; }
+  });
+  const alternarMinimizado = () => setMinimizado((v) => {
+    try { localStorage.setItem('chamada_quadro_minimizado', v ? '0' : '1'); } catch { /* sem storage */ }
+    return !v;
+  });
 
   const carregar = async (silencioso = false) => {
     if (!silencioso) setCarregando(true);
@@ -99,21 +108,32 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
       sem_chamada: c.sem_chamada + a.total - a.presentes - a.ausentes
     }), { presentes: 0, ausentes: 0, sem_chamada: 0 })
     : resumo;
+  const ausentesPorArea = useMemo(() => {
+    const porNome = new Map();
+    ausentes.forEach((p) => { if (!porNome.has(p.area)) porNome.set(p.area, []); porNome.get(p.area).push(p); });
+    return [...porNome.entries()];
+  }, [ausentes]);
 
   return (
     <Card className="bg-black/40 border-white/10">
-      <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 border-b border-white/10">
+      <div className={cn('p-4 flex flex-col sm:flex-row sm:items-center gap-3', !minimizado && 'border-b border-white/10')}>
         <div className="flex items-center gap-2 flex-1">
           <ClipboardList className="h-5 w-5 text-cyan-400 shrink-0" />
           <div>
             <h3 className="font-semibold text-white">Chamada da reunião de escala</h3>
-            <p className="text-xs text-gray-400">Clique num número para ver quem está nele.</p>
+            {!minimizado && <p className="text-xs text-gray-400">Clique num número para ver quem está nele.</p>}
           </div>
+          <Button type="button" variant="ghost" size="sm" onClick={alternarMinimizado}
+            data-dica={minimizado ? 'Mostrar a chamada.' : 'Esconder a chamada (fica só esta linha) para ver melhor a escala.'}
+            className="h-8 px-2 text-gray-300 hover:text-white hover:bg-white/10">
+            {minimizado ? <ChevronDown className="h-4 w-4 mr-1" /> : <ChevronUp className="h-4 w-4 mr-1" />}
+            <span className="text-xs">{minimizado ? 'Mostrar' : 'Minimizar'}</span>
+          </Button>
         </div>
         {contas && (
           <div className="flex flex-wrap gap-1.5">
             {ABAS.map(([chave, conta, cores]) => (
-              <button key={chave} type="button" onClick={() => setSituacao((s) => (s === chave ? null : chave))}
+              <button key={chave} type="button" onClick={() => { setSituacao((s) => (s === chave && !minimizado ? null : chave)); if (minimizado) alternarMinimizado(); }}
                 data-dica={situacao === chave ? 'Esconder a lista.' : `Ver quem está em ${SITUACOES[chave].rotulo}.`}
                 className={cn('rounded-full border px-3 py-1 text-xs', situacao === chave ? cores.ativo : cores.normal)}>
                 <span className="font-semibold">{contas[conta] ?? 0}</span> {SITUACOES[chave].rotulo.toLowerCase()}
@@ -122,11 +142,11 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
           </div>
         )}
         <div className="flex gap-2">
-          <Button size="sm" variant="ghost" onClick={() => setVerAreas((v) => !v)}
+          {!minimizado && <Button size="sm" variant="ghost" onClick={() => setVerAreas((v) => !v)}
             data-dica="Ver quantos presentes e ausentes cada área já marcou."
             className="text-gray-300 hover:text-white hover:bg-white/10">
             {verAreas ? 'Esconder áreas' : 'Por área'}
-          </Button>
+          </Button>}
           <Button size="sm" variant="outline" onClick={() => { carregar(); recarregarTela?.(); carregarChamada(); }} disabled={carregando}
             data-dica="Buscar a chamada de novo (atualiza sozinha a cada 30 segundos)."
             className="border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white">
@@ -135,7 +155,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
         </div>
       </div>
 
-      {verAreas && (
+      {verAreas && !minimizado && (
         <div className="px-4 py-3 border-b border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1 max-h-60 overflow-y-auto">
           {/* Cada area abre a lista dela para a organizacao gerenciar (16/10/2026). */}
           {porArea.map((a) => (
@@ -158,16 +178,17 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
         </div>
       )}
 
-      {situacao && (
+      {situacao && !minimizado && (
         <div className="px-4 py-3 border-b border-white/10">
           <p className="text-sm text-white font-medium mb-2">{SITUACOES[situacao].rotulo}</p>
-          <ChamadaSituacaoLista situacao={situacao} atualizar={tique} onAbrirArea={setAreaAberta} />
+          <ChamadaSituacaoLista situacao={situacao} atualizar={tique} onAbrirArea={setAreaAberta} onDecidir={decidir} />
         </div>
       )}
 
-      <div className="p-4 space-y-5">
-        {/* Ausentes a definir */}
-        <div>
+      {!minimizado && <div className="p-4 space-y-5">
+        {/* Ausentes a definir -- com a aba Ausentes aberta, as decisoes ja
+            estao nela, separadas por area. */}
+        {situacao !== 'ausentes' && <div>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <p className="text-sm text-white font-medium flex items-center gap-2 flex-1">
               <UserX className="h-4 w-4 text-red-400" /> Ausentes a definir ({ausentes.length})
@@ -176,13 +197,21 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
           {ausentes.length === 0 ? (
             <p className="text-xs text-gray-500">Nenhum ausente para decidir agora.</p>
           ) : (
-            <ul className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
-              {ausentes.map((p) => (
+            <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-1">
+              {ausentesPorArea.map(([nomeArea, lista]) => (
+              <div key={nomeArea}>
+              <button type="button" onClick={() => setAreaAberta(nomeArea)}
+                data-dica={`Abrir a chamada de ${nomeArea}: marcar presença e trocar atuação e cor.`}
+                className="sticky top-0 z-10 w-full text-left text-xs font-medium text-cyan-300 bg-zinc-950/95 py-1 hover:text-white">
+                {nomeArea} <span className="text-gray-500 font-normal">({lista.length})</span>
+              </button>
+              <ul className="space-y-1.5">
+              {lista.map((p) => (
                 <li key={p.escala_id} className="flex flex-col sm:flex-row sm:items-center gap-2 bg-red-500/5 border border-red-500/20 rounded-md px-3 py-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white truncate flex items-center gap-2">{p.nome} <SeloPago pago={p.pago} /></p>
                     <p className="text-[11px] text-gray-400 truncate">
-                      {p.area}{p.cor ? ` · ${p.cor}` : ''}
+                      {[p.atuacao, p.cor].filter(Boolean).join(' · ') || 'Sem atuação'}
                       {p.whatsapp ? ` · ${formatarTelefone(p.whatsapp)}` : ''}
                       {' · '}{nomeDaIgreja(p) || '—'}
                       {p.marcado_por ? ` · marcado por ${p.marcado_por}` : ''}
@@ -202,9 +231,12 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
                   </div>
                 </li>
               ))}
-            </ul>
+              </ul>
+              </div>
+              ))}
+            </div>
           )}
-        </div>
+        </div>}
 
         {/* Separados */}
         {separados.length > 0 && (
@@ -254,7 +286,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
             )}
           </div>
         )}
-      </div>
+      </div>}
       {areaAberta && (
         <ChamadaAreaDialog area={areaAberta}
           onClose={() => { setAreaAberta(null); carregar(true); recarregarTela?.(); carregarChamada(); }}

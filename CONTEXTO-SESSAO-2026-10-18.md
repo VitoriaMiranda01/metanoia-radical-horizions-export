@@ -1,0 +1,69 @@
+# Contexto — Metanoia Radical Serra (atualizado 19/10/2026)
+
+Leia este arquivo primeiro. Estado atual no topo; mapa do que existe, por assunto, embaixo.
+
+## Regras de trabalho
+- App React/Vite em `C:\ClaudeCode\metanoia`. O Hostinger publica o `main` sozinho: confirmar no ar comparando o `index-*.js` do site com `dist/index.html`. Antes de mexer: `git fetch` (outras sessões também sobem no main).
+- Supabase **oficial** `yxootyzlpefyztiiacrs`; **teste** `oozwcfoidfqperbxnwkk` (site com `?ambiente=teste`, PIX simulado). Migration nova vai nos DOIS bancos (teste primeiro), arquivo em `database/migrations/`. Edge Function `sicoob-pix-create` tem versão de teste e oficial (código oficial em `supabase/functions/`).
+- Patch em função existente: `pg_get_functiondef` + `replace` dentro de `DO $$`, com erro "trecho não encontrado" se não bater.
+- Teste no banco: bloco `DO` terminando em `raise exception 'TESTE_OK ...'` (desfaz tudo). Organizador simulado: `set_config('request.jwt.claims','{"sub":"a9045bfe-3360-4ad7-ba17-bfa66b951a42","role":"authenticated","user_role":"organizador"}',true)`.
+- Testar telas: equipante fictício na base de teste + `localStorage 'metanoia:sessao-inscricao'`; apagar tudo depois. `preview_start` serve o BUILD (rodar `vite build` antes).
+- Patrick usa a conta Desenvolvedores e fala português. Nunca digitar CPF real. Nunca confirmar exclusão/pagamento irreversível sem ele pedir. Coluna nova em `equipantes` nunca com NOT NULL. Script Python de edição: usar a ferramenta Write.
+- Regra de ouro: o alocar automático NUNCA mexe em quem já está escalado.
+- Ao terminar cada tarefa: atualizar este arquivo e avisar que pode dar `/clear`. Pedidos novos: sugerir modelo/esforço (ver memória).
+
+## Estado do evento
+- Provisória do oficial lançada em 18/10; ~942 equipantes escalados. Pagos: poucos equipantes (21); acampantes sem pagar em cobrança/agendado.
+- Pendência do Patrick: vincular as igrejas do Julio na conta 17 (Senhas dos Parceiros → "Igrejas").
+- **Desistência do acampante** (20/10, 20261020a + 20261020b, nos dois bancos, commit 685dac2): botão "Remover" (Gerenciar Inscrições) pergunta o motivo. (1) "Desistiu da edição" → linha MUDA para `acampantes_desistentes` (some de tudo; CPF e vaga liberam; virada não apaga); restaurar só na mesma edição; reinscrição com CPF + nome traz só 16 campos (pessoais + endereço) via `ficha_acampante_para_reinscricao`; apaga sozinho 180 dias após a inscrição (`_limpar_desistentes_vencidos`, roda quando as funções são chamadas — não há pg_cron). (2) "Excluir completamente" → sem nome/CPF/ficha; esvazia `auditoria` da pessoa; registro mínimo em `exclusoes_cadastro`. Qualquer organizador faz as duas. Pago ou PIX válido trava (PIX pago NÃO tem desfazer na tela). Lista em Configurações → "Acampantes que desistiram". `excluir_cadastro` recusa acampante. 20261020b: sem policy/privilégio de DELETE em `acampantes` (só funções). Formulário do acampante com aviso LGPD (180 dias). `acampantes.numero_edicao` nunca é preenchido (usa `_edicao_atual()`). Plano em `docs/PLANO_DESISTENCIA_ACAMPANTE.md` (local, tem nomes). Os 13 apagados em 19/10 NÃO foram importados (Patrick pede se precisar: backup `retidos/2026-10-19` ou `auditoria.mudancas`).
+- **Aviso LGPD do equipante** (20/10, commit 85b8119, só texto): `AvisoPrivacidadeEquipante` acima do "Enviar Inscrição"; enviar = concordar (sem caixa). Promete cadastro até 24 meses após a última participação e dados da edição (saúde, áreas, autorização) até 12 meses após o evento — **o sistema ainda NÃO apaga nada disso sozinho** (a virada só limpa áreas/pagamento; saúde fica na ficha). Link de contato em `constants/contato.js`.
+- Em aberto: depois da escala OFICIAL, quem pagou e nunca teve presença marcada fica sem faixa verde e sem aviso (não conclui). Perguntado, sem resposta.
+- Adiados: migração para Tailwind 4 (após o evento), roteiro de vídeo.
+
+- **Presença só no dia da Leitura de Escala** (19/10, 20261019m, nos dois bancos, commit b1f110f): líder/responsável só marca/desfaz presença no dia de `configuracoes.reuniao_leitura_escala_em` (dia inteiro, horário de Brasília; sem data = fechado). Fonte da data: Configurações → "Reuniões da edição" (sempre seguir esse campo). `_presenca_reuniao_aberta()`; `relacao_lider` devolve `presenca_aberta`; fora do dia a tela mostra só o resultado + aviso, lista e WhatsApp seguem. Organizador NUNCA bloqueado (`organizador_marcar_presenca` intocada).
+
+- **Chamada por situação** (21/10, 20261021a, nos dois bancos, commit 4e73c61): no quadro "Chamada da reunião de escala" os números presentes / ausentes / sem chamada são abas; cada uma abre a lista de nomes (todas as áreas, agrupada por área, busca + filtro de área, botões Presente/Ausente que usam `marcarChamada`; nome da área abre a janela da área). "Por área" mostra presentes / ausentes / sem chamada / total. Função `chamada_por_situacao(p_situacao)` ('presentes'|'ausentes'|'sem', só `_gere_escala`), mesma regra de conta da `situacao_escala` (conferido: oficial 689/199/148). Componente `ChamadaSituacaoLista.jsx`. Tela não testada logada (sem login de organizador no preview). Commit f464f65: botão Minimizar/Mostrar no quadro (igual à fila "A escalar", `localStorage chamada_quadro_minimizado`); aba Ausentes mostra Manter na área / Enviar para o Não será escalado (não presente/ausente), separado por área, e esconde o bloco "Ausentes a definir" (que também ficou separado por área). Botão "Manter na Copa / no Guia / nos Infiltrados" (`manterEm` em ChamadaSituacaoLista, lista fixa por área; área nova sai com "em" — incluir na lista; commit 646fae3). Recepção Sítio, Recepção Igreja e Equipe de Manutenção ficam FORA do quadro (contas, Por área, listas, ausentes a definir) — `FORA_DA_CHAMADA` no componente, só na tela (commit 51ccf88); `situacao_escala` no banco ainda conta as duas.
+
+- **Regra de negócio:** acampante NUNCA tem líder informado dentro do sistema (nenhum texto/fluxo de acampante deve mandar "procure seu líder").
+- **Texto após a reunião** (19/10, 20261019n, nos dois bancos): `situacao_inscricao` devolve `reuniao_leitura_passou` (hoje > data da leitura; sem data = false). Equipante não-líder vê "Procure o seu líder ou a coordenação do projeto para confirmar sua presença na edição" (`constants/textosPresenca.js`) no status do acompanhamento, no diálogo de revelar área e no aviso do PIX confirmado; só muda a partir do dia seguinte. Líder mantém o texto próprio. Pendente: conversar sobre o grupo de WhatsApp.
+
+- **Líder em Som / Projeção e Som / Multimídia** (19/10, 20261019o, nos dois bancos, só dados, sem código): atuação "Líder" (2ª, eh_lider) cadastrada nas duas áreas; sem limite de líderes. Patrick aloca os líderes pela coluna Atuação.
+
+## Mapa do que existe (tudo no ar, nos dois bancos)
+**Inscrição do equipante / acompanhamento**
+- Conclui só com pagamento + presença confirmada (`_presenca_equipante`; `verificar_inscricao` devolve `concluido` e `primeiro_nome`). Líder/responsável/líder de área extra nunca vai para "Inscrição Confirmada": cai no acompanhamento com a relação (20261019d/h).
+- Pago sem presença: PIX mostra aviso + "Voltar ao Acompanhamento". Pagamento agendado: acompanhamento mostra "agendado para dd/mm" e a etapa segue pendente (20261019l).
+- Sem CPF (fichas manuais): CPF → "Você já tem cadastro?" → nome (só 15h–19h) → pedido em "Pedidos de acesso ao cadastro" (Gerenciar Inscrições).
+- Pastor puxado da igreja (`pastores_da_igreja`); Especialidade da Saúde (`especialidades_saude`, aba "Equipe da Saúde").
+
+**Pagamento / PIX**
+- Cupom no topo do PIX, aplica sozinho ao gerar, botão "Gerar PIX de R$ X", "Tenho cupom de desconto" na tela do QR.
+- Desconto automático 50% sobre o preço do dia para pastor (`_e_pastor`) e infiltrado (escalado em Infiltrados), só equipante (20261019i): `_desconto_automatico`, cupom restrito `INFILTRADO` (`cupons.so_infiltrado`), usado pela Edge Function; tela mostra preço oficial e com desconto.
+- Pagamentos (organizador): abas Não pagaram (todo equipante escalado + acampante), Cobrança em andamento, Pagamento agendado (agora também equipante, `cobrancas_equipantes`), Pagos (sem isentos), **Isentos**, Precisam de atenção. PIX conferido à mão como meio manual; observação opcional.
+- Tabelas: até 25 por página crescem sem barra; 50/100 rolam mostrando 25 linhas (`Table porPagina`).
+
+**Escala / relação do líder e do responsável**
+- Relação confere "assinatura" a cada 10 s (4 s se compartilhada). Local da reunião (`locais_reuniao`, editável em Configurações). Áreas secundárias (sem local): inclui Base Operacional e Contêiner (20261019c).
+- Grupos de trilha (Guia, Invisível, Marcador, Pastor Invisível, Espírito Santo, Inimigo): quem é responsável vê UMA ABA POR COR (inclui equipe em que é líder), blocos por área, etiqueta da área, UM grupo de WhatsApp por cor. Líder/responsável troca a COR da pessoa (mesma área, cor obrigatória; cor do líder só organizador) — 20261019j.
+- Fotografia é equipe única (`_equipe_por_cor`, 20261019g); líder e responsável trocam a cor (20261019k).
+- Convite do grupo liberado para presente mesmo com pendência (20261019f).
+- Trocar de área: quem está em 2 áreas escolhe qual participação troca. Chamada da reunião: botão "Enviar para o Não será escalado" (sem o "enviar todos").
+- Relação nominal exportada: coluna Área com a cor ("Guia azul").
+- Selo de dev: tabela `selos_organizacao` (selo 'dev'); Victoria Fernandes tem.
+- Pastor de várias igrejas: `igrejas_responsavel_extra`.
+- Gerenciar Inscrições: botão "Cadastros com pendências — equipantes" (`utils/pendenciasEquipante.js`).
+
+## 21/10/2026 — Fotografia: 3 atuações novas
+Migration 20261021b (teste e oficial): Vídeomaker, Equipe de trabalho sítio, Equipe trabalho de trilha em atuacoes_areas. Ordem: Líder, Apoio (segue padrão), Drone, Equipe..., Vídeomaker. Cor não é atuação (coluna própria). Sem mudança de código/deploy.
+
+## 21/10/2026 — Fotografia: Foto Acampante
+Migration 20261021c (teste e oficial): atuação "Foto Acampante" na Fotografia, ordem Líder + alfabética. Sem deploy.
+
+## 21/10/2026 — Fotografia: Treinamento
+Migration 20261021e (teste e oficial): atuação "Treinamento" na Fotografia, mesma regra de ordem. Conferido no teste: Líder, Apoio, Drone, Equipe de trabalho sítio, Equipe trabalho de trilha, Foto Acampante, Treinamento, Vídeomaker. Sem deploy.
+
+## 21/10/2026 — Responsável da reunião troca a atuação (todas as áreas)
+Migration 20261021d (teste e oficial, só banco, sem deploy): `relacao_lider` manda a lista `atuacoes` também para o papel 'delegado' (antes só 'lider'); `lider_trocar_atuacao` aceita o responsável da equipe. Mantido: Guia sem troca, área precisa de 2+ atuações além do líder, atuação de líder só organizador. Testado no teste (troca ok, líder recusado, quem não é responsável recusado) e conferido no oficial (responsável da Fotografia recebe as 6 atuações). O responsável também pode trocar a própria atuação (o líder não, porque é atuação de líder).
+
+## 21/10/2026 — Grupo de WhatsApp na tela do equipante + limite de 40 envios
+Migration 20261021f (teste e oficial). Só equipantes (acampante fora). (1) O equipante escalado vê "Entrar no grupo" na própria área (`GrupoEquipante.jsx`, em AreaOficial e RevelarAreaDialog); o link vem de `revelar_area` (`_grupo_link_da_escala`: trilha com cor = um grupo por cor). Clique grava "abriu o link"; "Não consegui entrar" (aparece depois de abrir) põe a pessoa em destaque na lista do líder ("adicione pelo contato"). Tabela `grupo_whatsapp_equipe`. (2) Líder/responsável marca "Já está no grupo" à mão (`lider_marcar_no_grupo`; o site não sabe se entrou). (3) `lider_marcar_convite` limita 40 envios por 24h por quem envia (janela móvel, tabela `grupo_envios_lider`, limite em `_limite_envios_convite()`); botão trava com "libera às HH:MM"; aviso fixo no bloco do grupo. (4) Baixar contatos .vcf (só de quem não conseguiu, ou da equipe inteira; `utils/vcard.js`). Testado no banco de teste (fluxo e limite 40/41); telas NÃO testadas visualmente logado. Removido de grupo antigo: redefinir link NÃO resolve; só adicionar pelo contato ou grupo novo por edição.

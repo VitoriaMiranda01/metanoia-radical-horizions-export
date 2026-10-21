@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { revelarArea } from '@/services/equipantesService';
 import AreasReveladas from './AreasReveladas';
+import GrupoEquipante from './GrupoEquipante';
 
 /**
  * A area na escala OFICIAL (15/10/2026, Patrick): aparece direto, sem o
@@ -46,6 +47,7 @@ const AreaOficial = ({ equipanteId, dono, onVisto, onPendencias }) => {
             {estado.areas.length > 1 ? 'Suas áreas na escala oficial' : 'Sua área na escala oficial'}
           </p>
           <AreasReveladas areas={estado.areas} extras={estado.extras} animado={false} />
+          <div className="mt-5"><GrupoEquipante equipanteId={equipanteId} dono={dono} areas={estado.areas} /></div>
         </>
       )}
     </div>

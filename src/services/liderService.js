@@ -62,16 +62,30 @@ export const marcarConviteLider = (equipanteId, dono, escalaId) =>
     p_escala_id: escalaId
   }, 'convite do grupo');
 
+// "Ja esta no grupo", marcado a mao pelo lider/responsavel (valor false desmarca).
+export const marcarNoGrupo = (equipanteId, dono, escalaId, valor) =>
+  chamar('lider_marcar_no_grupo', {
+    ...credenciais(equipanteId, dono),
+    p_escala_id: escalaId,
+    p_valor: valor
+  }, 'marcação do grupo');
+
 /**
  * Link do WhatsApp para um numero cadastrado. Numero brasileiro (10 ou 11
  * digitos) ganha o 55; quem ja veio com 55 ou e estrangeiro vai como esta.
  */
-export const linkWhatsApp = (telefone, estrangeiro = false, texto = '') => {
+export const numeroWhatsApp = (telefone, estrangeiro = false) => {
   // Brasileiro: sem o 0 / +55 antes do DDD de numero antigo (digitosTelefone).
   let d = estrangeiro ? String(telefone || '').replace(/\D/g, '') : digitosTelefone(telefone);
   if (!d) return null;
   if (!estrangeiro && (d.length === 10 || d.length === 11)) d = `55${d}`;
   if (d.length < 10) return null;
+  return d;
+};
+
+export const linkWhatsApp = (telefone, estrangeiro = false, texto = '') => {
+  const d = numeroWhatsApp(telefone, estrangeiro);
+  if (!d) return null;
   return `https://wa.me/${d}${texto ? `?text=${encodeURIComponent(texto)}` : ''}`;
 };
 

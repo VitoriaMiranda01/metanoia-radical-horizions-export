@@ -310,6 +310,25 @@ export const revelarArea = async (equipante_id, dono = {}) => {
   return data;
 };
 
+// Grupo de WhatsApp da area (21/10/2026): "abriu o link" e "nao consegui entrar".
+const chamarGrupo = async (funcao, equipante_id, dono = {}, extra = {}) => {
+  const { data, error } = await supabase.rpc(funcao, {
+    p_id: equipante_id,
+    p_cpf: dono.cpf ?? null,
+    p_nome: dono.nome ?? null,
+    p_nascimento: dono.nascimento ?? null,
+    ...extra,
+  });
+  if (error) return { ok: false, erro: 'Sem conexão com o servidor agora. Tente de novo em instantes.' };
+  return data || { ok: false, erro: 'Resposta vazia do servidor.' };
+};
+
+export const grupoAbriu = (equipante_id, dono, escalaId) =>
+  chamarGrupo('equipante_grupo_abriu', equipante_id, dono, { p_escala_id: escalaId });
+
+export const grupoNaoConsegui = (equipante_id, dono, escalaId, valor) =>
+  chamarGrupo('equipante_grupo_nao_consegui', equipante_id, dono, { p_escala_id: escalaId, p_valor: valor });
+
 export const getEquipantesByWorkflowStage = async () => {
   try {
     const { data, error } = await supabase

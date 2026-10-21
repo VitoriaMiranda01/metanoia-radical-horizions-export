@@ -5,7 +5,7 @@ import React, {
   memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState
 } from 'react';
 import {
-  AlertTriangle, Check, CheckCircle2, ChevronDown, ChevronUp, Copy, Loader2, MapPin, MessageCircle,
+  AlertTriangle, Check, CheckCircle2, ChevronDown, ChevronUp, Copy, Download, Loader2, MapPin, MessageCircle,
   Plus, RefreshCw, Search, Send, Trash2, Truck, UserCog, Users, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,9 +14,11 @@ import { useToast } from '@/components/ui/use-toast';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { areaExtraPorChave, rotuloAreaExtra } from '@/constants/areasExtra';
 import { formatarTelefone } from '@/utils/telefone';
+import { gerarVCard, baixarVcf } from '@/utils/vcard';
 import { cn } from '@/lib/utils';
 import {
-  fetchRelacaoLider, fetchAssinaturaRelacao, marcarPresenca, salvarGrupoLider, marcarConviteLider, linkWhatsApp,
+  fetchRelacaoLider, fetchAssinaturaRelacao, marcarPresenca, salvarGrupoLider, marcarConviteLider, marcarNoGrupo,
+  linkWhatsApp, numeroWhatsApp,
   trocarAtuacaoLider, definirCorLider, delegarReuniao,
   buscarParaAreaExtra, incluirNaAreaExtra, removerDaAreaExtra
 } from '@/services/liderService';
@@ -300,6 +302,14 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
     agir(`c-${m.escala_id}`, () => marcarConviteLider(equipanteId, dono, m.escala_id));
   }, [agir, equipanteId, dono]);
 
+  // "Ja esta no grupo" (marcado a mao; o site nao sabe se a pessoa entrou).
+  const onNoGrupo = useCallback((m, valor) => {
+    ajustarMembro(m.escala_id, valor
+      ? { no_grupo_em: new Date().toISOString(), grupo_pedido_em: null }
+      : { no_grupo_em: null });
+    agir(`n-${m.escala_id}`, () => marcarNoGrupo(equipanteId, dono, m.escala_id, valor));
+  }, [agir, ajustarMembro, equipanteId, dono]);
+
   const onAtuacao = useCallback((m, atuacao) => {
     ajustarMembro(m.escala_id, { atuacao });
     agir(`e-${m.escala_id}`, () => trocarAtuacaoLider(equipanteId, dono, m.escala_id, atuacao),
@@ -455,6 +465,8 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
             ocupado={ocupado}
             onPresenca={onPresenca}
             onConvite={onConvite}
+            onNoGrupo={onNoGrupo}
+            envios={dados.envios}
             onAtuacao={onAtuacao}
             onCor={onCor}
             remetente={dados.lider}
@@ -524,7 +536,12 @@ const AGREGADOS = {
   'Selva': { area: 'Perseguidos', um: 'perseguido', varios: 'Perseguidos' }
 };
 
-const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onAtuacao, onCor, onSalvarGrupo, onSalvarGrupoCor, remetente, mostrarEquipe }) => {
+// Limite de envios do convite (21/10/2026): o WhatsApp trava o numero de quem
+// manda o mesmo convite a muita gente. Vem do servidor ({ usados, limite, libera_em }).
+const horaDe = (iso) => (iso ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '');
+const enviosEsgotados = (envios) => !!envios && envios.usados >= envios.limite;
+
+const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGrupo, envios, onAtuacao, onCor, onSalvarGrupo, onSalvarGrupoCor, remetente, mostrarEquipe }) => {
   const [busca, setBusca] = useState('');
   const [filtro, setFiltro] = useState('todos');
   const [atuacao, setAtuacao] = useState('');
@@ -586,7 +603,9 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onAtua
       ocupadoPresenca={!!ocupado[`p-${m.escala_id}`]}
       ocupadoConvite={!!ocupado[`c-${m.escala_id}`]}
       ocupadoEdicao={!!ocupado[`e-${m.escala_id}`]}
-      onPresenca={onPresenca} onConvite={onConvite} onAtuacao={onAtuacao} onCor={onCor} />
+      ocupadoNoGrupo={!!ocupado[`n-${m.escala_id}`]}
+      bloqueado={enviosEsgotados(envios)} liberaEm={envios?.libera_em || null}
+      onPresenca={onPresenca} onConvite={onConvite} onNoGrupo={onNoGrupo} onAtuacao={onAtuacao} onCor={onCor} />
   );
 
   return (
@@ -704,13 +723,13 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onAtua
       </ul>
 
       {equipe.escala_id && (
-        <GrupoWhatsApp equipe={equipe} prontos={prontosConvite} ocupado={!!ocupado[`g-${equipe.escala_id}`]}
+        <GrupoWhatsApp equipe={equipe} prontos={prontosConvite} membros={membros} envios={envios} ocupado={!!ocupado[`g-${equipe.escala_id}`]}
           onSalvar={(link) => onSalvarGrupo(equipe, link)} mostrarEquipe={mostrarEquipe} />
       )}
 
       {/* Grupo por cor: UM grupo de WhatsApp para a cor inteira. */}
       {equipe.porCor && equipe.ondeGuardar.length > 0 && (
-        <GrupoWhatsApp equipe={equipe} prontos={prontosConvite} ocupado={!!ocupado[`g-${equipe.chave}`]}
+        <GrupoWhatsApp equipe={equipe} prontos={prontosConvite} membros={membros} envios={envios} ocupado={!!ocupado[`g-${equipe.chave}`]}
           onSalvar={(link) => onSalvarGrupoCor(equipe, link)} mostrarEquipe={mostrarEquipe} />
       )}
     </section>
@@ -721,24 +740,28 @@ const mesmasProps = (a, b) => (
   a.presencaAberta === b.presencaAberta && a.grupoLink === b.grupoLink && a.area === b.area && a.etiquetaArea === b.etiquetaArea && a.remetente === b.remetente && a.podeCor === b.podeCor && a.responsavel === b.responsavel
   && (a.atuacoes === b.atuacoes || JSON.stringify(a.atuacoes) === JSON.stringify(b.atuacoes))
   && a.ocupadoPresenca === b.ocupadoPresenca && a.ocupadoConvite === b.ocupadoConvite
-  && a.ocupadoEdicao === b.ocupadoEdicao
-  && a.onPresenca === b.onPresenca && a.onConvite === b.onConvite && a.onAtuacao === b.onAtuacao && a.onCor === b.onCor
+  && a.ocupadoEdicao === b.ocupadoEdicao && a.ocupadoNoGrupo === b.ocupadoNoGrupo
+  && a.bloqueado === b.bloqueado && a.liberaEm === b.liberaEm
+  && a.onPresenca === b.onPresenca && a.onConvite === b.onConvite && a.onNoGrupo === b.onNoGrupo && a.onAtuacao === b.onAtuacao && a.onCor === b.onCor
   && (a.m === b.m || JSON.stringify(a.m) === JSON.stringify(b.m))
 );
 
 const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remetente, atuacoes, podeCor, responsavel, ocupadoPresenca, ocupadoConvite, ocupadoEdicao,
-  onPresenca, onConvite, onAtuacao, onCor }) => {
+  ocupadoNoGrupo, bloqueado, liberaEm, onPresenca, onConvite, onNoGrupo, onAtuacao, onCor }) => {
   const pendente = m.pendencias?.length > 0;
   const zap = linkWhatsApp(m.whatsapp, m.estrangeiro);
   // 19/10/2026 (Patrick): pendencia no cadastro nao trava mais o convite --
   // basta estar presente. So precisa de um WhatsApp que abra a conversa.
   const podeConvidar = grupoLink && m.presente === true && !m.eu && !!zap;
+  // Pediu ajuda: o WhatsApp nao o deixou entrar pelo link (ex.: removido de um grupo antigo).
+  const pedidoGrupo = !!m.grupo_pedido_em && !m.no_grupo_em;
   // Marcador na lista da Invisivel, Perseguido na lista da Selva.
   const etiquetaAgregado = m.area !== area ? (m.area === 'Perseguidos' ? 'Perseguido' : m.area) : null;
 
   // Sem o nome da area na mensagem (17/10/2026, Patrick): so quem esta
   // mandando -- o lider ou o responsavel pela reuniao.
   const enviarConvite = () => {
+    if (bloqueado) return;
     const quem = nomeCurto(remetente);
     const texto = `Olá, ${(m.nome || '').split(' ')[0]}! Aqui é ${quem ? `${quem}, ` : ''}da equipe do Metanoia Radical Serra. `
       + `Entre no nosso grupo pelo link: ${grupoLink}`;
@@ -750,6 +773,7 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
   return (
     <li style={LINHA_LEVE} className={cn('rounded-lg border p-3',
       pendente ? 'border-amber-500/40 bg-amber-500/5'
+        : pedidoGrupo ? 'border-amber-400/70 bg-amber-400/10'
         : m.presente === true ? 'border-green-500/30 bg-green-500/5'
           : m.presente === false ? 'border-red-500/30 bg-red-500/5'
             : 'border-white/10 bg-white/5')}>
@@ -856,18 +880,40 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
 
       {podeConvidar && (
         <div className="mt-2 flex items-center gap-2">
-          <Button size="sm" onClick={enviarConvite} disabled={ocupadoConvite}
+          <Button size="sm" onClick={enviarConvite} disabled={ocupadoConvite || bloqueado}
             className={cn('h-8', m.convite_enviado_em
               ? 'bg-transparent border border-white/20 text-gray-300 hover:bg-white/10'
               : 'bg-[#25D366] hover:bg-[#20bd5a] text-white')}>
             <Send className="w-3.5 h-3.5 mr-1.5" />
-            {m.convite_enviado_em ? 'Reenviar convite' : 'Enviar convite do grupo'}
+            {bloqueado ? `Limite de envios (libera às ${horaDe(liberaEm)})`
+              : m.convite_enviado_em ? 'Reenviar convite' : 'Enviar convite do grupo'}
           </Button>
           {m.convite_enviado_em && (
             <span className="text-xs text-green-400 flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" /> convite enviado
             </span>
           )}
+        </div>
+      )}
+
+      {/* Grupo de WhatsApp (21/10/2026): o que a pessoa fez com o link, e a marcacao manual. */}
+      {grupoLink && !m.eu && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+          {pedidoGrupo && (
+            <span className="rounded-full border border-amber-400/60 bg-amber-400/15 px-2 py-0.5 font-medium text-amber-100">
+              Não conseguiu entrar: adicione pelo contato
+            </span>
+          )}
+          {m.grupo_aberto_em && !m.no_grupo_em && !pedidoGrupo && (
+            <span className="text-sky-300">abriu o link do grupo</span>
+          )}
+          {m.no_grupo_em && (
+            <span className="text-green-400 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> está no grupo</span>
+          )}
+          <Button size="sm" variant="ghost" disabled={ocupadoNoGrupo} onClick={() => onNoGrupo(m, !m.no_grupo_em)}
+            className="h-7 px-2 text-xs text-gray-300 hover:text-white hover:bg-white/10">
+            {m.no_grupo_em ? 'Desmarcar' : 'Já está no grupo'}
+          </Button>
         </div>
       )}
     </li>
@@ -1088,8 +1134,27 @@ const EquipeExtra = ({ extra, equipanteId, dono, onMudou }) => {
   );
 };
 
-const GrupoWhatsApp = ({ equipe, prontos, ocupado, onSalvar, mostrarEquipe }) => {
+const GrupoWhatsApp = ({ equipe, prontos, membros = [], envios, ocupado, onSalvar, mostrarEquipe }) => {
   const { toast } = useToast();
+  const precisamAdicionar = membros.filter((m) => m.grupo_pedido_em && !m.no_grupo_em && !m.eu);
+
+  // Arquivo de contatos (.vcf) para importar no telefone (iOS e Android) e
+  // adicionar a pessoa ao grupo pelo contato.
+  const baixarContatos = (lista, rotuloArquivo) => {
+    const contatos = lista.map((m) => ({ nome: m.nome, numero: numeroWhatsApp(m.whatsapp, m.estrangeiro) }));
+    const sufixo = `Metanoia ${equipe.area}${equipe.cor && !equipe.porCor ? ` ${equipe.cor}` : ''}`;
+    const validos = contatos.filter((c) => c.numero);
+    if (validos.length === 0) {
+      toast({ title: 'Ninguém com telefone válido', variant: 'destructive' });
+      return;
+    }
+    baixarVcf(gerarVCard(validos, sufixo), `${sufixo}-${rotuloArquivo}`);
+    toast({
+      title: `${validos.length} contatos baixados`,
+      description: 'Abra o arquivo no celular e importe para a agenda. Depois adicione ao grupo pelo contato.',
+      className: 'bg-green-600 text-white'
+    });
+  };
   const [editando, setEditando] = useState(!equipe.grupo_link);
   const [link, setLink] = useState(equipe.grupo_link || '');
 
@@ -1157,11 +1222,45 @@ const GrupoWhatsApp = ({ equipe, prontos, ocupado, onSalvar, mostrarEquipe }) =>
         <>
           <p className="text-xs text-gray-300 break-all">{equipe.grupo_link}</p>
           <p className="text-xs text-gray-400">
+            Quem está escalado nesta equipe já vê o botão <strong>Entrar no grupo</strong> na própria tela. Peça para
+            entrarem por ali: é o jeito mais seguro.
+          </p>
+          <p className="text-xs text-gray-400">
             {prontos.length === 0
               ? 'Ninguém liberado ainda: o convite aparece para quem for marcado presente.'
               : `${prontos.length} liberados para o convite · ${enviados} já enviados.`}
           </p>
+          {/* Aviso fixo (21/10/2026): enviar o link a muita gente trava o WhatsApp de quem envia. */}
+          <div className={cn('rounded-md border px-3 py-2 text-xs flex items-start gap-2',
+            enviosEsgotados(envios) ? 'border-red-500/50 bg-red-500/10 text-red-200' : 'border-amber-500/30 bg-amber-500/5 text-amber-200')}>
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>
+              Mandar o link para muitas pessoas seguidas pode <strong>travar o seu WhatsApp por 24 horas</strong>.
+              Por isso o site limita a {envios?.limite ?? 40} envios a cada 24 horas
+              {envios ? ` (você usou ${envios.usados})` : ''}.
+              {enviosEsgotados(envios) ? ` Novo envio liberado às ${horaDe(envios.libera_em)}.` : ''}
+            </span>
+          </div>
+          {precisamAdicionar.length > 0 && (
+            <p className="text-xs text-amber-100 rounded-md border border-amber-400/50 bg-amber-400/10 px-3 py-2">
+              <strong>{precisamAdicionar.length}</strong> {precisamAdicionar.length === 1 ? 'pessoa não conseguiu' : 'pessoas não conseguiram'} entrar
+              pelo link (o WhatsApp avisa “um admin removeu você”). Salve {precisamAdicionar.length === 1 ? 'o contato' : 'os contatos'} e
+              adicione {precisamAdicionar.length === 1 ? 'a pessoa' : 'elas'} direto no grupo.
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
+            {precisamAdicionar.length > 0 && (
+              <Button size="sm" onClick={() => baixarContatos(precisamAdicionar, 'precisam-ser-adicionados')}
+                className="bg-amber-500 hover:bg-amber-600 text-black">
+                <Download className="w-4 h-4 mr-1.5" /> Contatos de quem não conseguiu entrar ({precisamAdicionar.length})
+              </Button>
+            )}
+            {membros.filter((m) => !m.eu).length > 0 && (
+              <Button size="sm" variant="outline" onClick={() => baixarContatos(membros.filter((m) => !m.eu), 'equipe')}
+                className="border-white/20 bg-transparent text-gray-200 hover:bg-white/10 hover:text-white">
+                <Download className="w-4 h-4 mr-1.5" /> Baixar contatos da equipe (.vcf)
+              </Button>
+            )}
             {prontos.length > 0 && (
               <Button size="sm" variant="outline" onClick={copiarTelefones}
                 className="border-white/20 bg-transparent text-gray-200 hover:bg-white/10 hover:text-white">

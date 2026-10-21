@@ -4,6 +4,7 @@ import { ArrowRight, Loader2, Sparkles, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { revelarArea } from '@/services/equipantesService';
 import AreasReveladas from './AreasReveladas';
+import GrupoEquipante from './GrupoEquipante';
 import { listaDeResponsaveis } from '@/utils/formatters';
 import { TEXTO_PRESENCA_APOS_REUNIAO } from '@/constants/textosPresenca';
 
@@ -126,6 +127,7 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, r
                   {areas.length > 1 ? 'Suas áreas' : 'Sua área'}
                 </motion.div>
                 <AreasReveladas areas={areas} extras={extras} mostrarLocal={provisoria} />
+                <GrupoEquipante equipanteId={equipanteId} dono={dono} areas={areas} />
               </motion.div>
             )}
 

@@ -140,11 +140,19 @@ const InscricaoPixPage = () => {
       const presente = situacao?.escala_oficial
         ? !!situacao?.escalado && !situacao?.nao_sera_escalado
         : situacao?.presenca === 'presente';
-      return { presente, reuniaoPassou: !!situacao?.reuniao_leitura_passou };
+      return {
+        presente,
+        reuniaoPassou: !!situacao?.reuniao_leitura_passou,
+        oficial: !!situacao?.escala_oficial,
+        // Regra do servidor (_inscricao_concluida, 20261022c).
+        concluida: !!situacao?.concluida
+      };
     } catch {
-      return { presente: null, reuniaoPassou: false };
+      return { presente: null, reuniaoPassou: false, oficial: false, concluida: false };
     }
   };
+  const [oficialLancada, setOficialLancada] = useState(false);
+  const [concluidaAgora, setConcluidaAgora] = useState(false);
 
   useEffect(() => {
     if (statusPagamento !== 'confirmado' || tipo !== 'equipante' || !inscricaoId) return;
@@ -153,6 +161,8 @@ const InscricaoPixPage = () => {
       if (!ativo) return;
       setPresencaConfirmada(r.presente);
       setReuniaoPassou(r.reuniaoPassou);
+      setOficialLancada(r.oficial);
+      setConcluidaAgora(r.concluida);
     });
     return () => { ativo = false; };
   }, [statusPagamento, tipo, inscricaoId]);
@@ -645,11 +655,26 @@ const InscricaoPixPage = () => {
                   <p className="text-gray-300">
                     Recebemos o seu PIX de <strong className="text-emerald-400">{formatCurrency(finalValue)}</strong>.
                   </p>
-                  {tipo === 'equipante' && presencaConfirmada === false ? (
+                  {/* A confirmacao da inscricao (portaria) so sai com a escala
+                      oficial lancada e a pessoa nela (20261022c). */}
+                  {tipo === 'equipante' && concluidaAgora ? (
+                    <p className="text-emerald-200 text-sm">
+                      Sua inscrição está confirmada! Em “Acompanhamento da Inscrição” você abre a confirmação para apresentar na portaria.
+                    </p>
+                  ) : tipo === 'equipante' && oficialLancada && presencaConfirmada === false ? (
+                    <p className="text-amber-200 text-sm">
+                      Seu nome não está na escala oficial. Procure a coordenação do projeto.
+                    </p>
+                  ) : tipo === 'equipante' && presencaConfirmada === false ? (
                     <p className="text-amber-200 text-sm">
                       {reuniaoPassou
-                        ? `${TEXTO_PRESENCA_APOS_REUNIAO} Depois disso, a sua inscrição fica concluída.`
-                        : 'Falta confirmar a sua presença na reunião de leitura de escala. Depois disso, a sua inscrição fica concluída.'}
+                        ? TEXTO_PRESENCA_APOS_REUNIAO
+                        : 'Falta confirmar a sua presença na reunião de leitura de escala.'}{' '}
+                      A confirmação da inscrição é liberada quando a escala oficial for lançada.
+                    </p>
+                  ) : tipo === 'equipante' && presencaConfirmada === true && !oficialLancada ? (
+                    <p className="text-gray-300 text-sm">
+                      Pagamento registrado. A confirmação da inscrição é liberada quando a escala oficial for lançada.
                     </p>
                   ) : (
                     <p className="text-gray-400 text-sm">

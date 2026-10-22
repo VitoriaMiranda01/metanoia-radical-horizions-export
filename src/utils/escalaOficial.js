@@ -15,7 +15,7 @@ import { carregarFonte } from './relacaoNominal';
  *  - Linha inteira pintada = o líder da cor: líder de cada cor na Invisível
  *    ("LÍDER / VERDE") e o primeiro de cada cor nos Guias e na Recepção Sítio.
  *  - Fotografia: Líder em verde 00B050 e Drone em laranja F79646.
- *  - Barra vazia = sub-área do bloco de cima (Mesa crachá no Estacionamento,
+ *  - Barra = sub-área do bloco de cima (com o nome; na planilha o nome ficou escondido) (Mesa crachá no Estacionamento,
  *    Copa na Cozinha, Contêiner na Cristolândia, Família no Dia do
  *    Arrebatamento): verde, menos a do Contêiner, que é branca.
  *  - Dentro de cada área: líder, atuações especiais (na ordem do catálogo) e a
@@ -45,6 +45,7 @@ const COR_LIDER_INVISIVEL = { VERDE: { bg: '00B050', fg: 'FFFFFF' }, AZUL: { bg:
 const FOTO_LIDER = { bg: '00B050', fg: '000000' };
 const FOTO_DRONE = { bg: 'F79646', fg: '000000' };
 
+const AREAS_COM_COR = ['espirito santo', 'fotografia', 'guia', 'infiltrados', 'inimigo', 'invisivel', 'marcador', 'pastor invisivel', 'recepcao sitio'];
 const ORDEM_COR_PADRAO = ['VERMELHO', 'VERDE', 'ROXO', 'AZUL', 'AMARELO'];
 const ORDEM_COR = {
   invisivel: ['VERDE', 'AZUL', 'ROXO', 'VERMELHO', 'AMARELO'],
@@ -62,12 +63,12 @@ const BLOCOS = [
   { t: 'RECEPÇÃO IGREJA', a: ['recepcao igreja'], semTitulo: true },
   { t: 'COZINHA', a: ['cozinha igreja'] },
   { t: 'SOM/ MULTI MIDIA', a: ['som / multimidia'] },
-  { t: 'ESTACIONAMENTO', a: ['estacionamento'], sub: [{ a: ['mesa cracha'], barra: VERDE }] },
+  { t: 'ESTACIONAMENTO', a: ['estacionamento'], sub: [{ a: ['mesa cracha'], barra: VERDE, nome: 'MESA CRACHÁ' }] },
   { t: 'RECEPÇÃO SÍTIO', a: ['recepcao sitio'] },
   { t: 'APRESENTADORES', a: ['apresentadores'] },
   { t: 'FAMÍLIA MUÇULMANA', a: ['familia mu'] },
   { t: 'SEGURANÇA', a: ['seguranca'] },
-  { t: 'COZINHA', a: ['cozinha'], sub: [{ a: ['copa'], barra: VERDE }] },
+  { t: 'COZINHA', a: ['cozinha'], sub: [{ a: ['copa'], barra: VERDE, nome: 'COPA' }] },
   { t: 'LOGÍSTICA', a: ['logistica'] },
   { t: 'INVISÍVEL', a: ['invisivel'] },
   { t: 'FOTOGRAFIA', a: ['fotografia'] },
@@ -78,11 +79,11 @@ const BLOCOS = [
   { t: 'ESPÍRITO SANTO', a: ['espirito santo'] },
   { t: 'PASTOR INVISÍVEL', a: ['pastor invisivel'] },
   { t: 'INFILTRADOS', a: ['infiltrados'] },
-  { t: 'CRISTOLÂNDIA', a: ['cristolandia'], sub: [{ a: ['conteiner'], barra: 'FFFFFF' }] },
+  { t: 'CRISTOLÂNDIA', a: ['cristolandia'], sub: [{ a: ['conteiner'], barra: 'FFFFFF', nome: 'CONTÊINER' }] },
   { t: 'PRESÍDIO', a: ['presidio'] },
   { t: 'FALSA BAIANA', a: ['falsa baiana'] },
   { t: 'CRACOLÂNDIA', a: ['cracolandia'] },
-  { t: 'DIA DO ARREBATAMENTO', a: ['dia do arrebatamento'], sub: [{ a: ['familia'], barra: VERDE }] },
+  { t: 'DIA DO ARREBATAMENTO', a: ['dia do arrebatamento'], sub: [{ a: ['familia'], barra: VERDE, nome: 'FAMÍLIA' }] },
   { t: 'HOSPITAL', a: ['hospital'] },
   { t: 'DEPRESSÃO', a: ['depressao'] },
   { t: 'PASTOR ENFORCADO', a: ['pastor enforcado'] },
@@ -142,6 +143,11 @@ export const montarEscalaOficial = (linhas, atuacoesPorArea = {}) => {
       else texto = d.padrao ? cor : `${texto} / ${cor}`;
     }
 
+    // Área dividida por cor e pessoa sem cor (o líder da área não conta).
+    if (!cor && !d.semCor && !d.lider && AREAS_COM_COR.some((a) => area.startsWith(a))) {
+      texto = area === 'recepcao sitio' ? `${texto} / SEM COR` : 'SEM COR';
+    }
+
     let atuacaoCor = null;
     if (cor && COR[cor] && area !== 'invisivel') atuacaoCor = COR[cor];
     if (area === 'fotografia' && d.lider && !cor) atuacaoCor = FOTO_LIDER;
@@ -199,7 +205,7 @@ export const montarEscalaOficial = (linhas, atuacoesPorArea = {}) => {
     (b.sub || []).forEach((s, j) => {
       const subs = doBloco(preparadas, (l) => destino.get(l) === `s${i}.${j}`);
       if (!subs.length) return;
-      itens.push({ tipo: 'barra', cor: s.barra });
+      itens.push({ tipo: 'barra', cor: s.barra, nome: s.nome });
       itens.push({ tipo: 'bloco', titulo: null, semTitulo: true, linhas: subs });
       subs.forEach((l) => usadas.add(l));
     });
@@ -313,6 +319,12 @@ export const exportarOficialPdf = async (itens) => {
       if (y + RH > limite) novaPagina();
       doc.setFillColor(...rgb(item.cor));
       doc.rect(xs[1], y, larguraTabela, RH, 'FD');
+      if (item.nome) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(fonteDados);
+        doc.setTextColor(0, 0, 0);
+        doc.text(item.nome, xs[1] + larguraTabela / 2, y + RH * 0.72, { align: 'center' });
+      }
       y += RH;
       return;
     }
@@ -399,16 +411,22 @@ export const exportarOficialExcel = async (itens) => {
   ws.getCell('D5').alignment = { horizontal: 'center', vertical: 'bottom' };
 
   let linha = 9;
-  const barra = (hex) => {
+  const barra = (hex, nome) => {
     const row = ws.getRow(linha);
-    [2, 3, 4, 5].forEach((i) => { row.getCell(i).fill = preencher(hex); row.getCell(i).border = bordas; });
+    row.getCell(2).value = nome || null;
+    [2, 3, 4, 5].forEach((i) => {
+      row.getCell(i).fill = preencher(hex);
+      row.getCell(i).border = bordas;
+      row.getCell(i).font = arial({ bold: true });
+      row.getCell(i).alignment = { horizontal: 'center', vertical: 'bottom' };
+    });
     ws.mergeCells(linha, 2, linha, 5);
     row.height = 15.75;
     linha += 1;
   };
 
   itens.forEach((item) => {
-    if (item.tipo === 'barra') { barra(item.cor); return; }
+    if (item.tipo === 'barra') { barra(item.cor, item.nome); return; }
 
     if (item.titulo && !item.semTitulo) {
       const faixa = ws.getRow(linha);

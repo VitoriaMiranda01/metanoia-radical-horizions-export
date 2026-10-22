@@ -23,7 +23,11 @@ import { nomeDaIgreja } from '@/constants/igrejas';
  */
 
 export const MODOS_RELACAO = {
-  geral: { rotulo: 'Escala geral', titulo: 'RELAÇÃO NOMINAL', arquivo: 'Geral' },
+  // 22/10/2026 (Patrick): a ESCALA OFICIAL no modelo da planilha "Escala 36ª
+  // EDIÇÃO OFICIAL" (ver escalaOficial.js) e a antiga "Escala geral" virou
+  // "Escala nominal".
+  oficial: { rotulo: 'Escala oficial', titulo: 'ESCALA OFICIAL', arquivo: 'Oficial' },
+  geral: { rotulo: 'Escala nominal', titulo: 'RELAÇÃO NOMINAL', arquivo: 'Nominal' },
   igreja: { rotulo: 'Por igreja', titulo: 'RELAÇÃO NOMINAL POR IGREJA', arquivo: 'Por_igreja' },
   area: { rotulo: 'Por área', titulo: 'RELAÇÃO NOMINAL POR ÁREA', arquivo: 'Por_area' }
 };
@@ -57,7 +61,11 @@ export const montarLinhasRelacao = (allocations) => (allocations || [])
       nome: MAIUSC(String(a.nome || '').replace(/\s+/g, ' ').trim()),
       igreja: MAIUSC(igrejaDaRelacao(a)),
       area: a.cor ? `${a.allocatedArea} ${String(a.cor).toLocaleLowerCase('pt-BR')}` : a.allocatedArea,
-      areaBase: a.allocatedArea
+      areaBase: a.allocatedArea,
+      // usados pela escala oficial (escalaOficial.js)
+      id: a.id,
+      atuacaoBruta: a.atuacao || null,
+      corBruta: a.cor || null
     };
   })
   .sort((x, y) => compararTexto(x.nome, y.nome) || compararTexto(x.area, y.area));
@@ -100,7 +108,7 @@ const paraBase64 = (buffer) => {
   return btoa(bin);
 };
 
-const carregarFonte = async (doc) => {
+export const carregarFonte = async (doc) => {
   try {
     const base = import.meta.env.BASE_URL || '/';
     const [reg, neg] = await Promise.all(['Carlito-Regular.ttf', 'Carlito-Bold.ttf'].map(async (f) => {
@@ -120,6 +128,7 @@ const carregarFonte = async (doc) => {
 };
 
 export const exportarRelacaoPdf = async (grupos, modo) => {
+  if (modo === 'oficial') return (await import('./escalaOficial')).exportarOficialPdf(grupos);
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
   const fonte = await carregarFonte(doc);
@@ -200,6 +209,7 @@ export const exportarRelacaoPdf = async (grupos, modo) => {
 // ------------------------------------------------------------------ Excel
 
 export const exportarRelacaoExcel = async (grupos, modo) => {
+  if (modo === 'oficial') return (await import('./escalaOficial')).exportarOficialExcel(grupos);
   const ExcelJS = (await import('exceljs')).default;
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Metanoia Radical Serra';

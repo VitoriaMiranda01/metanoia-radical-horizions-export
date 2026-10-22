@@ -2181,7 +2181,7 @@ const OrganizerScalesPage = () => {
                   </Button>
                 )}
                 {/* Relacao nominal em PDF/Excel (geral, por igreja, por area) -- 17/10/2026. */}
-               <ExportarRelacaoMenu allocations={allocations}
+               <ExportarRelacaoMenu allocations={allocations} atuacoesPorArea={atuacoesPorArea}
                   onPlanilhaDetalhada={handleExportAll} disabled={allocations.length === 0} />
               </div>
             </div>

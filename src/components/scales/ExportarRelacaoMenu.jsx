@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import {
   MODOS_RELACAO, montarLinhasRelacao, agruparRelacao, exportarRelacaoPdf, exportarRelacaoExcel
 } from '@/utils/relacaoNominal';
+import { montarEscalaOficial } from '@/utils/escalaOficial';
 import { cn } from '@/lib/utils';
 
 /**
@@ -21,7 +22,7 @@ import { cn } from '@/lib/utils';
  */
 const semAcento = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-const ExportarRelacaoMenu = ({ allocations, onPlanilhaDetalhada, disabled }) => {
+const ExportarRelacaoMenu = ({ allocations, atuacoesPorArea, onPlanilhaDetalhada, disabled }) => {
   const { toast } = useToast();
   const [gerando, setGerando] = useState(null);
   // { modo, formato } enquanto escolhe as igrejas/areas
@@ -30,7 +31,7 @@ const ExportarRelacaoMenu = ({ allocations, onPlanilhaDetalhada, disabled }) => 
   const gruposDe = (modo) => {
     const linhas = montarLinhasRelacao(allocations);
     if (linhas.length === 0) throw new Error('Ninguém escalado para exportar.');
-    return agruparRelacao(linhas, modo);
+    return modo === 'oficial' ? montarEscalaOficial(linhas, atuacoesPorArea) : agruparRelacao(linhas, modo);
   };
 
   const gerar = async (modo, formato, grupos) => {
@@ -54,7 +55,7 @@ const ExportarRelacaoMenu = ({ allocations, onPlanilhaDetalhada, disabled }) => 
   const escolher = (modo, formato) => {
     try {
       const grupos = gruposDe(modo);
-      if (modo === 'geral') gerar(modo, formato, grupos);
+      if (modo === 'geral' || modo === 'oficial') gerar(modo, formato, grupos);
       else setEscolhendo({ modo, formato, grupos });
     } catch (e) {
       toast({ title: 'Não foi possível exportar', description: e.message, variant: 'destructive' });
@@ -65,14 +66,14 @@ const ExportarRelacaoMenu = ({ allocations, onPlanilhaDetalhada, disabled }) => 
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button data-dica="Baixar a relação nominal (geral, por igreja ou por área) em PDF ou Excel." disabled={disabled || !!gerando}
+          <Button data-dica="Baixar a escala oficial, a escala nominal, por igreja ou por área, em PDF ou Excel." disabled={disabled || !!gerando}
             variant="outline" className="bg-green-600/20 text-green-400 border-green-600/50 hover:bg-green-600/40 hover:text-green-300">
             {gerando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />} Exportar
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72 bg-zinc-950 border-white/10 text-gray-100">
           <DropdownMenuLabel className="text-xs text-gray-400 font-normal">
-            Relação nominal (Nome / Igreja / Área), em ordem alfabética
+            Oficial no modelo da planilha; as demais em ordem alfabética
           </DropdownMenuLabel>
           {Object.entries(MODOS_RELACAO).map(([modo, info], i) => (
             <React.Fragment key={modo}>

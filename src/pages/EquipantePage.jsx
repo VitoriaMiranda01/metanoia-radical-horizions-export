@@ -452,13 +452,10 @@ const EquipantePage = () => {
         nascimento: nascimentoDigitado
       });
 
-      // Lider (ou responsavel, ou lider de area extra) sempre volta ao
-      // acompanhamento: precisa da relacao da equipe mesmo com tudo pago.
-      const conduzEquipe = (situacao?.lider_de?.length || 0) + (situacao?.delegado_de?.length || 0)
-        + (situacao?.lider_extra_de?.length || 0) > 0;
-      if (situacao?.pago && situacao?.presenca === 'presente' && !conduzEquipe) {
-        setCurrentStep('sucesso');
-      } else if (verificacao?.inscrito) {
+      // Quem concluiu tambem vai para o acompanhamento: e la que fica o botao
+      // da confirmacao da portaria (21/10/2026). A situacao acima so serve
+      // para conferir a data de nascimento.
+      if (situacao?.ok && verificacao?.inscrito) {
         setCurrentStep('workflow');
       } else {
         // Ficha de uma edição anterior. Sem CPF não dá para trazer a ficha

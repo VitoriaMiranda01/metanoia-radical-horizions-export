@@ -21,7 +21,7 @@ const AreaOficial = ({ equipanteId, dono, onVisto, onPendencias }) => {
         if (r?.pendencias?.length) { onPendencias?.(r.pendencias); return; }
         if (!r?.ok) { setEstado({ erro: r?.erro || 'Não foi possível buscar a sua área.' }); return; }
         if (!r.areas?.length) {
-          setEstado({ erro: 'Seu nome não saiu na escala preliminar, procure a coordenação do projeto.' });
+          setEstado({ erro: 'Seu nome não saiu na escala oficial, procure a coordenação do projeto.' });
           return;
         }
         setEstado({ areas: r.areas, extras: r.extras || [] });

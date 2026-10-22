@@ -164,13 +164,16 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     // e o grupo dela aparecem logo abaixo da lista (GrupoAcompanhamento).
     // A linha aparece sempre (21/10/2026): pendente ate a oficial sair; concluida
     // para quem esta nela; pendente com aviso para quem ficou fora.
+    // Fora da oficial: no "Nao sera escalado" ou sem escala nenhuma depois dela.
     const naOficial = workflowData.escalado && workflowData.escala_oficial;
+    const foraDaOficial = workflowData.nao_sera_escalado
+      || (workflowData.escala_oficial && !workflowData.escalado);
     stages.push({
       id: 'scale_oficial',
-      label: workflowData.nao_sera_escalado
+      label: foraDaOficial
         ? 'Você não foi escalado na escala oficial'
         : naOficial ? 'Escala oficial lançada' : 'Escala oficial',
-      status: naOficial && !workflowData.nao_sera_escalado ? 'ok' : 'pendente',
+      status: naOficial && !foraDaOficial ? 'ok' : 'pendente',
     });
 
     return stages;

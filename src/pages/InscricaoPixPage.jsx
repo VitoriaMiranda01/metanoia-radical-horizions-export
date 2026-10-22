@@ -131,19 +131,14 @@ const InscricaoPixPage = () => {
     nascimento: location.state?.nascimento || sessaoSalva?.nascimento || null
   });
   const [presencaConfirmada, setPresencaConfirmada] = useState(null);
-  // Lider/responsavel/lider de area extra: sempre tem o botao de voltar ao
-  // acompanhamento, onde fica a relacao da equipe (19/10/2026).
-  const [conduzEquipe, setConduzEquipe] = useState(false);
   const [reuniaoPassou, setReuniaoPassou] = useState(false);
   // presente: true/false; null se a consulta falhar (ai a tela nao afirma nada).
   const consultarPresenca = async () => {
     try {
       const situacao = await getEquipanteWorkflow(inscricaoId, donoEquipante());
-      const conduz = (situacao?.lider_de?.length || 0) + (situacao?.delegado_de?.length || 0)
-        + (situacao?.lider_extra_de?.length || 0) > 0;
-      return { presente: situacao?.presenca === 'presente', conduz, reuniaoPassou: !!situacao?.reuniao_leitura_passou };
+      return { presente: situacao?.presenca === 'presente', reuniaoPassou: !!situacao?.reuniao_leitura_passou };
     } catch {
-      return { presente: null, conduz: false, reuniaoPassou: false };
+      return { presente: null, reuniaoPassou: false };
     }
   };
 
@@ -153,12 +148,13 @@ const InscricaoPixPage = () => {
     consultarPresenca().then((r) => {
       if (!ativo) return;
       setPresencaConfirmada(r.presente);
-      setConduzEquipe(r.conduz);
       setReuniaoPassou(r.reuniaoPassou);
     });
     return () => { ativo = false; };
   }, [statusPagamento, tipo, inscricaoId]);
-  const mostrarVoltarAcompanhamento = tipo === 'equipante' && (presencaConfirmada === false || conduzEquipe);
+  // Equipante sempre volta ao acompanhamento: pendente, para ver o que falta;
+  // concluido, para abrir a confirmacao da portaria (21/10/2026).
+  const mostrarVoltarAcompanhamento = tipo === 'equipante' && !!inscricaoId;
 
   // O pagamento confirmado limpa a sessao; grava de novo so o necessario para
   // a pagina do equipante abrir direto no acompanhamento.

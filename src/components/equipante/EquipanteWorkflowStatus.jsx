@@ -212,6 +212,8 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     if (aprovacao === 'rejeitado') return 'Sua inscrição não foi aprovada pela sua igreja. Procure a organização.';
     if (aprovacao !== 'aprovado') return 'Sua igreja ainda precisa aprovar a sua inscrição. Assim que isso acontecer, esta tela avisa.';
     if (isMinor && !hasUploadedAuth) return 'Falta a autorização dos seus responsáveis: anexe o arquivo aqui embaixo, ou marque que você já entregou a carta na sua igreja.';
+    // Oficial lancada e a pessoa fora dela: nao ha mais escala para aguardar.
+    if (!escalado && escalaOficial) return 'Seu nome não saiu na escala oficial. Procure a coordenação do projeto.';
     if (!escalado) return 'Tudo certo até aqui. Agora é aguardar a escala: as áreas são divulgadas na reunião de equipe. Quando você for escalado, o pagamento da taxa de alimentação abre nesta tela.';
     // Escala PROVISORIA: a area ja aparece e o pagamento ja abre (decisao
     // do Patrick, 05/10/2026); falta a chamada da reuniao de escala.
@@ -228,6 +230,14 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
       const com = reuniaoCom.find((r) => r.com)?.com;
       if (com) return `Na reunião de leitura de escala, procure a liderança ${textoLideranca(com)} para confirmar a sua presença. Quando marcarem, esta etapa fica concluída.`;
       return 'Confirme sua presença com o líder da sua área na reunião de escala. Quando ele marcar, esta etapa fica concluída.';
+    }
+    // Oficial lancada sem presenca confirmada: a chamada ja fechou, so a
+    // organizacao marca agora.
+    if (presenca === 'ausente') return 'Você ficou como ausente na chamada da reunião de escala. Procure o líder da sua área ou a organização.';
+    if (presenca !== 'presente') {
+      return ehLider
+        ? 'Sua presença na reunião de escala não foi confirmada. Peça à organização para marcar.'
+        : TEXTO_PRESENCA_APOS_REUNIAO;
     }
     return null;
   };
@@ -248,7 +258,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
             <p className="text-red-300 text-sm flex items-start">
               <XCircle className="w-5 h-5 mr-2 shrink-0" />
               <span>
-                <strong>Seu nome não saiu na escala preliminar, procure a coordenação do projeto.</strong>
+                <strong>Seu nome não saiu na escala {escalaOficial ? 'oficial' : 'preliminar'}, procure a coordenação do projeto.</strong>
               </span>
             </p>
           </div>
@@ -298,9 +308,15 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
               {getStatusBadge(stage.status)}
             </motion.div>
           ))}
-          {/* Escala oficial (ultima etapa): a area de trabalho e o grupo dela. */}
+          {/* Escala oficial (ultima etapa): a area de trabalho, as extras e o
+              grupo, direto abaixo da etapa -- uma vez so (antes a area saia
+              aqui e de novo no botao "Ver minha area oficial"). */}
           {escalado && escalaOficial && ehOProprio && (
-            <GrupoAcompanhamento equipanteId={equipanteId} dono={dono} modo="oficial" recarregarCom={`${presenca}-${revelouAgora}`} />
+            // key: depois de corrigir o cadastro, busca a area de novo (com
+            // pendencia o servidor nao revela e o quadro ficaria carregando).
+            <AreaOficial key={`oficial-${completou}`} equipanteId={equipanteId} dono={dono}
+              onVisto={() => setRevelouAgora(true)}
+              onPendencias={(lista) => setCorrecao({ antesDeRevelar: false, pendencias: lista })} />
           )}
         </div>
 
@@ -417,7 +433,9 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
 
         {/* Escala OFICIAL (15/10/2026): mostra direto, sem o misterio. Se a
             pessoa mudou de area depois da provisoria, aparece a nova. */}
-        {escalado && escalaOficial && (
+        {/* So o organizador (abrindo a ficha) ve o botao; o proprio equipante
+            ja ve a area direto abaixo da etapa "Escala oficial". */}
+        {escalado && escalaOficial && !ehOProprio && (
           <div className="mt-8 pt-6 border-t border-white/10 space-y-3">
             <p className="text-center text-gray-300 text-sm">A escala oficial foi lançada!</p>
             <Button onClick={abrirOficial}

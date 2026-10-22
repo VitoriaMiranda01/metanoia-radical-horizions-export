@@ -796,6 +796,7 @@ const mesmasProps = (a, b) => (
 
 const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remetente, atuacoes, podeCor, responsavel, ocupadoPresenca, ocupadoConvite, ocupadoEdicao,
   ocupadoNoGrupo, bloqueado, liberaEm, onPresenca, onConvite, onNoGrupo, onAtuacao, onCor }) => {
+  const { toast } = useToast();
   const pendente = m.pendencias?.length > 0;
   const zap = linkWhatsApp(m.whatsapp, m.estrangeiro);
   // 19/10/2026 (Patrick): pendencia no cadastro nao trava mais o convite --
@@ -807,6 +808,17 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
   const pedidoGrupo = !!m.grupo_pedido_em && !m.no_grupo_em;
   // Marcador na lista da Invisivel, Perseguido na lista da Selva.
   const etiquetaAgregado = m.area !== area ? (m.area === 'Perseguidos' ? 'Perseguido' : m.area) : null;
+
+  const salvarContato = () => {
+    const numero = numeroWhatsApp(m.whatsapp, m.estrangeiro);
+    if (!numero) return;
+    baixarVcf(gerarVCard([{ nome: m.nome, numero }], `Metanoia ${area}`), `${m.nome}-Metanoia-${area}`);
+    toast({
+      title: 'Contato baixado',
+      description: 'Abra o arquivo baixado para adicionar à sua agenda. Depois adicione a pessoa ao grupo.',
+      className: 'bg-green-600 text-white'
+    });
+  };
 
   // Sem o nome da area na mensagem (17/10/2026, Patrick): so quem esta
   // mandando -- o lider ou o responsavel pela reuniao.
@@ -860,7 +872,13 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
           </p>
           <p className="text-xs text-gray-400 truncate">{nomeDaIgreja(m) || 'Igreja não informada'}</p>
           <p className="text-sm text-gray-300 flex items-center gap-2 mt-0.5 flex-wrap">
-            {telefoneVisivel(m)}
+            {/* Tocar no numero baixa o contato da pessoa, pronto para adicionar a agenda (21/10/2026). */}
+            {numeroWhatsApp(m.whatsapp, m.estrangeiro) ? (
+              <button type="button" onClick={salvarContato} title="Toque para adicionar esta pessoa aos seus contatos"
+                className="underline decoration-dotted underline-offset-4 hover:text-white text-left">
+                {telefoneVisivel(m)}
+              </button>
+            ) : telefoneVisivel(m)}
             {zap && (
               <a href={zap} target="_blank" rel="noopener noreferrer" aria-label="Abrir conversa no WhatsApp"
                 className="text-green-400 hover:text-green-300">

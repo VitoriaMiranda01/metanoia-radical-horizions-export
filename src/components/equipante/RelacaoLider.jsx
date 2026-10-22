@@ -5,7 +5,7 @@ import React, {
   memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState
 } from 'react';
 import {
-  AlertTriangle, Check, CheckCircle2, ChevronDown, ChevronUp, Copy, Download, Loader2, MapPin, MessageCircle,
+  AlertTriangle, Check, CheckCircle2, ChevronDown, ChevronUp, Copy, Loader2, MapPin, MessageCircle,
   Plus, RefreshCw, Search, Send, Trash2, Truck, UserCog, Users, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -1212,23 +1212,6 @@ const GrupoWhatsApp = ({ equipe, prontos, membros = [], envios, ocupado, onSalva
   const { toast } = useToast();
   const precisamAdicionar = membros.filter((m) => m.grupo_pedido_em && !m.no_grupo_em && !m.eu);
 
-  // Arquivo de contatos (.vcf) para importar no telefone (iOS e Android) e
-  // adicionar a pessoa ao grupo pelo contato.
-  const baixarContatos = (lista, rotuloArquivo) => {
-    const contatos = lista.map((m) => ({ nome: m.nome, numero: numeroWhatsApp(m.whatsapp, m.estrangeiro) }));
-    const sufixo = `Metanoia ${equipe.area}${equipe.cor && !equipe.porCor ? ` ${equipe.cor}` : ''}`;
-    const validos = contatos.filter((c) => c.numero);
-    if (validos.length === 0) {
-      toast({ title: 'Ninguém com telefone válido', variant: 'destructive' });
-      return;
-    }
-    baixarVcf(gerarVCard(validos, sufixo), `${sufixo}-${rotuloArquivo}`);
-    toast({
-      title: `${validos.length} contatos baixados`,
-      description: 'Abra o arquivo no celular e importe para a agenda. Depois adicione ao grupo pelo contato.',
-      className: 'bg-green-600 text-white'
-    });
-  };
   const [editando, setEditando] = useState(!equipe.grupo_link);
   const [link, setLink] = useState(equipe.grupo_link || '');
 
@@ -1317,23 +1300,11 @@ const GrupoWhatsApp = ({ equipe, prontos, membros = [], envios, ocupado, onSalva
           {precisamAdicionar.length > 0 && (
             <p className="text-xs text-amber-100 rounded-md border border-amber-400/50 bg-amber-400/10 px-3 py-2">
               <strong>{precisamAdicionar.length}</strong> {precisamAdicionar.length === 1 ? 'pessoa não conseguiu' : 'pessoas não conseguiram'} entrar
-              pelo link (o WhatsApp avisa “um admin removeu você”). Salve {precisamAdicionar.length === 1 ? 'o contato' : 'os contatos'} e
+              pelo link (o WhatsApp avisa “um admin removeu você”). Toque no número de {precisamAdicionar.length === 1 ? 'quem apareceu em âmbar' : 'cada uma'} para salvar o contato e
               adicione {precisamAdicionar.length === 1 ? 'a pessoa' : 'elas'} direto no grupo.
             </p>
           )}
           <div className="flex flex-wrap gap-2">
-            {precisamAdicionar.length > 0 && (
-              <Button size="sm" onClick={() => baixarContatos(precisamAdicionar, 'precisam-ser-adicionados')}
-                className="bg-amber-500 hover:bg-amber-600 text-black">
-                <Download className="w-4 h-4 mr-1.5" /> Contatos de quem não conseguiu entrar ({precisamAdicionar.length})
-              </Button>
-            )}
-            {membros.filter((m) => !m.eu).length > 0 && (
-              <Button size="sm" variant="outline" onClick={() => baixarContatos(membros.filter((m) => !m.eu), 'equipe')}
-                className="border-white/20 bg-transparent text-gray-200 hover:bg-white/10 hover:text-white">
-                <Download className="w-4 h-4 mr-1.5" /> Baixar contatos da equipe (.vcf)
-              </Button>
-            )}
             {prontos.length > 0 && (
               <Button size="sm" variant="outline" onClick={copiarTelefones}
                 className="border-white/20 bg-transparent text-gray-200 hover:bg-white/10 hover:text-white">

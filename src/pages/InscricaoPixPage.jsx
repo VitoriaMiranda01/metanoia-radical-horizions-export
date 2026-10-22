@@ -63,7 +63,7 @@ const InscricaoPixPage = () => {
   // A cobranca ja gerada volta junto: e ela que a pessoa foi pagar.
   const [pixData, setPixData] = useState(sessaoSalva?.cobranca || null);
   const [error, setError] = useState(null);
-  // 'aguardando' | 'confirmado' | 'divergente' | 'expirado'
+  // 'aguardando' | 'confirmado' | 'divergente' | 'expirado' | 'cancelado' | 'fora_da_escala'
   const [statusPagamento, setStatusPagamento] = useState('aguardando');
 
   // Coupon state
@@ -83,7 +83,9 @@ const InscricaoPixPage = () => {
   // resultado. Pergunta a cada 5 segundos e para assim que resolver.
   useEffect(() => {
     const txid = pixData?.txid;
-    if (!txid || statusPagamento !== 'aguardando') return undefined;
+    // Cancelado continua sendo consultado: se o dinheiro cair mesmo assim, a
+    // tela mostra que ficou segurado (fora_da_escala).
+    if (!txid || !['aguardando', 'cancelado'].includes(statusPagamento)) return undefined;
 
     let ativo = true;
 
@@ -104,6 +106,12 @@ const InscricaoPixPage = () => {
           });
         } else if (r.status === 'divergente') {
           setStatusPagamento('divergente');
+        } else if (r.status === 'fora_da_escala') {
+          // Pagou um PIX de quando estava na escala, depois de sair dela: o
+          // banco segurou sem confirmar (20261022d).
+          setStatusPagamento('fora_da_escala');
+        } else if (r.status === 'cancelado') {
+          setStatusPagamento('cancelado');
         } else if (r.expirado) {
           setStatusPagamento('expirado');
         }
@@ -743,6 +751,25 @@ const InscricaoPixPage = () => {
                 </div>
               )}
 
+              {/* Saiu da escala depois de gerar o PIX (20261022d). */}
+              {statusPagamento === 'cancelado' && (
+                <div className="bg-red-500/10 border-b border-red-500/30 px-4 py-3 text-center">
+                  <p className="text-red-300 text-sm font-medium">
+                    Esta cobrança foi cancelada porque você não está mais na escala. Não pague este
+                    código. Procure a coordenação do projeto.
+                  </p>
+                </div>
+              )}
+
+              {statusPagamento === 'fora_da_escala' && (
+                <div className="bg-amber-500/10 border-b border-amber-500/30 px-4 py-3 text-center">
+                  <p className="text-amber-300 text-sm font-medium">
+                    Recebemos o seu pagamento, mas você não está na escala. A inscrição não foi
+                    confirmada: procure a coordenação do projeto para combinar a devolução.
+                  </p>
+                </div>
+              )}
+
               <CardContent className="p-8 text-center space-y-8">
                 <div className="space-y-2">
                   <p className="text-gray-300 text-sm uppercase tracking-wider font-semibold">
@@ -759,6 +786,8 @@ const InscricaoPixPage = () => {
                   <p className="text-gray-400 text-sm">Titular: {formData.nome}</p>
                 </div>
 
+                {/* Cobranca cancelada ou segurada: o codigo some para ninguem pagar. */}
+                {!['cancelado', 'fora_da_escala'].includes(statusPagamento) && (<>
                 <div className="flex flex-col items-center bg-white p-6 rounded-xl max-w-[280px] mx-auto shadow-inner">
                   {pixData.qrcode?.startsWith('data:') ? (
                     <img src={pixData.qrcode} alt="QR Code PIX" className="w-full h-auto object-contain" />
@@ -780,6 +809,7 @@ const InscricaoPixPage = () => {
                     </Button>
                   </div>
                 </div>
+                </>)}
 
                 {/* Ambiente de teste: o PIX e ficticio; este botao faz o que o
                     aviso do Sicoob faz no oficial (services/ambiente.js). */}

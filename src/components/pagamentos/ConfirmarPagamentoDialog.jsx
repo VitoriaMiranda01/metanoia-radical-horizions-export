@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Banknote, CheckCircle, CreditCard, Loader2, QrCode } from 'lucide-react';
+import { AlertTriangle, Banknote, CheckCircle, CreditCard, Loader2, QrCode } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -134,6 +134,18 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Receber de quem nao esta escalado e decisao do organizador
+              (22/10/2026); a janela so avisa. */}
+          {pedido?.foraDaEscala && (
+            <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>
+                <strong className="text-amber-100">Esta pessoa não está escalada</strong>
+                {pedido.areaEscala === 'Não será escalado' ? ' (está em “Não será escalado”)' : ''}.
+                Confira antes de confirmar o recebimento.
+              </span>
+            </p>
+          )}
           <p className="text-xs text-gray-400">
             {ehPixTravado
               ? `PIX pago que não confirmou sozinho. Valor da cobrança: ${formatarValor(pedido?.valorCobrado)}.`

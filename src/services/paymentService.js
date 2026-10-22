@@ -349,7 +349,7 @@ export const fetchPixTravados = async () => {
     () => supabase
       .from('pix_sicoob')
       .select('id, sicoob_id, valor, status, inscricao_id, inscricao_tipo, created_at, updated_at')
-      .in('status', ['pago', 'divergente']),
+      .in('status', ['pago', 'divergente', 'fora_da_escala']),
     { rotulo: 'cobranças PIX' }
   );
 
@@ -393,11 +393,14 @@ export const fetchPixTravados = async () => {
         status_inscricao: inscricao?.status_pagamento || null,
         motivo: p.status === 'divergente'
           ? 'Valor pago diferente do cobrado'
-          : 'PIX pago, inscrição não liberada',
+          : p.status === 'fora_da_escala'
+            ? 'Pagou fora da escala — avaliar devolução'
+            : 'PIX pago, inscrição não liberada',
       };
     })
-    // 'divergente' sempre exige decisao. 'pago' so interessa se a inscricao
-    // ainda nao estiver quitada -- se ja estiver, o fluxo funcionou.
+    // 'divergente' e 'fora_da_escala' (PIX pago por quem saiu da escala,
+    // 20261022d) so saem daqui quando a inscricao for quitada a mao. 'pago' so
+    // interessa se a inscricao ainda nao estiver quitada.
     .filter((p) => p.status === 'divergente' || !estaQuitada(p.status_inscricao));
 };
 

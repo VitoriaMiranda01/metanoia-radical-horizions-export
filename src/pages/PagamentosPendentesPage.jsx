@@ -350,11 +350,19 @@ const PagamentosPendentesPage = () => {
   // janela, que mostra a mensagem do servidor.
   const abrirConfirmacao = (item) => {
     const travado = aba === 'travados';
+    // Equipante fora da escala (sem area ou em "Nao sera escalado"): a janela
+    // avisa, mas quem decide e o organizador (22/10/2026).
+    const idFicha = travado ? item.inscricao_id : item.id;
+    const areaEscala = areasDaEscala[idFicha] || null;
+    const foraDaEscala = item.tipo === 'equipante'
+      && (!areaEscala || areaEscala.split(', ').includes('Não será escalado'));
     setConfirmacao({
       item: travado ? { ...item, id: item.inscricao_id } : item,
       forma: travado ? 'pix' : 'manual',
       valorLote: precoDoLoteHoje(lotes[item.tipo]),
       valorCobrado: travado ? Number(item.valor) : null,
+      foraDaEscala,
+      areaEscala,
     });
   };
 
@@ -1028,7 +1036,7 @@ const PagamentosPendentesPage = () => {
                         <TableCell className="text-gray-300 text-sm">
                           {aba === 'travados' ? (
                             <div className="flex flex-col">
-                              <span className={item.status === 'divergente' ? 'text-amber-400 font-medium' : 'text-gray-300'}>
+                              <span className={item.status === 'divergente' || item.status === 'fora_da_escala' ? 'text-amber-400 font-medium' : 'text-gray-300'}>
                                 {item.motivo}
                               </span>
                               <span className="text-gray-500 text-xs mt-0.5">

@@ -79,18 +79,19 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
   const [oficial, setOficial] = useState(false);
   const [areasEscala, setAreasEscala] = useState([]);
 
+  const mostrarAreaOficial = async () => {
+    setOficial(true);
+    const limites = await fetchLimitesAreas();
+    setAreasEscala(Object.keys(limites || {})
+      .filter((a) => a !== 'Não será escalado')
+      .sort((a, b) => a.localeCompare(b, 'pt-BR')));
+  };
+
   useEffect(() => {
     let vivo = true;
     (async () => {
       const situacao = await fetchSituacaoEscala();
-      if (!vivo || !situacao?.oficial_em) return;
-      setOficial(true);
-      const limites = await fetchLimitesAreas();
-      if (vivo) {
-        setAreasEscala(Object.keys(limites || {})
-          .filter((a) => a !== 'Não será escalado')
-          .sort((a, b) => a.localeCompare(b, 'pt-BR')));
-      }
+      if (vivo && situacao?.oficial_em) mostrarAreaOficial();
     })();
     return () => { vivo = false; };
   }, []);
@@ -154,6 +155,9 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
       return;
     }
     if (!r.success) {
+      // A consulta da abertura falhou e o servidor diz que a oficial ja saiu:
+      // mostra o campo da area agora, em vez de deixar sem saida.
+      if (!oficial && /escala oficial já foi lançada/.test(r.error || '')) mostrarAreaOficial();
       toast({ title: 'Não deu para salvar', description: r.error, variant: 'destructive' });
       return;
     }

@@ -220,8 +220,9 @@ export const getEquipanteWorkflow = async (equipante_id, dono = {}) => {
 
 /**
  * Nome completo para a tela "Inscricao confirmada" (portaria). O servidor so
- * devolve com a prova de dono E a inscricao concluida (taxa de alimentacao paga
- * + presenca confirmada); caso contrario recusa e a tela nao abre.
+ * devolve com a prova de dono E a inscricao concluida (_inscricao_concluida:
+ * taxa paga + presenca; depois da oficial, taxa paga + estar nela); caso
+ * contrario recusa e a tela nao abre.
  */
 export const getConfirmacaoPortaria = async (equipante_id, dono = {}) => {
   const { data, error } = await supabase.rpc('confirmacao_portaria_equipante', {

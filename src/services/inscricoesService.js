@@ -167,8 +167,9 @@ const montarResultadoVerificacao = (resultado, cpfDigitado) => {
     concluido: !!concluido,
     // So o primeiro nome, para a tela "Inscrição Confirmada!" (20261019e).
     primeiroNome: resultado.primeiro_nome || null,
-    // Nome completo para a confirmacao da portaria: o servidor so manda a quem
-    // concluiu e entrou pelo CPF (20261021h).
+    // Nome completo: o servidor so manda a quem concluiu e entrou pelo CPF
+    // (20261021h). Desde 20261021i o equipante nunca volta 'concluido' aqui (vai
+    // para o acompanhamento); fica para o acampante.
     nomeCompleto: resultado.nome_completo || null,
     // Ficha manual ainda sem CPF e sem nascimento: nao ha data para confirmar;
     // a pessoa entra pelo nome e completa o cadastro (migration 20261006l).

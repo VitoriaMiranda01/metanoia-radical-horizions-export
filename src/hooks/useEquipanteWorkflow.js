@@ -166,7 +166,7 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     });
 
     // Escala oficial abaixo da taxa de alimentacao (21/10/2026, Patrick); a area
-    // e o grupo dela aparecem logo abaixo da lista (GrupoAcompanhamento).
+    // e o grupo dela aparecem logo abaixo da lista (AreaOficial).
     // A linha aparece sempre (21/10/2026): pendente ate a oficial sair; concluida
     // para quem esta nela; pendente com aviso para quem ficou fora.
     // Fora da oficial: no "Nao sera escalado" ou sem escala nenhuma depois dela.

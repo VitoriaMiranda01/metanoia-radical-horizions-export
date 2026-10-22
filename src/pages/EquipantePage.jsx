@@ -225,9 +225,9 @@ const EquipantePage = () => {
 
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  // Nome completo para a tela "Inscrição Confirmada!" (portaria). Quem concluiu
-  // nao recebe a ficha, so isto -- e o servidor so manda com a inscricao
-  // concluida (taxa paga + presenca confirmada).
+  // Nome completo para a tela "Inscrição Confirmada!" (portaria). O servidor so
+  // manda com a inscricao concluida (_inscricao_concluida: taxa paga + presenca;
+  // depois da oficial, taxa paga + estar nela).
   const [nomeDaPortaria, setNomeDaPortaria] = useState('');
 
   // Quem já se identificou nesta sessão não recomeça do CPF.

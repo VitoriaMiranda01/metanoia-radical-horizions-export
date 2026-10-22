@@ -151,10 +151,6 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
           : 'pendente',
     });
 
-    if (workflowData.escalado && workflowData.escala_oficial) {
-      stages.push({ id: 'scale_oficial', label: 'Escala oficial lançada', status: 'ok' });
-    }
-
     stages.push({
       id: 'payment',
       // Combinado com a organizacao (19/10/2026): mostra a data e segue pendente.
@@ -163,6 +159,12 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
         : 'Pagamento da taxa de alimentação',
       status: workflowData.pago ? 'ok' : 'pendente',
     });
+
+    // Escala oficial abaixo da taxa de alimentacao (21/10/2026, Patrick); a area
+    // e o grupo dela aparecem logo abaixo da lista (GrupoAcompanhamento).
+    if (workflowData.escalado && workflowData.escala_oficial) {
+      stages.push({ id: 'scale_oficial', label: 'Escala oficial lançada', status: 'ok' });
+    }
 
     return stages;
   };

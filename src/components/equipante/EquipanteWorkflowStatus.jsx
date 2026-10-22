@@ -293,6 +293,10 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
               {getStatusBadge(stage.status)}
             </motion.div>
           ))}
+          {/* Escala oficial (ultima etapa): a area de trabalho e o grupo dela. */}
+          {escalado && escalaOficial && ehOProprio && (
+            <GrupoAcompanhamento equipanteId={equipanteId} dono={dono} modo="oficial" recarregarCom={`${presenca}-${revelouAgora}`} />
+          )}
         </div>
 
         {isMinor && !hasUploadedAuth && (
@@ -445,11 +449,6 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
               Pagar a taxa de alimentação <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
-        )}
-
-        {/* Escala oficial: etapa abaixo da taxa de alimentacao, com a area e o grupo. */}
-        {escalado && escalaOficial && ehOProprio && (
-          <GrupoAcompanhamento equipanteId={equipanteId} dono={dono} modo="oficial" recarregarCom={`${presenca}-${revelouAgora}`} />
         )}
       </div>
 

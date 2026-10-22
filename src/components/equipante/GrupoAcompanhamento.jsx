@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, MessageCircle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { MessageCircle } from 'lucide-react';
 import { fetchGruposEquipante } from '@/services/equipantesService';
 import GrupoEquipante from './GrupoEquipante';
 
@@ -29,14 +28,7 @@ const GrupoAcompanhamento = ({ equipanteId, dono, modo, recarregarCom }) => {
 
   if (modo === 'oficial') {
     return (
-      <div className="mt-8 pt-6 border-t border-white/10 space-y-3">
-        <div className="flex items-center justify-between p-4 rounded-lg border border-green-500/30 bg-green-500/5">
-          <div className="flex items-center space-x-4">
-            <CheckCircle2 className="w-5 h-5 text-green-500" />
-            <span className="text-white font-medium">Escala oficial</span>
-          </div>
-          <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Concluído</Badge>
-        </div>
+      <div className="space-y-3">
         <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-center space-y-1">
           <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
             {areas.length > 1 ? 'Suas áreas de trabalho' : 'Sua área de trabalho'}

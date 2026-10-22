@@ -11,6 +11,8 @@ import RevelarAreaDialog from './RevelarAreaDialog';
 import { TEXTO_PRESENCA_APOS_REUNIAO } from '@/constants/textosPresenca';
 import RelacaoLider from './RelacaoLider';
 import AreaOficial from './AreaOficial';
+import GrupoAcompanhamento from './GrupoAcompanhamento';
+import { presencaPropriaLider } from '@/services/liderService';
 
 // onSair: "Não sou eu" -- a janela de cadastro não fecha, então precisa ter saída.
 // onDonoAtualizado: o que a pessoa acabou de gravar (CPF, nascimento) e que
@@ -396,6 +398,11 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
               <Sparkles className="mr-2 w-5 h-5" />
               {viuArea ? 'Ver minha área de novo' : 'Ver qual área fui escalado'}
             </Button>
+            {/* Grupo de WhatsApp (21/10/2026): so depois de ver a area (ela e surpresa)
+                e so para quem esta presente. */}
+            {viuArea && ehOProprio && (
+              <GrupoAcompanhamento equipanteId={equipanteId} dono={dono} modo="provisoria" recarregarCom={`${presenca}-${revelouAgora}`} />
+            )}
           </div>
         )}
 
@@ -439,6 +446,11 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
             </Button>
           </div>
         )}
+
+        {/* Escala oficial: etapa abaixo da taxa de alimentacao, com a area e o grupo. */}
+        {escalado && escalaOficial && ehOProprio && (
+          <GrupoAcompanhamento equipanteId={equipanteId} dono={dono} modo="oficial" recarregarCom={`${presenca}-${revelouAgora}`} />
+        )}
       </div>
 
       {/* Relacao da equipe, para quem esta como lider. So o proprio (que
@@ -470,7 +482,12 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
             provisoria={!escalaOficial}
             reuniaoPassou={reuniaoLeituraPassou}
             temEquipe={ehOProprio && conduzEquipe}
-            onVerEquipe={ehOProprio ? () => { setRevelando(false); setRevelouAgora(true); setIrParaEquipe(true); refreshSilencioso(); } : undefined}
+            // Lider/responsavel ficam presentes no primeiro clique aqui (21/10/2026).
+            onVerEquipe={ehOProprio ? async () => {
+              setRevelando(false); setRevelouAgora(true); setIrParaEquipe(true);
+              await presencaPropriaLider(equipanteId, dono);
+              refreshSilencioso();
+            } : undefined}
             onPagar={() => { setRevelando(false); onProceedToPayment?.({ nome: workflowData?.nome }); }}
             // As pendencias que o servidor acabou de devolver valem mais que as
             // da ultima leitura do acompanhamento.

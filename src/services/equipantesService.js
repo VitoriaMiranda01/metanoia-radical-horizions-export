@@ -323,7 +323,12 @@ const chamarGrupo = async (funcao, equipante_id, dono = {}, extra = {}) => {
   return data || { ok: false, erro: 'Resposta vazia do servidor.' };
 };
 
-export const grupoAbriu = (equipante_id, dono, escalaId) =>
+// Areas da pessoa com o link do grupo (so para presente na provisoria; todo
+// escalado na oficial). 21/10/2026.
+export const fetchGruposEquipante = (equipante_id, dono) =>
+  chamarGrupo('equipante_grupos', equipante_id, dono);
+
+export const grupoAbriu =(equipante_id, dono, escalaId) =>
   chamarGrupo('equipante_grupo_abriu', equipante_id, dono, { p_escala_id: escalaId });
 
 export const grupoNaoConsegui = (equipante_id, dono, escalaId, valor) =>

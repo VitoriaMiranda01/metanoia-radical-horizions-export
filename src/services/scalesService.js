@@ -396,7 +396,10 @@ const rpcOrganizador = async (funcao, params, rotulo) => {
 };
 
 export const lancarEscalaOficial = () => rpcOrganizador('lancar_escala_oficial', {}, 'lançar a escala oficial');
-export const desfazerEscalaOficial = () => rpcOrganizador('desfazer_escala_oficial', {}, 'desfazer a escala oficial');
+// Quem ainda esta aguardando aprovacao, em "A escalar", ausente ou sem chamada:
+// so aviso antes de lancar a oficial (21/10/2026).
+export const fetchResumoAntesDaOficial = () => rpcOrganizador('resumo_antes_da_oficial', {}, 'resumo antes da oficial');
+export const desfazerEscalaOficial =() => rpcOrganizador('desfazer_escala_oficial', {}, 'desfazer a escala oficial');
 export const fetchChamadaDaEscala = () => rpcOrganizador('chamada_da_escala', {}, 'chamada da escala');
 // Ausente na chamada: 'manter' (fica na area) | 'separar' (vai para "Não
 // será escalado", guardando de onde saiu; volta por "Trocar de área").

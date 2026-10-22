@@ -32,6 +32,7 @@ import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
 import PreEscalaDialog from '@/components/scales/PreEscalaDialog';
 import TrocarAreaDialog from '@/components/scales/TrocarAreaDialog';
 import ChamadaQuadro from '@/components/scales/ChamadaQuadro';
+import ResumoAntesDaOficial from '@/components/scales/ResumoAntesDaOficial';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
 import CpfsAreaEspecialManager from '@/components/organizer/CpfsAreaEspecialManager';
 import SeloPastor from '@/components/common/SeloPastor';
@@ -2163,22 +2164,20 @@ const OrganizerScalesPage = () => {
                       <Undo2 className="mr-2 h-4 w-4" /> Desfazer Escala Provisória
                     </Button>
                     <Button onClick={() => setConfirmandoOficial(true)}
-                      disabled={(escala.faltam > 0 && !liberaComFila) || !escala.pode_gerir}
+                      disabled={!escala.pode_gerir}
                       data-dica={!escala.pode_gerir
                         ? 'Só Desenvolvedores, Raquel e Dudu lançam a escala.'
-                        : escala.faltam > 0 && !liberaComFila
-                          ? 'Há gente na fila "A escalar" (inscrição manual, por exemplo). Distribua antes de lançar a oficial.'
-                          : 'Lançar a escala oficial (final), depois de refazer a escala com a chamada. Pede confirmação.'}
+                        : 'Lançar a escala oficial (final), depois de refazer a escala com a chamada. Pede confirmação e avisa quem ainda está pendente (aguardando aprovação, a escalar, ausente ou sem chamada), sem bloquear.'}
                       className="bg-green-600 hover:bg-green-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
                       <BadgeCheck className="mr-2 h-4 w-4" />
-                      Lançar escala oficial{escala.faltam > 0 ? ` (faltam ${escala.faltam})` : ''}
+                      Lançar escala oficial
                     </Button>
                   </>
                 ) : (
                   <Button data-dica="Voltar para a escala provisória. Não mexe em pagamento nenhum. Pede confirmação."
                     onClick={() => setConfirmandoDesfazerOficial(true)} variant="outline" disabled={!escala.pode_gerir}
-                    className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
-                    <Undo2 className="mr-2 h-4 w-4" /> Desfazer oficial
+                    className="bg-red-600/15 text-red-300 border-red-500/50 hover:bg-red-600/30 hover:text-red-200">
+                    <Undo2 className="mr-2 h-4 w-4" /> Desfazer escala oficial
                   </Button>
                 )}
                 {/* Relacao nominal em PDF/Excel (geral, por igreja, por area) -- 17/10/2026. */}
@@ -2748,6 +2747,7 @@ const OrganizerScalesPage = () => {
                 Dá para desfazer depois.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            <ResumoAntesDaOficial ativo={confirmandoOficial} />
             <AlertDialogFooter>
               <AlertDialogCancel className="bg-transparent border-gray-700 text-white hover:bg-gray-800">Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={handleLancarOficial} disabled={lancando} className="bg-green-600 hover:bg-green-700 text-white">

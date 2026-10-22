@@ -62,6 +62,11 @@ export const marcarConviteLider = (equipanteId, dono, escalaId) =>
     p_escala_id: escalaId
   }, 'convite do grupo');
 
+// Primeiro clique em "ver a lista da equipe": lider/responsavel ja ficam presentes
+// (so se ainda nao tinham chamada; ele pode retirar depois). 21/10/2026.
+export const presencaPropriaLider = (equipanteId, dono) =>
+  chamar('lider_presenca_propria', credenciais(equipanteId, dono), 'presença do líder');
+
 // "Ja esta no grupo", marcado a mao pelo lider/responsavel (valor false desmarca).
 export const marcarNoGrupo = (equipanteId, dono, escalaId, valor) =>
   chamar('lider_marcar_no_grupo', {

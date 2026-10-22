@@ -48,7 +48,7 @@ const Linha = ({ equipanteId, dono, a }) => {
         <>
           <a href={a.grupo_link} target="_blank" rel="noopener noreferrer" onClick={entrar}
             className="block rounded-md bg-[#25D366] hover:bg-[#20bd5a] text-white text-center text-sm font-semibold py-2.5">
-            Entrar no grupo
+            Entrar no grupo · {a.area}
           </a>
           {pedido ? (
             <div className="space-y-1">

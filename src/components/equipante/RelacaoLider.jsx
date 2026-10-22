@@ -151,6 +151,7 @@ const agruparTrilhaPorCor = (equipes) => {
     return {
       chave: `cor:${cor}`, area: cor === 'Sem cor' ? 'Sem cor' : `Grupo ${cor}`, cor: CORES[cor] ? cor : null,
       papel: 'delegado', porCor: true, origens, ondeGuardar, grupo_link: link,
+      trocados: [...new Map(origens.flatMap((e) => e.trocados || []).map((t) => [t.escala_id, t])).values()],
       membros: [...g.membros.values()].map((m) => ({ ...m, _grupo_link: link })),
       lideres: [...new Set(origens.flatMap((e) => e.lideres || []))]
     };
@@ -722,6 +723,23 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
         {membros.length > 0 && mostrados.length === 0 && <li className="text-sm text-gray-500">Ninguém com esse filtro.</li>}
       </ul>
 
+      {/* Quem a organizacao trocou de area (21/10/2026): ainda pode estar no grupo desta equipe. */}
+      {(equipe.trocados || []).length > 0 && (
+        <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 p-3 space-y-1.5">
+          <p className="text-xs font-semibold text-sky-200">
+            Trocados de área pela organização: remova do grupo desta equipe
+          </p>
+          <ul className="space-y-1">
+            {equipe.trocados.map((t) => (
+              <li key={t.escala_id} className="text-sm text-gray-300">
+                <span className="line-through text-gray-400">{t.nome}</span>
+                <span className="text-sky-200"> · foi para {t.foi_para}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {equipe.escala_id && (
         <GrupoWhatsApp equipe={equipe} prontos={prontosConvite} membros={membros} envios={envios} ocupado={!!ocupado[`g-${equipe.escala_id}`]}
           onSalvar={(link) => onSalvarGrupo(equipe, link)} mostrarEquipe={mostrarEquipe} />
@@ -752,7 +770,9 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
   const zap = linkWhatsApp(m.whatsapp, m.estrangeiro);
   // 19/10/2026 (Patrick): pendencia no cadastro nao trava mais o convite --
   // basta estar presente. So precisa de um WhatsApp que abra a conversa.
-  const podeConvidar = grupoLink && m.presente === true && !m.eu && !!zap;
+  // 21/10/2026: a presenca so e marcada no dia da leitura; depois, convidar a
+  // pessoa a mao e decisao do lider (dentro do limite de envios).
+  const podeConvidar = grupoLink && !m.eu && !!zap;
   // Pediu ajuda: o WhatsApp nao o deixou entrar pelo link (ex.: removido de um grupo antigo).
   const pedidoGrupo = !!m.grupo_pedido_em && !m.no_grupo_em;
   // Marcador na lista da Invisivel, Perseguido na lista da Selva.
@@ -794,7 +814,13 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
               </span>
             )}
             {m.eu && <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300">você</span>}
-            {m.eh_lider && !m.eu && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">líder</span>}
+            {m.veio_de && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-sky-400/50 bg-sky-500/15 text-sky-200"
+                title="Trocado de área pela organização: confira se já está no grupo certo.">
+                veio de {m.veio_de}
+              </span>
+            )}
+            {m.eh_lider && !m.eu &&<span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">líder</span>}
             {etiquetaAgregado && <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">{etiquetaAgregado}</span>}
             {responsavel && (
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40">
@@ -1163,7 +1189,8 @@ const GrupoWhatsApp = ({ equipe, prontos, membros = [], envios, ocupado, onSalva
     setLink(equipe.grupo_link || '');
   }, [equipe.grupo_link]);
 
-  const enviados = prontos.filter((m) => m.convite_enviado_em).length;
+  const convidaveis = membros.filter((m) => !m.eu && numeroWhatsApp(m.whatsapp, m.estrangeiro));
+  const enviados = convidaveis.filter((m) => m.convite_enviado_em).length;
 
   const copiarTelefones = async () => {
     const lista = prontos.map((m) => `${m.nome} - ${m.estrangeiro ? m.whatsapp : formatarTelefone(m.whatsapp)}`).join('\n');
@@ -1199,7 +1226,7 @@ const GrupoWhatsApp = ({ equipe, prontos, membros = [], envios, ocupado, onSalva
           <ol className="text-xs text-gray-300 list-decimal pl-4 space-y-0.5">
             <li>Crie o grupo no seu WhatsApp.</li>
             <li>No grupo, toque em “Convidar via link” e copie o link.</li>
-            <li>Cole aqui. O botão de convite aparece para quem estiver <strong>presente</strong>.</li>
+            <li>Cole aqui. Quem estiver <strong>presente</strong> já vê o botão de entrar; o convite manual vale para qualquer pessoa da equipe.</li>
           </ol>
           <div className="flex flex-col sm:flex-row gap-2">
             <Input value={link} onChange={(e) => setLink(e.target.value)}
@@ -1222,13 +1249,11 @@ const GrupoWhatsApp = ({ equipe, prontos, membros = [], envios, ocupado, onSalva
         <>
           <p className="text-xs text-gray-300 break-all">{equipe.grupo_link}</p>
           <p className="text-xs text-gray-400">
-            Quem está escalado nesta equipe já vê o botão <strong>Entrar no grupo</strong> na própria tela. Peça para
-            entrarem por ali: é o jeito mais seguro.
+            Quem está <strong>presente</strong> já vê o botão <strong>Entrar no grupo</strong> na própria tela (depois da
+            escala oficial, todos da equipe veem). Peça para entrarem por ali: é o jeito mais seguro.
           </p>
           <p className="text-xs text-gray-400">
-            {prontos.length === 0
-              ? 'Ninguém liberado ainda: o convite aparece para quem for marcado presente.'
-              : `${prontos.length} liberados para o convite · ${enviados} já enviados.`}
+            {convidaveis.length} podem receber o convite manual · {enviados} já enviados.
           </p>
           {/* Aviso fixo (21/10/2026): enviar o link a muita gente trava o WhatsApp de quem envia. */}
           <div className={cn('rounded-md border px-3 py-2 text-xs flex items-start gap-2',

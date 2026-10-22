@@ -525,6 +525,10 @@ const FILTROS = {
   ausentes: (m) => m.presente === false,
   sem_chamada: (m) => m.presente !== true && m.presente !== false,
   pendencia: (m) => m.pendencias?.length > 0,
+  // Grupo de WhatsApp (21/10/2026): a propria lider/responsavel nao entra na conta.
+  no_grupo: (m) => !!m.no_grupo_em && !m.eu,
+  fora_do_grupo: (m) => !m.no_grupo_em && !m.eu,
+  nao_conseguiu: (m) => !!m.grupo_pedido_em && !m.no_grupo_em && !m.eu,
   // Quem vem de outra area para a reuniao desta equipe (Marcadores na
   // Invisivel, Perseguidos na Selva).
   agregados: (m, equipe) => m.area !== equipe.area,
@@ -551,8 +555,11 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
   const membros = useMemo(() => [...(equipe.membros || [])].sort(porNome), [equipe.membros]);
 
   const contas = useMemo(() => {
-    const c = { total: membros.length, presentes: 0, ausentes: 0, sem: 0, pend: 0, agregados: 0 };
+    const c = { total: membros.length, presentes: 0, ausentes: 0, sem: 0, pend: 0, agregados: 0, noGrupo: 0, foraGrupo: 0, naoConseguiu: 0 };
     membros.forEach((m) => {
+      if (FILTROS.no_grupo(m)) c.noGrupo += 1;
+      if (FILTROS.fora_do_grupo(m)) c.foraGrupo += 1;
+      if (FILTROS.nao_conseguiu(m)) c.naoConseguiu += 1;
       if (m.presente === true) c.presentes += 1;
       else if (m.presente === false) c.ausentes += 1;
       else c.sem += 1;
@@ -679,6 +686,29 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
                 filtro === 'agregados' ? 'border-sky-400 bg-sky-400/15 text-sky-100' : 'border-sky-500/30 text-sky-300')}>
               {agregado.varios}: <strong>{contas.agregados}</strong>
             </button>
+          </div>
+        )}
+
+        {/* Quem ja esta no grupo de WhatsApp e quem ainda nao (so com o link salvo). */}
+        {(equipe.grupo_link || contas.noGrupo > 0) && (
+          <div className="flex flex-wrap gap-2 text-xs">
+            <button type="button" onClick={() => alternarFiltro('no_grupo')}
+              className={cn('rounded-full border px-3 py-1',
+                filtro === 'no_grupo' ? 'border-green-400 bg-green-400/15 text-green-100' : 'border-green-500/30 text-green-300')}>
+              No grupo: <strong>{contas.noGrupo}</strong>
+            </button>
+            <button type="button" onClick={() => alternarFiltro('fora_do_grupo')}
+              className={cn('rounded-full border px-3 py-1',
+                filtro === 'fora_do_grupo' ? 'border-white/60 bg-white/15 text-white' : 'border-white/20 text-gray-300')}>
+              Fora do grupo: <strong>{contas.foraGrupo}</strong>
+            </button>
+            {contas.naoConseguiu > 0 && (
+              <button type="button" onClick={() => alternarFiltro('nao_conseguiu')}
+                className={cn('rounded-full border px-3 py-1',
+                  filtro === 'nao_conseguiu' ? 'border-amber-400 bg-amber-400/15 text-amber-100' : 'border-amber-500/30 text-amber-300')}>
+                Não conseguiu entrar: <strong>{contas.naoConseguiu}</strong>
+              </button>
+            )}
           </div>
         )}
 

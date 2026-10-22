@@ -195,6 +195,10 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     naoSeraEscalado: !!workflowData?.nao_sera_escalado,
     escalaLancada: !!workflowData?.escala_lancada,
     escalaOficial: !!workflowData?.escala_oficial,
+    // Regra do servidor (_inscricao_concluida) e quando o botao "Confirmar
+    // inscricao" aparece (dia seguinte a reuniao de leitura; 20261022b).
+    concluidaServidor: workflowData?.concluida,
+    confirmacaoVisivel: !!workflowData?.confirmacao_visivel,
     reuniaoLeituraPassou: !!workflowData?.reuniao_leitura_passou,
     // Areas em que a pessoa e lider (so depois da provisoria) e como ficou
     // a chamada dela na reuniao de escala: 'presente' | 'ausente' | null.

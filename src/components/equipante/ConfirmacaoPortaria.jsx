@@ -1,7 +1,29 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+// Relogio ao vivo (22/10/2026): mostra que a tela esta aberta agora, e nao e um
+// print. A conferencia de verdade e no acesso de apoio da portaria.
+const agoraEmBrasilia = () => new Date().toLocaleString('pt-BR', {
+  timeZone: 'America/Sao_Paulo',
+  day: '2-digit', month: '2-digit', year: 'numeric',
+  hour: '2-digit', minute: '2-digit', second: '2-digit'
+});
+
+const RelogioAoVivo = () => {
+  const [agora, setAgora] = useState(agoraEmBrasilia);
+  useEffect(() => {
+    const t = setInterval(() => setAgora(agoraEmBrasilia()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <p className="font-mono text-base text-white tabular-nums flex items-center justify-center gap-2">
+      <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" aria-hidden="true" />
+      {agora.replace(',', ' ·')}
+    </p>
+  );
+};
 
 // Tela que a pessoa apresenta na portaria no dia da edicao. O nome completo
 // vem do servidor, que so o entrega a quem concluiu (ver
@@ -23,6 +45,7 @@ const ConfirmacaoPortaria = ({ nome, onVoltar }) => (
       </p>
       <p>Apresente esta tela na portaria para liberar o acesso.</p>
     </div>
+    <RelogioAoVivo />
     <Button variant="outline" className="mt-2" onClick={onVoltar}>
       <ArrowLeft className="w-4 h-4 mr-2" /> Voltar à Área do Equipante
     </Button>

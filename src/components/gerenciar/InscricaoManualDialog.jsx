@@ -9,10 +9,10 @@ import { useToast } from '@/components/ui/use-toast';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
 import TelefoneInput from '@/components/inscricao/TelefoneInput';
 import { NAO_CONGREGA, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
-import { AREAS_INSCRICAO } from '@/constants/workAreas';
+import { AREAS_INSCRICAO, CORES_GRUPO, areaTemCor } from '@/constants/workAreas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { inscricaoManualEquipante } from '@/services/equipantesService';
-import { fetchSituacaoEscala } from '@/services/scalesService';
+import { fetchSituacaoEscala, fetchAtuacoesPorArea } from '@/services/scalesService';
 import { fetchLimitesAreas } from '@/services/limiteAreasService';
 import { problemaTelefone } from '@/utils/telefone';
 import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
@@ -58,7 +58,7 @@ const VAZIO = {
   nome: '', cpf: '', data_nascimento: '', sexo: '', whatsapp: '',
   igreja: '', igreja_outra: '',
   area_trabalho_opcao1: '', area_trabalho_opcao2: '', area_trabalho_opcao3: '',
-  area_oficial: '',
+  area_oficial: '', atuacao_oficial: '', cor_oficial: '',
   carta_recebida: false,
 };
 
@@ -78,14 +78,25 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
   // Oficial lancada: escolhe a area da escala (lista das areas cadastradas).
   const [oficial, setOficial] = useState(false);
   const [areasEscala, setAreasEscala] = useState([]);
+  const [atuacoesPorArea, setAtuacoesPorArea] = useState({});
 
   const mostrarAreaOficial = async () => {
     setOficial(true);
-    const limites = await fetchLimitesAreas();
+    const [limites, atuacoes] = await Promise.all([fetchLimitesAreas(), fetchAtuacoesPorArea()]);
+    setAtuacoesPorArea(atuacoes || {});
     setAreasEscala(Object.keys(limites || {})
       .filter((a) => a !== 'Não será escalado')
       .sort((a, b) => a.localeCompare(b, 'pt-BR')));
   };
+
+  // Atuacao e cor junto com a area (22/10/2026), mesma regra do servidor:
+  // atuacao so se a area tem mais de uma; cor so nas areas de cor, e nao para
+  // atuacao sem cor (obrigatoria) nem de lider (opcional).
+  const atuacoesDaArea = atuacoesPorArea[form.area_oficial] || [];
+  const escolheAtuacao = atuacoesDaArea.length > 1;
+  const atuacaoEscolhida = atuacoesDaArea.find((a) => a.atuacao === form.atuacao_oficial);
+  const mostraCor = areaTemCor(form.area_oficial) && !atuacaoEscolhida?.semCor;
+  const corObrigatoria = mostraCor && !atuacaoEscolhida?.ehLider;
 
   useEffect(() => {
     let vivo = true;
@@ -134,6 +145,14 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
       toast({ title: 'Escolha a área', description: 'A escala oficial já foi lançada: a pessoa entra direto numa área.', variant: 'destructive' });
       return;
     }
+    if (oficial && escolheAtuacao && !atuacaoEscolhida) {
+      toast({ title: 'Escolha a atuação', description: `Escolha a atuação da pessoa em ${form.area_oficial}.`, variant: 'destructive' });
+      return;
+    }
+    if (oficial && corObrigatoria && !form.cor_oficial) {
+      toast({ title: 'Escolha a cor', description: `${form.area_oficial} é dividida por cor: escolha a cor do grupo.`, variant: 'destructive' });
+      return;
+    }
     const cpf = form.cpf.replace(/\D/g, '');
     if (cpf && !validateCPF(cpf)) {
       toast({ title: 'Confira o CPF', description: 'CPF inválido: confira os números. Ou deixe em branco.', variant: 'destructive' });
@@ -164,7 +183,7 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
     toast({
       title: 'Inscrição feita',
       description: oficial
-        ? `${form.nome.trim()} já está em ${form.area_oficial}, com presença confirmada. Falta só o pagamento (em Pagamentos). Se a área usa cor ou atuação, ajuste na Escala.`
+        ? `${form.nome.trim()} já está em ${form.area_oficial}, com presença confirmada. Falta só o pagamento (em Pagamentos).`
         : `${form.nome.trim()} já está aprovado(a), entra na escala e o pagamento ficou em Pagamentos.`,
       className: 'bg-green-600 text-white',
     });
@@ -290,7 +309,8 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
 
           {oficial && (
             <Campo label="Área na escala oficial *" className="md:col-span-2">
-              <Select value={form.area_oficial || SEM_VALOR} onValueChange={(v) => set('area_oficial')(v === SEM_VALOR ? '' : v)}>
+              <Select value={form.area_oficial || SEM_VALOR}
+                onValueChange={(v) => setForm((f) => ({ ...f, area_oficial: v === SEM_VALOR ? '' : v, atuacao_oficial: '', cor_oficial: '' }))}>
                 <SelectTrigger className="bg-white/10 border-emerald-500/50 text-white">
                   <SelectValue placeholder="Escolha a área" />
                 </SelectTrigger>
@@ -303,6 +323,38 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
                 A escala oficial já foi lançada: a pessoa entra direto nesta área, com a presença
                 confirmada. Fica pendente só o pagamento.
               </p>
+            </Campo>
+          )}
+
+          {oficial && escolheAtuacao && (
+            <Campo label="Atuação *">
+              <Select value={form.atuacao_oficial || SEM_VALOR}
+                onValueChange={(v) => setForm((f) => ({ ...f, atuacao_oficial: v === SEM_VALOR ? '' : v }))}>
+                <SelectTrigger className="bg-white/10 border-emerald-500/50 text-white">
+                  <SelectValue placeholder="Escolha a atuação" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SEM_VALOR}>Escolha a atuação</SelectItem>
+                  {atuacoesDaArea.map((a) => (
+                    <SelectItem key={a.atuacao} value={a.atuacao}>{a.ehLider ? `★ ${a.atuacao}` : a.atuacao}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Campo>
+          )}
+
+          {oficial && mostraCor && (
+            <Campo label={corObrigatoria ? 'Cor do grupo *' : 'Cor do grupo (opcional para líder)'}>
+              <Select value={form.cor_oficial || SEM_VALOR}
+                onValueChange={(v) => setForm((f) => ({ ...f, cor_oficial: v === SEM_VALOR ? '' : v }))}>
+                <SelectTrigger className="bg-white/10 border-emerald-500/50 text-white">
+                  <SelectValue placeholder="Escolha a cor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SEM_VALOR}>{corObrigatoria ? 'Escolha a cor' : 'Sem cor'}</SelectItem>
+                  {CORES_GRUPO.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </Campo>
           )}
 

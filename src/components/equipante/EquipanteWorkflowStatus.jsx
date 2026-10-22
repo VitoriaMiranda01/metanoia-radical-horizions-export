@@ -39,6 +39,8 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     pendencias,
     areaVista,
     escalaOficial,
+    concluidaServidor,
+    confirmacaoVisivel,
     liderDe,
     delegadoDe,
     liderExtraDe,
@@ -50,10 +52,19 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     refresh,
     refreshSilencioso
   } = useEquipanteWorkflow(equipanteId, age, dono);
-  // Mesma regra do servidor (_inscricao_concluida, 22/10/2026): antes da
-  // oficial, pago + presenca; depois dela, pago + estar na oficial (a oficial
-  // ja e montada pela presenca da reuniao de leitura).
-  const concluida = pago && (escalaOficial ? (escalado && !naoSeraEscalado) : presenca === 'presente');
+  // Quem decide e o servidor (_inscricao_concluida, 20261022b): antes da
+  // oficial, aprovado + pago + presenca; depois dela, aprovado + pago + estar
+  // na oficial. A conta local so vale se o servidor for antigo.
+  const concluida = concluidaServidor ?? (pago && (escalaOficial ? (escalado && !naoSeraEscalado) : presenca === 'presente'));
+  // Botao "Confirmar inscricao" (22/10/2026): aparece a partir do dia seguinte
+  // a reuniao de leitura (ou com a oficial lancada). Enquanto nao conclui, fica
+  // cinza dizendo o que falta -- so taxa de alimentacao e escala oficial.
+  const pendenciasConfirmacao = [
+    // Mesmo texto da etapa "Escala oficial" na lista (useEquipanteWorkflow).
+    naoSeraEscalado || (escalaOficial && !escalado) ? 'Você não foi escalado na escala oficial'
+      : !escalaOficial ? 'Escala oficial' : null,
+    !pago ? 'Taxa de alimentação' : null,
+  ].filter(Boolean);
 
   // So o proprio equipante (que provou ser dono) ve a janela de correcao
   // sozinha; o organizador abrindo a ficha pela tela dele, nao.
@@ -267,11 +278,27 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
               <CheckCircle2 className="w-5 h-5 mr-2 shrink-0" />
               Inscrição concluída. Nos vemos no Radical!
             </p>
-            {ehOProprio && onVerConfirmacao && (
+            {ehOProprio && onVerConfirmacao && confirmacaoVisivel && (
               <Button onClick={onVerConfirmacao} className="mt-4 w-full bg-green-700 hover:bg-green-600 text-white">
                 <BadgeCheck className="w-4 h-4 mr-2" /> Ver confirmação da inscrição
               </Button>
             )}
+          </div>
+        )}
+
+        {/* Mesmo lugar, cinza e desabilitado enquanto falta algo: a pessoa ve
+            o que precisa fazer aqui e na lista de etapas. */}
+        {!concluida && ehOProprio && onVerConfirmacao && confirmacaoVisivel && (
+          <div className="mb-6">
+            <Button disabled aria-disabled="true"
+              className="w-full h-auto py-3 flex-col gap-1 whitespace-normal bg-zinc-700 text-gray-300 disabled:opacity-100 cursor-not-allowed">
+              <span className="flex items-center font-semibold">
+                <BadgeCheck className="w-4 h-4 mr-2" /> Confirmar inscrição
+              </span>
+              <span className="text-xs font-normal text-gray-400">
+                Pendente: {pendenciasConfirmacao.length ? pendenciasConfirmacao.join(' · ') : 'procure a organização'}
+              </span>
+            </Button>
           </div>
         )}
 

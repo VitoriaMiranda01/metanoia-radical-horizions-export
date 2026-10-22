@@ -149,13 +149,13 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     switch (status) {
       case 'ok': 
       case 'concluído':
-        return <CheckCircle2 className="w-5 h-5 text-green-500" />;
+        return <CheckCircle2 className="w-5 h-5 shrink-0 text-green-500" />;
       case 'em_processo': 
-        return <Clock className="w-5 h-5 text-blue-500" />;
+        return <Clock className="w-5 h-5 shrink-0 text-blue-500" />;
       case 'rejeitado':
-        return <XCircle className="w-5 h-5 text-red-500" />;
+        return <XCircle className="w-5 h-5 shrink-0 text-red-500" />;
       case 'pendente': default: 
-        return <AlertCircle className="w-5 h-5 text-red-500" />;
+        return <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />;
     }
   };
 

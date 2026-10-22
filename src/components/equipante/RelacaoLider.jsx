@@ -936,9 +936,9 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
           {m.no_grupo_em && (
             <span className="text-green-400 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> está no grupo</span>
           )}
-          <Button size="sm" variant="ghost" disabled={ocupadoNoGrupo} onClick={() => onNoGrupo(m, !m.no_grupo_em)}
-            className="h-7 px-2 text-xs text-gray-300 hover:text-white hover:bg-white/10">
-            {m.no_grupo_em ? 'Desmarcar' : 'Já está no grupo'}
+          <Button size="sm" variant="outline" disabled={ocupadoNoGrupo} onClick={() => onNoGrupo(m, !m.no_grupo_em)}
+            className="h-7 px-2 text-xs border-white/25 bg-transparent text-gray-200 hover:text-white hover:bg-white/10">
+            {m.no_grupo_em ? 'Desmarcar' : 'Marcar como já está no grupo'}
           </Button>
         </div>
       )}

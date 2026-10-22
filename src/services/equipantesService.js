@@ -221,7 +221,7 @@ export const getEquipanteWorkflow = async (equipante_id, dono = {}) => {
 /**
  * Nome completo para a tela "Inscricao confirmada" (portaria). O servidor so
  * devolve com a prova de dono E a inscricao concluida (_inscricao_concluida:
- * taxa paga + presenca; depois da oficial, taxa paga + estar nela); caso
+ * aprovado + taxa paga + estar na escala oficial lancada); caso
  * contrario recusa e a tela nao abre.
  */
 export const getConfirmacaoPortaria = async (equipante_id, dono = {}) => {

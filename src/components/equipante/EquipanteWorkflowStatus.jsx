@@ -52,10 +52,10 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     refresh,
     refreshSilencioso
   } = useEquipanteWorkflow(equipanteId, age, dono);
-  // Quem decide e o servidor (_inscricao_concluida, 20261022b): antes da
-  // oficial, aprovado + pago + presenca; depois dela, aprovado + pago + estar
-  // na oficial. A conta local so vale se o servidor for antigo.
-  const concluida = concluidaServidor ?? (pago && (escalaOficial ? (escalado && !naoSeraEscalado) : presenca === 'presente'));
+  // Quem decide e o servidor (_inscricao_concluida, 20261022c): aprovado +
+  // pago + estar na escala oficial. Sem a oficial lancada ninguem conclui.
+  // A conta local so vale se o servidor for antigo.
+  const concluida = concluidaServidor ?? (pago && escalaOficial && escalado && !naoSeraEscalado);
   // Botao "Confirmar inscricao" (22/10/2026): aparece a partir do dia seguinte
   // a reuniao de leitura (ou com a oficial lancada). Enquanto nao conclui, fica
   // cinza dizendo o que falta -- so taxa de alimentacao e escala oficial.

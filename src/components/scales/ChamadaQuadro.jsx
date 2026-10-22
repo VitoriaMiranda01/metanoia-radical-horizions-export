@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, ClipboardList, Loader2, RefreshCw, Repeat, Undo2, UserCheck, UserMinus, UserX } from 'lucide-react';
+import { ChevronDown, ChevronUp, ClipboardList, Loader2, RefreshCw, Search, Repeat, Undo2, UserCheck, UserMinus, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { nomeDaIgreja } from '@/constants/igrejas';
@@ -19,6 +20,8 @@ const ABAS = [
   ['ausentes', 'ausentes', { ativo: 'border-red-400 bg-red-500/20 text-red-100', normal: 'border-red-500/30 text-red-300 hover:bg-red-500/10' }],
   ['sem', 'sem_chamada', { ativo: 'border-amber-300 bg-amber-400/20 text-amber-100', normal: 'border-amber-400/30 text-amber-300 hover:bg-amber-400/10' }]
 ];
+
+const semAcento = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 const SeloPago = ({ pago }) => pago ? (
   <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-300 border border-green-500/30">pago</span>
@@ -49,6 +52,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
   const [areaAberta, setAreaAberta] = useState(null);
   const [situacao, setSituacao] = useState(null);
   const [tique, setTique] = useState(0);
+  const [busca, setBusca] = useState('');
   // Minimizado: fica so a linha do titulo, como a fila "A escalar".
   // Lembrado neste navegador.
   const [minimizado, setMinimizado] = useState(() => {
@@ -95,8 +99,12 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
     recarregarTudo?.();
   };
 
-  const ausentes = (dados?.ausentes || []).filter((p) => contaNaChamada(p.area));
-  const separados = dados?.separados || [];
+  const termo = semAcento(busca.trim());
+  const bate = (p) => !termo || semAcento(`${p.nome} ${p.area || ''} ${p.separado_de || ''} ${nomeDaIgreja(p) || ''} ${p.whatsapp || ''}`).includes(termo);
+  const todosAusentes = (dados?.ausentes || []).filter((p) => contaNaChamada(p.area));
+  const ausentes = todosAusentes.filter(bate);
+  const todosSeparados = dados?.separados || [];
+  const separados = todosSeparados.filter(bate);
   const mantidos = (dados?.mantidos || []).filter((p) => contaNaChamada(p.area));
   const porArea = (dados?.por_area || []).filter((a) => contaNaChamada(a.area));
   // As contas do topo saem das areas que contam (sem Recepcao); antes de a
@@ -186,6 +194,13 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
       )}
 
       {!minimizado && <div className="p-4 space-y-5">
+        {((situacao !== 'ausentes' && todosAusentes.length > 0) || todosSeparados.length > 0) && (
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar ausentes e separados por nome, área, igreja ou telefone..."
+              className="h-9 pl-8 bg-black/40 border-white/20 text-white" />
+          </div>
+        )}
         {/* Ausentes a definir -- com a aba Ausentes aberta, as decisoes ja
             estao nela, separadas por area. */}
         {situacao !== 'ausentes' && <div>
@@ -195,7 +210,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
             </p>
           </div>
           {ausentes.length === 0 ? (
-            <p className="text-xs text-gray-500">Nenhum ausente para decidir agora.</p>
+            <p className="text-xs text-gray-500">{todosAusentes.length === 0 ? 'Nenhum ausente para decidir agora.' : 'Ninguém com esse filtro.'}</p>
           ) : (
             <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-1">
               {ausentesPorArea.map(([nomeArea, lista]) => (
@@ -239,13 +254,14 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
         </div>}
 
         {/* Separados */}
-        {separados.length > 0 && (
+        {todosSeparados.length > 0 && (
           <div>
             <p className="text-sm text-white font-medium flex items-center gap-2 mb-2">
-              <UserMinus className="h-4 w-4 text-amber-400" /> Separados ({separados.length})
+              <UserMinus className="h-4 w-4 text-amber-400" /> Separados ({termo ? `${separados.length} de ${todosSeparados.length}` : separados.length})
               <span className="text-xs font-normal text-gray-500">— estão em “Não será escalado”</span>
             </p>
             <ul className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+              {separados.length === 0 && <li className="text-xs text-gray-500">Ninguém com esse filtro.</li>}
               {separados.map((p) => (
                 <li key={p.escala_id} className="flex items-center gap-3 bg-amber-500/5 border border-amber-500/20 rounded-md px-3 py-2">
                   <div className="flex-1 min-w-0">

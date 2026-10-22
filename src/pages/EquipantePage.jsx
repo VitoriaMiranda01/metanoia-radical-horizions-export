@@ -35,7 +35,8 @@ import { problemaNomePessoa } from '@/utils/nomePessoa';
 import { conferirInscricao } from '@/utils/validacoesInscricao';
 import { validateCPF } from '@/utils/validation';
 import { calcularIdade } from '@/utils/formatters';
-import { getEquipanteWorkflow } from '@/services/equipantesService';
+import { getEquipanteWorkflow, getConfirmacaoPortaria } from '@/services/equipantesService';
+import ConfirmacaoPortaria from '@/components/equipante/ConfirmacaoPortaria';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
 import { igrejaEhOutra } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
@@ -224,9 +225,10 @@ const EquipantePage = () => {
 
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  // Primeiro nome para a tela "Inscrição Confirmada!" (quem concluiu nao
-  // recebe a ficha, so isto).
-  const [primeiroNome, setPrimeiroNome] = useState('');
+  // Nome completo para a tela "Inscrição Confirmada!" (portaria). Quem concluiu
+  // nao recebe a ficha, so isto -- e o servidor so manda com a inscricao
+  // concluida (taxa paga + presenca confirmada).
+  const [nomeDaPortaria, setNomeDaPortaria] = useState('');
 
   // Quem já se identificou nesta sessão não recomeça do CPF.
   //
@@ -252,6 +254,22 @@ const EquipantePage = () => {
   // Guarda quem é a pessoa para a volta. Só o necessário para retomar, e por
   // 6 horas (ver utils/sessaoInscricao).
   const guardarSessao = (dados) => salvarSessao({ tipo: 'equipante', ...dados });
+
+  // Botao "Ver confirmação" do acompanhamento: o servidor confere o dono e se a
+  // inscricao esta concluida antes de entregar o nome.
+  const abrirConfirmacao = async () => {
+    try {
+      const nome = await getConfirmacaoPortaria(inscricaoData?.id, {
+        cpf: inscricaoData?.cpf || formData.cpf,
+        nome: inscricaoData?.nome || formData.nome,
+        nascimento: nascimentoConfirmado || null
+      });
+      setNomeDaPortaria(nome || '');
+      setCurrentStep('confirmacao');
+    } catch (e) {
+      toast({ title: 'Confirmação indisponível', description: e.message, variant: 'destructive' });
+    }
+  };
 
   const sairDaInscricao = () => {
     limparSessao();
@@ -306,7 +324,7 @@ const EquipantePage = () => {
     }
 
     if (isFound && hasPaid) {
-      setPrimeiroNome(result.primeiroNome || '');
+      setNomeDaPortaria(result.nomeCompleto || '');
       setCurrentStep('sucesso');
     } else if (isFound && loadedData) {
       setInscricaoData(loadedData);
@@ -856,25 +874,19 @@ const EquipantePage = () => {
               nascimento: nascimentoConfirmado || null
             }}
             onProceedToPayment={proceedToPayment}
+            onVerConfirmacao={abrirConfirmacao}
             onSair={sairDaInscricao}
             onDonoAtualizado={aoAtualizarDono}
           />
         )}
 
         {currentStep === 'sucesso' && (
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-green-600/20 border border-green-500/50 p-8 rounded-lg text-center space-y-4">
-            <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle className="w-10 h-10 text-green-500" />
-            </div>
-            <h2 className="text-3xl font-bold text-white">Inscrição Confirmada!</h2>
-            <div className="text-green-100 text-lg space-y-3 max-w-xl mx-auto">
-              <p>Parabéns, {primeiroNome || inscricaoData?.nome?.split(' ')[0] || 'Equipante'}! Sua inscrição está confirmada.</p>
-              <p>Se sua área tem grupo no WhatsApp, fique atento às mensagens e informações passadas.</p>
-              <p>Sua primeira tarefa já começa hoje: <strong className="text-white">ORAI SEM CESSAR!</strong></p>
-              <p>Nos vemos no dia da nossa edição.</p>
-            </div>
-            <Button variant="outline" className="mt-4" onClick={() => navigate('/')}>Voltar para o Início</Button>
-          </motion.div>
+          <ConfirmacaoPortaria nome={nomeDaPortaria} onVoltar={sairDaInscricao} />
+        )}
+
+        {/* Vinda do acompanhamento: volta para ele. */}
+        {currentStep === 'confirmacao' && (
+          <ConfirmacaoPortaria nome={nomeDaPortaria} onVoltar={() => setCurrentStep('workflow')} />
         )}
 
         <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>

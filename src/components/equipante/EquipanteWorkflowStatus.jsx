@@ -2,7 +2,7 @@ import { listaDeResponsaveis } from '@/utils/formatters';
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEquipanteWorkflow } from '@/hooks/useEquipanteWorkflow';
-import { CheckCircle2, Clock, AlertCircle, XCircle, ArrowRight, Hand, Undo2, Sparkles, ChevronUp, Eye, CalendarClock } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, XCircle, ArrowRight, Hand, Undo2, Sparkles, ChevronUp, Eye, CalendarClock, BadgeCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import ParentalAuthUpload from './ParentalAuthUpload';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ import { presencaPropriaLider } from '@/services/liderService';
 // "dos Invisíveis" / "da Selva"
 export const textoLideranca = (area) => (area === 'Invisível' ? 'dos Invisíveis' : `da ${area}`);
 
-const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, onSair, onDonoAtualizado }) => {
+const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, onVerConfirmacao, onSair, onDonoAtualizado }) => {
   const {
     isMinor,
     workflowStages,
@@ -260,6 +260,11 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
               <CheckCircle2 className="w-5 h-5 mr-2 shrink-0" />
               Inscrição concluída. Nos vemos no Radical!
             </p>
+            {ehOProprio && onVerConfirmacao && (
+              <Button onClick={onVerConfirmacao} className="mt-4 w-full bg-green-700 hover:bg-green-600 text-white">
+                <BadgeCheck className="w-4 h-4 mr-2" /> Ver confirmação da inscrição
+              </Button>
+            )}
           </div>
         )}
 

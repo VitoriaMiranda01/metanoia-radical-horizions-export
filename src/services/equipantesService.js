@@ -219,6 +219,23 @@ export const getEquipanteWorkflow = async (equipante_id, dono = {}) => {
 };
 
 /**
+ * Nome completo para a tela "Inscricao confirmada" (portaria). O servidor so
+ * devolve com a prova de dono E a inscricao concluida (taxa de alimentacao paga
+ * + presenca confirmada); caso contrario recusa e a tela nao abre.
+ */
+export const getConfirmacaoPortaria = async (equipante_id, dono = {}) => {
+  const { data, error } = await supabase.rpc('confirmacao_portaria_equipante', {
+    p_id: equipante_id,
+    p_cpf: dono.cpf ?? null,
+    p_nome: dono.nome ?? null,
+    p_nascimento: dono.nascimento ?? null,
+  });
+  if (error) throw new Error('Não foi possível abrir a confirmação agora. Tente de novo em instantes.');
+  if (!data?.ok) throw new Error(data?.erro || 'A confirmação ainda não está disponível.');
+  return data.nome;
+};
+
+/**
  * A propria pessoa completa o que esta pendente na ficha (igreja que faltou,
  * WhatsApp fora do padrao), no acompanhamento. Quem decide o que pode ser
  * mudado e o servidor (corrigir_minha_inscricao): so o que esta pendente, e

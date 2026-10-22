@@ -110,21 +110,6 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
 
     stages.push({ id: 'inscricao', label: 'Inscrição enviada', status: 'ok' });
 
-    if (workflowData.menor_de_idade) {
-      // Concluida por qualquer um dos dois caminhos: arquivo anexado ou
-      // carta entregue em maos. O rotulo conta em que pe esta a conferencia
-      // da igreja -- que acontece DEPOIS e nao trava o pagamento.
-      stages.push({
-        id: 'parental_auth',
-        label: workflowData.autorizacao_conferida
-          ? 'Autorização dos pais (conferida pela igreja)'
-          : workflowData.autorizacao_entregue_maos
-            ? 'Autorização dos pais (entregue em mãos)'
-            : 'Autorização dos pais',
-        status: workflowData.autorizacao_pais_enviada ? 'ok' : 'em_processo',
-      });
-    }
-
     stages.push({
       id: 'pastoral_auth',
       label: 'Aprovação da sua igreja',
@@ -134,6 +119,21 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
           ? 'rejeitado'
           : 'pendente',
     });
+
+    if (workflowData.menor_de_idade) {
+      // Concluida por qualquer um dos dois caminhos: arquivo anexado ou
+      // carta entregue em maos. O rotulo conta em que pe esta a conferencia
+      // da igreja -- que acontece DEPOIS e nao trava o pagamento.
+      stages.push({
+        id: 'parental_auth',
+        label: workflowData.autorizacao_conferida
+          ? `Autorização dos pais conferida${workflowData.autorizacao_conferida_por ? ` por ${workflowData.autorizacao_conferida_por}` : ' pela igreja'}`
+          : workflowData.autorizacao_entregue_maos
+            ? 'Autorização dos pais (entregue em mãos)'
+            : 'Autorização dos pais',
+        status: workflowData.autorizacao_pais_enviada ? 'ok' : 'em_processo',
+      });
+    }
 
     // Escala PROVISORIA (05/10 e 15/10/2026): fica "em processo" ate a
     // presenca ser confirmada na reuniao de escala; confirmada, conclui com

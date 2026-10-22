@@ -390,7 +390,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
         {/* Etapa concluida pela entrega em maos: mostra em que pe esta a
             conferencia da igreja, e deixa desfazer enquanto ninguem conferiu
             (marcou sem querer, ou vai anexar o arquivo em vez disso). */}
-        {isMinor && entregueEmMaos && (
+        {isMinor && entregueEmMaos && !autorizacaoConferida && (
           <div className="mt-8">
             <div className={`p-4 rounded-lg border ${autorizacaoConferida
               ? 'bg-green-500/10 border-green-500/25'

@@ -162,9 +162,16 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
 
     // Escala oficial abaixo da taxa de alimentacao (21/10/2026, Patrick); a area
     // e o grupo dela aparecem logo abaixo da lista (GrupoAcompanhamento).
-    if (workflowData.escalado && workflowData.escala_oficial) {
-      stages.push({ id: 'scale_oficial', label: 'Escala oficial lançada', status: 'ok' });
-    }
+    // A linha aparece sempre (21/10/2026): pendente ate a oficial sair; concluida
+    // para quem esta nela; pendente com aviso para quem ficou fora.
+    const naOficial = workflowData.escalado && workflowData.escala_oficial;
+    stages.push({
+      id: 'scale_oficial',
+      label: workflowData.nao_sera_escalado
+        ? 'Você não foi escalado na escala oficial'
+        : naOficial ? 'Escala oficial lançada' : 'Escala oficial',
+      status: naOficial && !workflowData.nao_sera_escalado ? 'ok' : 'pendente',
+    });
 
     return stages;
   };

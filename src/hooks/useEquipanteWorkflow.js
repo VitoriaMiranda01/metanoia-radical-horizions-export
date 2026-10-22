@@ -141,13 +141,18 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     const provisoriaLabel = workflowData.presenca === 'presente'
       ? 'Escala de trabalho (provisória) — presença confirmada'
       : 'Escala de trabalho (provisória) - Confirme sua presença';
+    // Com a oficial lancada a provisoria vira historico: a presenca ja foi
+    // usada para montar a oficial e nao e mais pedida (22/10/2026).
+    const oficial = workflowData.escala_oficial;
     stages.push({
       id: 'scale',
-      label: workflowData.escalado ? provisoriaLabel : 'Escala de trabalho',
+      label: !workflowData.escalado
+        ? 'Escala de trabalho'
+        : oficial ? 'Escala de trabalho (provisória)' : provisoriaLabel,
       status: workflowData.nao_sera_escalado
         ? 'rejeitado'
         : workflowData.escalado
-          ? (workflowData.presenca === 'presente' ? 'ok' : 'em_processo')
+          ? (oficial || workflowData.presenca === 'presente' ? 'ok' : 'em_processo')
           : 'pendente',
     });
 

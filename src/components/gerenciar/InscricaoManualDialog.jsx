@@ -12,6 +12,8 @@ import { NAO_CONGREGA, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
 import { AREAS_INSCRICAO } from '@/constants/workAreas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { inscricaoManualEquipante } from '@/services/equipantesService';
+import { fetchSituacaoEscala } from '@/services/scalesService';
+import { fetchLimitesAreas } from '@/services/limiteAreasService';
 import { problemaTelefone } from '@/utils/telefone';
 import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
 import { validateCPF } from '@/utils/validation';
@@ -34,6 +36,10 @@ import { formatCPF } from '@/utils/formatters';
  * a ficha existente e so reenvia (confirmar_mesmo_nome) se for outra pessoa --
  * todo inscrito pelo link tem CPF, entao sem isso uma carta de quem ja se
  * inscreveu viraria cadastro duplicado.
+ *
+ * Escala oficial lancada (22/10/2026): a area de trabalho passa a ser
+ * obrigatoria. A pessoa entra alocada nela, com a presenca marcada, e so o
+ * pagamento fica pendente (o servidor recusa sem area).
  */
 
 const SEM_VALOR = '__nenhum__';
@@ -52,6 +58,7 @@ const VAZIO = {
   nome: '', cpf: '', data_nascimento: '', sexo: '', whatsapp: '',
   igreja: '', igreja_outra: '',
   area_trabalho_opcao1: '', area_trabalho_opcao2: '', area_trabalho_opcao3: '',
+  area_oficial: '',
   carta_recebida: false,
 };
 
@@ -68,6 +75,25 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
   const { parceiras, extras, permiteOutra } = useOpcoesDeIgreja();
   const [salvando, setSalvando] = useState(false);
   const [mesmoNome, setMesmoNome] = useState(null);
+  // Oficial lancada: escolhe a area da escala (lista das areas cadastradas).
+  const [oficial, setOficial] = useState(false);
+  const [areasEscala, setAreasEscala] = useState([]);
+
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      const situacao = await fetchSituacaoEscala();
+      if (!vivo || !situacao?.oficial_em) return;
+      setOficial(true);
+      const limites = await fetchLimitesAreas();
+      if (vivo) {
+        setAreasEscala(Object.keys(limites || {})
+          .filter((a) => a !== 'Não será escalado')
+          .sort((a, b) => a.localeCompare(b, 'pt-BR')));
+      }
+    })();
+    return () => { vivo = false; };
+  }, []);
 
   useEffect(() => {
     const aoTeclar = (e) => { if (e.key === 'Escape' && !salvando) onClose(); };
@@ -103,6 +129,10 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
         return;
       }
     }
+    if (oficial && !form.area_oficial) {
+      toast({ title: 'Escolha a área', description: 'A escala oficial já foi lançada: a pessoa entra direto numa área.', variant: 'destructive' });
+      return;
+    }
     const cpf = form.cpf.replace(/\D/g, '');
     if (cpf && !validateCPF(cpf)) {
       toast({ title: 'Confira o CPF', description: 'CPF inválido: confira os números. Ou deixe em branco.', variant: 'destructive' });
@@ -129,7 +159,9 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
     }
     toast({
       title: 'Inscrição feita',
-      description: `${form.nome.trim()} já está aprovado(a), entra na escala e o pagamento ficou em Pagamentos.`,
+      description: oficial
+        ? `${form.nome.trim()} já está em ${form.area_oficial}, com presença confirmada. Falta só o pagamento (em Pagamentos). Se a área usa cor ou atuação, ajuste na Escala.`
+        : `${form.nome.trim()} já está aprovado(a), entra na escala e o pagamento ficou em Pagamentos.`,
       className: 'bg-green-600 text-white',
     });
     onCriado?.(r.id);
@@ -251,6 +283,24 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
               />
             )}
           </Campo>
+
+          {oficial && (
+            <Campo label="Área na escala oficial *" className="md:col-span-2">
+              <Select value={form.area_oficial || SEM_VALOR} onValueChange={(v) => set('area_oficial')(v === SEM_VALOR ? '' : v)}>
+                <SelectTrigger className="bg-white/10 border-emerald-500/50 text-white">
+                  <SelectValue placeholder="Escolha a área" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SEM_VALOR}>Escolha a área</SelectItem>
+                  {areasEscala.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-emerald-200/80">
+                A escala oficial já foi lançada: a pessoa entra direto nesta área, com a presença
+                confirmada. Fica pendente só o pagamento.
+              </p>
+            </Campo>
+          )}
 
           {selectArea('area_trabalho_opcao1', 'Área de preferência 1')}
           {selectArea('area_trabalho_opcao2', 'Área de preferência 2')}

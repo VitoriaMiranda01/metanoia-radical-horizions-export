@@ -136,7 +136,11 @@ const InscricaoPixPage = () => {
   const consultarPresenca = async () => {
     try {
       const situacao = await getEquipanteWorkflow(inscricaoId, donoEquipante());
-      return { presente: situacao?.presenca === 'presente', reuniaoPassou: !!situacao?.reuniao_leitura_passou };
+      // Depois da oficial a presenca nao conta: estar nela basta (22/10/2026).
+      const presente = situacao?.escala_oficial
+        ? !!situacao?.escalado && !situacao?.nao_sera_escalado
+        : situacao?.presenca === 'presente';
+      return { presente, reuniaoPassou: !!situacao?.reuniao_leitura_passou };
     } catch {
       return { presente: null, reuniaoPassou: false };
     }

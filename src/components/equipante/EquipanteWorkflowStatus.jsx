@@ -50,7 +50,10 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     refresh,
     refreshSilencioso
   } = useEquipanteWorkflow(equipanteId, age, dono);
-  const concluida = pago && presenca === 'presente';
+  // Mesma regra do servidor (_inscricao_concluida, 22/10/2026): antes da
+  // oficial, pago + presenca; depois dela, pago + estar na oficial (a oficial
+  // ja e montada pela presenca da reuniao de leitura).
+  const concluida = pago && (escalaOficial ? (escalado && !naoSeraEscalado) : presenca === 'presente');
 
   // So o proprio equipante (que provou ser dono) ve a janela de correcao
   // sozinha; o organizador abrindo a ficha pela tela dele, nao.
@@ -231,14 +234,8 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
       if (com) return `Na reunião de leitura de escala, procure a liderança ${textoLideranca(com)} para confirmar a sua presença. Quando marcarem, esta etapa fica concluída.`;
       return 'Confirme sua presença com o líder da sua área na reunião de escala. Quando ele marcar, esta etapa fica concluída.';
     }
-    // Oficial lancada sem presenca confirmada: a chamada ja fechou, so a
-    // organizacao marca agora.
-    if (presenca === 'ausente') return 'Você ficou como ausente na chamada da reunião de escala. Procure o líder da sua área ou a organização.';
-    if (presenca !== 'presente') {
-      return ehLider
-        ? 'Sua presença na reunião de escala não foi confirmada. Peça à organização para marcar.'
-        : TEXTO_PRESENCA_APOS_REUNIAO;
-    }
+    // Oficial lancada: presenca nao conta mais (22/10/2026); quem esta nela so
+    // tem o pagamento pela frente, e o botao ja mostra isso.
     return null;
   };
   const falta = oQueFalta();

@@ -143,8 +143,11 @@ export const montarEscalaOficial = (linhas, atuacoesPorArea = {}) => {
       else texto = d.padrao ? cor : `${texto} / ${cor}`;
     }
 
-    // Área dividida por cor e pessoa sem cor (o líder da área não conta).
-    if (!cor && !d.semCor && !d.lider && AREAS_COM_COR.some((a) => area.startsWith(a))) {
+    // Área dividida por cor e pessoa sem cor (o líder da área não conta): vai
+    // para o fim da área. A atuação vem sempre primeiro: só quem está na
+    // atuação padrão mostra "SEM COR"; atuação especial sem cor mostra só a atuação.
+    const semCorNoFim = !cor && !d.semCor && !d.lider && AREAS_COM_COR.some((a) => area.startsWith(a));
+    if (semCorNoFim && d.padrao) {
       texto = area === 'recepcao sitio' ? `${texto} / SEM COR` : 'SEM COR';
     }
 
@@ -163,6 +166,7 @@ export const montarEscalaOficial = (linhas, atuacoesPorArea = {}) => {
     const sequencia = ORDEM_COR[Object.keys(ORDEM_COR).find((k) => area.startsWith(k))] || ORDEM_COR_PADRAO;
     let grupo;
     if (cor) grupo = 100 + Math.max(sequencia.indexOf(cor), 0);
+    else if (semCorNoFim) grupo = 900;
     else if (d.lider) grupo = 0;
     else if (!d.padrao) grupo = 1;
     else grupo = 50;

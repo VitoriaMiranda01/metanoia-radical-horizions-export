@@ -138,11 +138,11 @@ export const TrocarCor = ({ pessoa, avisoPara, onMover }) => {
             ? <span className="inline-flex items-center gap-1 text-[10px] text-gray-400"><Loader2 className="w-3 h-3 animate-spin" />movendo</span>
             : <GrupoTrilhaTag grupo={pessoa.grupo_trailha} className="text-[10px] px-2" />}
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-neutral-900 border-white/15 text-white">
           {GROUPS.map((g) => {
             const n = g !== pessoa.grupo_trailha && avisoPara ? avisoPara(pessoa.id, g).length : 0;
             return (
-              <SelectItem key={g} value={g}>
+              <SelectItem key={g} value={g} className="text-white focus:bg-white/10 focus:text-white data-[state=checked]:bg-white/5">
                 <span className="inline-flex items-center gap-1.5">
                   <GrupoTrilhaTag grupo={g} className="text-[10px] px-2" />
                   {n > 0 && <AlertTriangle className="w-3 h-3 text-amber-400" aria-label="tem vínculo neste grupo" />}

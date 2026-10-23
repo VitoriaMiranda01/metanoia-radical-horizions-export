@@ -96,17 +96,22 @@ const GerenciarInscricoesPage = () => {
   // do grupo. Depois da escala oficial entram nos grupos de trilha e nos
   // onibus como se fossem acampantes (sigilo), mas continuam equipantes --
   // nao entram na tabela, nos quadros nem nas contagens de acampantes.
-  const [infiltrados, setInfiltrados] = useState({ oficial: false, lista: [], semCor: 0 });
+  const [infiltrados, setInfiltrados] = useState({ oficial: false, lista: [], paraVinculos: [], semCor: 0 });
   const carregarInfiltrados = async () => {
     const r = await fetchInfiltradosNosGrupos();
-    if (r.success) setInfiltrados({ oficial: r.oficial, lista: r.infiltrados, semCor: r.semCor });
+    if (r.success) setInfiltrados({ oficial: r.oficial, lista: r.infiltrados, paraVinculos: r.paraVinculos, semCor: r.semCor });
   };
   // Quem esta nos grupos de trilha: acampantes + infiltrados.
   const participantes = useMemo(() => [...acampantesList, ...infiltrados.lista], [acampantesList, infiltrados.lista]);
   // Vinculos entre acampantes nos grupos de trilha (12/10/2026): quem nao
   // deveria ficar no mesmo grupo. Esta tela e so de organizador. Vale
-  // tambem com infiltrado.
-  const vinc = useVinculosAcampantes(participantes);
+  // tambem com infiltrado -- desde a escala provisoria (23/10/2026), antes
+  // de eles entrarem nos grupos.
+  const participantesDosVinculos = useMemo(
+    () => [...acampantesList, ...infiltrados.paraVinculos],
+    [acampantesList, infiltrados.paraVinculos]
+  );
+  const vinc = useVinculosAcampantes(participantesDosVinculos);
   const [vinculosAberto, setVinculosAberto] = useState(false);
   // Listas dos onibus (12/10/2026).
   const [onibusAberto, setOnibusAberto] = useState(false);

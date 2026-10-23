@@ -11,13 +11,12 @@ import { comReenvio } from '@/services/serviceHelpers';
  */
 export const fetchInfiltradosNosGrupos = async () => {
   const { data, error } = await comReenvio(() => supabase.rpc('infiltrados_nos_grupos'), { rotulo: 'infiltrados' });
-  if (error) return { success: false, error: error.message, oficial: false, infiltrados: [], semCor: 0 };
+  if (error) return { success: false, error: error.message, oficial: false, infiltrados: [], paraVinculos: [], semCor: 0 };
   const lista = Array.isArray(data?.infiltrados) ? data.infiltrados : [];
-  return {
-    success: true,
-    oficial: !!data?.oficial,
-    semCor: Number(data?.sem_cor) || 0,
-    infiltrados: lista.map((i) => ({
+  // Para os vinculos (23/10/2026, migration 20261023a): todos os escalados em
+  // Infiltrados desde a escala PROVISORIA, com ou sem cor.
+  const paraVinculos = Array.isArray(data?.para_vinculos) ? data.para_vinculos : lista;
+  const comoParticipante = (i) => ({
       id: i.id,
       escala_id: i.escala_id,
       nome: i.nome,
@@ -28,6 +27,12 @@ export const fetchInfiltradosNosGrupos = async () => {
       igreja: i.igreja,
       grupo_trailha: i.cor,
       infiltrado: true,
-    })),
+  });
+  return {
+    success: true,
+    oficial: !!data?.oficial,
+    semCor: Number(data?.sem_cor) || 0,
+    infiltrados: lista.map(comoParticipante),
+    paraVinculos: paraVinculos.map(comoParticipante),
   };
 };

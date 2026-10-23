@@ -119,8 +119,8 @@ Só visual (sem banco/migration). `components/organizer/Recolhivel.jsx` envolve 
 - Ficou como estava: lista "líder: ..." de uma equipe ainda inclui líder sem cor (no oficial não há nenhum líder sem cor em área por cor); painel de responsáveis do organizador ainda repete sem cor em cada cor; equipe de líder SEM cor em área por cor (nenhum hoje) mostra a área inteira. Chamada do organizador (`ChamadaAreaDialog`) já tinha filtro "Sem cor", sem duplicar.
 - Testado: lógica com cenário da Laiza (node) + build. NÃO testado logado como líder.
 
-## 23/10/2026 - Exportar: Equipe de Trilha
-- Só front-end (sem migration). Build ok, NÃO commitado/deployado, não testado no navegador.
-- Por área: atalho "Equipe de Trilha" marca Guia, Inimigo, Espírito Santo, Marcador, Invisível e Pastor Invisível (ExportarRelacaoMenu.jsx).
-- Novo item 5 do menu "Equipe de trilha (grupos)" (PDF/Excel), src/utils/equipeTrilha.js: planilha "Equipe de trilha 37" com os escalados, bloco por cor, faixas GUIAS/INIMIGO/ESPIRITO SANTO/INVISÍVEIS/MARCADOR/PASTOR INVISÍVEL, nome+igreja; sem cor vai em "SEM COR" no fim. Título fixo "37ª EDIÇÃO".
-- (23/10, ajuste) Equipe de trilha agora idêntica à planilha: só nomes na coluna A (sem igreja), colunas A-D com as larguras dela, faixas mescladas, 2 linhas vazias entre grupos. Sem cor vai ao fim da própria faixa no último grupo (Azul). Build ok; não testado/commitado.
+## 23/10/2026 - Exportar: Equipe de Trilha (refeito no Opus; só tela, sem migration)
+- Menu Exportar voltou a ter 4 itens (o item 5 saiu). Em "4. Por área", a janela de escolha tem a subcategoria "Equipe de Trilha" (Guia, Inimigo, Espírito Santo, Invisível, Marcador, Pastor Invisível) com "selecionar toda a equipe" (fica parcial se só algumas estão marcadas).
+- Áreas da trilha marcadas saem num arquivo próprio `Equipe_de_Trilha_<data>` no modelo EXATO da planilha "Equipe de trilha 37" (src/utils/equipeTrilha.js); as demais áreas marcadas saem na relação por área de sempre (2 downloads se misturar).
+- Modelo (tirado da planilha; a coluna A dela é ESCONDIDA): NOME | IGREJA | coluna estreita, Arial 10; título verde 70AD47; por cor (Roxo, Vermelho, Amarelo, Verde, Azul) faixa GRUPO + linha branca + faixas fixas (aparecem mesmo vazias; Pastor Invisível com no mínimo 4 linhas). Líder da Guia e da Invisível vêm primeiro com a linha pintada (Calibri 11 negrito). Sem cor: fim da própria faixa no grupo Azul. Fonte padrão Arial 10 e papel padrão (Carta), como a original — conferido pelo PDF do próprio Excel: colunas nas mesmas posições (91/340/606/657 pt). PDF do site usa essas medidas.
+- Título fixo "37ª EDIÇÃO". Testado: geração em node + janela no navegador (dev, componente montado com dados fictícios; Excel gerou os 2 arquivos, PDF ok). NÃO testado logado.

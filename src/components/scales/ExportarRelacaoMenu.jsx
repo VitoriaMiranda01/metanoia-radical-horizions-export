@@ -10,7 +10,7 @@ import {
   MODOS_RELACAO, montarLinhasRelacao, agruparRelacao, exportarRelacaoPdf, exportarRelacaoExcel
 } from '@/utils/relacaoNominal';
 import { montarEscalaOficial } from '@/utils/escalaOficial';
-import { montarEquipeTrilha, AREAS_TRILHA } from '@/utils/equipeTrilha';
+import { montarEquipeTrilha, ehAreaDaTrilha } from '@/utils/equipeTrilha';
 import { cn } from '@/lib/utils';
 
 /**
@@ -32,16 +32,28 @@ const ExportarRelacaoMenu = ({ allocations, atuacoesPorArea, onPlanilhaDetalhada
   const gruposDe = (modo) => {
     const linhas = montarLinhasRelacao(allocations);
     if (linhas.length === 0) throw new Error('Ninguém escalado para exportar.');
-    if (modo === 'trilha') return montarEquipeTrilha(linhas);
     return modo === 'oficial' ? montarEscalaOficial(linhas, atuacoesPorArea) : agruparRelacao(linhas, modo);
   };
 
+  // Por área: as áreas da Equipe de Trilha marcadas saem num arquivo próprio,
+  // no modelo da planilha "Equipe de trilha" (equipeTrilha.js); as demais, na
+  // relação por área de sempre.
   const gerar = async (modo, formato, grupos) => {
     setGerando(`${modo}-${formato}`);
     try {
-      const total = formato === 'pdf'
-        ? await exportarRelacaoPdf(grupos, modo)
-        : await exportarRelacaoExcel(grupos, modo);
+      const daTrilha = modo === 'area' ? grupos.filter((g) => ehAreaDaTrilha(g.titulo)) : [];
+      const outros = grupos.filter((g) => !daTrilha.includes(g));
+      let total = 0;
+      if (daTrilha.length) {
+        const t = await import('@/utils/equipeTrilha');
+        const itens = montarEquipeTrilha(daTrilha.flatMap((g) => g.linhas), atuacoesPorArea);
+        total += formato === 'pdf' ? await t.exportarTrilhaPdf(itens) : await t.exportarTrilhaExcel(itens);
+      }
+      if (outros.length) {
+        total += formato === 'pdf'
+          ? await exportarRelacaoPdf(outros, modo)
+          : await exportarRelacaoExcel(outros, modo);
+      }
       toast({
         title: `${MODOS_RELACAO[modo].rotulo} em ${formato === 'pdf' ? 'PDF' : 'Excel'} gerado`,
         description: `${total} ${total === 1 ? 'linha' : 'linhas'}.`,
@@ -57,7 +69,7 @@ const ExportarRelacaoMenu = ({ allocations, atuacoesPorArea, onPlanilhaDetalhada
   const escolher = (modo, formato) => {
     try {
       const grupos = gruposDe(modo);
-      if (modo === 'geral' || modo === 'oficial' || modo === 'trilha') gerar(modo, formato, grupos);
+      if (modo === 'geral' || modo === 'oficial') gerar(modo, formato, grupos);
       else setEscolhendo({ modo, formato, grupos });
     } catch (e) {
       toast({ title: 'Não foi possível exportar', description: e.message, variant: 'destructive' });
@@ -118,6 +130,16 @@ const ExportarRelacaoMenu = ({ allocations, atuacoesPorArea, onPlanilhaDetalhada
   );
 };
 
+const ItemGrupo = ({ g, marcado, onAlternar }) => (
+  <label
+    className={cn('flex items-center gap-2 rounded-md border px-3 py-2 cursor-pointer text-sm',
+      marcado ? 'border-green-500/50 bg-green-500/10 text-white' : 'border-white/10 bg-white/5 text-gray-200 hover:bg-white/10')}>
+    <input type="checkbox" className="h-4 w-4 accent-green-500" checked={marcado} onChange={onAlternar} />
+    <span className="flex-1 min-w-0 truncate">{g.titulo}</span>
+    <span className="text-xs text-gray-400 shrink-0">{g.linhas.length}</span>
+  </label>
+);
+
 // Quais igrejas (ou areas) entram na relacao.
 const EscolherGrupos = ({ modo, formato, grupos, onClose, onGerar }) => {
   const [marcados, setMarcados] = useState(() => new Set());
@@ -126,12 +148,16 @@ const EscolherGrupos = ({ modo, formato, grupos, onClose, onGerar }) => {
   const mostrados = useMemo(() => grupos.filter((g) => !termo || semAcento(g.titulo).includes(termo)), [grupos, termo]);
   const todos = marcados.size === grupos.length;
   const pessoas = grupos.filter((g) => marcados.has(g.titulo)).reduce((n, g) => n + g.linhas.length, 0);
-  // Atalho "Equipe de Trilha": Guia, Inimigo, Espírito Santo, Marcador, Invisível e Pastor Invisível.
+  // Subcategoria "Equipe de Trilha" (só no Por área): Guia, Inimigo, Espírito
+  // Santo, Invisível, Marcador e Pastor Invisível, com um "marcar toda a equipe".
   const trilha = useMemo(
-    () => (modo === 'area' ? grupos.filter((g) => AREAS_TRILHA.includes(semAcento(g.titulo).trim())).map((g) => g.titulo) : []),
+    () => (modo === 'area' ? grupos.filter((g) => ehAreaDaTrilha(g.titulo)).map((g) => g.titulo) : []),
     [grupos, modo]
   );
-  const trilhaMarcada = trilha.length > 0 && trilha.every((t) => marcados.has(t));
+  const trilhaMostrada = mostrados.filter((g) => trilha.includes(g.titulo));
+  const demaisMostradas = mostrados.filter((g) => !trilha.includes(g.titulo));
+  const trilhaMarcadas = trilha.filter((t) => marcados.has(t)).length;
+  const pessoasTrilha = grupos.filter((g) => trilha.includes(g.titulo)).reduce((n, g) => n + g.linhas.length, 0);
   const alternarTrilha = (marcar) => setMarcados((m) => {
     const n = new Set(m);
     trilha.forEach((t) => (marcar ? n.add(t) : n.delete(t)));
@@ -171,23 +197,28 @@ const EscolherGrupos = ({ modo, formato, grupos, onClose, onGerar }) => {
               onChange={(e) => setMarcados(e.target.checked ? new Set(grupos.map((g) => g.titulo)) : new Set())} />
             {nome.todas} ({grupos.length})
           </label>
-          {trilha.length > 0 && (
-            <label className="flex items-center gap-2 text-sm text-white cursor-pointer px-1">
-              <input type="checkbox" className="h-4 w-4 accent-green-500" checked={trilhaMarcada}
-                onChange={(e) => alternarTrilha(e.target.checked)} />
-              Equipe de Trilha ({trilha.length} áreas: Guia, Inimigo, Espírito Santo, Marcador, Invisível, Pastor Invisível)
-            </label>
-          )}
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {mostrados.map((g) => (
-            <label key={g.titulo}
-              className={cn('flex items-center gap-2 rounded-md border px-3 py-2 cursor-pointer text-sm',
-                marcados.has(g.titulo) ? 'border-green-500/50 bg-green-500/10 text-white' : 'border-white/10 bg-white/5 text-gray-200 hover:bg-white/10')}>
-              <input type="checkbox" className="h-4 w-4 accent-green-500" checked={marcados.has(g.titulo)} onChange={() => alternar(g.titulo)} />
-              <span className="flex-1 min-w-0 truncate">{g.titulo}</span>
-              <span className="text-xs text-gray-400 shrink-0">{g.linhas.length}</span>
-            </label>
+          {trilhaMostrada.length > 0 && (
+            <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-1.5 space-y-1 mb-2">
+              <label className="flex items-center gap-2 px-1.5 py-1 cursor-pointer text-sm font-semibold text-white">
+                <input type="checkbox" className="h-4 w-4 accent-green-500"
+                  checked={trilhaMarcadas === trilha.length}
+                  ref={(el) => { if (el) el.indeterminate = trilhaMarcadas > 0 && trilhaMarcadas < trilha.length; }}
+                  onChange={(e) => alternarTrilha(e.target.checked)} />
+                <span className="flex-1">Equipe de Trilha <span className="font-normal text-gray-400">· selecionar toda a equipe</span></span>
+                <span className="text-xs text-gray-400 shrink-0">{pessoasTrilha}</span>
+              </label>
+              <p className="px-1.5 text-xs text-gray-400">Sai no modelo da planilha "Equipe de trilha" (grupos por cor).</p>
+              <div className="pl-4 space-y-1">
+                {trilhaMostrada.map((g) => (
+                  <ItemGrupo key={g.titulo} g={g} marcado={marcados.has(g.titulo)} onAlternar={() => alternar(g.titulo)} />
+                ))}
+              </div>
+            </div>
+          )}
+          {demaisMostradas.map((g) => (
+            <ItemGrupo key={g.titulo} g={g} marcado={marcados.has(g.titulo)} onAlternar={() => alternar(g.titulo)} />
           ))}
           {mostrados.length === 0 && <p className="text-sm text-gray-500 text-center py-6">Nada encontrado.</p>}
         </div>

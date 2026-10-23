@@ -10,6 +10,7 @@ import {
   MODOS_RELACAO, montarLinhasRelacao, agruparRelacao, exportarRelacaoPdf, exportarRelacaoExcel
 } from '@/utils/relacaoNominal';
 import { montarEscalaOficial } from '@/utils/escalaOficial';
+import { montarEquipeTrilha, AREAS_TRILHA } from '@/utils/equipeTrilha';
 import { cn } from '@/lib/utils';
 
 /**
@@ -31,6 +32,7 @@ const ExportarRelacaoMenu = ({ allocations, atuacoesPorArea, onPlanilhaDetalhada
   const gruposDe = (modo) => {
     const linhas = montarLinhasRelacao(allocations);
     if (linhas.length === 0) throw new Error('Ninguém escalado para exportar.');
+    if (modo === 'trilha') return montarEquipeTrilha(linhas);
     return modo === 'oficial' ? montarEscalaOficial(linhas, atuacoesPorArea) : agruparRelacao(linhas, modo);
   };
 
@@ -55,7 +57,7 @@ const ExportarRelacaoMenu = ({ allocations, atuacoesPorArea, onPlanilhaDetalhada
   const escolher = (modo, formato) => {
     try {
       const grupos = gruposDe(modo);
-      if (modo === 'geral' || modo === 'oficial') gerar(modo, formato, grupos);
+      if (modo === 'geral' || modo === 'oficial' || modo === 'trilha') gerar(modo, formato, grupos);
       else setEscolhendo({ modo, formato, grupos });
     } catch (e) {
       toast({ title: 'Não foi possível exportar', description: e.message, variant: 'destructive' });
@@ -124,6 +126,17 @@ const EscolherGrupos = ({ modo, formato, grupos, onClose, onGerar }) => {
   const mostrados = useMemo(() => grupos.filter((g) => !termo || semAcento(g.titulo).includes(termo)), [grupos, termo]);
   const todos = marcados.size === grupos.length;
   const pessoas = grupos.filter((g) => marcados.has(g.titulo)).reduce((n, g) => n + g.linhas.length, 0);
+  // Atalho "Equipe de Trilha": Guia, Inimigo, Espírito Santo, Marcador, Invisível e Pastor Invisível.
+  const trilha = useMemo(
+    () => (modo === 'area' ? grupos.filter((g) => AREAS_TRILHA.includes(semAcento(g.titulo).trim())).map((g) => g.titulo) : []),
+    [grupos, modo]
+  );
+  const trilhaMarcada = trilha.length > 0 && trilha.every((t) => marcados.has(t));
+  const alternarTrilha = (marcar) => setMarcados((m) => {
+    const n = new Set(m);
+    trilha.forEach((t) => (marcar ? n.add(t) : n.delete(t)));
+    return n;
+  });
   const nome = modo === 'igreja' ? { um: 'igreja', varios: 'igrejas', todas: 'Selecionar todas' } : { um: 'área', varios: 'áreas', todas: 'Selecionar todas' };
 
   const alternar = (titulo) => setMarcados((m) => {
@@ -158,6 +171,13 @@ const EscolherGrupos = ({ modo, formato, grupos, onClose, onGerar }) => {
               onChange={(e) => setMarcados(e.target.checked ? new Set(grupos.map((g) => g.titulo)) : new Set())} />
             {nome.todas} ({grupos.length})
           </label>
+          {trilha.length > 0 && (
+            <label className="flex items-center gap-2 text-sm text-white cursor-pointer px-1">
+              <input type="checkbox" className="h-4 w-4 accent-green-500" checked={trilhaMarcada}
+                onChange={(e) => alternarTrilha(e.target.checked)} />
+              Equipe de Trilha ({trilha.length} áreas: Guia, Inimigo, Espírito Santo, Marcador, Invisível, Pastor Invisível)
+            </label>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {mostrados.map((g) => (

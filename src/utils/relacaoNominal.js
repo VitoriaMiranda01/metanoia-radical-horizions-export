@@ -29,7 +29,9 @@ export const MODOS_RELACAO = {
   oficial: { rotulo: 'Escala oficial', titulo: 'ESCALA OFICIAL', arquivo: 'Oficial' },
   geral: { rotulo: 'Escala nominal', titulo: 'RELAÇÃO NOMINAL', arquivo: 'Nominal' },
   igreja: { rotulo: 'Por igreja', titulo: 'RELAÇÃO NOMINAL POR IGREJA', arquivo: 'Por_igreja' },
-  area: { rotulo: 'Por área', titulo: 'RELAÇÃO NOMINAL POR ÁREA', arquivo: 'Por_area' }
+  area: { rotulo: 'Por área', titulo: 'RELAÇÃO NOMINAL POR ÁREA', arquivo: 'Por_area' },
+  // 23/10/2026: planilha "Equipe de trilha" (ver equipeTrilha.js)
+  trilha: { rotulo: 'Equipe de trilha (grupos)', titulo: 'EQUIPE DE TRILHA', arquivo: 'Trilha' }
 };
 
 const VERDE = '9BBB59';
@@ -129,6 +131,7 @@ export const carregarFonte = async (doc) => {
 
 export const exportarRelacaoPdf = async (grupos, modo) => {
   if (modo === 'oficial') return (await import('./escalaOficial')).exportarOficialPdf(grupos);
+  if (modo === 'trilha') return (await import('./equipeTrilha')).exportarTrilhaPdf(grupos);
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
   const fonte = await carregarFonte(doc);
@@ -210,6 +213,7 @@ export const exportarRelacaoPdf = async (grupos, modo) => {
 
 export const exportarRelacaoExcel = async (grupos, modo) => {
   if (modo === 'oficial') return (await import('./escalaOficial')).exportarOficialExcel(grupos);
+  if (modo === 'trilha') return (await import('./equipeTrilha')).exportarTrilhaExcel(grupos);
   const ExcelJS = (await import('exceljs')).default;
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Metanoia Radical Serra';

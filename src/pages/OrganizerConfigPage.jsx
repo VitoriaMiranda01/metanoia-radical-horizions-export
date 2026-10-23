@@ -23,6 +23,7 @@ import OutrasIgrejasManager from '@/components/organizer/OutrasIgrejasManager';
 import IgrejasCadastradasManager from '@/components/organizer/IgrejasCadastradasManager';
 import PastoresParceirosManager from '@/components/organizer/PastoresParceirosManager';
 import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizadoresManager';
+import Recolhivel, { RecolhivelBotoesGerais } from '@/components/organizer/Recolhivel';
 import BackupStatusCard from '@/components/organizer/BackupStatusCard';
 import AuditoriaCard from '@/components/organizer/AuditoriaCard';
 import AmbienteTesteCard from '@/components/organizer/AmbienteTesteCard';
@@ -467,6 +468,8 @@ const OrganizerConfigPage = () => {
           </Button>
         </motion.div>
 
+        <div className="flex justify-end"><RecolhivelBotoesGerais /></div>
+
         {dbStatus.checked && !dbStatus.success && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start space-x-3">
             <AlertCircle className="w-5 h-5 text-red-500" />
@@ -478,7 +481,7 @@ const OrganizerConfigPage = () => {
         )}
 
         <div className="space-y-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <Recolhivel chave="cfg-geral" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
@@ -595,14 +598,14 @@ const OrganizerConfigPage = () => {
                 </Button>
               </CardFooter>
             </Card>
-          </motion.div>
+          </Recolhivel>
 
           {/* Locais da reuniao de leitura de escala (19/10/2026). */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+          <Recolhivel chave="cfg-locais" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
             <LocaisReuniaoCard />
-          </motion.div>
+          </Recolhivel>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <Recolhivel chave="cfg-valores" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
@@ -630,9 +633,9 @@ const OrganizerConfigPage = () => {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </Recolhivel>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <Recolhivel chave="cfg-limite" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
@@ -650,12 +653,12 @@ const OrganizerConfigPage = () => {
                 />
               </CardContent>
             </Card>
-          </motion.div>
+          </Recolhivel>
 
           {/* Pre-cadastro sem CPF (14/10/2026): as listas das Areas Especiais e
               da Recepção Igreja guardam CPF; ligado, aceitam quem nao tem CPF
               (inscricoes manuais), escolhido pelo nome. */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+          <Recolhivel chave="cfg-areas-especiais" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
@@ -686,7 +689,7 @@ const OrganizerConfigPage = () => {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </Recolhivel>
 
           {/* Guia, Inimigo e Espirito Santo: o cadastro por CPF desses 3
               papeis morava aqui e mudou pra tela de Geracao de Escalas, a
@@ -696,7 +699,7 @@ const OrganizerConfigPage = () => {
 
           {/* Todas as igrejas cadastradas (lista do formulario), com busca,
               barra de rolagem e a planilha. */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.21 }}>
+          <Recolhivel chave="cfg-igrejas" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.21 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
@@ -712,11 +715,11 @@ const OrganizerConfigPage = () => {
                 <IgrejasCadastradasManager />
               </CardContent>
             </Card>
-          </motion.div>
+          </Recolhivel>
 
           {/* Pastores Parceiros (08/10/2026): todos os pastores de cada igreja,
               para a automacao futura. Ver PastoresParceirosManager.jsx. */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.215 }}>
+          <Recolhivel chave="cfg-pastores" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.215 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
@@ -731,12 +734,12 @@ const OrganizerConfigPage = () => {
                 <PastoresParceirosManager />
               </CardContent>
             </Card>
-          </motion.div>
+          </Recolhivel>
 
           {/* A relacao das igrejas "OUTRA": nomes que os equipantes digitaram
               porque a igreja deles nao esta nas 145 da lista. Daqui o
               organizador promove um nome para dentro do formulario. */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+          <Recolhivel chave="cfg-outra" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
@@ -752,9 +755,9 @@ const OrganizerConfigPage = () => {
                 <OutrasIgrejasManager />
               </CardContent>
             </Card>
-          </motion.div>
+          </Recolhivel>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <Recolhivel chave="cfg-cupons" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
@@ -873,9 +876,9 @@ const OrganizerConfigPage = () => {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </Recolhivel>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          <Recolhivel chave="cfg-abertura" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
@@ -906,40 +909,40 @@ const OrganizerConfigPage = () => {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </Recolhivel>
 
           {/* Senhas dos organizadores: troca da propria e, para a conta de
               permissao maxima, geracao de senha para os outros. */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
+          <Recolhivel chave="cfg-senhas" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
             <SenhasOrganizadoresManager />
-          </motion.div>
+          </Recolhivel>
 
           {/* Backups: o quadro some sozinho para quem nao e a conta Desenvolvedores. */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48 }}>
+          <Recolhivel chave="cfg-backups" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48 }}>
             <BackupStatusCard />
-          </motion.div>
+          </Recolhivel>
 
           {/* Auditoria: tambem so a conta Desenvolvedores ve. */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
+          <Recolhivel chave="cfg-auditoria" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
             <AuditoriaCard />
-          </motion.div>
+          </Recolhivel>
 
           {/* Acampantes que desistiram -- 20/10/2026. */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
+          <Recolhivel chave="cfg-desistentes" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
             <DesistentesCard />
-          </motion.div>
+          </Recolhivel>
 
           {/* Excluir cadastro (duplicados) -- 18/10/2026. */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
+          <Recolhivel chave="cfg-excluir" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
             <ExcluirCadastroCard />
-          </motion.div>
+          </Recolhivel>
 
           {/* Atalho para o ambiente de teste (12/10/2026). */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.495 }}>
+          <Recolhivel chave="cfg-teste" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.495 }}>
             <AmbienteTesteCard />
-          </motion.div>
+          </Recolhivel>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+          <Recolhivel chave="cfg-risco" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
             <Card className="glass-effect border-red-500/20 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-red-400">
@@ -961,7 +964,7 @@ const OrganizerConfigPage = () => {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </Recolhivel>
         </div>
       </div>
 

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Check, ChevronDown, ChevronRight, Crown, Download, Loader2, Search, Truck, X } from 'lucide-react';
 import { AREAS_EXTRA } from '@/constants/areasExtra';
-import { fetchDisponibilidadesExtra, decidirDisponibilidadeExtra, definirLiderAreaExtra } from '@/services/scalesService';
+import { fetchDisponibilidadesExtra, decidirDisponibilidadeExtra, definirLiderAreaExtra, removerLiderAreaExtra } from '@/services/scalesService';
 import { supabase } from '@/services/supabaseClient';
 import { exportDisponibilidadesExtra } from '@/utils/excelExport';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
@@ -58,7 +58,7 @@ const AreasExtraDialog = ({ onClose }) => {
     } else {
       setErro('');
       setItens(r.itens);
-      setLideres(r.lideres || {});
+      setLideres(r.lideresPorArea || {});
     }
     setLoading(false);
   }, []);
@@ -113,20 +113,33 @@ const AreasExtraDialog = ({ onClose }) => {
     )));
   };
 
-  const salvarLider = async (area, pessoa) => {
+  // Varios lideres por area (23/10/2026): escolher ADICIONA; o X de cada um tira so ele.
+  const adicionarLider = async (area, pessoa) => {
     setSalvando((s) => ({ ...s, [`lider:${area}`]: true }));
-    const r = await definirLiderAreaExtra(area, pessoa?.equipante_id || null);
+    const r = await definirLiderAreaExtra(area, pessoa.equipante_id);
     setSalvando((s) => { const c = { ...s }; delete c[`lider:${area}`]; return c; });
     if (!r.success) {
       toast({ title: 'Não deu para salvar o líder', description: r.error, variant: 'destructive' });
       return;
     }
     toast({
-      title: pessoa ? `${pessoa.nome} é o líder` : 'Líder retirado',
-      description: pessoa ? 'Entrou aprovado na lista e já vê a relação no acompanhamento da inscrição.' : undefined,
+      title: `${pessoa.nome} agora é líder`,
+      description: 'Entrou aprovado na lista e já vê a relação no acompanhamento da inscrição.',
       className: 'bg-emerald-600 text-white'
     });
     setEscolhendoLider(null);
+    carregar();
+  };
+
+  const tirarLider = async (area, lider) => {
+    setSalvando((s) => ({ ...s, [`lider:${area}`]: true }));
+    const r = await removerLiderAreaExtra(area, lider.equipante_id);
+    setSalvando((s) => { const c = { ...s }; delete c[`lider:${area}`]; return c; });
+    if (!r.success) {
+      toast({ title: 'Não deu para tirar o líder', description: r.error, variant: 'destructive' });
+      return;
+    }
+    toast({ title: `${lider.nome} não é mais líder`, description: 'Continua aprovado na lista.', className: 'bg-emerald-600 text-white' });
     carregar();
   };
 
@@ -322,7 +335,7 @@ const AreasExtraDialog = ({ onClose }) => {
 
             // Buscando, abre sozinha onde tem resultado.
             const aberta = abertas.has(area.chave) || (!!termo && doGrupo.length > 0);
-            const lider = lideres[area.chave];
+            const lideresArea = lideres[area.chave] || [];
 
             return (
               <div key={area.chave} className="rounded-lg border border-white/10">
@@ -334,7 +347,9 @@ const AreasExtraDialog = ({ onClose }) => {
                       <span className="block text-white font-semibold">{area.rotulo}</span>
                       <span className="block text-xs text-gray-500">{area.detalhe}</span>
                       <span className="block text-xs mt-0.5 text-amber-300/90">
-                        {lider ? <><Crown className="inline h-3 w-3 mr-1" />Líder: {lider.nome}</> : <span className="text-gray-500">sem líder</span>}
+                        {lideresArea.length > 0
+                          ? <><Crown className="inline h-3 w-3 mr-1" />{lideresArea.length === 1 ? 'Líder' : 'Líderes'}: {lideresArea.map((l) => l.nome).join(', ')}</>
+                          : <span className="text-gray-500">sem líder</span>}
                       </span>
                     </span>
                   </span>
@@ -350,21 +365,28 @@ const AreasExtraDialog = ({ onClose }) => {
                     <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
                       <Button size="sm" variant="outline" onClick={() => setEscolhendoLider(escolhendoLider === area.chave ? null : area.chave)}
                         className="h-8 border-amber-500/40 bg-transparent text-amber-200 hover:bg-amber-500/10 hover:text-amber-100">
-                        <Crown className="h-3.5 w-3.5 mr-1.5" /> {lider ? 'Trocar líder' : 'Definir líder'}
+                        <Crown className="h-3.5 w-3.5 mr-1.5" /> {lideresArea.length > 0 ? 'Adicionar líder' : 'Definir líder'}
                       </Button>
-                      {lider && (
-                        <Button size="sm" variant="ghost" disabled={!!salvando[`lider:${area.chave}`]}
-                          onClick={() => salvarLider(area.chave, null)}
-                          className="h-8 text-gray-400 hover:text-red-300 hover:bg-white/10">
-                          Tirar líder
-                        </Button>
-                      )}
+                      {lideresArea.map((l) => (
+                        <span key={l.equipante_id}
+                          className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 pl-2.5 pr-1 py-0.5 text-xs text-amber-100">
+                          <Crown className="h-3 w-3" /> {l.nome}
+                          <button type="button" disabled={!!salvando[`lider:${area.chave}`]}
+                            onClick={() => tirarLider(area.chave, l)}
+                            aria-label={`Tirar ${l.nome} da liderança`} title="Tirar da liderança"
+                            className="rounded-full p-0.5 text-amber-200/70 hover:text-red-300 hover:bg-white/10 disabled:opacity-50">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </span>
+                      ))}
                     </div>
                     {escolhendoLider === area.chave && (
                       <EscolherLider
-                        candidatos={itens.filter((i) => i.area === area.chave)}
+                        candidatos={itens.filter((i) => i.area === area.chave
+                          && !lideresArea.some((l) => l.equipante_id === i.equipante_id))}
+                        jaLideres={lideresArea.map((l) => l.equipante_id)}
                         ocupado={!!salvando[`lider:${area.chave}`]}
-                        onEscolher={(p) => salvarLider(area.chave, p)}
+                        onEscolher={(p) => adicionarLider(area.chave, p)}
                       />
                     )}
                     {doGrupo.length === 0 ? (
@@ -395,7 +417,7 @@ const AreasExtraDialog = ({ onClose }) => {
 
 // Escolher o lider de um mutirao: primeiro quem se ofereceu para ele; com 3+
 // letras, procura tambem entre todos os equipantes aprovados.
-const EscolherLider = ({ candidatos, ocupado, onEscolher }) => {
+const EscolherLider = ({ candidatos, jaLideres = [], ocupado, onEscolher }) => {
   const [busca, setBusca] = useState('');
   const [deFora, setDeFora] = useState([]);
   const termo = semAcento(busca.trim());
@@ -411,7 +433,7 @@ const EscolherLider = ({ candidatos, ocupado, onEscolher }) => {
       const { data } = await supabase.from('equipantes').select('id, nome, igreja')
         .eq('tipo', 'equipante').eq('status', 'aprovado').ilike('nome', `%${busca.trim()}%`).order('nome').limit(15);
       if (!vivo) return;
-      const ja = new Set(candidatos.map((c) => c.equipante_id));
+      const ja = new Set([...candidatos.map((c) => c.equipante_id), ...jaLideres]);
       setDeFora((data || []).filter((d) => !ja.has(d.id)).map((d) => ({ equipante_id: d.id, nome: d.nome, igreja: d.igreja })));
     }, 350);
     return () => { vivo = false; clearTimeout(t); };

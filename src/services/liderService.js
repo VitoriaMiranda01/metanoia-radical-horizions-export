@@ -136,6 +136,29 @@ export const incluirNaAreaExtra = (equipanteId, dono, area, pessoaId) =>
     p_equipante_id: pessoaId
   }, 'inclusão na área extra');
 
+// Lider da Recepcao Igreja (23/10/2026, migration 20261023c): gerencia as cinco
+// areas do modulo (Recepcao Igreja, Cozinha Igreja, Som / Multimidia,
+// Estacionamento, Mesa cracha) -- inclui e tira gente da escala nelas.
+export const buscarParaModulo = (equipanteId, dono, area, termo) =>
+  chamar('lider_modulo_buscar', {
+    ...credenciais(equipanteId, dono),
+    p_area: area,
+    p_termo: termo
+  }, 'busca');
+
+export const incluirNoModulo = (equipanteId, dono, area, pessoaId) =>
+  chamar('lider_modulo_incluir', {
+    ...credenciais(equipanteId, dono),
+    p_area: area,
+    p_equipante_id: pessoaId
+  }, 'inclusão na área');
+
+export const removerDoModulo = (equipanteId, dono, escalaId) =>
+  chamar('lider_modulo_remover', {
+    ...credenciais(equipanteId, dono),
+    p_escala_id: escalaId
+  }, 'remoção da área');
+
 export const removerDaAreaExtra = (equipanteId, dono, area, pessoaId) =>
   chamar('lider_extra_remover', {
     ...credenciais(equipanteId, dono),

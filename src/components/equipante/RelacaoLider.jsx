@@ -20,7 +20,8 @@ import {
   fetchRelacaoLider, fetchAssinaturaRelacao, marcarPresenca, salvarGrupoLider, marcarConviteLider, marcarNoGrupo,
   linkWhatsApp, numeroWhatsApp,
   trocarAtuacaoLider, definirCorLider, delegarReuniao,
-  buscarParaAreaExtra, incluirNaAreaExtra, removerDaAreaExtra
+  buscarParaAreaExtra, incluirNaAreaExtra, removerDaAreaExtra,
+  buscarParaModulo, incluirNoModulo, removerDoModulo
 } from '@/services/liderService';
 
 /**
@@ -42,6 +43,9 @@ import {
  *  - o Invisivel de cada cor ve tambem os Marcadores da cor (selo Marcador);
  *  - "Delegar reuniao": outra pessoa da equipe faz a chamada e o grupo;
  *  - lider de area extra ve os aprovados e pode puxar mais gente.
+ *
+ * 23/10/2026: o lider da Recepcao Igreja conduz as cinco areas da igreja
+ * (equipe.pode_gerenciar) e inclui/tira gente da escala nelas.
  *
  * Feito para celular: so a aba aberta e desenhada, cada linha so redesenha
  * quando os dados DELA mudam, e a atualizacao automatica para quando a tela
@@ -323,6 +327,20 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
       () => (cor ? `${(m.nome || '').split(' ')[0]} agora é ${cor}` : 'Cor retirada'));
   }, [agir, ajustarMembro, equipanteId, dono]);
 
+  // Lider da Recepcao Igreja: tirar alguem de uma das cinco areas da igreja.
+  const onRemover = useCallback((m) => {
+    // eslint-disable-next-line no-alert
+    if (!window.confirm(`Tirar ${m.nome} de ${m.area}?`)) return;
+    agir(`r-${m.escala_id}`, () => removerDoModulo(equipanteId, dono, m.escala_id),
+      () => `${(m.nome || '').split(' ')[0]} saiu de ${m.area}`);
+  }, [agir, equipanteId, dono]);
+
+  const onBuscarModulo = useCallback((area, termo) => buscarParaModulo(equipanteId, dono, area, termo), [equipanteId, dono]);
+
+  const onIncluirModulo = useCallback((area, p) => agir(`i-${p.equipante_id}`,
+    () => incluirNoModulo(equipanteId, dono, area, p.equipante_id),
+    () => `${p.nome} incluído em ${area}`), [agir, equipanteId, dono]);
+
   const equipes = dados?.equipes || [];
   const extras = dados?.extras || [];
 
@@ -470,6 +488,9 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
             envios={dados.envios}
             onAtuacao={onAtuacao}
             onCor={onCor}
+            onRemover={onRemover}
+            onBuscarModulo={onBuscarModulo}
+            onIncluirModulo={onIncluirModulo}
             remetente={dados.lider}
             mostrarEquipe={abas.length > 1}
             onSalvarGrupo={(eq, link) => agir(`g-${eq.escala_id}`,
@@ -546,7 +567,7 @@ const AGREGADOS = {
 const horaDe = (iso) => (iso ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '');
 const enviosEsgotados = (envios) => !!envios && envios.usados >= envios.limite;
 
-const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGrupo, envios, onAtuacao, onCor, onSalvarGrupo, onSalvarGrupoCor, remetente, mostrarEquipe }) => {
+const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGrupo, envios, onAtuacao, onCor, onRemover, onBuscarModulo, onIncluirModulo, onSalvarGrupo, onSalvarGrupoCor, remetente, mostrarEquipe }) => {
   const [busca, setBusca] = useState('');
   const [filtro, setFiltro] = useState('todos');
   const [atuacao, setAtuacao] = useState('');
@@ -612,8 +633,10 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
       ocupadoConvite={!!ocupado[`c-${m.escala_id}`]}
       ocupadoEdicao={!!ocupado[`e-${m.escala_id}`]}
       ocupadoNoGrupo={!!ocupado[`n-${m.escala_id}`]}
+      podeRemover={!!equipe.pode_gerenciar && !m.eh_lider && !m.eu && m.area === equipe.area}
+      ocupadoRemover={!!ocupado[`r-${m.escala_id}`]}
       bloqueado={enviosEsgotados(envios)} liberaEm={envios?.libera_em || null}
-      onPresenca={onPresenca} onConvite={onConvite} onNoGrupo={onNoGrupo} onAtuacao={onAtuacao} onCor={onCor} />
+      onPresenca={onPresenca} onConvite={onConvite} onNoGrupo={onNoGrupo} onAtuacao={onAtuacao} onCor={onCor} onRemover={onRemover} />
   );
 
   return (
@@ -639,6 +662,13 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
             {equipe.lideres?.length ? ` (líder: ${equipe.lideres.join(', ')})` : ''}. {presencaAberta ? 'Faça a chamada e mande o convite do grupo.' : 'Mande o convite do grupo e fale com a equipe pelo WhatsApp.'}
           </p>
         ) : null}
+
+        {equipe.pode_gerenciar && (
+          <p className="text-xs text-amber-200/90">
+            Como líder da Recepção Igreja, você inclui e tira pessoas das cinco áreas da igreja
+            (Recepção Igreja, Cozinha Igreja, Som / Multimídia, Estacionamento e Mesa crachá).
+          </p>
+        )}
 
         <div className="grid grid-cols-4 gap-2">
           <Numero valor={contas.total} rotulo={contas.total === 1 ? 'pessoa' : 'pessoas'} cor="text-white"
@@ -753,6 +783,11 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
         {membros.length > 0 && mostrados.length === 0 && <li className="text-sm text-gray-500">Ninguém com esse filtro.</li>}
       </ul>
 
+      {equipe.pode_gerenciar && (
+        <IncluirNaEquipe area={equipe.area} ocupado={ocupado}
+          onBuscar={onBuscarModulo} onIncluir={onIncluirModulo} />
+      )}
+
       {/* Quem a organizacao trocou de area (21/10/2026): ainda pode estar no grupo desta equipe. */}
       {(equipe.trocados || []).length > 0 && (
         <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 p-3 space-y-1.5">
@@ -789,13 +824,14 @@ const mesmasProps = (a, b) => (
   && (a.atuacoes === b.atuacoes || JSON.stringify(a.atuacoes) === JSON.stringify(b.atuacoes))
   && a.ocupadoPresenca === b.ocupadoPresenca && a.ocupadoConvite === b.ocupadoConvite
   && a.ocupadoEdicao === b.ocupadoEdicao && a.ocupadoNoGrupo === b.ocupadoNoGrupo
+  && a.podeRemover === b.podeRemover && a.ocupadoRemover === b.ocupadoRemover && a.onRemover === b.onRemover
   && a.bloqueado === b.bloqueado && a.liberaEm === b.liberaEm
   && a.onPresenca === b.onPresenca && a.onConvite === b.onConvite && a.onNoGrupo === b.onNoGrupo && a.onAtuacao === b.onAtuacao && a.onCor === b.onCor
   && (a.m === b.m || JSON.stringify(a.m) === JSON.stringify(b.m))
 );
 
 const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remetente, atuacoes, podeCor, responsavel, ocupadoPresenca, ocupadoConvite, ocupadoEdicao,
-  ocupadoNoGrupo, bloqueado, liberaEm, onPresenca, onConvite, onNoGrupo, onAtuacao, onCor }) => {
+  ocupadoNoGrupo, podeRemover, ocupadoRemover, onRemover, bloqueado, liberaEm, onPresenca, onConvite, onNoGrupo, onAtuacao, onCor }) => {
   const { toast } = useToast();
   const pendente = m.pendencias?.length > 0;
   const zap = linkWhatsApp(m.whatsapp, m.estrangeiro);
@@ -990,6 +1026,16 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
           </Button>
         </div>
       )}
+
+      {podeRemover && (
+        <div className="mt-2 flex justify-end">
+          <Button size="sm" variant="ghost" disabled={ocupadoRemover} onClick={() => onRemover(m)}
+            className="h-7 px-2 text-xs text-gray-400 hover:text-red-300 hover:bg-white/10">
+            {ocupadoRemover ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 mr-1" />}
+            Tirar desta área
+          </Button>
+        </div>
+      )}
     </li>
   );
 }, mesmasProps);
@@ -1075,8 +1121,65 @@ const DelegarDialog = ({ equipe, onClose, onEscolher, ocupado }) => {
   );
 };
 
+// Lider da Recepcao Igreja: incluir alguem nesta area da igreja (23/10/2026).
+// Busca entre os equipantes aprovados que ainda nao estao nela.
+const IncluirNaEquipe = ({ area, ocupado, onBuscar, onIncluir }) => {
+  const [procura, setProcura] = useState('');
+  const [achados, setAchados] = useState([]);
+  const [procurando, setProcurando] = useState(false);
+
+  useEffect(() => {
+    const t = procura.trim();
+    if (t.length < 3) { setAchados([]); return undefined; }
+    let vivo = true;
+    const timer = setTimeout(async () => {
+      setProcurando(true);
+      const r = await onBuscar(area, t);
+      if (!vivo) return;
+      setProcurando(false);
+      setAchados(r.ok ? (r.pessoas || []) : []);
+    }, 400);
+    return () => { vivo = false; clearTimeout(timer); };
+  }, [procura, area, onBuscar]);
+
+  return (
+    <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4 space-y-3">
+      <p className="text-white font-medium flex items-center gap-2">
+        <Plus className="w-4 h-4 text-blue-300" /> Incluir alguém em {area}
+      </p>
+      <Input value={procura} onChange={(e) => setProcura(e.target.value)} placeholder="Digite pelo menos 3 letras do nome"
+        className="h-10 bg-black/40 border-white/20 text-white" />
+      {procurando && <p className="text-xs text-gray-400 flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Procurando...</p>}
+      {!procurando && procura.trim().length >= 3 && achados.length === 0 && (
+        <p className="text-xs text-gray-400">Ninguém encontrado (só aparecem inscrições aprovadas que ainda não estão nesta área).</p>
+      )}
+      <ul className="space-y-1">
+        {achados.map((p) => (
+          <li key={p.equipante_id} className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-white/5">
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm text-gray-100 truncate">{p.nome}</span>
+              <span className="block text-xs text-gray-500 truncate">
+                {nomeDaIgreja(p) || ''}{p.areas ? ` · já em: ${p.areas}` : ' · ainda sem área'}
+              </span>
+            </span>
+            <Button size="sm" disabled={!!ocupado[`i-${p.equipante_id}`]}
+              onClick={async () => {
+                const r = await onIncluir(area, p);
+                if (r?.ok) setAchados((l) => l.filter((x) => x.equipante_id !== p.equipante_id));
+              }}
+              className="h-8 bg-blue-600 hover:bg-blue-700 text-white shrink-0">
+              Incluir
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
 // Area extra (caminhao, cozinha, limpeza): os aprovados pela organizacao e
-// quem o lider puxou. O lider so tira quem ele mesmo incluiu.
+// quem os lideres puxaram. Os lideres so tiram quem algum lider incluiu
+// (a area pode ter varios lideres desde 23/10/2026).
 const EquipeExtra = ({ extra, equipanteId, dono, onMudou }) => {
   const { toast } = useToast();
   const info = areaExtraPorChave(extra.area);
@@ -1125,9 +1228,12 @@ const EquipeExtra = ({ extra, equipanteId, dono, onMudou }) => {
           <Truck className="w-5 h-5 text-blue-300" /> {info?.rotulo || extra.area}
         </h4>
         {info?.detalhe && <p className="text-xs text-gray-400">{info.detalhe}</p>}
+        {(extra.lideres || []).length > 1 && (
+          <p className="text-xs text-amber-200/90">Líderes: {extra.lideres.join(', ')}</p>
+        )}
         <p className="text-sm text-gray-300">
           <strong className="text-white">{membros.length}</strong> {membros.length === 1 ? 'pessoa' : 'pessoas'} na lista
-          (aprovadas pela organização ou incluídas por você).
+          (aprovadas pela organização ou incluídas pelos líderes).
         </p>
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
@@ -1145,7 +1251,11 @@ const EquipeExtra = ({ extra, equipanteId, dono, onMudou }) => {
                 <p className="text-white font-medium flex items-center gap-2 flex-wrap">
                   {m.nome}
                   {m.eu && <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300">você</span>}
-                  {m.incluido_pelo_lider && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-300">incluído por você</span>}
+                  {m.incluido_pelo_lider && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-300">
+                      incluído por {m.incluido_por ? nomeCurto(m.incluido_por) : 'líder'}
+                    </span>
+                  )}
                 </p>
                 <p className="text-xs text-gray-400 truncate">{nomeDaIgreja(m) || 'Igreja não informada'}</p>
                 <p className="text-sm text-gray-300 flex items-center gap-2 mt-0.5">

@@ -449,10 +449,12 @@ export const fetchDisponibilidadesExtra = async () => {
   if (!data?.ok) {
     return { success: false, error: data?.erro || 'Não foi possível carregar', itens: [] };
   }
-  return { success: true, itens: data.itens || [], lideres: data.lideres || {} };
+  // lideres_por_area (23/10/2026): varios lideres por area, { area: [{ equipante_id, nome }] }.
+  return { success: true, itens: data.itens || [], lideresPorArea: data.lideres_por_area || {} };
 };
 
-// Lider de cada area extra (15/10/2026). equipanteId null tira o lider.
+// Lideres de cada area extra (15/10/2026). Desde 23/10/2026 ADICIONA um lider
+// (a area pode ter varios); para tirar um, removerLiderAreaExtra.
 export const definirLiderAreaExtra = async (area, equipanteId) => {
   const { data, error } = await comReenvio(
     () => supabase.rpc('definir_lider_area_extra', { p_area: area, p_equipante_id: equipanteId || null }),
@@ -461,6 +463,16 @@ export const definirLiderAreaExtra = async (area, equipanteId) => {
   if (error) return { success: false, error: error.message || 'Erro ao salvar o líder' };
   if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar o líder' };
   return { success: true, lider: data.lider || null };
+};
+
+export const removerLiderAreaExtra = async (area, equipanteId) => {
+  const { data, error } = await comReenvio(
+    () => supabase.rpc('remover_lider_area_extra', { p_area: area, p_equipante_id: equipanteId }),
+    { rotulo: 'líder da área extra' }
+  );
+  if (error) return { success: false, error: error.message || 'Erro ao tirar o líder' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível tirar o líder' };
+  return { success: true };
 };
 
 // Responsaveis pela reuniao da escala (15/10/2026): uma linha por equipe

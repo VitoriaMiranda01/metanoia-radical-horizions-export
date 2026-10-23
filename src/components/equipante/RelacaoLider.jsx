@@ -125,7 +125,11 @@ const agruparTrilhaPorCor = (equipes) => {
   if (daTrilha.length < 2 || !daTrilha.some((e) => e.papel === 'delegado')) return { grupos: [], resto: equipes };
   const porCor = new Map();
   daTrilha.forEach((e) => (e.membros || []).forEach((m) => {
-    const cor = e.cor || m.cor || 'Sem cor';
+    // Sem cor vai para o grupo "Sem cor", nunca para a cor da equipe: o
+    // servidor manda quem esta sem cor em TODAS as equipes da area (para o
+    // lider poder marcar e escolher a cor), e a pessoa aparecia em todos os
+    // grupos (caso da Laiza, 23/10/2026).
+    const cor = m.cor ? (e.cor || m.cor) : 'Sem cor';
     if (!porCor.has(cor)) porCor.set(cor, { membros: new Map(), origens: new Set() });
     const g = porCor.get(cor);
     g.origens.add(e);
@@ -149,18 +153,55 @@ const agruparTrilhaPorCor = (equipes) => {
     // o lider de cada uma ve o mesmo link. Espirito Santo, Inimigo e Pastor
     // Invisivel sao uma equipe so para todas as cores, entao nao guardam o
     // link da cor -- o convite deles usa o link do grupo da cor da pessoa.
+    // Sem cor nao tem grupo de WhatsApp: guardar o link ali gravaria por cima
+    // do grupo de uma cor.
+    const semCor = cor === 'Sem cor';
     const guardam = origens.filter((e) => e.cor && e.escala_id);
-    const ondeGuardar = guardam.length > 0 ? guardam : origens.filter((e) => e.escala_id);
+    const ondeGuardar = semCor ? [] : guardam.length > 0 ? guardam : origens.filter((e) => e.escala_id);
     const link = ondeGuardar.map((e) => e.grupo_link).find(Boolean) || null;
     return {
-      chave: `cor:${cor}`, area: cor === 'Sem cor' ? 'Sem cor' : `Grupo ${cor}`, cor: CORES[cor] ? cor : null,
-      papel: 'delegado', porCor: true, origens, ondeGuardar, grupo_link: link,
-      trocados: [...new Map(origens.flatMap((e) => e.trocados || []).map((t) => [t.escala_id, t])).values()],
+      chave: `cor:${cor}`, area: semCor ? 'Sem cor' : `Grupo ${cor}`, cor: CORES[cor] ? cor : null,
+      papel: 'delegado', porCor: true, semCor, origens, ondeGuardar, grupo_link: link,
+      trocados: semCor ? [] : [...new Map(origens.flatMap((e) => e.trocados || []).map((t) => [t.escala_id, t])).values()],
       membros: [...g.membros.values()].map((m) => ({ ...m, _grupo_link: link })),
       lideres: [...new Set(origens.flatMap((e) => e.lideres || []))]
     };
   });
   return { grupos, resto: equipes.filter((e) => !daTrilha.includes(e)) };
+};
+
+// Equipe com cor (Guia Azul...): quem esta sem cor sai da lista dela e vai
+// para uma aba "<area> · Sem cor", uma por area, depois das equipes. So
+// aparece quando ha alguem sem cor (Patrick, 23/10/2026).
+const separarSemCor = (equipes) => {
+  const semCor = new Map();
+  const comCor = equipes.map((e) => {
+    if (!e.cor) return e;
+    const fora = (e.membros || []).filter((m) => !m.cor);
+    if (fora.length === 0) return e;
+    if (!semCor.has(e.area)) semCor.set(e.area, { origens: [], membros: new Map() });
+    const g = semCor.get(e.area);
+    g.origens.push(e);
+    fora.forEach((m) => {
+      if (!g.membros.has(m.escala_id)) {
+        g.membros.set(m.escala_id, {
+          ...m,
+          _grupo_link: null,
+          _atuacoes: !m.eh_lider && m.area === e.area ? e.atuacoes : null,
+          _responsavel: responsaveisDe(e).some((d) => d.equipante_id === m.equipante_id),
+          _podeCor: !!e.pode_trocar_cor && !m.eh_lider
+        });
+      }
+    });
+    return { ...e, membros: e.membros.filter((m) => m.cor) };
+  });
+  const abasSemCor = [...semCor.entries()].map(([area, g]) => ({
+    chave: `semcor:${area}`, area: `${area} · Sem cor`, cor: null,
+    papel: 'sem_cor', porCor: true, semCor: true, origens: g.origens, ondeGuardar: [], grupo_link: null,
+    trocados: [], membros: [...g.membros.values()],
+    lideres: [...new Set(g.origens.flatMap((e) => e.lideres || []))]
+  }));
+  return { comCor, abasSemCor };
 };
 
 const telefoneVisivel = (m) => (m.whatsapp ? (m.estrangeiro ? m.whatsapp : formatarTelefone(m.whatsapp)) : 'Sem telefone');
@@ -345,20 +386,24 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
   const extras = dados?.extras || [];
 
   const trilha = useMemo(() => agruparTrilhaPorCor(equipes), [equipes]);
+  const resto = useMemo(() => separarSemCor(trilha.resto), [trilha]);
 
   const abas = useMemo(() => [
     ...trilha.grupos.map((g) => ({
       chave: g.chave, tipo: 'equipe', equipe: g, rotulo: g.area, corDot: g.cor, qtd: g.membros.length
     })),
-    ...trilha.resto.map((e) => ({
+    ...resto.comCor.map((e) => ({
       chave: `e:${e.chave}`, tipo: 'equipe', equipe: e,
       rotulo: tituloEquipe(e), selo: e.papel === 'delegado' ? 'reunião' : null
+    })),
+    ...resto.abasSemCor.map((g) => ({
+      chave: g.chave, tipo: 'equipe', equipe: g, rotulo: g.area, qtd: g.membros.length
     })),
     ...extras.map((x) => ({
       chave: `x:${x.area}`, tipo: 'extra', extra: x,
       rotulo: rotuloAreaExtra(x.area), selo: 'extra'
     }))
-  ], [trilha, extras]);
+  ], [trilha, resto, extras]);
 
   const abaAtual = abas.find((a) => a.chave === aba) || abas[0] || null;
   const equipeAtual = abaAtual?.tipo === 'equipe' ? abaAtual.equipe : null;
@@ -656,7 +701,12 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
           </p>
         )}
 
-        {equipe.papel === 'delegado' ? (
+        {equipe.semCor ? (
+          <p className="text-xs text-amber-200/90">
+            Estas pessoas ainda <strong>não têm cor</strong>, por isso não entram em nenhum grupo. Faça a chamada aqui e
+            escolha a cor de cada uma{equipe.membros?.some((m) => m.eh_lider) ? ' (a cor do líder só a organização troca)' : ''}.
+          </p>
+        ) : equipe.papel === 'delegado' ? (
           <p className="text-xs text-amber-200/90">
             Você é o <strong>responsável pela reunião</strong> {equipe.porCor ? 'deste grupo' : 'desta equipe'}
             {equipe.lideres?.length ? ` (líder: ${equipe.lideres.join(', ')})` : ''}. {presencaAberta ? 'Faça a chamada e mande o convite do grupo.' : 'Mande o convite do grupo e fale com a equipe pelo WhatsApp.'}

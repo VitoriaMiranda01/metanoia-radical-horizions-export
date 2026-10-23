@@ -131,6 +131,11 @@ export const montarEscalaOficial = (linhas, atuacoesPorArea = {}) => {
   // Líderes da área Guia: a mesma pessoa é pintada também na Recepção Sítio.
   const guiasLideres = new Set(linhas.filter((l) => sem(l.areaBase) === 'guia' && detalhe(l).lider).map((l) => l.id));
 
+  // Fotografia: a cor do líder é a primeira a aparecer.
+  const corDoLiderFoto = linhas
+    .filter((l) => sem(l.areaBase) === 'fotografia' && detalhe(l).lider && l.corBruta && l.corBruta !== 'sem')
+    .map((l) => MAIUSC(sem(l.corBruta)))[0];
+
   const preparar = (l) => {
     const d = detalhe(l);
     const area = sem(l.areaBase);
@@ -163,9 +168,11 @@ export const montarEscalaOficial = (linhas, atuacoesPorArea = {}) => {
       else if (area === 'recepcao sitio' && guiasLideres.has(l.id)) inteira = COR[cor];
     }
 
-    const sequencia = ORDEM_COR[Object.keys(ORDEM_COR).find((k) => area.startsWith(k))] || ORDEM_COR_PADRAO;
+    let sequencia = ORDEM_COR[Object.keys(ORDEM_COR).find((k) => area.startsWith(k))] || ORDEM_COR_PADRAO;
+    if (area === 'fotografia' && corDoLiderFoto) sequencia = [corDoLiderFoto, ...sequencia.filter((c) => c !== corDoLiderFoto)];
     let grupo;
-    if (cor) grupo = 100 + Math.max(sequencia.indexOf(cor), 0);
+    if (area === 'fotografia' && d.lider) grupo = 0; // líder na primeira linha, com ou sem cor
+    else if (cor) grupo = 100 + Math.max(sequencia.indexOf(cor), 0);
     else if (semCorNoFim) grupo = 900;
     else if (d.lider) grupo = 0;
     else if (!d.padrao) grupo = 1;

@@ -46,6 +46,25 @@ export const rotuloDoTipo = (tipo) => ROTULOS[tipo] || tipo || 'Outro';
 export const tipoVistoPor = (vinculo, meuId) =>
   (vinculo.a === meuId ? vinculo.tipo : (ESPELHO[vinculo.tipo] || vinculo.tipo));
 
+/**
+ * Familia/turma cadastrada de uma vez (23/10/2026): B e tipoB de A, C e tipoC
+ * de A -> o que C e de B. Quando nao da para deduzir, OUTRO.
+ */
+const ENTRE_SI = {
+  'FILHO / FILHA|FILHO / FILHA': 'IRMÃO / IRMÃ',
+  'IRMÃO / IRMÃ|IRMÃO / IRMÃ': 'IRMÃO / IRMÃ',
+  'CONJUGE|FILHO / FILHA': 'FILHO / FILHA',
+  'FILHO / FILHA|CONJUGE': 'PAI / MÃE',
+  'PAI / MÃE|PAI / MÃE': 'CONJUGE',
+  'PAI / MÃE|IRMÃO / IRMÃ': 'FILHO / FILHA',
+  'IRMÃO / IRMÃ|PAI / MÃE': 'PAI / MÃE',
+  'FILHO / FILHA|PAI / MÃE': 'AVÔ / AVÓ',
+  'PAI / MÃE|FILHO / FILHA': 'NETO / NETA',
+};
+const MESMO_TIPO = new Set(['AMIGO / AMIGA', 'COLEGA DE TRABALHO', 'COLEGA DE ESCOLA', 'VIZINHO / VIZINHA']);
+export const tipoEntreSi = (tipoB, tipoC) =>
+  ENTRE_SI[`${tipoB}|${tipoC}`] || (tipoB === tipoC && MESMO_TIPO.has(tipoB) ? tipoB : 'OUTRO');
+
 /** Resposta da inscricao ("AMIGO / AMIGA", "NÃO TENHO"...) -> tipo de vinculo. */
 export const tipoDaInscricao = (resposta) => (VALORES.has(resposta) ? resposta : 'OUTRO');
 

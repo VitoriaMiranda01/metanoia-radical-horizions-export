@@ -79,6 +79,22 @@ export const useVinculosAcampantes = (acampantes) => {
   }, [recarregar, toast]);
 
   const salvar = useCallback((dados, msg = 'Vínculo salvo') => executar(salvarVinculo(dados), msg), [executar]);
+  // Varios de uma vez (familia de 3+): grava um por um, recarrega uma vez so.
+  const salvarVarios = useCallback(async (lista) => {
+    const erros = [];
+    for (const dados of lista) {
+      const r = await salvarVinculo(dados);
+      if (!r.success) erros.push(r.error);
+    }
+    const salvos = lista.length - erros.length;
+    if (erros.length) {
+      toast({ title: `${salvos} de ${lista.length} vínculos salvos`, description: erros[0], variant: 'destructive' });
+    } else {
+      toast({ title: salvos === 1 ? 'Vínculo salvo' : `${salvos} vínculos salvos` });
+    }
+    await recarregar();
+    return { success: !erros.length };
+  }, [recarregar, toast]);
   const excluir = useCallback((id) => executar(excluirVinculo(id), 'Vínculo excluído'), [executar]);
   const ignorar = useCallback((acampanteId, sim = true) =>
     executar(ignorarSugestao(acampanteId, sim), sim ? 'Sugestão ignorada' : 'Sugestão de volta'), [executar]);
@@ -87,6 +103,6 @@ export const useVinculosAcampantes = (acampantes) => {
     carregado, erro, recarregar,
     porId, vinculos: ativos, porAcampante, conflitos, idsEmConflito, conflitosPorGrupo,
     sugestoes, sugestoesIgnoradas, sugestaoDe,
-    avisoParaGrupo, salvar, excluir, ignorar,
+    avisoParaGrupo, salvar, salvarVarios, excluir, ignorar,
   };
 };

@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
 import { GROUPS } from '@/utils/gruposTrailha';
 import { casaBusca } from '@/utils/busca';
-import { rotuloDoTipo, TIPOS_VINCULO } from '@/utils/vinculosAcampantes';
+import { rotuloDoTipo, tipoEntreSi, TIPOS_VINCULO } from '@/utils/vinculosAcampantes';
 import { cn } from '@/lib/utils';
 
 /**
@@ -104,91 +104,246 @@ const SelectTipo = ({ valor, onChange, className }) => (
   </Select>
 );
 
-/** "+ Vinculo": procura em todos os acampantes (qualquer grupo). */
-export const NovoVinculo = ({ acampante, vinc, buscaInicial = '', onFechar }) => {
-  const [busca, setBusca] = useState(buscaInicial);
-  const [escolhido, setEscolhido] = useState(null);
-  const [tipo, setTipo] = useState('AMIGO / AMIGA');
-  const [observacao, setObservacao] = useState('');
+/**
+ * A etiqueta da cor do grupo, clicavel (23/10/2026): troca a pessoa entre as
+ * 5 cores ali mesmo. Cor com alguem vinculado vem com aviso e pede "mover
+ * mesmo assim". Sem onMover, e so a etiqueta.
+ */
+export const TrocarCor = ({ pessoa, avisoPara, onMover }) => {
+  const [pendente, setPendente] = useState(null);
   const [salvando, setSalvando] = useState(false);
+  if (!onMover) return <GrupoTrilhaTag grupo={pessoa.grupo_trailha} className="text-[10px] px-2" />;
 
-  const jaLigados = useMemo(
-    () => new Set((vinc.porAcampante.get(acampante.id) || []).map((x) => x.outroId)),
-    [vinc.porAcampante, acampante.id]
+  const mover = async (grupo, forcar = false) => {
+    const avisos = avisoPara ? avisoPara(pessoa.id, grupo) : [];
+    if (avisos.length && !forcar) { setPendente({ grupo, avisos }); return; }
+    setSalvando(true);
+    try {
+      await onMover(pessoa, grupo);
+      setPendente(null);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <>
+      <Select value={pessoa.grupo_trailha || undefined} onValueChange={(g) => { if (g !== pessoa.grupo_trailha) mover(g); }} disabled={salvando}>
+        <SelectTrigger
+          aria-label={`Cor do grupo de ${primeiroNome(pessoa.nome)}`}
+          data-dica={`Trocar ${primeiroNome(pessoa.nome)} de cor (grupo de trilha).`}
+          className="h-auto w-auto gap-1 border-0 bg-transparent p-0 shadow-none focus:ring-0 focus:ring-offset-0 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-gray-400"
+        >
+          {salvando
+            ? <span className="inline-flex items-center gap-1 text-[10px] text-gray-400"><Loader2 className="w-3 h-3 animate-spin" />movendo</span>
+            : <GrupoTrilhaTag grupo={pessoa.grupo_trailha} className="text-[10px] px-2" />}
+        </SelectTrigger>
+        <SelectContent>
+          {GROUPS.map((g) => {
+            const n = g !== pessoa.grupo_trailha && avisoPara ? avisoPara(pessoa.id, g).length : 0;
+            return (
+              <SelectItem key={g} value={g}>
+                <span className="inline-flex items-center gap-1.5">
+                  <GrupoTrilhaTag grupo={g} className="text-[10px] px-2" />
+                  {n > 0 && <AlertTriangle className="w-3 h-3 text-amber-400" aria-label="tem vínculo neste grupo" />}
+                </span>
+              </SelectItem>
+            );
+          })}
+        </SelectContent>
+      </Select>
+      {pendente && (
+        <div className="basis-full w-full rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-100 space-y-2">
+          <p className="flex gap-1.5"><AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />{textoDoAviso(primeiroNome(pessoa.nome), pendente.avisos, pendente.grupo)}</p>
+          <div className="flex gap-1.5 justify-end">
+            <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs text-gray-300 hover:bg-white/10" onClick={() => setPendente(null)}>Cancelar</Button>
+            <Button type="button" size="sm" className="h-7 px-2 text-xs bg-amber-600 hover:bg-amber-700 text-white" onClick={() => mover(pendente.grupo, true)} disabled={salvando}>
+              {salvando && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}Mover mesmo assim
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
   );
+};
 
+/** Busca em todos os participantes dos grupos (acampantes e infiltrados). */
+const BuscaPessoa = ({ vinc, excluir, busca, setBusca, placeholder, onEscolher }) => {
   const resultados = useMemo(() => {
     if (!busca.trim()) return [];
     return Array.from(vinc.porId.values())
-      .filter((a) => a.id !== acampante.id && !jaLigados.has(a.id) && casaBusca(busca, [a.nome, a.cpf, a.whatsapp]))
+      .filter((a) => !excluir.has(a.id) && casaBusca(busca, [a.nome, a.cpf, a.whatsapp]))
       .sort((x, y) => String(x.nome).localeCompare(String(y.nome), 'pt-BR'))
       .slice(0, 8);
-  }, [busca, vinc.porId, acampante.id, jaLigados]);
+  }, [busca, vinc.porId, excluir]);
+
+  return (
+    <>
+      <div className="relative">
+        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500 pointer-events-none" />
+        <Input
+          autoFocus value={busca} onChange={(e) => setBusca(e.target.value)} placeholder={placeholder}
+          className="h-8 pl-7 text-xs bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+        />
+      </div>
+      {busca.trim() && (
+        <div className="max-h-48 overflow-y-auto space-y-1">
+          {resultados.length === 0 && <p className="text-xs text-gray-500 px-1">Ninguém encontrado.</p>}
+          {resultados.map((a) => (
+            <button
+              key={a.id} type="button" onClick={() => onEscolher(a)}
+              className="w-full flex items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-xs text-gray-200 hover:bg-white/10"
+            >
+              <span className="truncate">{a.nome}{a.infiltrado && <span className="ml-1.5 text-[10px] text-gray-500">infiltrado</span>}</span>
+              <GrupoTrilhaTag grupo={a.grupo_trailha} className="text-[10px] px-2" />
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+};
+
+/**
+ * "+ Vinculo": liga o acampante a UMA OU MAIS pessoas de uma vez (familia de 3,
+ * turma de amigos -- 23/10/2026). Procura em todos os acampantes e infiltrados,
+ * de qualquer grupo. Com 2+ pessoas, "ligar entre si" cria tambem os pares
+ * entre elas (o tipo e deduzido: filhos -> irmaos, conjuge + filho -> filho...).
+ */
+export const NovoVinculo = ({ acampante, vinc, buscaInicial = '', onFechar }) => {
+  const [busca, setBusca] = useState(buscaInicial);
+  const [pessoas, setPessoas] = useState([]);
+  const [entreSi, setEntreSi] = useState(true);
+  const [observacao, setObservacao] = useState('');
+  const [salvando, setSalvando] = useState(false);
+
+  const ligadosDe = (id) => new Set((vinc.porAcampante.get(id) || []).map((x) => x.outroId));
+  const excluir = useMemo(() => {
+    const s = ligadosDe(acampante.id);
+    s.add(acampante.id);
+    pessoas.forEach((p) => s.add(p.pessoa.id));
+    return s;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vinc.porAcampante, acampante.id, pessoas]);
+
+  const adicionar = (a) => { setPessoas((l) => [...l, { pessoa: a, tipo: 'AMIGO / AMIGA' }]); setBusca(''); };
+  const mudarTipo = (id, tipo) => setPessoas((l) => l.map((p) => (p.pessoa.id === id ? { ...p, tipo } : p)));
+  const tirar = (id) => setPessoas((l) => l.filter((p) => p.pessoa.id !== id));
+
+  // Pares entre as pessoas escolhidas que ainda nao tem vinculo.
+  const paresEntreSi = useMemo(() => {
+    const pares = [];
+    pessoas.forEach((p, i) => pessoas.slice(i + 1).forEach((q) => {
+      if (!ligadosDe(p.pessoa.id).has(q.pessoa.id)) pares.push({ p, q, tipo: tipoEntreSi(p.tipo, q.tipo) });
+    }));
+    return pares;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pessoas, vinc.porAcampante]);
+
+  const total = pessoas.length + (entreSi && pessoas.length > 1 ? paresEntreSi.length : 0);
 
   const salvar = async () => {
-    if (!escolhido) return;
+    if (!pessoas.length) return;
     setSalvando(true);
-    // "escolhido e <tipo> de acampante": A = acampante, B = escolhido.
-    const r = await vinc.salvar({ a: acampante.id, b: escolhido.id, tipo, observacao });
+    // "<pessoa> e <tipo> de acampante": A = acampante, B = pessoa.
+    const lista = pessoas.map(({ pessoa, tipo }) => ({ a: acampante.id, b: pessoa.id, tipo, observacao }));
+    if (entreSi && pessoas.length > 1) {
+      paresEntreSi.forEach(({ p, q, tipo }) => lista.push({
+        a: p.pessoa.id, b: q.pessoa.id, tipo,
+        observacao: tipo === 'OUTRO' ? `Vêm juntos com ${acampante.nome}` : null,
+      }));
+    }
+    const r = await vinc.salvarVarios(lista);
     setSalvando(false);
     if (r.success) onFechar?.();
   };
 
   return (
     <div className="rounded-md border border-white/15 bg-black/40 p-2.5 space-y-2">
-      {!escolhido ? (
-        <>
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500 pointer-events-none" />
-            <Input
-              autoFocus value={busca} onChange={(e) => setBusca(e.target.value)}
-              placeholder="Nome, CPF ou telefone do outro acampante..."
-              className="h-8 pl-7 text-xs bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-            />
-          </div>
-          {busca.trim() && (
-            <div className="max-h-48 overflow-y-auto space-y-1">
-              {resultados.length === 0 && <p className="text-xs text-gray-500 px-1">Nenhum acampante encontrado.</p>}
-              {resultados.map((a) => (
-                <button
-                  key={a.id} type="button" onClick={() => setEscolhido(a)}
-                  className="w-full flex items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-xs text-gray-200 hover:bg-white/10"
-                >
-                  <span className="truncate">{a.nome}</span>
-                  <GrupoTrilhaTag grupo={a.grupo_trailha} className="text-[10px] px-2" />
-                </button>
-              ))}
+      {pessoas.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] uppercase tracking-wide text-gray-500">Ligar {primeiroNome(acampante.nome)} a</p>
+          {pessoas.map(({ pessoa, tipo }) => (
+            <div key={pessoa.id} className="flex flex-wrap items-center gap-1.5 rounded bg-white/5 px-2 py-1.5 text-xs">
+              <span className="text-gray-200 truncate max-w-[12rem]">{pessoa.nome}</span>
+              <GrupoTrilhaTag grupo={pessoa.grupo_trailha} className="text-[10px] px-2" />
+              <span className="text-gray-400 ml-auto">é</span>
+              <SelectTipo valor={tipo} onChange={(t) => mudarTipo(pessoa.id, t)} className="w-[150px]" />
+              <button type="button" onClick={() => tirar(pessoa.id)} aria-label={`Tirar ${pessoa.nome}`} className="text-gray-500 hover:text-red-300 p-0.5">
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
-          )}
-          <div className="flex justify-end">
-            <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs text-gray-400 hover:bg-white/10" onClick={onFechar}>Cancelar</Button>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="flex items-center justify-between gap-2 text-xs text-gray-200">
-            <span className="truncate"><span className="text-gray-400">Com: </span>{escolhido.nome}</span>
-            <GrupoTrilhaTag grupo={escolhido.grupo_trailha} className="text-[10px] px-2" />
-          </div>
-          <div className="flex flex-col sm:flex-row gap-1.5">
-            <div className="flex items-center gap-1.5 text-xs text-gray-400 shrink-0">
-              <span>{primeiroNome(escolhido.nome)} é</span>
-              <SelectTipo valor={tipo} onChange={setTipo} className="w-[150px]" />
-            </div>
-            <Input
-              value={observacao} onChange={(e) => setObservacao(e.target.value)}
-              placeholder="Observação (opcional)"
-              className="h-8 text-xs bg-white/5 border-white/10 text-white placeholder:text-gray-500 flex-1 min-w-0"
-            />
-          </div>
-          <div className="flex justify-end gap-1.5">
-            <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs text-gray-400 hover:bg-white/10" onClick={() => setEscolhido(null)}>Voltar</Button>
-            <Button type="button" size="sm" className="h-7 px-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={salvar} disabled={salvando}>
-              {salvando ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Check className="w-3 h-3 mr-1" />}Salvar vínculo
-            </Button>
-          </div>
-        </>
+          ))}
+        </div>
       )}
+
+      <BuscaPessoa
+        vinc={vinc} excluir={excluir} busca={busca} setBusca={setBusca} onEscolher={adicionar}
+        placeholder={pessoas.length ? 'Adicionar mais alguém (nome, CPF ou telefone)...' : 'Nome, CPF ou telefone de quem vem junto...'}
+      />
+
+      {pessoas.length > 1 && (
+        <label className="flex items-start gap-2 text-xs text-gray-300 cursor-pointer">
+          <input type="checkbox" checked={entreSi} onChange={(e) => setEntreSi(e.target.checked)} className="mt-0.5 accent-emerald-500" />
+          <span>
+            Ligar também entre si (mesma família ou turma)
+            {entreSi && paresEntreSi.length > 0 && (
+              <span className="block text-gray-500">
+                {paresEntreSi.map(({ p, q, tipo }) => `${primeiroNome(q.pessoa.nome)} é ${rotuloDoTipo(tipo).toLowerCase()} de ${primeiroNome(p.pessoa.nome)}`).join(' · ')}
+              </span>
+            )}
+          </span>
+        </label>
+      )}
+
+      {pessoas.length > 0 && (
+        <Input
+          value={observacao} onChange={(e) => setObservacao(e.target.value)}
+          placeholder="Observação (opcional)"
+          className="h-8 text-xs bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+        />
+      )}
+
+      <div className="flex justify-end gap-1.5">
+        <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs text-gray-400 hover:bg-white/10" onClick={onFechar}>Cancelar</Button>
+        {pessoas.length > 0 && (
+          <Button type="button" size="sm" className="h-7 px-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={salvar} disabled={salvando}>
+            {salvando ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Check className="w-3 h-3 mr-1" />}
+            {total === 1 ? 'Salvar vínculo' : `Salvar ${total} vínculos`}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * "+ Novo vinculo" da janela geral: primeiro escolhe a pessoa (acampante ou
+ * infiltrado), depois com quem ela vem.
+ */
+export const NovoVinculoAvulso = ({ vinc, onFechar }) => {
+  const [busca, setBusca] = useState('');
+  const [principal, setPrincipal] = useState(null);
+  const nenhum = useMemo(() => new Set(), []);
+
+  if (principal) {
+    return (
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between gap-2 text-xs">
+          <span className="text-gray-200 truncate"><span className="text-gray-400">Pessoa: </span>{principal.nome}</span>
+          <button type="button" onClick={() => setPrincipal(null)} className="text-gray-400 hover:text-white shrink-0">Trocar</button>
+        </div>
+        <NovoVinculo acampante={principal} vinc={vinc} onFechar={onFechar} />
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-md border border-white/15 bg-black/40 p-2.5 space-y-2">
+      <p className="text-xs text-gray-400">Escolha a pessoa (acampante ou infiltrado):</p>
+      <BuscaPessoa vinc={vinc} excluir={nenhum} busca={busca} setBusca={setBusca} onEscolher={setPrincipal} placeholder="Nome, CPF ou telefone..." />
+      <div className="flex justify-end">
+        <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs text-gray-400 hover:bg-white/10" onClick={onFechar}>Cancelar</Button>
+      </div>
     </div>
   );
 };
@@ -294,7 +449,7 @@ export const LinhaVinculo = ({ acampante, item, vinc, onRealocar }) => {
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-gray-200 truncate max-w-[14rem]">{outro.nome}</span>
         <span className="text-gray-400">· {rotuloDoTipo(item.tipo)}</span>
-        <GrupoTrilhaTag grupo={outro.grupo_trailha} className="text-[10px] px-2" />
+        <TrocarCor pessoa={outro} avisoPara={vinc.avisoParaGrupo} onMover={onRealocar} />
         {mesmoGrupo
           ? <span className="inline-flex items-center gap-1 text-amber-300 font-medium"><AlertTriangle className="w-3 h-3" />mesmo grupo</span>
           : <Check className="w-3.5 h-3.5 text-emerald-400" aria-label="grupos diferentes" />}
@@ -350,10 +505,10 @@ const VinculosDoAcampante = ({ acampante, vinc, onRealocar }) => {
       ) : (
         <button
           type="button" onClick={() => abrirNovo('')}
-          data-dica="Cadastrar alguém que não deveria ficar no mesmo grupo que este acampante (cônjuge, amigo, parente...)."
+          data-dica="Cadastrar uma ou mais pessoas que não deveriam ficar no mesmo grupo que este acampante (cônjuge, filhos, amigos...). Dá para escolher a família inteira de uma vez."
           className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-white"
         >
-          <Plus className="w-3 h-3" /> Vínculo
+          <Plus className="w-3 h-3" /> {lista.length ? 'Mais vínculos' : 'Vínculo'}
         </button>
       )}
     </div>

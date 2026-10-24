@@ -12,7 +12,8 @@ const SELOS = {
     Icone: Crown, cor: 'text-amber-400', cheio: true
   },
   diretor: { titulo: (p) => (p?.sexo === 'Feminino' ? 'Diretora' : 'Diretor'), Icone: ShieldCheck, cor: 'text-violet-400' },
-  dev: { titulo: () => 'Dev (desenvolvedor do sistema)', Icone: Code2, cor: 'text-emerald-400' }
+  dev: { titulo: () => 'Dev (desenvolvedor do sistema)', Icone: Code2, cor: 'text-emerald-400' },
+  dev_rosa: { titulo: () => 'Dev (desenvolvedor do sistema)', Icone: Code2, cor: 'text-pink-400' }
 };
 
 /**

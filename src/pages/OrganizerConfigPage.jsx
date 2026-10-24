@@ -467,9 +467,9 @@ const OrganizerConfigPage = () => {
             className="border-rose-500/40 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20 hover:text-white">
             <Link to="/saude"><HeartPulse className="w-4 h-4 mr-2" />Saúde dos acampantes</Link>
           </Button>
-          {/* A tela da portaria (login Apoio, 24/10/2026): baixa na hora e observacoes. */}
+          {/* A tela da portaria (login Apoio, 24/10/2026): entrada dos equipantes. */}
           <Button asChild variant="outline"
-            data-dica="Abrir a tela da portaria: pagamento de cada pessoa, baixas feitas na hora e observações da portaria."
+            data-dica="Abrir a tela da portaria: entrada dos equipantes, pagamentos feitos na hora e observações da portaria."
             className="border-emerald-500/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 hover:text-white">
             <Link to="/portaria"><DoorOpen className="w-4 h-4 mr-2" />Portaria</Link>
           </Button>

@@ -2,34 +2,37 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Banknote, CheckCircle2, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, RefreshCw, Search, Undo2, X
+  ArrowLeft, Banknote, CheckCircle2, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, RefreshCw, Search, Undo2, Wallet, X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
 } from '@/components/ui/dialog';
 import Layout from '@/components/Layout';
 import { getAuthToken } from '@/services/authToken';
 import {
-  darBaixaPortaria, desfazerBaixaPortaria, fetchPortariaLista, fetchValorPrevisto, salvarObservacaoPortaria
+  darBaixaPortaria, desfazerBaixaPortaria, desfazerEntradaPortaria, fetchPortariaLista, fetchValorPrevisto,
+  liberarEntradaPortaria, salvarObservacaoPortaria
 } from '@/services/portariaService';
 
 /**
- * Tela da portaria (login "Apoio", Patrick, 24/10/2026).
+ * Tela da portaria (login "Apoio", Patrick, 24/10/2026): ENTRADA DOS EQUIPANTES.
  *
- * Usada na sexta, sabado e domingo do evento, quase sempre no celular: cada
- * acampante e cada equipante da escala com nome completo, igreja e se o
- * pagamento esta pago ou em aberto. A portaria da baixa de quem paga na hora
- * (dinheiro ou cartao), desfaz so a baixa que ela mesma deu e escreve uma
- * observacao livre para a organizacao.
+ * Usada na sexta, sabado e domingo do evento, quase sempre no celular. So
+ * equipantes (os da escala, ou que ja pagaram). Quem ja pagou -- PIX, em maos
+ * ou isento -- recebe a pulseira e a portaria toca em "Liberar entrada": a
+ * pessoa vai para "Ja entrou" e fica verde. Quem nao pagou usa "Pagar agora"
+ * (dinheiro ou cartao) e, no mesmo passo, ja tem a entrada liberada.
  *
- * Os dados vem de portaria_lista() -- a conta de apoio nao le nenhuma tabela
- * direto, e cada gravacao e conferida no banco. Organizador tambem abre esta
- * tela (botao "Portaria" de Configuracoes), dentro do painel.
+ * Uma pesquisa so: nome, igreja ou area. Observacao livre por pessoa para a
+ * organizacao. Os dados vem de portaria_lista() -- a conta de apoio nao le
+ * nenhuma tabela direto, e cada gravacao e conferida no banco. Organizador
+ * tambem abre esta tela (botao "Portaria" de Configuracoes), dentro do painel.
  */
 
 const POR_PAGINA = 50;
@@ -47,13 +50,15 @@ const dataHora = (v) => {
   return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
 
-const ehBaixaDaPortaria = (p) => p.pago && p.metodo === 'manual' && String(p.confirmado_por || '').startsWith('Portaria: ');
+const semPrefixo = (quem) => String(quem || '').replace(/^Portaria: /, '');
+
+const pagoNaPortaria = (p) => p.pago && p.metodo === 'manual' && String(p.confirmado_por || '').startsWith('Portaria: ');
 
 const NOME_MEIO = { dinheiro: 'Dinheiro', cartao: 'Cartão', pix: 'PIX' };
 
 // Texto da situacao do pagamento.
 const situacao = (p) => {
-  if (!p.pago) return { texto: 'Em aberto', classe: 'border-amber-500/40 bg-amber-500/15 text-amber-200' };
+  if (!p.pago) return { texto: 'Pagamento em aberto', classe: 'border-amber-500/40 bg-amber-500/15 text-amber-200' };
   if (p.metodo === 'isento') return { texto: 'Isento', classe: 'border-sky-500/40 bg-sky-500/15 text-sky-200' };
   if (p.metodo === 'pix') return { texto: 'Pago · PIX', classe: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-200' };
   const meio = NOME_MEIO[p.meio];
@@ -80,11 +85,12 @@ const Numero = ({ rotulo, valor, detalhe, cor = 'text-white' }) => (
   </div>
 );
 
-// ---- Janela de baixa ----------------------------------------------------------
-const BaixaDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
+// ---- Janela "Pagar agora" -------------------------------------------------------
+const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
   const { toast } = useToast();
   const [meio, setMeio] = useState('');
   const [valor, setValor] = useState('');
+  const [liberar, setLiberar] = useState(true);
   const [previsto, setPrevisto] = useState(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -92,9 +98,10 @@ const BaixaDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
     if (!pessoa) return;
     setMeio('');
     setValor('');
+    setLiberar(true);
     setPrevisto(null);
     let vivo = true;
-    fetchValorPrevisto(pessoa.tipo, pessoa.id).then((r) => {
+    fetchValorPrevisto('equipante', pessoa.id).then((r) => {
       if (!vivo || !r) return;
       setPrevisto(r);
       if (r.valor != null) setValor(String(Number(r.valor).toFixed(2)).replace('.', ','));
@@ -102,7 +109,7 @@ const BaixaDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
     return () => { vivo = false; };
   }, [pessoa]);
 
-  // "220,00" ou "1.220,50" (virgula decimal) e tambem "220.50" (ponto decimal).
+  // "80,00" ou "1.080,50" (virgula decimal) e tambem "80.50" (ponto decimal).
   const valorTexto = String(valor).trim();
   const valorNumero = Number(valorTexto.includes(',') ? valorTexto.replace(/\./g, '').replace(',', '.') : valorTexto);
   const valorOk = Number.isFinite(valorNumero) && valorNumero > 0 && valorNumero <= 5000;
@@ -111,10 +118,10 @@ const BaixaDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
     if (!meio || !valorOk) return;
     setSalvando(true);
     try {
-      await darBaixaPortaria(pessoa.tipo, pessoa.id, meio, valorNumero);
+      await darBaixaPortaria('equipante', pessoa.id, meio, valorNumero, liberar);
       toast({
-        title: 'Baixa feita',
-        description: `${pessoa.nome} · ${NOME_MEIO[meio]} · ${moeda(valorNumero)}`,
+        title: liberar ? 'Pago e entrada liberada' : 'Pagamento registrado',
+        description: `${pessoa.nome} · ${NOME_MEIO[meio]} · ${moeda(valorNumero)}${liberar ? ' · entregue a pulseira' : ''}`,
         className: 'bg-emerald-600 text-white',
       });
       onFeito();
@@ -130,7 +137,7 @@ const BaixaDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
     <Dialog open={!!pessoa} onOpenChange={(aberto) => { if (!aberto && !salvando) onFechar(); }}>
       <DialogContent className="bg-zinc-950 border-white/10 text-white max-w-md">
         <DialogHeader>
-          <DialogTitle>Dar baixa no pagamento</DialogTitle>
+          <DialogTitle>Pagar agora</DialogTitle>
           <DialogDescription className="text-gray-400">
             {pessoa?.nome}{pessoa?.igreja ? ` · ${pessoa.igreja}` : ''}
           </DialogDescription>
@@ -164,6 +171,14 @@ const BaixaDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
                 : 'Confira o valor antes de confirmar.'}
             </p>
           </div>
+
+          <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3 cursor-pointer">
+            <Checkbox checked={liberar} onCheckedChange={(v) => setLiberar(v === true)} className="mt-0.5" />
+            <span className="text-sm text-gray-200">
+              Liberar a entrada agora
+              <span className="block text-xs text-gray-500">Entregue a pulseira. A pessoa vai para "Já entrou".</span>
+            </span>
+          </label>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
@@ -173,7 +188,7 @@ const BaixaDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
           </Button>
           <Button disabled={salvando || !meio || !valorOk} onClick={confirmar}
             className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar baixa'}
+            {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar pagamento'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -181,103 +196,143 @@ const BaixaDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
   );
 };
 
+// Confirmacao em linha (desfazer entrada / desfazer pagamento).
+const Confirmar = ({ texto, rotulo, ocupado, onNao, onSim }) => (
+  <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2">
+    <span className="text-sm text-red-200 flex-1 min-w-[180px]">{texto}</span>
+    <Button size="sm" variant="outline" disabled={ocupado} onClick={onNao}
+      className="h-8 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
+      Não
+    </Button>
+    <Button size="sm" disabled={ocupado} onClick={onSim} className="h-8 bg-red-600 hover:bg-red-700 text-white">
+      {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : rotulo}
+    </Button>
+  </div>
+);
+
 // ---- Cartao de uma pessoa ------------------------------------------------------
-const CartaoPessoa = ({ p, onBaixa, onAtualizado }) => {
+const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
   const { toast } = useToast();
   const [editando, setEditando] = useState(false);
   const [texto, setTexto] = useState(p.observacao || '');
   const [salvando, setSalvando] = useState(false);
-  const [confirmarDesfazer, setConfirmarDesfazer] = useState(false);
-  const [desfazendo, setDesfazendo] = useState(false);
+  const [confirmando, setConfirmando] = useState(''); // 'entrada' | 'pagamento'
+  const [ocupado, setOcupado] = useState(false);
   const s = situacao(p);
+  const entrou = !!p.entrou_em;
+
+  // Toda gravacao recarrega a lista, deu certo ou nao: "ja entrou" ou "ja esta
+  // paga" (outra pessoa da portaria foi mais rapida) passa a aparecer na hora.
+  const executar = async (acao, sucesso) => {
+    setOcupado(true);
+    try {
+      await acao();
+      toast(sucesso);
+      setConfirmando('');
+    } catch (e) {
+      toast({ title: 'Não deu certo', description: e?.message || 'Tente de novo.', variant: 'destructive' });
+    } finally {
+      setOcupado(false);
+      onAtualizado();
+    }
+  };
+
+  const liberar = () => executar(() => liberarEntradaPortaria(p.id), {
+    title: 'Entrada liberada', description: `${p.nome} · entregue a pulseira.`, className: 'bg-emerald-600 text-white',
+  });
+  const desfazerEntrada = () => executar(() => desfazerEntradaPortaria(p.id), {
+    title: 'Entrada desfeita', description: `${p.nome} voltou para "Falta entrar".`,
+  });
+  const desfazerPagamento = () => executar(() => desfazerBaixaPortaria('equipante', p.id), {
+    title: 'Pagamento desfeito', description: `${p.nome} voltou para "Pagamento em aberto".`,
+  });
 
   const salvarObs = async () => {
     setSalvando(true);
     try {
-      await salvarObservacaoPortaria(p.tipo, p.id, texto);
+      await salvarObservacaoPortaria('equipante', p.id, texto);
       toast({ title: texto.trim() ? 'Observação salva' : 'Observação apagada', className: 'bg-emerald-600 text-white' });
       setEditando(false);
-      onAtualizado();
     } catch (e) {
       toast({ title: 'Não deu certo', description: e?.message || 'Tente de novo.', variant: 'destructive' });
-      onAtualizado();
     } finally {
       setSalvando(false);
+      onAtualizado();
     }
   };
 
-  const desfazer = async () => {
-    setDesfazendo(true);
-    try {
-      await desfazerBaixaPortaria(p.tipo, p.id);
-      toast({ title: 'Baixa desfeita', description: `${p.nome} voltou para "Em aberto".` });
-      setConfirmarDesfazer(false);
-      onAtualizado();
-    } catch (e) {
-      toast({ title: 'Não deu certo', description: e?.message || 'Tente de novo.', variant: 'destructive' });
-      onAtualizado();
-    } finally {
-      setDesfazendo(false);
-    }
-  };
+  const botaoSecundario = 'flex-1 sm:flex-none border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10';
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+    <div className={`rounded-xl border p-4 ${entrou ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-white/10 bg-white/[0.03]'}`}>
       <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-white break-words">{p.nome}</p>
-          <p className="text-sm text-gray-400 break-words">
-            {p.igreja || 'Sem igreja informada'}
-            {p.congrega && p.congrega !== p.igreja && !/^N[ÃA]O SE APLICA/i.test(p.congrega) && <span className="text-gray-500"> · congrega: {p.congrega}</span>}
+          <p className="font-semibold text-white break-words flex items-center gap-2">
+            {entrou && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+            {p.nome}
           </p>
+          <p className="text-sm text-gray-400 break-words">{p.igreja || 'Sem igreja informada'}</p>
+          {p.areas?.length > 0 && <p className="text-xs text-gray-500 break-words">{p.areas.join(' · ')}</p>}
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
-            <span className={`text-[11px] px-2 py-0.5 rounded-full border ${
-              p.tipo === 'acampante' ? 'border-violet-500/40 bg-violet-500/10 text-violet-200' : 'border-blue-500/40 bg-blue-500/10 text-blue-200'
-            }`}>
-              {p.tipo === 'acampante' ? 'Acampante' : 'Equipante'}
-            </span>
+            {entrou && (
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full border border-emerald-400 bg-emerald-500/30 text-white">
+                Entrou · {dataHora(p.entrou_em)}
+              </span>
+            )}
             <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${s.classe}`}>{s.texto}</span>
             {p.pago && p.metodo === 'manual' && p.valor != null && (
               <span className="text-xs text-gray-400">{moeda(p.valor)}</span>
             )}
+            {!p.na_escala && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full border border-red-500/40 bg-red-500/10 text-red-200">
+                Fora da escala
+              </span>
+            )}
           </div>
-          {ehBaixaDaPortaria(p) && (
+          {(entrou || pagoNaPortaria(p)) && (
             <p className="text-[11px] text-gray-500 mt-1">
-              Baixa por {String(p.confirmado_por).replace('Portaria: ', '')} em {dataHora(p.data_pagamento)}
+              {pagoNaPortaria(p) && <>Pagou na portaria ({semPrefixo(p.confirmado_por)}, {dataHora(p.data_pagamento)})</>}
+              {pagoNaPortaria(p) && entrou && ' · '}
+              {entrou && <>Entrada liberada por {semPrefixo(p.entrada_por)}</>}
             </p>
           )}
         </div>
 
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-          {!p.pago && (
-            <Button size="sm" onClick={() => onBaixa(p)} className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white">
-              <CheckCircle2 className="w-4 h-4 mr-1.5" />Dar baixa
+          {!entrou && !p.pago && (
+            <Button size="sm" onClick={() => onPagar(p)} className="flex-1 sm:flex-none bg-amber-600 hover:bg-amber-700 text-white">
+              <Wallet className="w-4 h-4 mr-1.5" />Pagar agora
             </Button>
           )}
-          {ehBaixaDaPortaria(p) && !confirmarDesfazer && (
-            <Button size="sm" variant="outline" onClick={() => setConfirmarDesfazer(true)}
-              className="flex-1 sm:flex-none border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
-              <Undo2 className="w-4 h-4 mr-1.5" />Desfazer baixa
+          {!entrou && p.pago && (
+            <Button size="sm" disabled={ocupado} onClick={liberar} className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white">
+              {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : <><DoorOpen className="w-4 h-4 mr-1.5" />Liberar entrada</>}
+            </Button>
+          )}
+          {entrou && !confirmando && (
+            <Button size="sm" variant="outline" onClick={() => setConfirmando('entrada')} className={botaoSecundario}>
+              <Undo2 className="w-4 h-4 mr-1.5" />Desfazer entrada
+            </Button>
+          )}
+          {!entrou && pagoNaPortaria(p) && !confirmando && (
+            <Button size="sm" variant="outline" onClick={() => setConfirmando('pagamento')} className={botaoSecundario}>
+              <Undo2 className="w-4 h-4 mr-1.5" />Desfazer pagamento
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={() => { setTexto(p.observacao || ''); setEditando(!editando); }}
-            className="flex-1 sm:flex-none border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
+            className={botaoSecundario}>
             <MessageSquare className="w-4 h-4 mr-1.5" />Observação
           </Button>
         </div>
       </div>
 
-      {confirmarDesfazer && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2">
-          <span className="text-sm text-red-200 flex-1 min-w-[180px]">Desfazer a baixa? A pessoa volta para "Em aberto".</span>
-          <Button size="sm" variant="outline" disabled={desfazendo} onClick={() => setConfirmarDesfazer(false)}
-            className="h-8 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
-            Não
-          </Button>
-          <Button size="sm" disabled={desfazendo} onClick={desfazer} className="h-8 bg-red-600 hover:bg-red-700 text-white">
-            {desfazendo ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sim, desfazer'}
-          </Button>
-        </div>
+      {confirmando === 'entrada' && (
+        <Confirmar texto='Desfazer a entrada? A pessoa volta para "Falta entrar".' rotulo="Sim, desfazer"
+          ocupado={ocupado} onNao={() => setConfirmando('')} onSim={desfazerEntrada} />
+      )}
+      {confirmando === 'pagamento' && (
+        <Confirmar texto='Desfazer o pagamento feito na portaria? Volta para "Pagamento em aberto".' rotulo="Sim, desfazer"
+          ocupado={ocupado} onNao={() => setConfirmando('')} onSim={desfazerPagamento} />
       )}
 
       {editando ? (
@@ -309,6 +364,12 @@ const CartaoPessoa = ({ p, onBaixa, onAtualizado }) => {
 };
 
 // ---- Tela -------------------------------------------------------------------------
+const ABAS = [
+  { valor: 'falta', rotulo: 'Falta entrar' },
+  { valor: 'entrou', rotulo: 'Já entrou' },
+  { valor: 'todos', rotulo: 'Todos' },
+];
+
 const PortariaPage = () => {
   const { apoioUser, organizadorUser, user, logout } = useAuth();
   const navigate = useNavigate();
@@ -319,13 +380,12 @@ const PortariaPage = () => {
   const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState('');
 
+  const [aba, setAba] = useState('falta');
   const [busca, setBusca] = useState('');
   const [pagamento, setPagamento] = useState('todos');
-  const [tipo, setTipo] = useState('todos');
-  const [igreja, setIgreja] = useState('');
-  const [extra, setExtra] = useState('');
+  const [soObservacao, setSoObservacao] = useState(false);
   const [limite, setLimite] = useState(POR_PAGINA);
-  const [baixa, setBaixa] = useState(null);
+  const [pagando, setPagando] = useState(null);
 
   const nomeDaConta = apoioUser?.nome || organizadorUser?.nome || user?.nome || '';
   const ehOrganizador = !apoioUser && (!!organizadorUser || ['organizador', 'organizador-aprovador'].includes(user?.role));
@@ -346,8 +406,8 @@ const PortariaPage = () => {
   const ehRecusaDeAcesso = (e) => /acesso não autorizado/i.test(String(e?.message || ''));
 
   // Uma carga por vez. Se pedirem outra no meio (ex.: logo depois de uma
-  // baixa), ela roda quando a atual terminar -- a atual pode ter saido do
-  // banco antes da gravacao e trazer a pessoa ainda "em aberto".
+  // gravacao), ela roda quando a atual terminar -- a atual pode ter saido do
+  // banco antes da gravacao e trazer a pessoa ainda sem a mudanca.
   const emCurso = useRef(false);
   const deNovo = useRef(false);
   const carregar = async (silencioso = false) => {
@@ -357,7 +417,11 @@ const PortariaPage = () => {
     if (silencioso) setAtualizando(true); else setCarregando(true);
     try {
       const dados = await fetchPortariaLista();
-      setLista(dados.map((p) => ({ ...p, _busca: semAcento(p.nome) })));
+      setLista(dados.map((p) => ({
+        ...p,
+        areas: Array.isArray(p.areas) ? p.areas : [],
+        _busca: semAcento([p.nome, p.igreja, ...(Array.isArray(p.areas) ? p.areas : [])].join(' ')),
+      })));
       setErro('');
     } catch (e) {
       console.error('PortariaPage - carregar', e?.message || e);
@@ -382,40 +446,44 @@ const PortariaPage = () => {
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => { setLimite(POR_PAGINA); }, [busca, pagamento, tipo, igreja, extra]);
+  useEffect(() => { setLimite(POR_PAGINA); }, [aba, busca, pagamento, soObservacao]);
 
   const sair = () => {
     logout();
     navigate('/login');
   };
 
-  const igrejas = useMemo(
-    () => [...new Set(lista.map((p) => p.igreja).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true })),
-    [lista]
-  );
+  const numeros = useMemo(() => {
+    const entraram = lista.filter((p) => p.entrou_em).length;
+    const faltam = lista.filter((p) => !p.entrou_em);
+    const pagosNaPortaria = lista.filter(pagoNaPortaria);
+    const soma = (m) => pagosNaPortaria.filter((p) => p.meio === m).reduce((t, p) => t + Number(p.valor || 0), 0);
+    return {
+      total: lista.length,
+      entraram,
+      faltam: faltam.length,
+      faltamPagos: faltam.filter((p) => p.pago).length,
+      faltamAbertos: faltam.filter((p) => !p.pago).length,
+      pagosNaPortaria: pagosNaPortaria.length,
+      dinheiro: soma('dinheiro'),
+      cartao: soma('cartao'),
+    };
+  }, [lista]);
+
+  const contagemAba = { falta: numeros.faltam, entrou: numeros.entraram, todos: numeros.total };
 
   const filtrados = useMemo(() => {
     const termos = semAcento(busca).split(/\s+/).filter(Boolean);
     return lista.filter((p) => {
-      if (tipo !== 'todos' && p.tipo !== tipo) return false;
-      if (pagamento === 'aberto' && p.pago) return false;
-      if (pagamento === 'pagos' && !p.pago) return false;
-      if (igreja && p.igreja !== igreja) return false;
-      if (extra === 'obs' && !p.observacao) return false;
-      if (extra === 'baixas' && !ehBaixaDaPortaria(p)) return false;
+      if (aba === 'falta' && p.entrou_em) return false;
+      if (aba === 'entrou' && !p.entrou_em) return false;
+      // Em "Ja entrou" todo mundo pagou: o filtro de pagamento nao vale ali.
+      if (aba !== 'entrou' && pagamento === 'pagos' && !p.pago) return false;
+      if (aba !== 'entrou' && pagamento === 'aberto' && p.pago) return false;
+      if (soObservacao && !p.observacao) return false;
       return termos.every((t) => p._busca.includes(t));
     });
-  }, [lista, busca, pagamento, tipo, igreja, extra]);
-
-  const numeros = useMemo(() => {
-    const pagos = lista.filter((p) => p.pago).length;
-    const baixas = lista.filter(ehBaixaDaPortaria);
-    const soma = (m) => baixas.filter((p) => p.meio === m).reduce((t, p) => t + Number(p.valor || 0), 0);
-    return {
-      total: lista.length, pagos, aberto: lista.length - pagos,
-      baixas: baixas.length, dinheiro: soma('dinheiro'), cartao: soma('cartao'),
-    };
-  }, [lista]);
+  }, [lista, aba, busca, pagamento, soObservacao]);
 
   const conteudo = carregando ? (
     <div className="py-20 text-center text-gray-400">
@@ -429,17 +497,31 @@ const PortariaPage = () => {
   ) : (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Numero rotulo="Total" valor={numeros.total} />
-        <Numero rotulo="Pagos" valor={numeros.pagos} cor="text-emerald-300" />
-        <Numero rotulo="Em aberto" valor={numeros.aberto} cor="text-amber-300" />
-        <Numero rotulo="Baixas na portaria" valor={numeros.baixas}
+        <Numero rotulo="Equipantes" valor={numeros.total} />
+        <Numero rotulo="Já entraram" valor={numeros.entraram} cor="text-emerald-300" />
+        <Numero rotulo="Faltam entrar" valor={numeros.faltam} cor="text-amber-300"
+          detalhe={`${numeros.faltamPagos} já pagos · ${numeros.faltamAbertos} pagam na hora`} />
+        <Numero rotulo="Pagos na portaria" valor={numeros.pagosNaPortaria}
           detalhe={`Dinheiro ${moeda(numeros.dinheiro)} · Cartão ${moeda(numeros.cartao)}`} />
+      </div>
+
+      <div className="grid grid-cols-3 gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1">
+        {ABAS.map((a) => (
+          <button key={a.valor} type="button" onClick={() => setAba(a.valor)}
+            className={`rounded-lg px-2 py-2.5 text-sm font-semibold transition-colors ${
+              aba === a.valor
+                ? (a.valor === 'entrou' ? 'bg-emerald-600 text-white' : 'bg-white/15 text-white')
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}>
+            {a.rotulo} <span className="opacity-70">({contagemAba[a.valor]})</span>
+          </button>
+        ))}
       </div>
 
       <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-3">
         <div className="relative">
           <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
-          <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Pesquisar pelo nome"
+          <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Pesquisar nome, igreja ou área"
             className="pl-9 pr-9 bg-white/5 border-white/20 text-white h-11 text-base" />
           {busca && (
             <button type="button" onClick={() => setBusca('')} aria-label="Limpar pesquisa"
@@ -450,23 +532,16 @@ const PortariaPage = () => {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Chip ativo={pagamento === 'todos'} onClick={() => setPagamento('todos')}>Todos</Chip>
-          <Chip ativo={pagamento === 'aberto'} onClick={() => setPagamento('aberto')}>Em aberto</Chip>
-          <Chip ativo={pagamento === 'pagos'} onClick={() => setPagamento('pagos')}>Pagos</Chip>
-          <span className="w-px bg-white/10 mx-1" />
-          <Chip ativo={tipo === 'todos'} onClick={() => setTipo('todos')}>Acampantes e equipantes</Chip>
-          <Chip ativo={tipo === 'acampante'} onClick={() => setTipo('acampante')}>Acampantes</Chip>
-          <Chip ativo={tipo === 'equipante'} onClick={() => setTipo('equipante')}>Equipantes</Chip>
-          <span className="w-px bg-white/10 mx-1" />
-          <Chip ativo={extra === 'obs'} onClick={() => setExtra(extra === 'obs' ? '' : 'obs')}>Com observação</Chip>
-          <Chip ativo={extra === 'baixas'} onClick={() => setExtra(extra === 'baixas' ? '' : 'baixas')}>Baixas na portaria</Chip>
+          {aba !== 'entrou' && (
+            <>
+              <Chip ativo={pagamento === 'todos'} onClick={() => setPagamento('todos')}>Todos</Chip>
+              <Chip ativo={pagamento === 'pagos'} onClick={() => setPagamento('pagos')}>Já pagos</Chip>
+              <Chip ativo={pagamento === 'aberto'} onClick={() => setPagamento('aberto')}>Pagam na hora</Chip>
+              <span className="w-px bg-white/10 mx-1" />
+            </>
+          )}
+          <Chip ativo={soObservacao} onClick={() => setSoObservacao(!soObservacao)}>Com observação</Chip>
         </div>
-
-        <select value={igreja} onChange={(e) => setIgreja(e.target.value)}
-          className="w-full h-10 rounded-md border border-white/20 bg-zinc-900 px-3 text-sm text-white">
-          <option value="">Todas as igrejas</option>
-          {igrejas.map((i) => <option key={i} value={i}>{i}</option>)}
-        </select>
       </div>
 
       <div className="flex items-center justify-between gap-3 text-sm text-gray-400">
@@ -481,7 +556,7 @@ const PortariaPage = () => {
       ) : (
         <div className="space-y-2">
           {filtrados.slice(0, limite).map((p) => (
-            <CartaoPessoa key={`${p.tipo}:${p.id}:${p.observacao || ''}`} p={p} onBaixa={setBaixa} onAtualizado={() => carregar(true)} />
+            <CartaoPessoa key={`${p.id}:${p.observacao || ''}`} p={p} onPagar={setPagando} onAtualizado={() => carregar(true)} />
           ))}
           {filtrados.length > limite && (
             <Button variant="outline" onClick={() => setLimite(limite + POR_PAGINA)}
@@ -506,7 +581,7 @@ const PortariaPage = () => {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2">
-                  <DoorOpen className="w-6 h-6 text-emerald-400" /> Portaria
+                  <DoorOpen className="w-6 h-6 text-emerald-400" /> Portaria · entrada dos equipantes
                 </h1>
                 <p className="text-sm text-gray-400">A mesma tela que a portaria vê no login Apoio.</p>
               </div>
@@ -524,7 +599,7 @@ const PortariaPage = () => {
               <img src="/images/logo.png" alt="Metanoia Radical" className="hidden sm:block h-9 w-auto object-contain" />
               <div className="min-w-0">
                 <p className="font-bold leading-tight flex items-center gap-2">
-                  <DoorOpen className="w-4 h-4 text-emerald-400" /> Portaria
+                  <DoorOpen className="w-4 h-4 text-emerald-400" /> Portaria · equipantes
                 </p>
                 <p className="text-xs text-gray-500 truncate">Metanoia Radical Serra · {nomeDaConta || 'Apoio'}</p>
               </div>
@@ -539,8 +614,8 @@ const PortariaPage = () => {
         </div>
       )}
 
-      <BaixaDialog pessoa={baixa} onFechar={() => setBaixa(null)} onFeito={() => { setBaixa(null); carregar(true); }}
-        onErro={() => carregar(true)} />
+      <PagarAgoraDialog pessoa={pagando} onFechar={() => setPagando(null)}
+        onFeito={() => { setPagando(null); carregar(true); }} onErro={() => carregar(true)} />
     </>
   );
 };

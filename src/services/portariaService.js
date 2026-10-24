@@ -2,12 +2,12 @@ import { supabase } from '@/services/supabaseClient';
 import { comReenvio } from '@/services/serviceHelpers';
 
 /**
- * Tela da portaria (login de apoio, 24/10/2026).
+ * Tela da portaria (login de apoio, 24/10/2026): entrada dos EQUIPANTES.
  *
  * A conta da portaria nao le nenhuma tabela direto: o banco entrega, pela
- * funcao portaria_lista(), so nome, igreja, situacao do pagamento e a
- * observacao. A baixa (dinheiro/cartao), o desfazer e a observacao tambem sao
- * funcoes do banco, que conferem quem esta logado.
+ * funcao portaria_lista(), so nome, igreja, area, situacao do pagamento, a
+ * entrada e a observacao. Pagar agora, liberar a entrada, os desfazer e a
+ * observacao tambem sao funcoes do banco, que conferem quem esta logado.
  */
 export const fetchPortariaLista = async () => {
   const { data, error } = await comReenvio(
@@ -35,9 +35,18 @@ const gravar = async (funcao, args, falha) => {
   return data;
 };
 
-export const darBaixaPortaria = (tipo, id, meio, valor) =>
-  gravar('portaria_dar_baixa', { p_tipo: tipo, p_id: id, p_meio: meio, p_valor: valor },
-    'Não foi possível dar baixa.');
+// "Pagar agora": so equipante. liberarEntrada = ja entrega a pulseira no mesmo passo.
+export const darBaixaPortaria = (tipo, id, meio, valor, liberarEntrada = false) =>
+  gravar('portaria_dar_baixa', {
+    p_tipo: tipo, p_id: id, p_meio: meio, p_valor: valor, p_liberar_entrada: liberarEntrada,
+  }, 'Não foi possível registrar o pagamento.');
+
+// Entrada (pulseira entregue): so quem ja pagou ou e isento.
+export const liberarEntradaPortaria = (id) =>
+  gravar('portaria_liberar_entrada', { p_id: id }, 'Não foi possível liberar a entrada.');
+
+export const desfazerEntradaPortaria = (id) =>
+  gravar('portaria_desfazer_entrada', { p_id: id }, 'Não foi possível desfazer a entrada.');
 
 export const desfazerBaixaPortaria = (tipo, id) =>
   gravar('portaria_desfazer_baixa', { p_tipo: tipo, p_id: id },

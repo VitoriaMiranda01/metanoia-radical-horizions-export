@@ -132,6 +132,9 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
       onFeito();
     } catch (e) {
       toast({ title: 'Não deu certo', description: e?.message || 'Tente de novo.', variant: 'destructive' });
+      // Recusa do banco (ex.: outra pessoa da portaria ja registrou): fecha a
+      // janela para ninguem tentar de novo. Falha de conexao: fica aberta.
+      if (e?.recusadoPeloBanco) onFechar();
       onErro();
     } finally {
       setSalvando(false);

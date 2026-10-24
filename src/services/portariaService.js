@@ -40,7 +40,13 @@ export const fetchValorPrevisto = async (tipo, id) => {
 const gravar = async (funcao, args, falha) => {
   const { data, error } = await supabase.rpc(funcao, args);
   if (error) throw error;
-  if (!data?.ok) throw new Error(data?.erro || falha);
+  if (!data?.ok) {
+    // Recusa do banco (ja esta paga, fora da escala...): a tela fecha a janela
+    // e recarrega. Erro de conexao (acima) deixa a janela aberta para tentar.
+    const recusa = new Error(data?.erro || falha);
+    recusa.recusadoPeloBanco = true;
+    throw recusa;
+  }
   return data;
 };
 

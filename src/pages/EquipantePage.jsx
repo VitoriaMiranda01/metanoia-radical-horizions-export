@@ -127,6 +127,7 @@ const mapDbToFormData = (dbData) => {
     areasTrabalhoExtra: dbData.area_trabalho_extra || [],
     especialidadeSaude: dbData.especialidade_saude || '',
     especialidadeSaudeOutro: dbData.especialidade_saude_outro || '',
+    especialidadesSaudeAdicionais: dbData.especialidades_saude_adicionais || [],
 
     // Outros
     metodoPagamento: dbData.metodo_pagamento || '',
@@ -219,7 +220,7 @@ const EquipantePage = () => {
     contatoEmergencia: '', telefoneEmergencia: '',
     areaTrabalhoOpcao1: '', areaTrabalhoOpcao2: '', areaTrabalhoOpcao3: '',
     areasTrabalhoExtra: [],
-    especialidadeSaude: '', especialidadeSaudeOutro: '',
+    especialidadeSaude: '', especialidadeSaudeOutro: '', especialidadesSaudeAdicionais: [],
     metodoPagamento: '',
   });
 

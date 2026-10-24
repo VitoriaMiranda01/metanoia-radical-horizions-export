@@ -113,6 +113,8 @@ const mapEquipanteToDb = (formData) => ({
   ...(escolheuSaude(formData) ? {
     especialidade_saude: formData.especialidadeSaude || null,
     especialidade_saude_outro: formData.especialidadeSaude === ESPECIALIDADE_OUTRO ? (formData.especialidadeSaudeOutro || '').trim() : null,
+    // Mais de uma (24/10/2026): as demais marcadas.
+    especialidades_saude_adicionais: Array.isArray(formData.especialidadesSaudeAdicionais) ? formData.especialidadesSaudeAdicionais : [],
   } : {}),
   // Bug corrigido em 2026-09-01: o formulario grava a escolha em
   // formData.areasTrabalhoExtra (plural, array de ate 3 opcoes via

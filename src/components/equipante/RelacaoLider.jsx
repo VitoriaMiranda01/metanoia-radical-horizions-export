@@ -934,7 +934,8 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
               {m.nome}
               {m.especialidade_saude === ESPECIALIDADE_OUTRO && <TagEspecialidade especialidade={ESPECIALIDADE_OUTRO} outro={m.especialidade_saude_outro} />}
             </span>
-            {m.especialidade_saude && m.especialidade_saude !== ESPECIALIDADE_OUTRO && <TagEspecialidade especialidade={m.especialidade_saude} />}
+            {m.especialidade_saude && m.especialidade_saude !== ESPECIALIDADE_OUTRO && <TagEspecialidade especialidade={m.especialidade_saude} adicionais={m.especialidades_saude_adicionais} />}
+            {m.especialidade_saude === ESPECIALIDADE_OUTRO && (m.especialidades_saude_adicionais || []).map((x) => <TagEspecialidade key={x} especialidade={x} />)}
             {/* Grupo por cor: a area de cada pessoa como etiqueta. */}
             {etiquetaArea && (
               <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full', ETIQUETA_TRILHA[etiquetaArea] || 'bg-white/10 text-gray-200')}>

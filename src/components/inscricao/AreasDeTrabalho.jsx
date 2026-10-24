@@ -120,9 +120,15 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange, semExtras
             <CampoEspecialidadeSaude
               id="inscricao-especialidade"
               rotulo="Você escolheu Primeiros socorros – Saúde. Qual é a sua especialidade?"
+              multipla
               valor={formData.especialidadeSaude}
               outro={formData.especialidadeSaudeOutro}
-              onChange={(v, o) => { handleSelectChange('especialidadeSaude', v); handleSelectChange('especialidadeSaudeOutro', o); }}
+              adicionais={formData.especialidadesSaudeAdicionais}
+              onChange={(v, o, a) => {
+                handleSelectChange('especialidadeSaude', v);
+                handleSelectChange('especialidadeSaudeOutro', o);
+                handleSelectChange('especialidadesSaudeAdicionais', a);
+              }}
             />
           </div>
         )}

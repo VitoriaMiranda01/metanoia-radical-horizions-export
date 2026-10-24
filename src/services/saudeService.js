@@ -32,9 +32,11 @@ export const fetchSaudeEquipe = async () => {
 };
 
 // A lider da Saude (ou organizador) corrige a especialidade de alguem.
-export const definirEspecialidadeSaude = async (equipanteId, especialidade, outro) => {
+// adicionais (24/10/2026): as demais especialidades marcadas.
+export const definirEspecialidadeSaude = async (equipanteId, especialidade, outro, adicionais = []) => {
   const { data, error } = await supabase.rpc('definir_especialidade_saude', {
     p_equipante_id: equipanteId, p_especialidade: especialidade || null, p_outro: outro || null,
+    p_adicionais: adicionais || [],
   });
   if (error) throw error;
   if (!data?.ok) throw new Error(data?.erro || 'Não foi possível salvar a especialidade.');

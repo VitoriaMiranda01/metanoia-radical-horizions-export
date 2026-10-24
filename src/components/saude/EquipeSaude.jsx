@@ -27,6 +27,8 @@ import { cn } from '@/lib/utils';
  */
 
 const primeiroNome = (nome) => String(nome || '').trim().split(/\s+/)[0] || '';
+// Principal + as demais (24/10/2026: a pessoa pode ter mais de uma).
+const especialidades = (p) => [p.especialidade, ...(p.especialidades_adicionais || [])].filter(Boolean);
 
 const Ordenar = ({ coluna, ordem, setOrdem, children }) => {
   const ativa = ordem.coluna === coluna;
@@ -73,7 +75,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
   // Quantos de cada especialidade (para os botoes de filtro).
   const contagem = useMemo(() => {
     const c = new Map();
-    equipe.forEach((p) => { if (p.especialidade) c.set(p.especialidade, (c.get(p.especialidade) || 0) + 1); });
+    equipe.forEach((p) => especialidades(p).forEach((esp) => c.set(esp, (c.get(esp) || 0) + 1)));
     return [...c.entries()].sort((a, b) => (a[0] === ESPECIALIDADE_OUTRO) - (b[0] === ESPECIALIDADE_OUTRO) || b[1] - a[1]);
   }, [equipe]);
   const semEspecialidade = equipe.filter((p) => !p.especialidade).length;
@@ -82,14 +84,14 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
     const q = busca.trim();
     const lista = equipe.filter((p) => {
       if (filtro === 'sem' && p.especialidade) return false;
-      if (filtro !== 'todas' && filtro !== 'sem' && p.especialidade !== filtro) return false;
-      if (q && ![p.nome, nomeDaIgreja(p), p.especialidade, p.especialidade_outro, p.whatsapp].some((c) => contemTexto(c, q))) return false;
+      if (filtro !== 'todas' && filtro !== 'sem' && !especialidades(p).includes(filtro)) return false;
+      if (q && ![p.nome, nomeDaIgreja(p), especialidades(p).join(' '), p.especialidade_outro, p.whatsapp].some((c) => contemTexto(c, q))) return false;
       return true;
     });
     const chave = {
       nome: (p) => (p.nome || '').toLowerCase(),
       idade: (p) => (p.idade == null ? 999 : p.idade),
-      especialidade: (p) => `${p.especialidade ? '' : '~'}${p.especialidade || ''} ${p.especialidade_outro || ''}`.toLowerCase(),
+      especialidade: (p) => `${p.especialidade ? '' : '~'}${especialidades(p).join(' ')} ${p.especialidade_outro || ''}`.toLowerCase(),
       igreja: (p) => nomeDaIgreja(p).toLowerCase(),
     }[ordem.coluna];
     return [...lista].sort((a, b) => {
@@ -115,11 +117,12 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
     if (problema) { toast({ title: 'Confira', description: problema, variant: 'destructive' }); return; }
     setSalvando(true);
     try {
-      await definirEspecialidadeSaude(editando.id, editando.esp, editando.esp === ESPECIALIDADE_OUTRO ? editando.outro.trim() : null);
+      const r = await definirEspecialidadeSaude(editando.id, editando.esp, editando.esp === ESPECIALIDADE_OUTRO ? editando.outro.trim() : null, editando.adicionais);
       setDados((d) => ({
         ...d,
         equipe: d.equipe.map((p) => (p.id === editando.id
-          ? { ...p, especialidade: editando.esp, especialidade_outro: editando.esp === ESPECIALIDADE_OUTRO ? editando.outro.trim() : null }
+          ? { ...p, especialidade: editando.esp, especialidade_outro: editando.esp === ESPECIALIDADE_OUTRO ? editando.outro.trim() : null,
+              especialidades_adicionais: r.adicionais || [] }
           : p)),
       }));
       setEditando(null);
@@ -167,7 +170,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
     <p className="font-medium text-white flex flex-wrap items-center gap-x-1.5 gap-y-1">
       {p.eh_lider && <Star className="w-3.5 h-3.5 text-amber-300 shrink-0" aria-label="Líder" />}
       <span>{p.nome}</span>
-      <TagEspecialidade especialidade={p.especialidade} outro={p.especialidade_outro} semEspecialidade />
+      <TagEspecialidade especialidade={p.especialidade} outro={p.especialidade_outro} adicionais={p.especialidades_adicionais} semEspecialidade />
     </p>
   );
 
@@ -188,7 +191,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
             <Send className="w-3.5 h-3.5" />Enviar grupo
           </a>
         )}
-        <button type="button" onClick={() => setEditando({ id: p.id, esp: p.especialidade || '', outro: p.especialidade_outro || '' })}
+        <button type="button" onClick={() => setEditando({ id: p.id, esp: p.especialidade || '', outro: p.especialidade_outro || '', adicionais: p.especialidades_adicionais || [] })}
           title="Corrigir a especialidade"
           className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-white/15 bg-white/5 text-gray-300 text-xs hover:bg-white/10">
           <Pencil className="w-3.5 h-3.5" />Especialidade
@@ -199,9 +202,9 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
 
   const edicao = (p) => (editando?.id === p.id ? (
     <div className="mt-2 p-3 rounded-md border border-white/15 bg-black/40 space-y-3">
-      <CampoEspecialidadeSaude id={`esp-${p.id}`} rotulo={`Especialidade de ${primeiroNome(p.nome)}`} compacto
-        valor={editando.esp} outro={editando.outro}
-        onChange={(v, o) => setEditando((e) => ({ ...e, esp: v, outro: o }))} />
+      <CampoEspecialidadeSaude id={`esp-${p.id}`} rotulo={`Especialidades de ${primeiroNome(p.nome)}`} compacto multipla
+        valor={editando.esp} outro={editando.outro} adicionais={editando.adicionais}
+        onChange={(v, o, a) => setEditando((e) => ({ ...e, esp: v, outro: o, adicionais: a }))} />
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={() => setEditando(null)} className="text-gray-400 hover:text-white hover:bg-white/10">Cancelar</Button>
         <Button size="sm" onClick={salvarEspecialidade} disabled={salvando} className="bg-emerald-600 hover:bg-emerald-700 text-white">
@@ -294,9 +297,14 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
                         </td>
                         <td className="px-3 py-2.5 text-gray-200 tabular-nums whitespace-nowrap">{p.idade != null ? `${p.idade} anos` : '—'}<p className="text-xs text-gray-500">{p.sexo || ''}</p></td>
                         <td className="px-3 py-2.5">
-                          {p.especialidade === ESPECIALIDADE_OUTRO
-                            ? <span className="text-gray-200">{p.especialidade_outro}</span>
-                            : <TagEspecialidade especialidade={p.especialidade} semEspecialidade />}
+                          <div className="flex flex-wrap items-center gap-1">
+                            {p.especialidade === ESPECIALIDADE_OUTRO
+                              ? <>
+                                  <span className="text-gray-200">{p.especialidade_outro}</span>
+                                  {(p.especialidades_adicionais || []).map((x) => <TagEspecialidade key={x} especialidade={x} />)}
+                                </>
+                              : <TagEspecialidade especialidade={p.especialidade} adicionais={p.especialidades_adicionais} semEspecialidade />}
+                          </div>
                         </td>
                         <td className="px-3 py-2.5 text-xs text-gray-300 max-w-[220px] truncate" title={nomeDaIgreja(p)}>{nomeDaIgreja(p) || '—'}</td>
                         <td className="px-3 py-2.5 text-xs">

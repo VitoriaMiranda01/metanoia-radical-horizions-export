@@ -18,22 +18,31 @@ const COR = {
  * opcao da lista vira TAG colorida; o que a pessoa escreveu em "Outro"
  * aparece como texto, do jeito que ela escreveu ("Patrick - Biomedicina").
  * semEspecialidade: mostra o aviso de que falta (so na tela da Saude).
+ * adicionais (24/10/2026): as demais especialidades, uma tag para cada.
  */
-const TagEspecialidade = ({ especialidade, outro, semEspecialidade = false, className }) => {
+const Tag = ({ nome, className }) => (
+  <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap',
+    COR[nome] || 'border-emerald-500/40 bg-emerald-500/15 text-emerald-200', className)}>
+    {nome}
+  </span>
+);
+
+const TagEspecialidade = ({ especialidade, outro, adicionais, semEspecialidade = false, className }) => {
   if (!especialidade) {
     return semEspecialidade
       ? <span className={cn('text-[11px] text-amber-300/90 italic', className)}>sem especialidade</span>
       : null;
   }
+  const extras = (adicionais || []).filter((x) => x && x !== especialidade).map((x) => <Tag key={x} nome={x} className={className} />);
   if (especialidade === ESPECIALIDADE_OUTRO) {
-    return outro ? <span className={cn('text-gray-300 font-normal', className)}> - {outro}</span> : null;
+    return (
+      <>
+        {outro ? <span className={cn('text-gray-300 font-normal', className)}> - {outro}</span> : null}
+        {extras}
+      </>
+    );
   }
-  return (
-    <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap',
-      COR[especialidade] || 'border-emerald-500/40 bg-emerald-500/15 text-emerald-200', className)}>
-      {especialidade}
-    </span>
-  );
+  return <><Tag nome={especialidade} className={className} />{extras}</>;
 };
 
 export default TagEspecialidade;

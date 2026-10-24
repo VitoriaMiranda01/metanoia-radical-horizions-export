@@ -13,6 +13,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
 } from '@/components/ui/dialog';
 import Layout from '@/components/Layout';
+import { getAuthToken } from '@/services/authToken';
 import {
   darBaixaPortaria, desfazerBaixaPortaria, fetchPortariaLista, fetchValorPrevisto, salvarObservacaoPortaria
 } from '@/services/portariaService';
@@ -80,7 +81,7 @@ const Numero = ({ rotulo, valor, detalhe, cor = 'text-white' }) => (
 );
 
 // ---- Janela de baixa ----------------------------------------------------------
-const BaixaDialog = ({ pessoa, onFechar, onFeito }) => {
+const BaixaDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
   const { toast } = useToast();
   const [meio, setMeio] = useState('');
   const [valor, setValor] = useState('');
@@ -119,6 +120,7 @@ const BaixaDialog = ({ pessoa, onFechar, onFeito }) => {
       onFeito();
     } catch (e) {
       toast({ title: 'Não deu certo', description: e?.message || 'Tente de novo.', variant: 'destructive' });
+      onErro();
     } finally {
       setSalvando(false);
     }
@@ -198,6 +200,7 @@ const CartaoPessoa = ({ p, onBaixa, onAtualizado }) => {
       onAtualizado();
     } catch (e) {
       toast({ title: 'Não deu certo', description: e?.message || 'Tente de novo.', variant: 'destructive' });
+      onAtualizado();
     } finally {
       setSalvando(false);
     }
@@ -212,6 +215,7 @@ const CartaoPessoa = ({ p, onBaixa, onAtualizado }) => {
       onAtualizado();
     } catch (e) {
       toast({ title: 'Não deu certo', description: e?.message || 'Tente de novo.', variant: 'destructive' });
+      onAtualizado();
     } finally {
       setDesfazendo(false);
     }
@@ -308,6 +312,7 @@ const CartaoPessoa = ({ p, onBaixa, onAtualizado }) => {
 const PortariaPage = () => {
   const { apoioUser, organizadorUser, user, logout } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [lista, setLista] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -325,9 +330,29 @@ const PortariaPage = () => {
   const nomeDaConta = apoioUser?.nome || organizadorUser?.nome || user?.nome || '';
   const ehOrganizador = !apoioUser && (!!organizadorUser || ['organizador', 'organizador-aprovador'].includes(user?.role));
 
+  // O cracha vale 8 horas e a portaria fica com a tela aberta o dia todo.
+  // Vencido, o banco passa a responder "Acesso não autorizado" e a lista
+  // pararia de atualizar sem aviso: aqui a pessoa e mandada para o login.
+  const sessaoAcabou = () => {
+    toast({
+      title: 'Sua sessão terminou',
+      description: 'Entre de novo com o seu nome e a sua senha.',
+      variant: 'destructive',
+    });
+    logout();
+    navigate('/login');
+  };
+  const semSessao = () => !getAuthToken();
+  const ehRecusaDeAcesso = (e) => /acesso não autorizado/i.test(String(e?.message || ''));
+
+  // Uma carga por vez. Se pedirem outra no meio (ex.: logo depois de uma
+  // baixa), ela roda quando a atual terminar -- a atual pode ter saido do
+  // banco antes da gravacao e trazer a pessoa ainda "em aberto".
   const emCurso = useRef(false);
+  const deNovo = useRef(false);
   const carregar = async (silencioso = false) => {
-    if (emCurso.current) return;
+    if (semSessao()) { sessaoAcabou(); return; }
+    if (emCurso.current) { deNovo.current = true; return; }
     emCurso.current = true;
     if (silencioso) setAtualizando(true); else setCarregando(true);
     try {
@@ -336,11 +361,16 @@ const PortariaPage = () => {
       setErro('');
     } catch (e) {
       console.error('PortariaPage - carregar', e?.message || e);
+      if (ehRecusaDeAcesso(e) && (semSessao() || !ehOrganizador)) { sessaoAcabou(); return; }
       if (!silencioso) setErro(e?.message || 'Não foi possível carregar a lista.');
     } finally {
       emCurso.current = false;
       setCarregando(false);
       setAtualizando(false);
+      if (deNovo.current) {
+        deNovo.current = false;
+        carregar(true);
+      }
     }
   };
 
@@ -509,7 +539,8 @@ const PortariaPage = () => {
         </div>
       )}
 
-      <BaixaDialog pessoa={baixa} onFechar={() => setBaixa(null)} onFeito={() => { setBaixa(null); carregar(true); }} />
+      <BaixaDialog pessoa={baixa} onFechar={() => setBaixa(null)} onFeito={() => { setBaixa(null); carregar(true); }}
+        onErro={() => carregar(true)} />
     </>
   );
 };

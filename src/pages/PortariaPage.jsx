@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Banknote, CheckCircle2, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, RefreshCw, Search, Undo2, Wallet, X
+  ArrowLeft, Banknote, CheckCircle2, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, QrCode, RefreshCw, Search, Undo2, Wallet, X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -51,11 +51,15 @@ const dataHora = (v) => {
   return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
 
-const semPrefixo = (quem) => String(quem || '').replace(/^Portaria: /, '');
+const maiusculas = (t) => String(t || '').replace(/(^|\s)(\S)/g, (m, a, b) => a + b.toUpperCase());
+
+const semPrefixo = (quem) => maiusculas(String(quem || '').replace(/^Portaria: /, ''));
 
 const pagoNaPortaria = (p) => p.pago && p.metodo === 'manual' && String(p.confirmado_por || '').startsWith('Portaria: ');
 
-const NOME_MEIO = { dinheiro: 'Dinheiro', cartao: 'Cartão', pix: 'PIX' };
+// Na portaria a opcao "dinheiro" e Dinheiro ou Pix recebido na hora (Patrick,
+// 24/10/2026): o banco segue gravando 'dinheiro', so o nome na tela muda.
+const NOME_MEIO = { dinheiro: 'Dinheiro/Pix', cartao: 'Cartão', pix: 'PIX' };
 
 // Texto da situacao do pagamento.
 const situacao = (p) => {
@@ -148,12 +152,14 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
           <div>
             <p className="text-sm text-gray-300 mb-2">Como pagou?</p>
             <div className="grid grid-cols-2 gap-3">
-              {[['dinheiro', 'Dinheiro', Banknote], ['cartao', 'Cartão', CreditCard]].map(([v, rotulo, Icone]) => (
+              {[['dinheiro', 'Dinheiro/Pix', [Banknote, QrCode]], ['cartao', 'Cartão', [CreditCard]]].map(([v, rotulo, icones]) => (
                 <button key={v} type="button" onClick={() => setMeio(v)}
                   className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border p-4 transition-colors ${
                     meio === v ? 'border-emerald-400 bg-emerald-500/20 text-white' : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
                   }`}>
-                  <Icone className="w-6 h-6" />
+                  <span className="flex items-center gap-1.5">
+                    {icones.map((Icone, i) => <Icone key={i} className="w-6 h-6" />)}
+                  </span>
                   <span className="font-medium">{rotulo}</span>
                 </button>
               ))}
@@ -177,7 +183,7 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
             <Checkbox checked={liberar} onCheckedChange={(v) => setLiberar(v === true)} className="mt-0.5" />
             <span className="text-sm text-gray-200">
               Liberar a entrada agora
-              <span className="block text-xs text-gray-500">Entregue a pulseira. A pessoa vai para "Já entrou".</span>
+              <span className="block text-xs text-gray-500">Entregue a pulseira. A pessoa vai para "Entrada liberada".</span>
             </span>
           </label>
         </div>
@@ -242,7 +248,7 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
     title: 'Entrada liberada', description: `${p.nome} · entregue a pulseira.`, className: 'bg-emerald-600 text-white',
   });
   const desfazerEntrada = () => executar(() => desfazerEntradaPortaria(p.id), {
-    title: 'Entrada desfeita', description: `${p.nome} voltou para "Falta entrar".`,
+    title: 'Entrada desfeita', description: `${p.nome} voltou para "Entrada pendente".`,
   });
   const desfazerPagamento = () => executar(() => desfazerBaixaPortaria('equipante', p.id), {
     title: 'Pagamento desfeito', description: `${p.nome} voltou para "Pagamento em aberto".`,
@@ -277,7 +283,7 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             {entrou && (
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full border border-emerald-400 bg-emerald-500/30 text-white">
-                Entrou · {dataHora(p.entrou_em)}
+                Entrada liberada · {dataHora(p.entrou_em)}
               </span>
             )}
             <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${s.classe}`}>{s.texto}</span>
@@ -328,7 +334,7 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
       </div>
 
       {confirmando === 'entrada' && (
-        <Confirmar texto='Desfazer a entrada? A pessoa volta para "Falta entrar".' rotulo="Sim, desfazer"
+        <Confirmar texto='Desfazer a entrada? A pessoa volta para "Entrada pendente".' rotulo="Sim, desfazer"
           ocupado={ocupado} onNao={() => setConfirmando('')} onSim={desfazerEntrada} />
       )}
       {confirmando === 'pagamento' && (
@@ -366,8 +372,8 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
 
 // ---- Tela -------------------------------------------------------------------------
 const ABAS = [
-  { valor: 'falta', rotulo: 'Falta entrar' },
-  { valor: 'entrou', rotulo: 'Já entrou' },
+  { valor: 'falta', rotulo: 'Entrada pendente' },
+  { valor: 'entrou', rotulo: 'Entrada liberada' },
   { valor: 'todos', rotulo: 'Todos' },
 ];
 
@@ -529,11 +535,11 @@ const PortariaPage = () => {
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Numero rotulo="Equipantes" valor={numeros.total} />
-        <Numero rotulo="Já entraram" valor={numeros.entraram} cor="text-emerald-300" />
-        <Numero rotulo="Faltam entrar" valor={numeros.faltam} cor="text-amber-300"
+        <Numero rotulo="Entrada liberada" valor={numeros.entraram} cor="text-emerald-300" />
+        <Numero rotulo="Entrada pendente" valor={numeros.faltam} cor="text-amber-300"
           detalhe={`${numeros.faltamPagos} já pagos · ${numeros.faltamAbertos} pagam na hora`} />
         <Numero rotulo="Pagos na portaria" valor={numeros.pagosNaPortaria}
-          detalhe={`Dinheiro ${moeda(numeros.dinheiro)} · Cartão ${moeda(numeros.cartao)}`} />
+          detalhe={`Dinheiro/Pix ${moeda(numeros.dinheiro)} · Cartão ${moeda(numeros.cartao)}`} />
       </div>
 
       <div className="grid grid-cols-3 gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1">
@@ -612,7 +618,7 @@ const PortariaPage = () => {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2">
-                  <DoorOpen className="w-6 h-6 text-emerald-400" /> Portaria · entrada dos equipantes
+                  <DoorOpen className="w-6 h-6 text-emerald-400" /> Portaria · Equipantes
                 </h1>
                 <p className="text-sm text-gray-400">A mesma tela que a portaria vê no login Apoio.</p>
               </div>
@@ -630,9 +636,9 @@ const PortariaPage = () => {
               <img src="/images/logo.png" alt="Metanoia Radical" className="hidden sm:block h-9 w-auto object-contain" />
               <div className="min-w-0">
                 <p className="font-bold leading-tight flex items-center gap-2">
-                  <DoorOpen className="w-4 h-4 text-emerald-400" /> Portaria · equipantes
+                  <DoorOpen className="w-4 h-4 text-emerald-400" /> Portaria · Equipantes
                 </p>
-                <p className="text-xs text-gray-500 truncate">Metanoia Radical Serra · {nomeDaConta || 'Apoio'}</p>
+                <p className="text-xs text-gray-500 truncate">Metanoia Radical Serra · {maiusculas(nomeDaConta) || 'Apoio'}</p>
               </div>
               <div className="ml-auto">
                 <Button variant="ghost" size="sm" onClick={sair} className="text-gray-300 hover:text-white hover:bg-white/10">

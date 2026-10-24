@@ -19,6 +19,15 @@ export const fetchPortariaLista = async () => {
   return data.pessoas || [];
 };
 
+// "Assinatura" curta do que a lista mostra (escala, pagamentos, entradas,
+// observacoes). A tela confere a cada poucos segundos e so baixa a lista
+// inteira (~400 KB) quando ela muda. null = sem acesso.
+export const fetchPortariaVersao = async () => {
+  const { data, error } = await supabase.rpc('portaria_versao');
+  if (error) throw error;
+  return data ?? null;
+};
+
 // Valor sugerido para a baixa (lote do dia, com desconto automatico de
 // pastor/infiltrado do equipante). A portaria confere e pode mudar.
 export const fetchValorPrevisto = async (tipo, id) => {

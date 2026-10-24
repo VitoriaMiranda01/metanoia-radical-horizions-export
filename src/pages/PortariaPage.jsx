@@ -16,7 +16,7 @@ import {
 import Layout from '@/components/Layout';
 import { getAuthToken } from '@/services/authToken';
 import {
-  darBaixaPortaria, desfazerBaixaPortaria, desfazerEntradaPortaria, fetchPortariaLista, fetchValorPrevisto,
+  darBaixaPortaria, desfazerBaixaPortaria, desfazerEntradaPortaria, fetchPortariaLista, fetchPortariaVersao, fetchValorPrevisto,
   liberarEntradaPortaria, salvarObservacaoPortaria
 } from '@/services/portariaService';
 
@@ -36,7 +36,8 @@ import {
  */
 
 const POR_PAGINA = 50;
-const ATUALIZAR_A_CADA_MS = 30000;
+const CONFERIR_A_CADA_MS = 5000;
+const RECARGA_COMPLETA_MS = 120000;
 
 const semAcento = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -165,7 +166,7 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
               placeholder="0,00" className="bg-white/5 border-white/20 text-white text-lg" />
             <p className="text-xs text-gray-500 mt-1.5">
               {previsto?.valor != null
-                ? <>Valor de hoje: {moeda(previsto.valor)}
+                ? <>Valor do último lote: {moeda(previsto.valor)}
                     {Number(previsto.desconto) > 0 && <> (com desconto de {previsto.motivo === 'pastor' ? 'pastor' : 'infiltrado'})</>}.
                     {' '}Confira antes de confirmar.</>
                 : 'Confira o valor antes de confirmar.'}
@@ -410,13 +411,20 @@ const PortariaPage = () => {
   // banco antes da gravacao e trazer a pessoa ainda sem a mudanca.
   const emCurso = useRef(false);
   const deNovo = useRef(false);
+  const versaoRef = useRef(null);
+  const ultimaCarga = useRef(0);
   const carregar = async (silencioso = false) => {
     if (semSessao()) { sessaoAcabou(); return; }
     if (emCurso.current) { deNovo.current = true; return; }
     emCurso.current = true;
     if (silencioso) setAtualizando(true); else setCarregando(true);
     try {
+      // A assinatura vem ANTES da lista: se algo mudar entre as duas, a
+      // assinatura guardada fica velha e a proxima conferencia recarrega.
+      const versao = await fetchPortariaVersao().catch(() => null);
       const dados = await fetchPortariaLista();
+      versaoRef.current = versao;
+      ultimaCarga.current = Date.now();
       setLista(dados.map((p) => ({
         ...p,
         areas: Array.isArray(p.areas) ? p.areas : [],
@@ -438,12 +446,35 @@ const PortariaPage = () => {
     }
   };
 
-  // Varias pessoas da portaria trabalham ao mesmo tempo: a lista se atualiza
-  // sozinha a cada 30 s (e logo depois de cada gravacao).
+  // A lista precisa estar sempre em dia: depois da escala oficial ha trocas
+  // de area (inclusive infiltrado <-> outra area), e quem trocou as 17:00 e
+  // chega as 17:01 ja tem de aparecer certo. A cada 5 s a tela confere a
+  // assinatura (consulta pequena) e so recarrega a lista quando ela mudou;
+  // ao voltar para a tela (celular desbloqueado, aba trocada) confere na hora.
+  // Por seguranca, recarrega tudo de 2 em 2 minutos. Toda gravacao tambem
+  // recarrega, e o banco confere de novo em cada acao.
+  const conferir = async () => {
+    if (document.visibilityState === 'hidden' || emCurso.current) return;
+    if (Date.now() - ultimaCarga.current > RECARGA_COMPLETA_MS) { carregar(true); return; }
+    try {
+      const versao = await fetchPortariaVersao();
+      if (!versao || versao !== versaoRef.current) carregar(true);
+    } catch (e) {
+      carregar(true);
+    }
+  };
+
   useEffect(() => {
     carregar();
-    const t = setInterval(() => carregar(true), ATUALIZAR_A_CADA_MS);
-    return () => clearInterval(t);
+    const t = setInterval(conferir, CONFERIR_A_CADA_MS);
+    const aoVoltar = () => { if (document.visibilityState === 'visible') conferir(); };
+    document.addEventListener('visibilitychange', aoVoltar);
+    window.addEventListener('focus', aoVoltar);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', aoVoltar);
+      window.removeEventListener('focus', aoVoltar);
+    };
   }, []);
 
   useEffect(() => { setLimite(POR_PAGINA); }, [aba, busca, pagamento, soObservacao]);

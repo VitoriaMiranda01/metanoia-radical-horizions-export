@@ -209,7 +209,6 @@ const EscolherGrupos = ({ modo, formato, grupos, onClose, onGerar }) => {
                 <span className="flex-1">Equipe de Trilha <span className="font-normal text-gray-400">· selecionar toda a equipe</span></span>
                 <span className="text-xs text-gray-400 shrink-0">{pessoasTrilha}</span>
               </label>
-              <p className="px-1.5 text-xs text-gray-400">Sai no modelo da planilha "Equipe de trilha" (grupos por cor).</p>
               <div className="pl-4 space-y-1">
                 {trilhaMostrada.map((g) => (
                   <ItemGrupo key={g.titulo} g={g} marcado={marcados.has(g.titulo)} onAlternar={() => alternar(g.titulo)} />

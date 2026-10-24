@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Banknote, CheckCircle2, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, QrCode, RefreshCw, Search, Undo2, Wallet, X
+  ArrowLeft, Banknote, CheckCircle2, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, RefreshCw, Search, Undo2, Wallet, X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -57,9 +57,9 @@ const semPrefixo = (quem) => maiusculas(String(quem || '').replace(/^Portaria: /
 
 const pagoNaPortaria = (p) => p.pago && p.metodo === 'manual' && String(p.confirmado_por || '').startsWith('Portaria: ');
 
-// Na portaria a opcao "dinheiro" e Dinheiro ou Pix recebido na hora (Patrick,
-// 24/10/2026): o banco segue gravando 'dinheiro', so o nome na tela muda.
-const NOME_MEIO = { dinheiro: 'Dinheiro/Pix', cartao: 'Cartão', pix: 'PIX' };
+// Na portaria so se recebe dinheiro ou cartao (Patrick, 24/10/2026): o PIX o
+// equipante paga sozinho na propria area. 'pix' fica so para quem ja pagou assim.
+const NOME_MEIO = { dinheiro: 'Dinheiro', cartao: 'Cartão', pix: 'PIX' };
 
 // Texto da situacao do pagamento.
 const situacao = (p) => {
@@ -155,7 +155,7 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
           <div>
             <p className="text-sm text-gray-300 mb-2">Como pagou?</p>
             <div className="grid grid-cols-2 gap-3">
-              {[['dinheiro', 'Dinheiro/Pix', [Banknote, QrCode]], ['cartao', 'Cartão', [CreditCard]]].map(([v, rotulo, icones]) => (
+              {[['dinheiro', 'Dinheiro', [Banknote]], ['cartao', 'Cartão', [CreditCard]]].map(([v, rotulo, icones]) => (
                 <button key={v} type="button" onClick={() => setMeio(v)}
                   className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border p-4 transition-colors ${
                     meio === v ? 'border-emerald-400 bg-emerald-500/20 text-white' : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
@@ -497,7 +497,6 @@ const PortariaPage = () => {
     const entraram = lista.filter((p) => p.entrou_em).length;
     const faltam = lista.filter((p) => !p.entrou_em);
     const pagosNaPortaria = lista.filter(pagoNaPortaria);
-    const soma = (m) => pagosNaPortaria.filter((p) => p.meio === m).reduce((t, p) => t + Number(p.valor || 0), 0);
     return {
       total: lista.length,
       entraram,
@@ -505,8 +504,6 @@ const PortariaPage = () => {
       faltamPagos: faltam.filter((p) => p.pago).length,
       faltamAbertos: faltam.filter((p) => !p.pago).length,
       pagosNaPortaria: pagosNaPortaria.length,
-      dinheiro: soma('dinheiro'),
-      cartao: soma('cartao'),
     };
   }, [lista]);
 
@@ -541,8 +538,7 @@ const PortariaPage = () => {
         <Numero rotulo="Entrada liberada" valor={numeros.entraram} cor="text-emerald-300" />
         <Numero rotulo="Entrada pendente" valor={numeros.faltam} cor="text-amber-300"
           detalhe={`${numeros.faltamPagos} já pagos · ${numeros.faltamAbertos} pagam na hora`} />
-        <Numero rotulo="Pagos na portaria" valor={numeros.pagosNaPortaria}
-          detalhe={`Dinheiro/Pix ${moeda(numeros.dinheiro)} · Cartão ${moeda(numeros.cartao)}`} />
+        <Numero rotulo="Pagos na portaria" valor={numeros.pagosNaPortaria} />
       </div>
 
       <div className="grid grid-cols-3 gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1">

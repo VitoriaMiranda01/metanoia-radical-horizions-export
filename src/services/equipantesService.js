@@ -292,6 +292,7 @@ export const completarMinhaInscricao = async (equipante_id, dono = {}, dados = {
       area3: dados.area3 ?? undefined,
       especialidade_saude: dados.especialidadeSaude ?? undefined,
       especialidade_saude_outro: dados.especialidadeSaudeOutro ?? undefined,
+      especialidade_saude_adicionais: dados.especialidadesSaudeAdicionais ?? undefined,
     },
   });
   // Recusa de dado do gatilho validar_ficha chega como erro: vira a frase

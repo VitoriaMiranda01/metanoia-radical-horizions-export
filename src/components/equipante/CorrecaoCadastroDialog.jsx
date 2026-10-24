@@ -93,6 +93,8 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
   const [areas, setAreas] = useState({ areaTrabalhoOpcao1: '', areaTrabalhoOpcao2: '', areaTrabalhoOpcao3: '', areasTrabalhoExtra: [] });
   const [especialidade, setEspecialidade] = useState(pEspecialidade?.valor || '');
   const [especialidadeOutro, setEspecialidadeOutro] = useState(pEspecialidade?.outro || '');
+  // Quem ainda nao informou pode marcar varias (24/10/2026).
+  const [especialidadesAdicionais, setEspecialidadesAdicionais] = useState([]);
   const [salvando, setSalvando] = useState(false);
 
   const opcoesDeIgreja = useMemo(
@@ -183,7 +185,7 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
         ...(pTelefone ? { whatsapp } : {}),
         ...(temParentesco ? { parentesco, familiarNome: parentesco === 'NÃO TENHO' ? '' : familiarNome } : {}),
         ...(temAreas ? { area1: areas.areaTrabalhoOpcao1, area2: areas.areaTrabalhoOpcao2, area3: areas.areaTrabalhoOpcao3 } : {}),
-        ...(pEspecialidade ? { especialidadeSaude: especialidade, especialidadeSaudeOutro: especialidadeOutro.trim() } : {}),
+        ...(pEspecialidade ? { especialidadeSaude: especialidade, especialidadeSaudeOutro: especialidadeOutro.trim(), especialidadesSaudeAdicionais: especialidadesAdicionais } : {}),
       });
       toast({
         title: sobraram.length === 0 ? 'Cadastro completo' : 'Quase lá',
@@ -428,9 +430,11 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
               <CampoEspecialidadeSaude
                 id="correcao-especialidade"
                 rotulo={null}
+                multipla
                 valor={especialidade}
                 outro={especialidadeOutro}
-                onChange={(v, o) => { setEspecialidade(v); setEspecialidadeOutro(o); }}
+                adicionais={especialidadesAdicionais}
+                onChange={(v, o, a) => { setEspecialidade(v); setEspecialidadeOutro(o); setEspecialidadesAdicionais(a); }}
               />
             </Secao>
           )}

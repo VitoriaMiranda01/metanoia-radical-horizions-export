@@ -21,14 +21,18 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
 
   // silencioso: atualiza sem trocar a tela por "Carregando..." (que
   // desmontava a relacao do lider no meio da chamada).
-  const fetchWorkflow = useCallback(async (silencioso = false) => {
+  // ignorarErro: a conferencia automatica nao troca a tela por erro numa
+  // falha passageira de rede -- tenta de novo na proxima.
+  const fetchWorkflow = useCallback(async (silencioso = false, ignorarErro = false) => {
     if (!equipante_id) return;
     try {
       if (!silencioso) setIsLoading(true);
       const data = await getEquipanteWorkflow(equipante_id, dono);
-      setWorkflowData(data);
+      // Sem mudanca, mantem o mesmo objeto: a conferencia automatica (abaixo)
+      // nao redesenha a tela a cada poucos segundos.
+      setWorkflowData((antes) => (antes && JSON.stringify(antes) === JSON.stringify(data) ? antes : data));
     } catch (err) {
-      setError(err.message);
+      if (!ignorarErro) setError(err.message);
     } finally {
       if (!silencioso) setIsLoading(false);
     }
@@ -37,6 +41,24 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
   useEffect(() => {
     fetchWorkflow();
   }, [fetchWorkflow]);
+
+  // Conferencia automatica (24/10/2026, Patrick): o pagamento pode acontecer
+  // fora desta tela -- na portaria (dinheiro/Pix/cartao) ou pelo PIX ja pago
+  // em outra aba -- e o acompanhamento tem de mostrar a taxa concluida sem a
+  // pessoa recarregar. Confere a cada 10 s com a tela visivel e na hora em
+  // que ela volta para a tela. Consulta leve (situacao_inscricao, ~5 ms).
+  useEffect(() => {
+    if (!equipante_id) return undefined;
+    const conferir = () => { if (document.visibilityState === 'visible') fetchWorkflow(true, true); };
+    const t = setInterval(conferir, 10000);
+    document.addEventListener('visibilitychange', conferir);
+    window.addEventListener('focus', conferir);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', conferir);
+      window.removeEventListener('focus', conferir);
+    };
+  }, [equipante_id, fetchWorkflow]);
 
   // Estaveis entre desenhos: a relacao do lider recebe refreshSilencioso e,
   // se ele mudasse a cada desenho, todas as linhas da lista redesenhariam.

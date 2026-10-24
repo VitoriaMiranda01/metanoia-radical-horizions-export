@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { KeyRound, ShieldCheck, RefreshCw, Copy, Check, MessageSquare, X, AlertTriangle, Eye, EyeOff, DoorOpen, HeartPulse } from 'lucide-react';
+import { KeyRound, ShieldCheck, RefreshCw, Copy, Check, MessageSquare, X, AlertTriangle, Eye, EyeOff, DoorOpen, HeartPulse, UserPlus, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ import {
   redefinirSenhaOrganizador,
   listarContasApoio,
   redefinirSenhaApoio,
+  criarContaApoio,
+  excluirContaApoio,
   primeiroAcessoHabilitado,
   definirPrimeiroAcessoParceiros,
   reabrirPrimeiroAcesso,
@@ -34,7 +36,8 @@ import BloqueioLogin from '@/components/organizer/BloqueioLogin';
  *  - "Organizadores": so aparece para a conta de permissao maxima
  *    ("Desenvolvedores"), que gera senha nova para os outros;
  *  - "Contas de apoio" (09/10/2026): idem, para o login "Apoio" (a lider da
- *    saude). Senha nova e temporaria: ela cria a propria ao entrar.
+ *    saude). Senha nova e temporaria: ela cria a propria ao entrar. Desde
+ *    24/10/2026 as contas (saude ou portaria) sao criadas e excluidas aqui.
  *
  * Quem decide o que a pessoa pode fazer e o BANCO (eh_organizador_maximo).
  * Esconder o bloco aqui e so conforto visual -- se alguem forcasse a chamada,
@@ -101,6 +104,9 @@ const SenhasOrganizadoresManager = () => {
   const [senhaGerada, setSenhaGerada] = useState(null);
   // Contas de apoio (login "Apoio"): mesma mecanica, chave "apoio:<nome>".
   const [contasApoio, setContasApoio] = useState([]);
+  const [novoApoioNome, setNovoApoioNome] = useState('');
+  const [novoApoioArea, setNovoApoioArea] = useState('portaria');
+  const [criandoApoio, setCriandoApoio] = useState(false);
 
   // Interruptor do botao "Primeiro acesso" na tela de login do parceiro.
   const [primeiroAcesso, setPrimeiroAcesso] = useState(false);
@@ -251,13 +257,58 @@ const SenhasOrganizadoresManager = () => {
     }
   };
 
+  const criarApoio = async (e) => {
+    e.preventDefault();
+    const nome = novoApoioNome.trim();
+    if (!nome) return;
+    setCriandoApoio(true);
+    try {
+      const r = await criarContaApoio(nome, novoApoioArea);
+      if (!r?.ok) {
+        toast({ title: 'Não deu certo', description: r?.erro, variant: 'destructive' });
+        return;
+      }
+      setNovoApoioNome('');
+      setSenhaGerada({ nome: r.nome, senha: r.senha, mensagem: r.mensagem, tipo: 'apoio', criada: true });
+      carregarLista();
+    } catch (err) {
+      console.error('SenhasOrganizadoresManager - criar apoio', err?.message || err);
+      toast({ title: 'Erro de conexão', description: 'Confira a lista antes de tentar de novo.', variant: 'destructive' });
+      carregarLista();
+    } finally {
+      setCriandoApoio(false);
+    }
+  };
+
+  const excluirApoio = async (nome) => {
+    setConfirmando(null);
+    setOcupado(`apoio:${nome}`);
+    try {
+      const r = await excluirContaApoio(nome);
+      if (!r?.ok) {
+        toast({ title: 'Não deu certo', description: r?.erro, variant: 'destructive' });
+        return;
+      }
+      toast({ title: `Conta de ${r.nome} excluída`, description: 'O acesso parou de funcionar na hora.' });
+      if (senhaGerada?.tipo === 'apoio' && senhaGerada.nome === r.nome) setSenhaGerada(null);
+      carregarLista();
+    } catch (err) {
+      console.error('SenhasOrganizadoresManager - excluir apoio', err?.message || err);
+      toast({ title: 'Erro de conexão', description: 'Tente de novo.', variant: 'destructive' });
+    } finally {
+      setOcupado(null);
+    }
+  };
+
   // Senha recem-gerada (aparece uma vez so, no quadro de quem a gerou).
   const quadroSenhaGerada = senhaGerada && (
     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
       className="mb-5 bg-emerald-500/10 border border-emerald-500/40 rounded-lg p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-emerald-300 font-semibold">Senha nova para {senhaGerada.nome}</p>
+          <p className="text-emerald-300 font-semibold">
+            {senhaGerada.criada ? `Conta criada: ${senhaGerada.nome} — senha inicial` : `Senha nova para ${senhaGerada.nome}`}
+          </p>
           <p className="font-mono text-2xl text-white mt-2 tracking-wide break-all">{senhaGerada.senha}</p>
           <p className="text-sm text-gray-300 mt-2">
             Anote ou copie agora: esta senha não aparece de novo. Se fechar sem copiar, é só gerar outra.
@@ -492,10 +543,33 @@ const SenhasOrganizadoresManager = () => {
             </Badge>
           </div>
           <p className="text-gray-400 text-sm mb-5">
-            Login <strong className="text-gray-200">Apoio</strong> da tela de entrada: a pessoa entra com o primeiro
-            nome e só vê a tela da área dela (saúde dos acampantes). Gere uma senha nova se ela esquecer — ao entrar,
-            ela cria a própria.
+            Login <strong className="text-gray-200">Apoio</strong> da tela de entrada: a pessoa entra com o nome
+            cadastrado aqui e só vê a tela da área dela (saúde dos acampantes ou portaria). A conta nasce com uma senha
+            inicial — ao entrar, ela cria a própria. Se esquecer, gere uma senha nova.
           </p>
+
+          <form onSubmit={criarApoio} className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border border-white/10 bg-white/5 p-4">
+            <div className="space-y-2">
+              <Label className="text-gray-200">Nome (usuário do login)</Label>
+              <Input value={novoApoioNome} onChange={(e) => setNovoApoioNome(e.target.value)} maxLength={41}
+                className="bg-white/5 border-white/20 text-white w-56" placeholder="Ex.: Carlos" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-gray-200">Área</Label>
+              <select value={novoApoioArea} onChange={(e) => setNovoApoioArea(e.target.value)}
+                className="h-10 rounded-md border border-white/20 bg-zinc-900 px-3 text-sm text-white">
+                <option value="portaria">Portaria</option>
+                <option value="saude">Saúde</option>
+              </select>
+            </div>
+            <Button data-dica="Criar a conta de apoio com uma senha inicial (a pessoa troca no primeiro acesso)." type="submit"
+              disabled={criandoApoio || !novoApoioNome.trim()} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {criandoApoio ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-4 h-4 mr-1.5" />Criar conta</>}
+            </Button>
+            <p className="text-xs text-gray-500 basis-full">
+              Só letras: o primeiro nome, ou nome e sobrenome se já existir alguém com o mesmo nome.
+            </p>
+          </form>
 
           {senhaGerada && senhaGerada.tipo === 'apoio' && quadroSenhaGerada}
 
@@ -516,9 +590,15 @@ const SenhasOrganizadoresManager = () => {
                     <div className="min-w-0">
                       <p className="text-white font-medium flex items-center gap-2 flex-wrap">
                         {c.nome}
-                        <Badge className="bg-sky-500/15 text-sky-300 border-sky-500/30 hover:bg-sky-500/15">
-                          {c.area === 'saude' ? 'saúde' : c.area}
-                        </Badge>
+                        {c.area === 'portaria' ? (
+                          <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/15">
+                            <DoorOpen className="w-3 h-3 mr-1" />portaria
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-sky-500/15 text-sky-300 border-sky-500/30 hover:bg-sky-500/15">
+                            <HeartPulse className="w-3 h-3 mr-1" />{c.area === 'saude' ? 'saúde' : c.area}
+                          </Badge>
+                        )}
                         {!c.tem_senha ? (
                           <Badge className="bg-red-500/15 text-red-300 border-red-500/30 hover:bg-red-500/15">
                             sem senha
@@ -532,6 +612,7 @@ const SenhasOrganizadoresManager = () => {
                       <p className="text-xs text-gray-500 mt-0.5">
                         Último acesso: {formatarData(c.ultimo_acesso)}
                         {' · '}Senha alterada: {formatarData(c.senha_atualizada_em)}
+                        {c.criado_por && <>{' · '}Criada por {c.criado_por}</>}
                       </p>
                       <BloqueioLogin
                         bloqueio={bloqueios[chaveBloqueio('apoio', c.nome)]}
@@ -540,7 +621,20 @@ const SenhasOrganizadoresManager = () => {
                       />
                     </div>
 
-                    {confirmando === chave ? (
+                    {confirmando === `excluir:${chave}` ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-red-300">Excluir a conta de {c.nome}?</span>
+                        <Button size="sm" variant="outline" disabled={ocupado === chave}
+                          onClick={() => setConfirmando(null)}
+                          className="h-8 px-3 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
+                          Cancelar
+                        </Button>
+                        <Button size="sm" disabled={ocupado === chave} onClick={() => excluirApoio(c.nome)}
+                          className="h-8 px-4 bg-red-600 hover:bg-red-700 text-white">
+                          {ocupado === chave ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Excluir'}
+                        </Button>
+                      </div>
+                    ) : confirmando === chave ? (
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-400">Gerar nova senha?</span>
                         <Button size="sm" variant="outline" disabled={ocupado === chave}
@@ -554,12 +648,19 @@ const SenhasOrganizadoresManager = () => {
                         </Button>
                       </div>
                     ) : (
-                      <Button data-dica="Gerar uma senha nova para esta conta (a antiga para de funcionar)." size="sm"
-                        onClick={() => setConfirmando(chave)}
-                        className="h-8 bg-blue-600 hover:bg-blue-700 text-white">
-                        <KeyRound className="w-4 h-4 mr-1.5" />
-                        Nova senha
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button data-dica="Gerar uma senha nova para esta conta (a antiga para de funcionar)." size="sm"
+                          onClick={() => setConfirmando(chave)}
+                          className="h-8 bg-blue-600 hover:bg-blue-700 text-white">
+                          <KeyRound className="w-4 h-4 mr-1.5" />
+                          Nova senha
+                        </Button>
+                        <Button data-dica="Excluir esta conta de apoio (o acesso para na hora)." size="sm" variant="outline"
+                          onClick={() => setConfirmando(`excluir:${chave}`)}
+                          className="h-8 border-red-500/30 bg-transparent text-red-300 hover:text-white hover:bg-red-500/20">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 );

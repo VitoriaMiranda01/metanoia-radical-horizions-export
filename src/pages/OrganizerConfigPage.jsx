@@ -14,7 +14,7 @@ import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimi
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
-import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users, Church, BookUser, HeartPulse, Star } from 'lucide-react';
+import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users, Church, BookUser, HeartPulse, Star, DoorOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
@@ -459,6 +459,7 @@ const OrganizerConfigPage = () => {
               <p className="text-white text-sm mt-1">Gerencie as configurações do projeto</p>
             </div>
           </div>
+          <div className="flex flex-wrap gap-2">
           {/* A tela da equipe de saude (login Apoio, 09/10/2026). Fica aqui e
               nao no menu: a organizacao abre pouco (Patrick). */}
           <Button asChild variant="outline"
@@ -466,6 +467,13 @@ const OrganizerConfigPage = () => {
             className="border-rose-500/40 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20 hover:text-white">
             <Link to="/saude"><HeartPulse className="w-4 h-4 mr-2" />Saúde dos acampantes</Link>
           </Button>
+          {/* A tela da portaria (login Apoio, 24/10/2026): baixa na hora e observacoes. */}
+          <Button asChild variant="outline"
+            data-dica="Abrir a tela da portaria: pagamento de cada pessoa, baixas feitas na hora e observações da portaria."
+            className="border-emerald-500/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 hover:text-white">
+            <Link to="/portaria"><DoorOpen className="w-4 h-4 mr-2" />Portaria</Link>
+          </Button>
+          </div>
         </motion.div>
 
         <div className="flex justify-end"><RecolhivelBotoesGerais /></div>

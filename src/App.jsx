@@ -43,6 +43,7 @@ const AdminWorkflowsPage = carregarPagina(() => import('@/pages/AdminWorkflowsPa
 const PagamentosPendentesPage = carregarPagina(() => import('@/pages/PagamentosPendentesPage'));
 const SenhasParceirosPage = carregarPagina(() => import('@/pages/SenhasParceirosPage'));
 const SaudePage = carregarPagina(() => import('@/pages/SaudePage'));
+const PortariaPage = carregarPagina(() => import('@/pages/PortariaPage'));
 
 const Carregando = () => (
   <div className="min-h-screen flex items-center justify-center bg-black text-gray-400 text-sm">Carregando...</div>
@@ -172,8 +173,17 @@ function App() {
             <Route
               path="/saude"
               element={
-                <ApoioProtectedRoute>
+                <ApoioProtectedRoute area="saude">
                   <SaudePage />
+                </ApoioProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/portaria"
+              element={
+                <ApoioProtectedRoute area="portaria">
+                  <PortariaPage />
                 </ApoioProtectedRoute>
               }
             />

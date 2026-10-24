@@ -188,6 +188,22 @@ export const redefinirSenhaApoio = async (nome) =>
   chamar('redefinir_senha_apoio', { p_nome: String(nome || '').trim() },
     'nova senha do apoio');
 
+// Criar e excluir conta de apoio (24/10/2026, area 'saude' ou 'portaria').
+// Sem reenvio automatico: sao gravacoes, e um reenvio do criar responderia
+// "ja existe" e a senha gerada na primeira tentativa se perderia.
+const gravar = async (funcao, args) => {
+  const { data, error } = await supabase.rpc(funcao, args);
+  if (error) throw error;
+  return data;
+};
+
+/** Cria a conta com senha temporaria. Devolve a senha em texto uma vez so. */
+export const criarContaApoio = async (nome, area) =>
+  gravar('criar_conta_apoio', { p_nome: String(nome || '').trim(), p_area: area });
+
+export const excluirContaApoio = async (nome) =>
+  gravar('excluir_conta_apoio', { p_nome: String(nome || '').trim() });
+
 // ---------------------------------------------------------------------------
 // Logins bloqueados por senha errada (migration 20261003b)
 //

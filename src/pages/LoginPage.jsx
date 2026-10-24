@@ -12,6 +12,7 @@ import { Eye, EyeOff, Heart, HeartPulse, Shield, Users, AlertCircle, CheckCircle
 import { buscarIgrejaPorCodigo, IGREJAS_TESTE } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
+import { rotaDoApoio } from '@/components/route-guards/ApoioProtectedRoute';
 import {
   trocarSenhaIgreja,
   solicitarRedefinicaoSenha,
@@ -109,7 +110,7 @@ const LoginPage = () => {
 
   if (organizadorUser) return <Navigate to="/gerenciar" replace />;
   if (igrejaUser) return <Navigate to="/parceiros" replace />;
-  if (apoioUser) return <Navigate to="/saude" replace />;
+  if (apoioUser) return <Navigate to={rotaDoApoio(apoioUser)} replace />;
 
   const ehParceiro = selectedType === 'parceiro';
   // Apoio (09/10/2026): lider de area -- hoje a da saude -- entra com o
@@ -183,7 +184,7 @@ const LoginPage = () => {
           description: `Bem-vindo(a), ${resultado?.user?.nome || 'apoio'}!`
         });
         setFormData({ identifier: '', password: '' });
-        navigate('/saude');
+        navigate(rotaDoApoio(resultado?.user));
       } else {
         const resultado = await loginAsIgreja(formData.identifier, formData.password);
 
@@ -242,10 +243,11 @@ const LoginPage = () => {
       }
 
       // Senha criada: entra de verdade, agora com a senha dela.
+      let apoioLogado = null;
       if (ehParceiro) {
         await loginAsIgreja(formData.identifier, novaSenha);
       } else if (ehApoio) {
-        await loginAsApoio(formData.identifier, novaSenha);
+        apoioLogado = (await loginAsApoio(formData.identifier, novaSenha))?.user;
       } else {
         await loginAsOrganizador(formData.identifier, novaSenha);
       }
@@ -258,7 +260,7 @@ const LoginPage = () => {
       setConfirmaSenha('');
       setPrimeiroAcessoEmAndamento(false);
       setFormData({ identifier: '', password: '' });
-      navigate(ehParceiro ? '/parceiros' : ehApoio ? '/saude' : '/gerenciar');
+      navigate(ehParceiro ? '/parceiros' : ehApoio ? rotaDoApoio(apoioLogado) : '/gerenciar');
     } catch (error) {
       showError(error.message || 'Não foi possível criar a senha. Tente novamente.');
     } finally {

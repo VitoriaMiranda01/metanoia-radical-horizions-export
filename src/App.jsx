@@ -7,15 +7,8 @@ import DicasMouse from '@/components/common/DicasMouse';
 import OrganizerProtectedRoute from '@/components/route-guards/OrganizerProtectedRoute';
 import IgrejaProtectedRoute from '@/components/route-guards/IgrejaProtectedRoute';
 import ApoioProtectedRoute from '@/components/route-guards/ApoioProtectedRoute';
-import LoginPage from '@/pages/LoginPage';
-import AcampantePage from '@/pages/AcampantePage';
-import EquipantePage from '@/pages/EquipantePage';
 import HomePage from '@/pages/HomePage';
-import PaymentMethodSelectionPage from '@/pages/PaymentMethodSelectionPage';
-import InscricaoPixPage from '@/pages/InscricaoPixPage';
-import ManualPaymentPage from '@/pages/ManualPaymentPage';
 import Layout from '@/components/Layout';
-import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
 
 // Telas dos organizadores em arquivos separados (18/10/2026): o celular de
 // quem so abre a Area do Equipante nao baixa a Geracao de Escalas, os
@@ -34,6 +27,15 @@ const carregarPagina = (importar) => lazy(() => importar().then((m) => {
   }
   throw erro;
 }));
+// Páginas públicas também separadas (25/10/2026): quem abre só a página
+// inicial não baixa os formulários, o PIX e o login.
+const LoginPage = carregarPagina(() => import('@/pages/LoginPage'));
+const AcampantePage = carregarPagina(() => import('@/pages/AcampantePage'));
+const EquipantePage = carregarPagina(() => import('@/pages/EquipantePage'));
+const PaymentMethodSelectionPage = carregarPagina(() => import('@/pages/PaymentMethodSelectionPage'));
+const InscricaoPixPage = carregarPagina(() => import('@/pages/InscricaoPixPage'));
+const ManualPaymentPage = carregarPagina(() => import('@/pages/ManualPaymentPage'));
+const EquipanteWorkflowStatus = carregarPagina(() => import('@/components/equipante/EquipanteWorkflowStatus'));
 const GerenciarInscricoesPage = carregarPagina(() => import('@/pages/GerenciarInscricoesPage'));
 const AprovacoesPage = carregarPagina(() => import('@/pages/AprovacoesPage'));
 const ParceirosPage = carregarPagina(() => import('@/pages/ParceirosPage'));

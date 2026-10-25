@@ -2066,7 +2066,7 @@ const OrganizerScalesPage = () => {
                 <Button data-dica="Banco de fotos da equipe de trilha (Guias, Inimigo, Infiltrados, Espírito Santo) e a arte de cada grupo, montada pela escala."
                   onClick={() => setVerFotosTrilha(true)} variant="outline"
                   className="bg-pink-600/15 text-pink-300 border-pink-600/40 hover:bg-pink-600/30 hover:text-pink-200">
-                  <Camera className="mr-2 h-4 w-4" /> Fotos da trilha
+                  <Camera className="mr-2 h-4 w-4" /> Fotos Eq. Trilha
                   <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
                 </Button>
                 <Button data-dica="Equipe da igreja no dia da saída: Recepção Igreja, Cozinha Igreja, Som / Multimídia, Estacionamento e Mesa crachá. Pré-cadastro e alocação, como nas Áreas Especiais."

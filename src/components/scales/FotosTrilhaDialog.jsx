@@ -56,6 +56,13 @@ export const nomeCurto = (nome) => {
   return [partes[0], ult].filter(Boolean).map(tituloPt).join(' ');
 };
 
+const lerComoDataUrl = (blob) => new Promise((resolve, reject) => {
+  const r = new FileReader();
+  r.onload = () => resolve(r.result);
+  r.onerror = () => reject(r.error);
+  r.readAsDataURL(blob);
+});
+
 // ------------------------------------------------------------------ recorte
 // Quadro 4:5 (como os cartões da arte). Arrastar move, a barra aproxima.
 // Sai um JPEG 600x750.
@@ -71,13 +78,27 @@ const RecorteFoto = ({ arquivo, pessoa, nomeInicial, onCancelar, onSalvo }) => {
   const [salvando, setSalvando] = useState(false);
   const arrasto = useRef(null);
 
+  // Lê como data: -- a CSP do site (public/.htaccess) não libera blob: em img-src.
   useEffect(() => {
-    const url = URL.createObjectURL(arquivo);
-    const i = new Image();
-    i.onload = () => setImg(i);
-    i.onerror = () => { toast({ title: 'Não consegui abrir essa imagem.', variant: 'destructive' }); onCancelar(); };
-    i.src = url;
-    return () => URL.revokeObjectURL(url);
+    let vivo = true;
+    lerComoDataUrl(arquivo)
+      .then((url) => new Promise((resolve, reject) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = reject;
+        i.src = url;
+      }))
+      .then((i) => { if (vivo) setImg(i); })
+      .catch(() => {
+        if (!vivo) return;
+        toast({
+          title: 'Não consegui abrir essa imagem.',
+          description: 'Use JPG, PNG ou WEBP. Foto do iPhone (HEIC): exporte ou mande pelo WhatsApp e salve de novo.',
+          variant: 'destructive'
+        });
+        onCancelar();
+      });
+    return () => { vivo = false; };
   }, [arquivo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const base = img ? Math.max(QW / img.width, QH / img.height) : 1;
@@ -264,8 +285,6 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
     return () => window.removeEventListener('keydown', aoTeclar);
   }, [onClose]);
 
-  useEffect(() => () => { (artes || []).forEach((a) => URL.revokeObjectURL(a.url)); }, [artes]);
-
   const fotoPorId = useMemo(() => Object.fromEntries(fotos.map((f) => [f.equipante_id, f])), [fotos]);
 
   // Escalados nos 4 papéis, por cor; o líder da Guia primeiro.
@@ -380,7 +399,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
             .map((p) => ({ nome: fotoPorId[p.id].nome_arte || nomeCurto(p.nome), imagem: imagens[p.id] }));
         });
         const blob = await desenharArteGrupo(grupo, edicao);
-        novas.push({ cor, blob, url: URL.createObjectURL(blob) });
+        novas.push({ cor, blob, url: await lerComoDataUrl(blob) });
       }
       setArtes(novas);
     } catch (e) {
@@ -456,12 +475,12 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
-      <input ref={arquivoRef} type="file" accept="image/*" className="hidden" onChange={aoEscolherArquivo} />
+      <input ref={arquivoRef} type="file" accept="image/jpeg,image/png,image/webp,image/*" className="hidden" onChange={aoEscolherArquivo} />
       <div className="bg-black border border-white/10 rounded-lg shadow-2xl w-full max-w-[min(96vw,1700px)] h-[96vh] sm:h-[94vh] overflow-hidden flex flex-col">
         <div className="flex justify-between items-start gap-4 p-5 border-b border-white/10 bg-zinc-900">
           <div>
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <Camera className="h-5 w-5 text-pink-400" /> Fotos da trilha
+              <Camera className="h-5 w-5 text-pink-400" /> Fotos Eq. Trilha
             </h3>
             <p className="text-sm text-gray-400 mt-1">
               Banco de fotos da equipe de trilha e a arte de cada grupo (Guias, Inimigo, Infiltrados e Espírito Santo), montada pela escala.

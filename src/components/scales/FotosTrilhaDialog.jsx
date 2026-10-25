@@ -46,7 +46,16 @@ const COR_CHIP = {
   AZUL: 'bg-sky-600/30 text-sky-200 border-sky-500/50'
 };
 
-const MINUSCULAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
+// Botão "Gerar grupo X" na cor do grupo.
+const COR_BOTAO = {
+  ROXO: 'bg-purple-600/25 text-purple-200 border-purple-500/60 hover:bg-purple-600/45',
+  VERMELHO: 'bg-red-600/25 text-red-200 border-red-500/60 hover:bg-red-600/45',
+  AMARELO: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/60 hover:bg-yellow-500/40',
+  VERDE: 'bg-green-600/25 text-green-200 border-green-500/60 hover:bg-green-600/45',
+  AZUL: 'bg-sky-600/25 text-sky-200 border-sky-500/60 hover:bg-sky-600/45'
+};
+
+const MINUSCULAS =new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
 const tituloPt = (p) => p.toLocaleLowerCase('pt-BR').replace(/(^|[\s-])(\S)/g, (m, a, b) => a + b.toLocaleUpperCase('pt-BR'));
 // Sem nome na arte: primeiro + último nome ("JOÃO DA SILVA BRANCO" -> "João Branco").
 export const nomeCurto = (nome) => {
@@ -463,7 +472,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
           {cor && (
             <Button size="sm" onClick={() => pedirArtes(cor)} disabled={!!gerando || carregando}
               data-dica={`Gerar (ou refazer) só a arte do grupo ${cor.toLowerCase()}.`}
-              className="ml-auto h-8 bg-pink-600/20 text-pink-200 border border-pink-600/50 hover:bg-pink-600/40">
+              className={`ml-auto h-8 border ${COR_BOTAO[cor]}`}>
               {gerando === cor ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
               Gerar grupo {cor.toLowerCase()}
             </Button>

@@ -24,6 +24,13 @@ import { supabase } from '@/services/supabaseClient';
 const GENERIC_ERROR = 'Usuário ou senha inválidos';
 const UNAVAILABLE_ERROR = 'Não foi possível fazer login. Tente novamente.';
 
+// Limite de tempo do login (25/10/2026). Sem ele, um pedido que nunca volta
+// (sinal fraco, rede do celular presa) deixava o botao "processando" para
+// sempre, sem mensagem nenhuma. A resposta normal leva 1-3 s.
+const LIMITE_LOGIN_MS = 20000;
+const TEMPO_ESGOTADO_ERROR =
+  'A conexão está lenta ou falhou e o login não respondeu. Confira a internet e tente de novo.';
+
 // A Edge Function responde 401 para credencial invalida e 5xx para falha de
 // servico. O supabase-js transforma respostas fora da faixa 2xx em "error",
 // entao aqui olhamos o status para escolher a mensagem certa -- sem nunca
@@ -40,6 +47,9 @@ const ACESSO_NAO_LIBERADO =
 // Como so chega aqui quem JA acertou a senha, a mensagem nao revela nada a
 // quem esta tentando adivinhar.
 const mensagemParaErro = async (error) => {
+  // Estourou o LIMITE_LOGIN_MS: o supabase-js aborta o pedido e devolve um
+  // FunctionsFetchError com o AbortError em context.
+  if (error?.context?.name === 'AbortError') return TEMPO_ESGOTADO_ERROR;
   const status = error?.context?.status;
   if (status === 401 || status === 400) return GENERIC_ERROR;
   // 429: login bloqueado por 10 senhas erradas seguidas (migration
@@ -75,6 +85,7 @@ const chamarLogin = async (tipo, identifier, senha) => {
 
     const { data, error } = await supabase.functions.invoke('login', {
       body: { tipo, identifier: String(identifier).trim(), senha },
+      timeout: LIMITE_LOGIN_MS,
     });
 
     if (error) {

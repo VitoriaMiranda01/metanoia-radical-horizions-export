@@ -172,7 +172,11 @@ const derrubarSessaoInvalida = () => {
   if (sessaoJaDescartada) return;
   sessaoJaDescartada = true;
   try {
-    ['metanoia_access_token', 'metanoia_user', 'metanoia_org_user', 'metanoia_igreja_user']
+    // metanoia_apoio_user (25/10/2026): faltava. Sem ela, o login do Apoio
+    // com cracha recusado voltava sozinho para /saude, era recusado de novo e
+    // a pagina recarregava sem parar.
+    ['metanoia_access_token', 'metanoia_user', 'metanoia_org_user', 'metanoia_igreja_user',
+      'metanoia_apoio_user']
       .forEach((chave) => localStorage.removeItem(chave));
   } catch (_) { /* ignora */ }
   try {

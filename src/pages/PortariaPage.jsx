@@ -51,6 +51,14 @@ const dataHora = (v) => {
   return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
 
+// Dia do cadastro no horario de Brasilia (AAAA-MM-DD), para o filtro "a partir de".
+const diaBrasilia = (v) => {
+  if (!v) return '';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+};
+
 const maiusculas = (t) => String(t || '').replace(/(^|\s)(\S)/g, (m, a, b) => a + b.toUpperCase());
 
 const semPrefixo = (quem) => maiusculas(String(quem || '').replace(/^Portaria: /, ''));
@@ -299,6 +307,7 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
               </span>
             )}
           </div>
+          {p.cadastrado_em && <p className="text-[11px] text-gray-500 mt-1">Cadastrou em {dataHora(p.cadastrado_em)}</p>}
           {(entrou || pagoNaPortaria(p)) && (
             <p className="text-[11px] text-gray-500 mt-1">
               {pagoNaPortaria(p) && <>Pagou na portaria ({semPrefixo(p.confirmado_por)}, {dataHora(p.data_pagamento)})</>}
@@ -394,6 +403,7 @@ const PortariaPage = () => {
   const [busca, setBusca] = useState('');
   const [pagamento, setPagamento] = useState('todos');
   const [soObservacao, setSoObservacao] = useState(false);
+  const [desde, setDesde] = useState('');
   const [limite, setLimite] = useState(POR_PAGINA);
   const [pagando, setPagando] = useState(null);
 
@@ -437,6 +447,7 @@ const PortariaPage = () => {
       setLista(dados.map((p) => ({
         ...p,
         areas: Array.isArray(p.areas) ? p.areas : [],
+        _cadastro: diaBrasilia(p.cadastrado_em),
         _busca: semAcento([p.nome, p.igreja, ...(Array.isArray(p.areas) ? p.areas : [])].join(' ')),
       })));
       setErro('');
@@ -486,7 +497,7 @@ const PortariaPage = () => {
     };
   }, []);
 
-  useEffect(() => { setLimite(POR_PAGINA); }, [aba, busca, pagamento, soObservacao]);
+  useEffect(() => { setLimite(POR_PAGINA); }, [aba, busca, pagamento, soObservacao, desde]);
 
   const sair = () => {
     logout();
@@ -518,9 +529,10 @@ const PortariaPage = () => {
       if (aba !== 'entrou' && pagamento === 'pagos' && !p.pago) return false;
       if (aba !== 'entrou' && pagamento === 'aberto' && p.pago) return false;
       if (soObservacao && !p.observacao) return false;
+      if (desde && !(p._cadastro && p._cadastro >= desde)) return false;
       return termos.every((t) => p._busca.includes(t));
     });
-  }, [lista, aba, busca, pagamento, soObservacao]);
+  }, [lista, aba, busca, pagamento, soObservacao, desde]);
 
   const conteudo = carregando ? (
     <div className="py-20 text-center text-gray-400">
@@ -577,6 +589,17 @@ const PortariaPage = () => {
             </>
           )}
           <Chip ativo={soObservacao} onClick={() => setSoObservacao(!soObservacao)}>Com observação</Chip>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="portaria-desde" className="text-xs text-gray-400">Cadastrados a partir de</label>
+          <Input id="portaria-desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)}
+            className="w-auto h-9 bg-white/5 border-white/20 text-white [color-scheme:dark]" />
+          {desde && (
+            <button type="button" onClick={() => setDesde('')} className="text-xs text-gray-400 hover:text-white inline-flex items-center gap-1">
+              <X className="w-3.5 h-3.5" />Limpar data
+            </button>
+          )}
         </div>
       </div>
 

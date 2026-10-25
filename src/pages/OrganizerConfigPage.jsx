@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimiteAcampantesPorIgreja, updatePreCadastroSemCpf, subscribeToConfiguracoesChanges, resetarParaNovaEdicao } from '@/services/organizerConfigService';
+import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimiteAcampantesPorIgreja, updatePreCadastroSemCpf, resetarParaNovaEdicao } from '@/services/organizerConfigService';
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
@@ -88,18 +88,6 @@ const OrganizerConfigPage = () => {
     if (targetOrganizadorId !== undefined || isAuthenticated) {
       loadData();
     }
-  }, [organizadorId, organizadorUser?.id, user?.id, isAuthenticated]);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToConfiguracoesChanges('public:configuracoes', () => {
-      const targetOrganizadorId = organizadorId || organizadorUser?.id || user?.id;
-      if (targetOrganizadorId !== undefined || isAuthenticated) {
-        loadData();
-      }
-    });
-    return () => {
-      unsubscribe();
-    };
   }, [organizadorId, organizadorUser?.id, user?.id, isAuthenticated]);
 
   useEffect(() => {

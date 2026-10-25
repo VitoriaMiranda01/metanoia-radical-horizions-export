@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import ChamadaAreaDialog from './ChamadaAreaDialog';
 import ChamadaSituacaoLista, { SITUACOES, contaNaChamada, manterEm } from './ChamadaSituacaoLista';
 import { carregarChamada } from '@/services/chamadaStore';
+import { useAtualizacaoPeriodica } from '@/hooks/useAtualizacaoPeriodica';
 
 const ATUALIZAR_A_CADA_MS = 30000;
 
@@ -71,10 +72,9 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
     setTique((n) => n + 1);
   };
 
-  useEffect(() => {
-    const t = setInterval(() => { carregar(true); recarregarTela?.(); }, ATUALIZAR_A_CADA_MS);
-    return () => clearInterval(t);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Só com a aba visível. Os números do resumo (situacao_escala) a tela de
+  // escalas já atualiza no mesmo intervalo -- não precisa pedir de novo aqui.
+  useAtualizacaoPeriodica(() => carregar(true), ATUALIZAR_A_CADA_MS);
 
   // Os numeros do resumo vem da tela (situacao_escala). Quando eles mudam
   // -- uma troca de area, a chamada de um lider -- a lista acompanha na hora.

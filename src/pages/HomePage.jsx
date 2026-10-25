@@ -6,7 +6,7 @@ import { ChevronDown, ChevronUp, Heart, Calendar, DollarSign, Clock } from 'luci
 import { Button } from '@/components/ui/button';
 import LandingNav from '@/components/landing/LandingNav';
 import { useCurrentPrice } from '@/hooks/useCurrentPrice';
-import { fetchEventoDatas, subscribeToConfiguracoesChanges } from '@/services/organizerConfigService';
+import { fetchEventoDatas } from '@/services/organizerConfigService';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatEventDateRange } from '@/utils/eventDateFormat';
@@ -118,12 +118,9 @@ const HomePage = () => {
       }
     };
     fetchDates();
-    const unsubscribe = subscribeToConfiguracoesChanges('homepage_config', () => {
-      fetchDates();
-    });
-    return () => {
-      unsubscribe();
-    };
+    // Sem escuta em tempo real (25/10/2026): "configuracoes" nem está na
+    // publicação do Realtime, e o visitante não pode ler a tabela -- a
+    // conexão (um websocket por visitante) nunca recebia nada.
   }, []);
   const faqs = [{
     q: "Qual a faixa etária do Metanoia Radical Serra?",

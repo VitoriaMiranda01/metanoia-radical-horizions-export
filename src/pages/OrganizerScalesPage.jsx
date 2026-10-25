@@ -30,6 +30,7 @@ import ResponsaveisReuniaoDialog from '@/components/scales/ResponsaveisReuniaoDi
 import ExportarRelacaoMenu from '@/components/scales/ExportarRelacaoMenu';
 import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
 import FotosTrilhaDialog from '@/components/scales/FotosTrilhaDialog';
+import { useAtualizacaoPeriodica } from '@/hooks/useAtualizacaoPeriodica';
 import PreEscalaDialog from '@/components/scales/PreEscalaDialog';
 import TrocarAreaDialog from '@/components/scales/TrocarAreaDialog';
 import ChamadaQuadro from '@/components/scales/ChamadaQuadro';
@@ -558,10 +559,18 @@ const OrganizerScalesPage = () => {
         }
       }
 
-      setAguardandoAprovacao(await contarAguardandoAprovacao());
-      setEscala(await fetchSituacaoEscala());
-      setAutoSituacao(await fetchSituacaoAlocacaoAutomatica());
-      setFixas(await fetchAreasFixas());
+      // As quatro juntas (antes uma esperava a outra: ~4 idas ao servidor
+      // em fila a cada atualização).
+      const [aguardando, situacao, auto, fixasAtuais] = await Promise.all([
+        contarAguardandoAprovacao(),
+        fetchSituacaoEscala(),
+        fetchSituacaoAlocacaoAutomatica(),
+        fetchAreasFixas()
+      ]);
+      setAguardandoAprovacao(aguardando);
+      setEscala(situacao);
+      setAutoSituacao(auto);
+      setFixas(fixasAtuais);
     } catch (error) {
       console.error("Background fetch error:", error);
     } finally {
@@ -680,10 +689,8 @@ const OrganizerScalesPage = () => {
     loadEquipantesParaSelecao();
   }, []);
 
-  useEffect(() => {
-    const intervalId = setInterval(() => fetchBackgroundData(false), 30000);
-    return () => clearInterval(intervalId);
-  }, []);
+  // A cada 30 s, só com a aba visível (e na hora em que a pessoa volta).
+  useAtualizacaoPeriodica(() => fetchBackgroundData(false), 30000);
 
   useEffect(() => {
     if (allocations.length === 0) return;

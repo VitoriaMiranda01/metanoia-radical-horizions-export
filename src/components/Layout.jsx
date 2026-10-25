@@ -48,8 +48,11 @@ const Layout = ({ children, largo = false }) => {
     carregar();
     // Um minuto: rapido o bastante para o organizador perceber um pedido novo
     // enquanto trabalha, devagar o bastante para nao pesar.
-    const id = setInterval(carregar, 60000);
-    return () => { vivo = false; clearInterval(id); };
+    // Pausa com a aba escondida; ao voltar, atualiza na hora (25/10/2026).
+    const id = setInterval(() => { if (!document.hidden) carregar(); }, 60000);
+    const aoVoltar = () => { if (!document.hidden) carregar(); };
+    document.addEventListener('visibilitychange', aoVoltar);
+    return () => { vivo = false; clearInterval(id); document.removeEventListener('visibilitychange', aoVoltar); };
   }, [isOrganizer, isAprovador]);
 
   const handleLogout = () => {

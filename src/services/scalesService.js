@@ -11,6 +11,9 @@ const COLUNAS_EQUIPANTE =
 // Se passar sem esta paginacao, a tela de escalas simplesmente deixaria de
 // mostrar parte das pessoas, sem nenhum erro na tela. Por isso lemos de
 // 1000 em 1000 ate a pagina vir incompleta.
+// Sempre com ORDEM FIXA (.order('id'), 25/10/2026): sem ela o banco pode
+// devolver cada pagina numa ordem diferente e a tela repete ou perde gente
+// -- as escalas ja passaram de 1000 linhas (1044 na 37a).
 const PAGINA = 1000;
 
 const lerTudoPaginado = async (montarConsulta, rotulo) => {
@@ -39,7 +42,7 @@ const lerTudoPaginado = async (montarConsulta, rotulo) => {
 
 export const fetchApprovedEquipantes = async () =>
   lerTudoPaginado(
-    () => supabase.from('equipantes').select(COLUNAS_EQUIPANTE).eq('status', 'aprovado'),
+    () => supabase.from('equipantes').select(COLUNAS_EQUIPANTE).eq('status', 'aprovado').order('id'),
     'equipantes aprovados'
   );
 
@@ -106,7 +109,7 @@ export const saveScales = async (allocations) => {
 export const fetchAllAllocations = async () => {
   const [linhas, automaticas, peloLider] = await Promise.all([
     lerTudoPaginado(
-      () => supabase.from('escalas').select(`id, equipante_id, area_alocada, atuacao, cor, separado_de, incluido_por, equipantes!inner (${COLUNAS_EQUIPANTE})`),
+      () => supabase.from('escalas').select(`id, equipante_id, area_alocada, atuacao, cor, separado_de, incluido_por, equipantes!inner (${COLUNAS_EQUIPANTE})`).order('id'),
       'alocações'
     ),
     // Quem veio do "Alocar automático" e ainda esta onde ele colocou, com o

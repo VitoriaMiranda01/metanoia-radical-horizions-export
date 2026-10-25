@@ -70,7 +70,9 @@ export function useCurrentPrice(tipo = 'acampante', edicao_numero = null) {
     fetchConfig();
 
     // Set up an interval to re-check the price in case a period changes while user is on page
-    const intervalId = setInterval(fetchConfig, 60000); // Check every minute
+    // So com a aba visivel (25/10/2026): formulario esquecido aberto nao
+    // fica consultando o banco.
+    const intervalId = setInterval(() => { if (!document.hidden) fetchConfig(); }, 60000); // Check every minute
 
     return () => {
       mounted = false;

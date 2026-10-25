@@ -303,15 +303,6 @@ export const fetchEventoDatas = async () => {
   }
 };
 
-export const subscribeToConfiguracoesChanges = (channelName, onChange) => {
-  const channel = supabase
-    .channel(channelName)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, onChange)
-    .subscribe();
-
-  return () => supabase.removeChannel(channel);
-};
-
 // Usada pela tela de boas-vindas do formulario de acampante, que e PUBLICA:
 // visitante nao pode ler a tabela "configuracoes" (trancada em 11/09), e a
 // leitura direta falhava em silencio -- a tela mostrava "Data nao

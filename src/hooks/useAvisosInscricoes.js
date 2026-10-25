@@ -65,7 +65,8 @@ export const useAvisosInscricoes = (atualizarEm) => {
   useEffect(() => {
     recarregar();
     fetchMeusAvisosOcultos().then((lista) => setOcultos(new Set(lista))).catch(() => {});
-    const id = setInterval(recarregar, INTERVALO);
+    // So com a aba visivel (25/10/2026).
+    const id = setInterval(() => { if (!document.hidden) recarregar(); }, INTERVALO);
     return () => clearInterval(id);
   }, [recarregar]);
 

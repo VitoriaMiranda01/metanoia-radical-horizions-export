@@ -66,8 +66,9 @@ const ApprovalsView = ({
   useEffect(() => {
     carregarInscricoes();
 
+    // So com a aba visivel (25/10/2026).
     const intervalId = setInterval(() => {
-      carregarInscricoes(false);
+      if (!document.hidden) carregarInscricoes(false);
     }, 30000);
 
     return () => clearInterval(intervalId);

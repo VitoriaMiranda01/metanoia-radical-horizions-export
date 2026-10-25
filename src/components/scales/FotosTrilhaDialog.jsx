@@ -10,7 +10,7 @@ import {
   listarFotosTrilha, buscarFichasParaFoto, linksDasFotos, baixarFoto, salvarFoto, salvarNomeArte, removerFoto,
   dadosDaEdicaoParaArte
 } from '@/services/fotosTrilhaService';
-import { CORES_ARTE, desenharArteGrupo } from '@/utils/arteTrilha';
+import { CORES_ARTE, FUNDOS_ARTE, desenharArteGrupo } from '@/utils/arteTrilha';
 
 /**
  * FOTOS DA TRILHA (24/10/2026, Patrick): banco de fotos da equipe de trilha e
@@ -254,6 +254,11 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
   const [aviso, setAviso] = useState(null); // { semFoto, semCor }
   const [gerando, setGerando] = useState(false);
   const [artes, setArtes] = useState(null); // [{ cor, url, blob }]
+  // Fundo da arte e qual grupo gerar (25/10/2026, Patrick: às vezes só um
+  // grupo precisa ser refeito; e o modelo branco da arte antiga do roxo).
+  const [fundo, setFundo] = useState(() => { try { return localStorage.getItem('fotos_trilha_fundo') || 'escuro'; } catch { return 'escuro'; } });
+  const [grupoAlvo, setGrupoAlvo] = useState('TODOS');
+  useEffect(() => { try { localStorage.setItem('fotos_trilha_fundo', fundo); } catch { /* sem armazenamento */ } }, [fundo]);
   const [adicionar, setAdicionar] = useState(false);
   const [buscaFicha, setBuscaFicha] = useState('');
   const [fichas, setFichas] = useState([]);
@@ -367,11 +372,17 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
   }, [buscaFicha, adicionar, toast]);
 
   // ---- arte
+  const doAlvo = (p) => (grupoAlvo === 'TODOS' ? !!p.cor : p.cor === grupoAlvo);
   const pedirArtes = () => {
-    const semFoto = escalados.filter((p) => p.cor && !fotoPorId[p.id]);
-    const semCor = escalados.filter((p) => !p.cor);
-    if (escalados.filter((p) => p.cor && fotoPorId[p.id]).length === 0) {
-      toast({ title: 'Ninguém com foto e cor nos papéis da arte.', description: 'Envie as fotos ou confira as cores na escala.', variant: 'destructive' });
+    const semFoto = escalados.filter((p) => doAlvo(p) && !fotoPorId[p.id]);
+    // sem cor só importa quando gera todos os grupos
+    const semCor = grupoAlvo === 'TODOS' ? escalados.filter((p) => !p.cor) : [];
+    if (escalados.filter((p) => doAlvo(p) && fotoPorId[p.id]).length === 0) {
+      toast({
+        title: grupoAlvo === 'TODOS' ? 'Ninguém com foto e cor nos papéis da arte.' : `Ninguém com foto no grupo ${grupoAlvo.toLowerCase()}.`,
+        description: 'Envie as fotos ou confira as cores na escala.',
+        variant: 'destructive'
+      });
       return;
     }
     if (semFoto.length || semCor.length) setAviso({ semFoto, semCor });
@@ -383,7 +394,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
     setGerando(true);
     try {
       const edicao = await dadosDaEdicaoParaArte();
-      const usados = escalados.filter((p) => p.cor && fotoPorId[p.id]);
+      const usados = escalados.filter((p) => doAlvo(p) && fotoPorId[p.id]);
       const imagens = {};
       await Promise.all(usados.map(async (p) => {
         const blob = await baixarFoto(fotoPorId[p.id].caminho);
@@ -398,7 +409,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
           grupo[chave] = doGrupo.filter((p) => p.papel.area === area)
             .map((p) => ({ nome: fotoPorId[p.id].nome_arte || nomeCurto(p.nome), imagem: imagens[p.id] }));
         });
-        const blob = await desenharArteGrupo(grupo, edicao);
+        const blob = await desenharArteGrupo(grupo, edicao, { fundo });
         novas.push({ cor, blob, url: await lerComoDataUrl(blob) });
       }
       setArtes(novas);
@@ -448,12 +459,13 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
           <span className={`text-xs ${ok === daCor.length ? 'text-emerald-400' : 'text-amber-300'}`}>{ok} de {daCor.length} com foto</span>
           {!cor && <span className="text-xs text-gray-500">— não entram na arte até ter cor na escala.</span>}
         </div>
-        <div className="space-y-3">
+        <div className="flex flex-wrap gap-x-6 gap-y-3">
           {PAPEIS.map(({ area, titulo }) => {
             const doPapel = visiveis.filter((p) => p.papel.area === area);
             if (doPapel.length === 0) return null;
             return (
-              <div key={area}>
+              // Guias numa linha; Inimigo, Infiltrados e Espírito Santo lado a lado
+              <div key={area} className={area === 'guia' ? 'basis-full' : ''}>
                 <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1.5">{titulo}</p>
                 <div className="flex flex-wrap gap-2">{doPapel.map((p) => cartao(p))}</div>
               </div>
@@ -520,9 +532,25 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
             </Button>
           )}
           <div className="flex-1" />
+          <div className="flex items-center gap-1.5" data-dica="Fundo da arte: escuro ou branco (modelo da arte antiga do roxo).">
+            <span className="text-xs text-gray-500">Fundo</span>
+            <div className="flex rounded-md border border-white/15 overflow-hidden">
+              {FUNDOS_ARTE.map(({ valor, rotulo }) => (
+                <button key={valor} type="button" onClick={() => setFundo(valor)}
+                  className={`px-3 py-1.5 text-sm ${fundo === valor ? 'bg-white/15 text-white' : 'text-gray-400 hover:bg-white/5'}`}>{rotulo}</button>
+              ))}
+            </div>
+          </div>
+          <select value={grupoAlvo} onChange={(e) => setGrupoAlvo(e.target.value)}
+            data-dica="Gerar todos os grupos ou refazer só um."
+            className="h-9 rounded-md border border-white/15 bg-black/40 px-2 text-sm text-white">
+            <option value="TODOS">Todos os grupos</option>
+            {CORES_ARTE.map((c) => <option key={c} value={c}>Só o grupo {c.toLowerCase()}</option>)}
+          </select>
           <Button onClick={pedirArtes} disabled={gerando || carregando}
             className="h-9 bg-pink-600 hover:bg-pink-500 text-white">
-            {gerando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />} Gerar artes
+            {gerando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+            {grupoAlvo === 'TODOS' ? 'Gerar artes' : `Gerar grupo ${grupoAlvo.toLowerCase()}`}
           </Button>
         </div>
 
@@ -603,9 +631,11 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
         <div role="dialog" data-state="open" className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-3">
           <div className="bg-zinc-900 border border-white/10 rounded-lg w-full max-w-6xl p-5 space-y-4 max-h-[94vh] flex flex-col">
             <div className="flex justify-between items-center gap-3">
-              <h4 className="text-lg font-bold text-white">Artes geradas ({artes.length})</h4>
+              <h4 className="text-lg font-bold text-white">
+                {artes.length === 1 ? `Arte do grupo ${artes[0].cor.toLowerCase()}` : `Artes geradas (${artes.length})`}
+              </h4>
               <div className="flex gap-2">
-                <Button onClick={baixarTodas} className="bg-emerald-600 hover:bg-emerald-500 text-white"><Download className="mr-2 h-4 w-4" /> Baixar todas (.zip)</Button>
+                {artes.length > 1 && <Button onClick={baixarTodas} className="bg-emerald-600 hover:bg-emerald-500 text-white"><Download className="mr-2 h-4 w-4" /> Baixar todas (.zip)</Button>}
                 <Button variant="ghost" size="sm" onClick={() => setArtes(null)} className="text-gray-400 hover:text-white"><X className="h-5 w-5" /></Button>
               </div>
             </div>

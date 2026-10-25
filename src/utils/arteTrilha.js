@@ -12,13 +12,25 @@ export const CORES_ARTE = ['ROXO', 'VERMELHO', 'AMARELO', 'VERDE', 'AZUL'];
 
 // faixa: fundo da faixa do topo; destaque: textos, moldura dos guias e
 // etiquetas dos guias; etiqueta: cor do texto nas etiquetas dos guias.
+// forte / etiquetaForte: as mesmas funções no fundo BRANCO (o destaque claro,
+// como o amarelo, some no branco).
 const PALETA = {
-  ROXO: { faixa: '#5b1a8f', destaque: '#b04cff', etiqueta: '#ffffff' },
-  VERMELHO: { faixa: '#7e1016', destaque: '#ff2323', etiqueta: '#ffffff' },
-  AMARELO: { faixa: '#77781f', destaque: '#ffea00', etiqueta: '#111111' },
-  VERDE: { faixa: '#1f7a2e', destaque: '#3be541', etiqueta: '#ffffff' },
-  AZUL: { faixa: '#195a8c', destaque: '#2ea9f0', etiqueta: '#ffffff' }
+  ROXO: { faixa: '#5b1a8f', destaque: '#b04cff', etiqueta: '#ffffff', forte: '#8a2be2', etiquetaForte: '#ffffff' },
+  VERMELHO: { faixa: '#7e1016', destaque: '#ff2323', etiqueta: '#ffffff', forte: '#d61a1f', etiquetaForte: '#ffffff' },
+  AMARELO: { faixa: '#77781f', destaque: '#ffea00', etiqueta: '#111111', forte: '#c9a200', etiquetaForte: '#111111' },
+  VERDE: { faixa: '#1f7a2e', destaque: '#3be541', etiqueta: '#ffffff', forte: '#1f9e2c', etiquetaForte: '#ffffff' },
+  AZUL: { faixa: '#195a8c', destaque: '#2ea9f0', etiqueta: '#ffffff', forte: '#1683cc', etiquetaForte: '#ffffff' }
 };
+
+export const FUNDOS_ARTE = [
+  { valor: 'escuro', rotulo: 'Escuro' },
+  { valor: 'branco', rotulo: 'Branco' }
+];
+
+// Cores que mudam com o fundo.
+const temaDe = (paleta, fundo) => (fundo === 'branco'
+  ? { ...paleta, branco: true, texto: paleta.forte, etiquetaFundo: paleta.forte, etiquetaTexto: paleta.etiquetaForte }
+  : { ...paleta, branco: false, texto: paleta.destaque, etiquetaFundo: paleta.destaque, etiquetaTexto: paleta.etiqueta });
 
 const W = 1280;
 const H = 720;
@@ -29,13 +41,16 @@ const FONTE_TEXTO = '"Segoe UI", Arial, sans-serif';
 // ------------------------------------------------------------------ ícones
 // Traço em uma caixa de 64x64 (desenhados em Path2D, na cor do grupo).
 const ICONES = {
+  // keffiyeh/turbante: copa pequena, faixa torcida e o pano comprido caindo
+  // até embaixo, com dobras e a barra recortada (25/10/2026, Patrick).
   guia: [
-    'M14 31 C14 13 50 13 50 31',
-    'M10 31 H54 V39 H10 Z',
-    'M18 31 L14 39 M26 31 L22 39 M34 31 L30 39 M42 31 L38 39 M50 31 L46 39',
-    'M12 39 L10 59 L20 56 L25 60 L32 56 L39 60 L44 56 L54 59 L52 39',
-    'M22 43 L20 54 M42 43 L44 54 M32 43 L32 52',
-    'M22 22 C24 19 27 18 30 18'
+    'M18 19 C18 5 46 5 46 19',
+    'M14 19 H50 V26 H14 Z',
+    'M21 19 L17 26 M28 19 L24 26 M35 19 L31 26 M42 19 L38 26 M49 19 L45 26',
+    'M16 26 C14 38 11 50 8 62 L18 58 L24 63 L32 58 L40 63 L46 58 L56 62 C53 50 50 38 48 26',
+    'M23 31 C22 41 20 50 18 56 M41 31 C42 41 44 50 46 56',
+    'M32 31 L32 52',
+    'M24 11 C26 9 28 8.5 31 8.5'
   ],
   inimigo: [
     'M32 60 L32 24',
@@ -112,8 +127,13 @@ const carregarLogo = () => {
   return logoPromessa;
 };
 
-// Fundo escuro com leve granulado (como a textura da arte original).
-const desenharFundo = (ctx) => {
+// Fundo escuro com leve granulado (como a textura da arte original), ou branco.
+const desenharFundo = (ctx, tema) => {
+  if (tema.branco) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+    return;
+  }
   const g = ctx.createLinearGradient(0, 0, W, H);
   g.addColorStop(0, '#24213f');
   g.addColorStop(0.55, '#16152b');
@@ -169,10 +189,10 @@ const desenharCabecalho = (ctx, cor, paleta, logo, edicao) => {
 };
 
 // Cartão branco com a foto (preenche o quadro, cortando o que sobra).
-const desenharCartao = (ctx, x, y, w, h, img, borda) => {
+const desenharCartao = (ctx, x, y, w, h, img, borda, branco = false) => {
   ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.45)';
-  ctx.shadowBlur = 10;
+  ctx.shadowColor = branco ? 'rgba(0,0,0,0.22)' : 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = branco ? 8 : 10;
   ctx.fillStyle = '#ffffff';
   retanguloRedondo(ctx, x, y, w, h, 4);
   ctx.fill();
@@ -191,7 +211,7 @@ const desenharCartao = (ctx, x, y, w, h, img, borda) => {
     ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, px, py, pw, ph);
   }
   ctx.strokeStyle = borda;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = branco ? 3 : 1.5;
   ctx.strokeRect(px, py, pw, ph);
 };
 
@@ -210,12 +230,12 @@ const desenharEtiqueta = (ctx, texto, cx, y, larguraMax, fundo, corTexto) => {
 
 const desenharGuias = (ctx, paleta, guias) => {
   // título e ícone à esquerda
-  ctx.fillStyle = paleta.destaque;
+  ctx.fillStyle = paleta.texto;
   ctx.font = `900 44px ${FONTE}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('GUIAS', 190, 238);
-  desenharIcone(ctx, 'guia', 190, 312, 74, paleta.destaque);
+  desenharIcone(ctx, 'guia', 190, 316, 80, paleta.texto);
   if (guias.length === 0) return;
 
   const n = guias.length;
@@ -230,13 +250,27 @@ const desenharGuias = (ctx, paleta, guias) => {
   const pw = n * cw + (n - 1) * gap + 2 * pad;
   const px = x0 + (largura - pw) / 2;
   const py = 163;
-  ctx.fillStyle = paleta.destaque;
-  retanguloRedondo(ctx, px, py, pw, ch + 2 * pad, 6);
-  ctx.fill();
+  if (paleta.branco) {
+    // fundo branco: moldura só no contorno e uma barra entre os cartões
+    ctx.strokeStyle = paleta.forte;
+    ctx.lineWidth = 3;
+    retanguloRedondo(ctx, px, py, pw, ch + 2 * pad, 6);
+    ctx.stroke();
+    ctx.fillStyle = paleta.forte;
+    for (let i = 1; i < n; i += 1) {
+      const bx = px + pad + i * (cw + gap) - gap / 2;
+      retanguloRedondo(ctx, bx - 3, py + pad, 6, ch, 3);
+      ctx.fill();
+    }
+  } else {
+    ctx.fillStyle = paleta.destaque;
+    retanguloRedondo(ctx, px, py, pw, ch + 2 * pad, 6);
+    ctx.fill();
+  }
   guias.forEach((p, i) => {
     const x = px + pad + i * (cw + gap);
-    desenharCartao(ctx, x, py + pad, cw, ch, p.imagem, paleta.faixa);
-    desenharEtiqueta(ctx, p.nome, x + cw / 2, py + ch + 2 * pad + 4, cw + gap - 2, paleta.destaque, paleta.etiqueta);
+    desenharCartao(ctx, x, py + pad, cw, ch, p.imagem, paleta.faixa, paleta.branco);
+    desenharEtiqueta(ctx, p.nome, x + cw / 2, py + ch + 2 * pad + 4, cw + gap - 2, paleta.etiquetaFundo, paleta.etiquetaTexto);
   });
 };
 
@@ -264,11 +298,11 @@ const desenharLinhaDeBaixo = (ctx, paleta, secoes) => {
   const y = 447;
   usadas.forEach((s) => {
     // ícone e texto em pé, centrados na altura do cartão
-    desenharIcone(ctx, s.icone, x + 18, y + ch / 2, 46, paleta.destaque, s.icone === 'inimigo' ? Math.PI / 4 : 0);
+    desenharIcone(ctx, s.icone, x + 18, y + ch / 2, 46, paleta.texto, s.icone === 'inimigo' ? Math.PI / 4 : 0);
     ctx.save();
     ctx.translate(x + 54, y + ch / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.fillStyle = paleta.destaque;
+    ctx.fillStyle = paleta.texto;
     ajustarFonte(ctx, s.titulo, 900, 22, FONTE, ch);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -276,8 +310,17 @@ const desenharLinhaDeBaixo = (ctx, paleta, secoes) => {
     ctx.restore();
     x += COLUNA;
     s.pessoas.forEach((p, i) => {
-      desenharCartao(ctx, x, y, cw, ch, p.imagem, paleta.faixa);
-      desenharEtiqueta(ctx, p.nome, x + cw / 2, y + ch + 5, cw + gap - 2, '#ffffff', '#222222');
+      desenharCartao(ctx, x, y, cw, ch, p.imagem, paleta.faixa, paleta.branco);
+      if (paleta.branco) {
+        // fundo branco: o nome solto, na cor do grupo (como na arte do roxo)
+        ctx.fillStyle = paleta.forte;
+        ajustarFonte(ctx, p.nome, 700, 15, FONTE_TEXTO, cw + gap - 4);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.nome, x + cw / 2, y + ch + 16);
+      } else {
+        desenharEtiqueta(ctx, p.nome, x + cw / 2, y + ch + 5, cw + gap - 2, '#ffffff', '#222222');
+      }
       x += cw + (i < s.pessoas.length - 1 ? gap : 0);
     });
     x += entre;
@@ -288,17 +331,18 @@ const desenharLinhaDeBaixo = (ctx, paleta, secoes) => {
  * grupo: { cor, guias, inimigo, infiltrados, espirito } -- cada um uma lista
  *   de { nome, imagem (HTMLImageElement|ImageBitmap|null) }.
  * edicao: { titulo: '36ª EDIÇÃO', datas: ['04, 05 e 06 de setembro', 'de 2026'] }
+ * fundo: 'escuro' (padrão) ou 'branco' (modelo da arte antiga do roxo).
  * Devolve um Blob PNG 1920x1080.
  */
-export const desenharArteGrupo = async (grupo, edicao) => {
-  const paleta = PALETA[grupo.cor];
+export const desenharArteGrupo = async (grupo, edicao, { fundo = 'escuro' } = {}) => {
+  const paleta = temaDe(PALETA[grupo.cor], fundo);
   const logo = await carregarLogo();
   const canvas = document.createElement('canvas');
   canvas.width = W * ESCALA;
   canvas.height = H * ESCALA;
   const ctx = canvas.getContext('2d');
   ctx.scale(ESCALA, ESCALA);
-  desenharFundo(ctx);
+  desenharFundo(ctx, paleta);
   desenharCabecalho(ctx, grupo.cor, paleta, logo, edicao);
   desenharGuias(ctx, paleta, grupo.guias);
   desenharLinhaDeBaixo(ctx, paleta, [

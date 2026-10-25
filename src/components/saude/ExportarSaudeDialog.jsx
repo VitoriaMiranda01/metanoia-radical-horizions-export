@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { COLUNAS_SAUDE, COLUNAS_SAUDE_PADRAO } from '@/utils/saudeColunas';
 import { agruparTermos } from '@/utils/saude';
 import { exportSaudeToExcel } from '@/utils/excelExport';
+import { exportarSaudePdf } from '@/utils/saudePdf';
 
 const TIPOS_RESUMO = [
   ['problema', 'Problema de saúde'],
@@ -14,7 +15,7 @@ const TIPOS_RESUMO = [
 ];
 
 /**
- * Exportar Excel da tela da saude: quem (marcados ou a lista da tela), quais
+ * Exportar (Excel ou PDF) da tela da saude: quem (marcados ou a lista da tela), quais
  * colunas, e se vai a aba "Resumo" (quantos por problema/remedio/alimento).
  */
 const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExportado }) => {
@@ -22,6 +23,7 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
   const [colunas, setColunas] = useState(COLUNAS_SAUDE_PADRAO);
   const [resumo, setResumo] = useState(true);
   const [erro, setErro] = useState('');
+  const [gerandoPdf, setGerandoPdf] = useState(false);
 
   useEffect(() => {
     if (!aberto) return;
@@ -37,12 +39,9 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
     setColunas((atual) => (v ? COLUNAS_SAUDE.map((c) => c.chave).filter((k) => k === chave || atual.includes(k))
       : atual.filter((k) => k !== chave)));
 
-  const baixar = () => {
-    if (colunas.length === 0) { setErro('Marque pelo menos uma coluna.'); return; }
-    const escolhidas = COLUNAS_SAUDE.filter((c) => colunas.includes(c.chave));
-    const linhas = pessoas.map((p) => Object.fromEntries(escolhidas.map((c) => [c.rotulo, c.valor(p)])));
+  const montarResumo = () => {
     const porId = new Map(pessoas.map((p) => [p.id, p]));
-    const abaResumo = resumo
+    return resumo
       ? TIPOS_RESUMO.flatMap(([tipo, rotulo]) => agruparTermos(pessoas, tipo).map((g) => ({
         Tipo: rotulo,
         Item: g.rotulo,
@@ -52,10 +51,33 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
         Pessoas: [...g.ids].map((id) => porId.get(id).nome).join(', '),
       })))
       : null;
-    const r = exportSaudeToExcel(linhas, abaResumo);
+  };
+
+  const baixar = () => {
+    if (colunas.length === 0) { setErro('Marque pelo menos uma coluna.'); return; }
+    const escolhidas = COLUNAS_SAUDE.filter((c) => colunas.includes(c.chave));
+    const linhas = pessoas.map((p) => Object.fromEntries(escolhidas.map((c) => [c.rotulo, c.valor(p)])));
+    const r = exportSaudeToExcel(linhas, montarResumo());
     if (!r.success) { setErro(r.error || 'Não foi possível gerar a planilha.'); return; }
     onExportado?.(linhas.length);
     onFechar();
+  };
+
+  const baixarPdf = async () => {
+    if (colunas.length === 0) { setErro('Marque pelo menos uma coluna.'); return; }
+    setErro('');
+    setGerandoPdf(true);
+    try {
+      const escolhidas = COLUNAS_SAUDE.filter((c) => colunas.includes(c.chave));
+      await exportarSaudePdf(pessoas, escolhidas, montarResumo());
+      onExportado?.(pessoas.length);
+      onFechar();
+    } catch (e) {
+      console.error('Erro ao gerar PDF da saúde:', e);
+      setErro('Não foi possível gerar o PDF.');
+    } finally {
+      setGerandoPdf(false);
+    }
   };
 
   const opcao = (valor, rotulo, n, desabilitada) => (
@@ -74,9 +96,9 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
     <Dialog open={aberto} onOpenChange={(v) => !v && onFechar()}>
       <DialogContent className="bg-zinc-900 border border-white/10 text-white sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Exportar para Excel</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription className="text-gray-400">
-            Escolha quem vai na planilha e quais informações.
+            Escolha quem vai no arquivo e quais informações; depois baixe em PDF ou Excel.
           </DialogDescription>
         </DialogHeader>
 
@@ -115,7 +137,11 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
           <Button type="button" variant="ghost" onClick={onFechar} className="text-gray-300 hover:text-white hover:bg-white/10">
             Cancelar
           </Button>
-          <Button type="button" onClick={baixar} disabled={pessoas.length === 0}
+          <Button type="button" onClick={baixarPdf} disabled={pessoas.length === 0 || gerandoPdf}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <FileText className="w-4 h-4 mr-1.5" />{gerandoPdf ? 'Gerando PDF...' : 'Baixar PDF'}
+          </Button>
+          <Button type="button" onClick={baixar} disabled={pessoas.length === 0 || gerandoPdf}
             className="bg-emerald-600 hover:bg-emerald-700 text-white">
             <Download className="w-4 h-4 mr-1.5" />Baixar planilha
           </Button>

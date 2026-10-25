@@ -408,7 +408,7 @@ const SaudePage = () => {
                 </Button>
                 <Button size="sm" onClick={() => setExportando(true)} disabled={visiveis.length === 0 && selecionados.size === 0}
                   className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white">
-                  <Download className="w-4 h-4 mr-1.5" />Exportar Excel
+                  <Download className="w-4 h-4 mr-1.5" />Exportar
                 </Button>
               </div>
             </div>

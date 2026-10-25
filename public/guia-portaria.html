@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<script>document.documentElement.setAttribute("data-theme","dark");</script>
+<title>Guia da Portaria Metanoia</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: coluna de leitura central; cada passo = texto à esquerda + "tela" simulada à direita (empilha no celular). */
+:root{
+  --bg:#f6f7f4; --fg:#14211c; --muted:#56655e; --line:#dbe0da; --card:#ffffff;
+  --accent:#0f7a55; --accent-soft:#dff2e9; --warn:#a85d00; --warn-soft:#fdeccf; --danger:#a82a2a;
+  --display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --body:'Figtree','Segoe UI',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1511; --fg:#e8efea; --muted:#9aaba2; --line:#223029; --card:#131d18;
+  --accent:#34d399; --accent-soft:#12372a; --warn:#fbbf24; --warn-soft:#3a2b0c; --danger:#f87171; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1511; --fg:#e8efea; --muted:#9aaba2; --line:#223029; --card:#131d18;
+  --accent:#34d399; --accent-soft:#12372a; --warn:#fbbf24; --warn-soft:#3a2b0c; --danger:#f87171; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:1.6rem;font-weight:700}
+h3{font-size:1.1rem;font-weight:700}
+p{margin:0}
+.eyebrow{font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+header.topo{display:flex;flex-direction:column;gap:14px;padding-bottom:32px;border-bottom:1px solid var(--line)}
+header.topo p.lead{font-size:1.15rem;color:var(--muted);max-width:60ch}
+.resumo{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.resumo div{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:14px 16px;min-width:0}
+.resumo b{display:block;font-family:var(--display);margin-bottom:2px}
+.resumo span{color:var(--muted);font-size:.92rem}
+section{display:flex;flex-direction:column;gap:20px;scroll-margin-top:16px}
+.passo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,380px);gap:32px;align-items:start}
+.texto{display:flex;flex-direction:column;gap:12px;min-width:0}
+.texto p,.texto li{max-width:62ch}
+.texto ul,.texto ol{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.dica{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;font-size:.95rem}
+.atencao{border-left:3px solid var(--warn);background:var(--warn-soft);padding:10px 14px;border-radius:0 8px 8px 0;font-size:.95rem}
+@media (max-width:820px){.passo{grid-template-columns:minmax(0,1fr)}}
+nav.indice{display:flex;flex-wrap:wrap;gap:8px}
+nav.indice a{font-size:.88rem;font-weight:600;color:var(--fg);text-decoration:none;border:1px solid var(--line);background:var(--card);padding:6px 12px;border-radius:999px}
+nav.indice a:hover,nav.indice a:focus-visible{border-color:var(--accent);outline:none}
+
+/* ---- Telas simuladas (sempre escuras, como o aplicativo) ---- */
+.tela{background:#000;color:#fff;border-radius:22px;border:6px solid #1c2622;padding:14px 12px 16px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.4;min-width:0;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.tela *{box-sizing:border-box}
+.tela .cab{display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:10px}
+.tela .cab b{font-size:14px;display:block}.tela .cab small{color:#6b7280;font-size:11px}
+.tela .sair{margin-left:auto;color:#d1d5db;font-size:12px}
+.t-nums{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.t-num{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);border-radius:10px;padding:7px 10px}
+.t-num small{color:#9ca3af;font-size:10.5px;display:block}.t-num strong{font-size:20px;display:block}
+.t-num em{font-style:normal;color:#6b7280;font-size:9.5px}
+.t-abas{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);border-radius:10px;padding:3px}
+.t-abas span{text-align:center;padding:7px 2px;border-radius:7px;font-weight:700;font-size:11px;color:#9ca3af}
+.t-abas .on{background:rgba(255,255,255,.15);color:#fff}.t-abas .on.verde{background:#059669}
+.t-busca{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);border-radius:8px;padding:9px 10px;color:#9ca3af}
+.t-busca.cheia{color:#fff}
+.t-chips{display:flex;flex-wrap:wrap;gap:5px}
+.t-chip{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#d1d5db;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:600}
+.t-chip.on{border-color:#34d399;background:rgba(16,185,129,.2);color:#fff}
+.t-card{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);border-radius:12px;padding:11px;display:flex;flex-direction:column;gap:6px}
+.t-card.entrou{border-color:rgba(16,185,129,.5);background:rgba(16,185,129,.1)}
+.t-nome{font-weight:700;font-size:14px}.t-igreja{color:#9ca3af;font-size:12px}.t-area{color:#6b7280;font-size:11px}
+.t-tags{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid}
+.tag.ab{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.15);color:#fde68a}
+.tag.pg{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.15);color:#a7f3d0}
+.tag.en{border-color:#34d399;background:rgba(16,185,129,.3);color:#fff}
+.tag.is{border-color:rgba(14,165,233,.4);background:rgba(14,165,233,.15);color:#bae6fd}
+.tag.fe{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.1);color:#fecaca}
+.t-btns{display:flex;gap:6px;flex-wrap:wrap}
+.btn{flex:1;text-align:center;border-radius:8px;padding:8px 6px;font-weight:700;font-size:12px;color:#fff;border:1px solid transparent;white-space:nowrap}
+.btn.amb{background:#d97706}.btn.ver{background:#059669}.btn.az{background:#2563eb}.btn.verm{background:#dc2626}
+.btn.sec{background:transparent;border-color:rgba(255,255,255,.12);color:#d1d5db}
+.btn.off{background:#3a3a3a;color:#8a8a8a}
+.t-obs{border:1px solid rgba(245,158,11,.2);background:rgba(245,158,11,.05);border-radius:8px;padding:7px 10px;color:#fef3c7}
+.t-obs small{display:block;color:#6b7280;font-size:10.5px;margin-top:2px}
+.t-conf{border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.1);border-radius:8px;padding:8px 10px;color:#fecaca;display:flex;flex-direction:column;gap:8px}
+.t-conf .t-btns{justify-content:flex-end}.t-conf .btn{flex:0 0 auto;padding:6px 12px}
+.t-modal{background:#09090b;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.t-modal h4{margin:0;font-family:var(--display);font-size:16px}
+.t-modal .sub{color:#9ca3af;font-size:12px}
+.t-meios{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.t-meio{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#d1d5db;border-radius:12px;padding:12px 6px;text-align:center;font-weight:600}
+.t-meio.on{border-color:#34d399;background:rgba(16,185,129,.2);color:#fff}
+.t-meio i{display:block;font-style:normal;font-size:20px}
+.t-input{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);border-radius:8px;padding:9px 10px;font-size:16px}
+.t-hint{color:#6b7280;font-size:11px}
+.t-check{display:flex;gap:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);border-radius:8px;padding:9px}
+.t-check .cx{width:16px;height:16px;border-radius:4px;background:#10b981;color:#000;font-size:11px;font-weight:800;text-align:center;line-height:16px;flex:none;margin-top:2px}
+.t-check small{display:block;color:#6b7280;font-size:11px}
+.t-toast{background:#059669;border-radius:10px;padding:10px 12px}
+.t-toast small{display:block;opacity:.9}
+.t-login{display:flex;flex-direction:column;gap:10px;padding:10px 4px}
+.t-login label{color:#9ca3af;font-size:11px}
+.sel{outline:2px dashed #fbbf24;outline-offset:3px;border-radius:10px}
+.num-ref{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#fbbf24;color:#000;font-size:11px;font-weight:800;vertical-align:1px;margin-right:4px}
+.legenda{font-size:.82rem;color:var(--muted);margin-top:6px;text-align:center}
+.figura{min-width:0}
+table.glossario{width:100%;border-collapse:collapse;font-size:.95rem}
+table.glossario th,table.glossario td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+table.glossario th{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tabela-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.faq{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.faq div{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:14px 16px;min-width:0}
+.faq b{display:block;margin-bottom:4px;font-family:var(--display)}
+footer{color:var(--muted);font-size:.88rem;border-top:1px solid var(--line);padding-top:20px}
+</style>
+
+<div class="wrap">
+
+<header class="topo">
+  <span class="eyebrow">Metanoia Radical Serra · Apoio</span>
+  <h1>Guia da Portaria</h1>
+  <p class="lead">Como usar a tela da portaria para liberar a entrada dos equipantes, receber o pagamento na hora e deixar recados para a organização. Pensado para o celular, na sexta, no sábado e no domingo do evento.</p>
+  <nav class="indice" aria-label="Seções do guia">
+    <a href="#tela">1. A tela</a>
+    <a href="#procurar">2. Procurar</a>
+    <a href="#pago">3. Quem já pagou</a>
+    <a href="#pagar">4. Quem paga na hora</a>
+    <a href="#obs">5. Observação</a>
+    <a href="#desfazer">6. Desfazer</a>
+    <a href="#duvidas">7. Dúvidas</a>
+  </nav>
+  <div class="resumo">
+    <div><b>Só equipantes</b><span>Acampantes e infiltrados não aparecem nesta tela.</span></div>
+    <div><b>Controla a pulseira</b><span>"Entrada liberada" quer dizer que a pulseira foi entregue.</span></div>
+    <div><b>Dinheiro ou cartão</b><span>O PIX o equipante paga sozinho, pelo site.</span></div>
+  </div>
+</header>
+
+<section id="tela">
+  <span class="eyebrow">Passo 1</span>
+  <h2>Conhecendo a tela</h2>
+  <div class="passo">
+    <div class="texto">
+      <p>A tela tem três partes, de cima para baixo:</p>
+      <ol>
+        <li><span class="num-ref">1</span><b>Quatro números.</b> Quantos equipantes existem, quantos já entraram, quantos faltam (e, desses, quantos já pagaram e quantos pagam na hora) e quantos pagaram na portaria.</li>
+        <li><span class="num-ref">2</span><b>Três abas.</b> <i>Entrada pendente</i> (quem ainda não pegou a pulseira), <i>Entrada liberada</i> (quem já entrou) e <i>Todos</i>.</li>
+        <li><span class="num-ref">3</span><b>A lista de pessoas.</b> Cada pessoa é um cartão com nome, igreja, área, situação do pagamento e os botões de ação.</li>
+      </ol>
+      <div class="dica">A lista se atualiza sozinha a cada poucos segundos. Se duas pessoas da portaria trabalham ao mesmo tempo, as duas veem a mudança uma da outra. Para forçar, toque em <b>Atualizar</b>.</div>
+    </div>
+    <div class="figura">
+      <div class="tela">
+        <div class="cab"><div><b>Portaria · Equipantes</b><small>Metanoia Radical Serra · Mariana Souza</small></div><span class="sair">Sair</span></div>
+        <div class="sel"><div class="t-nums">
+          <div class="t-num"><small>Equipantes</small><strong>942</strong></div>
+          <div class="t-num"><small>Entrada liberada</small><strong style="color:#6ee7b7">318</strong></div>
+          <div class="t-num"><small>Entrada pendente</small><strong style="color:#fcd34d">624</strong><em>540 já pagos · 84 pagam na hora</em></div>
+          <div class="t-num"><small>Pagos na portaria</small><strong>27</strong></div>
+        </div></div>
+        <div class="sel"><div class="t-abas"><span class="on">Entrada pendente (624)</span><span>Entrada liberada (318)</span><span>Todos (942)</span></div></div>
+        <div class="sel"><div class="t-card">
+          <div class="t-nome">Ana Beatriz Lima</div><div class="t-igreja">Igreja Exemplo Central</div><div class="t-area">Cozinha · Copa</div>
+          <div class="t-tags"><span class="tag pg">Pago · PIX</span></div>
+          <div class="t-btns"><span class="btn ver">Liberar entrada</span><span class="btn sec">Observação</span></div>
+        </div></div>
+      </div>
+      <p class="legenda">Números, abas e lista (nomes fictícios)</p>
+    </div>
+  </div>
+</section>
+
+<section id="procurar">
+  <span class="eyebrow">Passo 2</span>
+  <h2>Encontrar uma pessoa</h2>
+  <div class="passo">
+    <div class="texto">
+      <p>Use o campo de pesquisa. Ele procura ao mesmo tempo por <b>nome, igreja ou área</b>, sem se importar com acento ou letra maiúscula. Digite só um pedaço: "ana lim" já encontra "Ana Beatriz Lima".</p>
+      <p>Abaixo da pesquisa há filtros que ajudam em filas grandes:</p>
+      <ul>
+        <li><b>Todos / Já pagos / Pagam na hora</b>: separa quem só precisa da pulseira de quem vai pagar.</li>
+        <li><b>Com observação</b>: mostra só quem tem recado escrito.</li>
+        <li><b>Cadastrados a partir de</b>: escolha uma data para ver só quem se cadastrou desde aquele dia.</li>
+      </ul>
+      <p>Para limpar a pesquisa, toque no <b>X</b> no canto do campo.</p>
+    </div>
+    <div class="figura">
+      <div class="tela">
+        <div class="t-busca cheia">🔍 ana lim</div>
+        <div class="t-chips"><span class="t-chip">Todos</span><span class="t-chip on">Já pagos</span><span class="t-chip">Pagam na hora</span><span class="t-chip">Com observação</span></div>
+        <div class="t-hint">Cadastrados a partir de &nbsp; <span class="t-input" style="padding:3px 8px;font-size:12px">20/10/2026</span></div>
+        <div class="t-hint">1 pessoa</div>
+        <div class="t-card">
+          <div class="t-nome">Ana Beatriz Lima</div><div class="t-igreja">Igreja Exemplo Central</div>
+          <div class="t-tags"><span class="tag pg">Pago · PIX</span></div>
+        </div>
+      </div>
+      <p class="legenda">Pesquisa com filtro "Já pagos"</p>
+    </div>
+  </div>
+</section>
+
+<section id="pago">
+  <span class="eyebrow">Passo 3</span>
+  <h2>Quem já pagou: liberar a entrada</h2>
+  <div class="passo">
+    <div class="texto">
+      <p>Pagou pelo PIX, pagou em mãos antes ou é isento? O cartão mostra uma etiqueta verde ou azul e o botão <b>Liberar entrada</b>.</p>
+      <ol>
+        <li>Procure a pessoa.</li>
+        <li>Entregue a pulseira.</li>
+        <li>Toque em <b>Liberar entrada</b>.</li>
+      </ol>
+      <p>Pronto: a pessoa vai para a aba <i>Entrada liberada</i>, o cartão fica verde e passa a mostrar quem liberou e a que horas.</p>
+      <div class="dica">Primeiro a pulseira, depois o toque. Assim a tela sempre confere com o que está no braço de cada um.</div>
+    </div>
+    <div class="figura">
+      <div class="tela">
+        <div class="t-card">
+          <div class="t-nome">Ana Beatriz Lima</div><div class="t-igreja">Igreja Exemplo Central</div><div class="t-area">Cozinha · Copa</div>
+          <div class="t-tags"><span class="tag pg">Pago · PIX</span></div>
+          <div class="t-btns"><span class="btn ver sel">Liberar entrada</span><span class="btn sec">Observação</span></div>
+        </div>
+        <div class="t-hint" style="text-align:center">depois de tocar ↓</div>
+        <div class="t-toast"><b>Entrada liberada</b><small>Ana Beatriz Lima · entregue a pulseira.</small></div>
+        <div class="t-card entrou">
+          <div class="t-nome">✔ Ana Beatriz Lima</div><div class="t-igreja">Igreja Exemplo Central</div>
+          <div class="t-tags"><span class="tag en">Entrada liberada · 24/10 16:42</span><span class="tag pg">Pago · PIX</span></div>
+          <div class="t-hint">Entrada liberada por Mariana Souza</div>
+          <div class="t-btns"><span class="btn sec">Desfazer entrada</span><span class="btn sec">Observação</span></div>
+        </div>
+      </div>
+      <p class="legenda">Antes e depois de liberar</p>
+    </div>
+  </div>
+</section>
+
+<section id="pagar">
+  <span class="eyebrow">Passo 4</span>
+  <h2>Quem paga na hora: Pagar agora</h2>
+  <div class="passo">
+    <div class="texto">
+      <p>Quem ainda não pagou aparece com a etiqueta amarela <b>Pagamento em aberto</b> e o botão <b>Pagar agora</b>. Ao tocar nele, abre uma janela:</p>
+      <ol>
+        <li><span class="num-ref">1</span><b>Como pagou?</b> Escolha <i>Dinheiro</i> ou <i>Cartão</i>.</li>
+        <li><span class="num-ref">2</span><b>Valor recebido.</b> A tela já sugere o valor do lote atual, com desconto de pastor ou infiltrado quando houver. <b>Confira com o que a pessoa realmente entregou</b> e corrija se for diferente.</li>
+        <li><span class="num-ref">3</span><b>Liberar a entrada agora.</b> Vem marcado. Deixe marcado se você vai entregar a pulseira neste momento.</li>
+        <li>Toque em <b>Confirmar pagamento</b>.</li>
+      </ol>
+      <div class="atencao">O botão de confirmar só liga depois que você escolhe o meio de pagamento e o valor está certo. Receba o dinheiro ou passe o cartão <b>antes</b> de confirmar.</div>
+      <div class="dica">Desmarcou "Liberar a entrada agora"? O pagamento fica registrado e a pessoa continua em <i>Entrada pendente</i>, já com o botão <b>Liberar entrada</b>.</div>
+    </div>
+    <div class="figura">
+      <div class="tela">
+        <div class="t-modal">
+          <div><h4>Pagar agora</h4><div class="sub">Carlos Eduardo Reis · Igreja Exemplo Norte</div></div>
+          <div><div class="sub" style="margin-bottom:6px"><span class="num-ref">1</span>Como pagou?</div>
+            <div class="t-meios"><div class="t-meio on"><i>💵</i>Dinheiro</div><div class="t-meio"><i>💳</i>Cartão</div></div></div>
+          <div><div class="sub" style="margin-bottom:6px"><span class="num-ref">2</span>Valor recebido (R$)</div>
+            <div class="t-input">80,00</div>
+            <div class="t-hint" style="margin-top:5px">Valor do último lote: R$ 80,00. Confira antes de confirmar.</div></div>
+          <div class="t-check"><span class="cx">✓</span><span><span class="num-ref">3</span>Liberar a entrada agora<small>Entregue a pulseira. A pessoa vai para "Entrada liberada".</small></span></div>
+          <div class="t-btns"><span class="btn sec">Cancelar</span><span class="btn ver" style="flex:2">Confirmar pagamento</span></div>
+        </div>
+      </div>
+      <p class="legenda">Janela "Pagar agora" (valores de exemplo)</p>
+    </div>
+  </div>
+</section>
+
+<section id="obs">
+  <span class="eyebrow">Passo 5</span>
+  <h2>Deixar um recado para a organização</h2>
+  <div class="passo">
+    <div class="texto">
+      <p>Em qualquer cartão há o botão <b>Observação</b>. Use para registrar o que a organização precisa saber: "trouxe o irmão sem estar na lista", "paga o resto amanhã", "alergia avisada na porta".</p>
+      <ol>
+        <li>Toque em <b>Observação</b>.</li>
+        <li>Escreva o recado (até 500 letras).</li>
+        <li>Toque em <b>Salvar</b>.</li>
+      </ol>
+      <p>O recado aparece num quadro amarelo no cartão, com o nome de quem escreveu e a hora. Para apagar, abra de novo, deixe o campo vazio e salve.</p>
+      <div class="dica">Use o filtro <b>Com observação</b> para ver todos os recados do dia de uma vez.</div>
+    </div>
+    <div class="figura">
+      <div class="tela">
+        <div class="t-card">
+          <div class="t-nome">Carlos Eduardo Reis</div><div class="t-igreja">Igreja Exemplo Norte</div>
+          <div class="t-tags"><span class="tag ab">Pagamento em aberto</span></div>
+          <div class="t-btns"><span class="btn amb">Pagar agora</span><span class="btn sec sel">Observação</span></div>
+          <div class="t-input" style="min-height:60px;font-size:13px">Vai pagar o restante amanhã cedo com a esposa.</div>
+          <div class="t-btns" style="justify-content:flex-end"><span class="t-hint" style="margin-right:auto;align-self:center">45/500</span><span class="btn sec" style="flex:0 0 auto;padding:6px 12px">Cancelar</span><span class="btn az" style="flex:0 0 auto;padding:6px 14px">Salvar</span></div>
+        </div>
+        <div class="t-hint" style="text-align:center">depois de salvar ↓</div>
+        <div class="t-obs">Vai pagar o restante amanhã cedo com a esposa.<small>Mariana Souza · 24/10 17:05</small></div>
+      </div>
+      <p class="legenda">Escrevendo e salvando uma observação</p>
+    </div>
+  </div>
+</section>
+
+<section id="desfazer">
+  <span class="eyebrow">Passo 6</span>
+  <h2>Errou? Desfaça</h2>
+  <div class="passo">
+    <div class="texto">
+      <p>Dois erros comuns têm conserto na própria tela:</p>
+      <ul>
+        <li><b>Liberou a entrada da pessoa errada:</b> no cartão verde, toque em <b>Desfazer entrada</b> e confirme. A pessoa volta para <i>Entrada pendente</i>.</li>
+        <li><b>Registrou um pagamento errado:</b> se a pessoa ainda não entrou, toque em <b>Desfazer pagamento</b> e confirme. Volta para <i>Pagamento em aberto</i>.</li>
+      </ul>
+      <p>Toda desfeita pede uma confirmação em vermelho, para você não apagar sem querer.</p>
+      <div class="atencao"><b>A portaria só desfaz o que ela mesma registrou.</b> Pagamento por PIX ou lançado pela organização não tem botão de desfazer aqui. Se precisar mexer neles, chame um organizador.</div>
+      <div class="atencao">Para desfazer um pagamento de quem já entrou, primeiro desfaça a entrada.</div>
+    </div>
+    <div class="figura">
+      <div class="tela">
+        <div class="t-card entrou">
+          <div class="t-nome">✔ Carlos Eduardo Reis</div><div class="t-igreja">Igreja Exemplo Norte</div>
+          <div class="t-tags"><span class="tag en">Entrada liberada · 24/10 17:20</span><span class="tag pg">Pago · Dinheiro</span><span class="t-hint">R$ 80,00</span></div>
+          <div class="t-hint">Pagou na portaria (Mariana Souza, 24/10 17:20) · Entrada liberada por Mariana Souza</div>
+          <div class="t-btns"><span class="btn sec sel">Desfazer entrada</span><span class="btn sec">Observação</span></div>
+          <div class="t-conf">
+            <span>Desfazer a entrada? A pessoa volta para "Entrada pendente".</span>
+            <div class="t-btns"><span class="btn sec">Não</span><span class="btn verm">Sim, desfazer</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="legenda">Confirmação antes de desfazer</p>
+    </div>
+  </div>
+</section>
+
+<section id="duvidas">
+  <span class="eyebrow">Passo 7</span>
+  <h2>O que significa cada etiqueta</h2>
+  <div class="tabela-wrap">
+  <table class="glossario">
+    <thead><tr><th>Etiqueta</th><th>Significado</th><th>O que fazer</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag ab" style="background:#3a2b0c;color:#fde68a">Pagamento em aberto</span></td><td>Ainda não pagou.</td><td>Receba e toque em <b>Pagar agora</b>.</td></tr>
+      <tr><td><span class="tag pg" style="background:#0f3d2c;color:#a7f3d0">Pago · PIX / Dinheiro / Cartão</span></td><td>Pagamento confirmado.</td><td>Entregue a pulseira e toque em <b>Liberar entrada</b>.</td></tr>
+      <tr><td><span class="tag is" style="background:#0c3350;color:#bae6fd">Isento</span></td><td>Não precisa pagar.</td><td>Igual a quem já pagou: <b>Liberar entrada</b>.</td></tr>
+      <tr><td><span class="tag en" style="background:#0f5a3f;color:#fff">Entrada liberada</span></td><td>A pulseira já foi entregue.</td><td>Nada. Só <b>Desfazer entrada</b> se foi engano.</td></tr>
+      <tr><td><span class="tag fe" style="background:#3a1414;color:#fecaca">Fora da escala</span></td><td>A pessoa não está em nenhuma área da escala oficial.</td><td>Registre o que acontecer em <b>Observação</b> para a organização decidir.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2 style="margin-top:12px">Perguntas que costumam aparecer</h2>
+  <div class="faq">
+    <div><b>A pessoa não aparece na busca.</b><span>Confira a aba: em <i>Entrada pendente</i> não aparece quem já entrou. Use <i>Todos</i>. Acampantes e infiltrados não aparecem nunca: eles entram junto com os acampantes.</span></div>
+    <div><b>Apareceu "Não deu certo".</b><span>Leia a mensagem. Quase sempre outra pessoa da portaria já registrou a mesma coisa. A tela recarrega e mostra a situação atual.</span></div>
+    <div><b>O sinal do celular caiu.</b><span>Se a conexão falhar no meio de um pagamento, a janela continua aberta. Espere voltar e toque de novo em confirmar. O sistema não cobra duas vezes a mesma pessoa.</span></div>
+    <div><b>A pessoa quer pagar por PIX.</b><span>A portaria não recebe PIX. Peça para ela pagar pelo site, na própria área de acompanhamento. Quando confirmar, a tela mostra "Pago · PIX" em segundos.</span></div>
+    <div><b>Valor sugerido diferente do combinado.</b><span>Corrija no campo antes de confirmar. Se houver dúvida, escreva o motivo em <b>Observação</b>.</span></div>
+    <div><b>Preciso sair.</b><span>Toque em <b>Sair</b>, no canto superior direito. Não deixe o celular da portaria logado com outra pessoa.</span></div>
+  </div>
+</section>
+
+<footer>Guia elaborado em 24/10/2026. As telas deste guia são ilustrações com nomes e valores fictícios, reproduzindo a aparência real da portaria.</footer>
+
+</div>
+
+</html>

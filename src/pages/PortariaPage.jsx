@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Banknote, CheckCircle2, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, RefreshCw, Search, Undo2, Wallet, X
+  ArrowLeft, Banknote, BookOpen, CheckCircle2, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, RefreshCw, Search, Undo2, Wallet, X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -214,6 +214,19 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
   );
 };
 
+// ---- Janela "Como usar a portaria" (guia em /guia-portaria.html) --------------------
+const GuiaDialog = ({ aberto, onFechar }) => (
+  <Dialog open={aberto} onOpenChange={(a) => { if (!a) onFechar(); }}>
+    <DialogContent className="bg-zinc-950 border-white/10 text-white max-w-3xl w-[95vw] h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogHeader className="px-5 py-3 border-b border-white/10 text-left">
+        <DialogTitle>Como usar a portaria</DialogTitle>
+        <DialogDescription className="sr-only">Guia passo a passo da tela da portaria.</DialogDescription>
+      </DialogHeader>
+      {aberto && <iframe title="Como usar a portaria" src="/guia-portaria.html" className="flex-1 w-full border-0 bg-[#0d1511]" />}
+    </DialogContent>
+  </Dialog>
+);
+
 // Confirmacao em linha (desfazer entrada / desfazer pagamento).
 const Confirmar = ({ texto, rotulo, ocupado, onNao, onSim }) => (
   <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2">
@@ -406,6 +419,7 @@ const PortariaPage = () => {
   const [desde, setDesde] = useState('');
   const [limite, setLimite] = useState(POR_PAGINA);
   const [pagando, setPagando] = useState(null);
+  const [guiaAberto, setGuiaAberto] = useState(false);
 
   const nomeDaConta = apoioUser?.nome || organizadorUser?.nome || user?.nome || '';
   const ehOrganizador = !apoioUser && (!!organizadorUser || ['organizador', 'organizador-aprovador'].includes(user?.role));
@@ -545,6 +559,12 @@ const PortariaPage = () => {
     </div>
   ) : (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <button type="button" onClick={() => setGuiaAberto(true)}
+          className="inline-flex items-center gap-1.5 text-sm text-emerald-300 hover:text-emerald-200 underline-offset-2 hover:underline">
+          <BookOpen className="w-4 h-4" />Como usar a portaria
+        </button>
+      </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Numero rotulo="Equipantes" valor={numeros.total} />
         <Numero rotulo="Entrada liberada" valor={numeros.entraram} cor="text-emerald-300" />
@@ -673,6 +693,7 @@ const PortariaPage = () => {
         </div>
       )}
 
+      <GuiaDialog aberto={guiaAberto} onFechar={() => setGuiaAberto(false)} />
       <PagarAgoraDialog pessoa={pagando} onFechar={() => setPagando(null)}
         onFeito={() => { setPagando(null); carregar(true); }} onErro={() => carregar(true)} />
     </>

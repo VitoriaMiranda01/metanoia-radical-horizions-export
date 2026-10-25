@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { formatCPF } from '@/utils/formatters';
+import { entregarArquivo } from '@/utils/entregarArquivo';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { montarLinhasIgrejas } from '@/utils/igrejasCadastradas';
 import { formatarDataHora } from '@/utils/columnVisibility';
@@ -371,7 +372,7 @@ export const exportListaIgrejas = (lista, relatorio, contas = [], cadastro = {})
 // Planilha da tela da saude (login de apoio, 09/10/2026): aba "Acampantes"
 // com as colunas escolhidas e, se pedido, aba "Resumo" com quantas pessoas
 // por problema de saude, medicamento e restricao alimentar.
-export const exportSaudeToExcel = (linhas, resumo) => {
+export const exportSaudeToExcel = async (linhas, resumo) => {
   try {
     if (!linhas || linhas.length === 0) throw new Error('Nada para exportar.');
     const wb = XLSX.utils.book_new();
@@ -388,7 +389,9 @@ export const exportSaudeToExcel = (linhas, resumo) => {
       XLSX.utils.book_append_sheet(wb, wr, 'Resumo');
     }
 
-    XLSX.writeFile(wb, `saude_acampantes_${new Date().toISOString().split('T')[0]}.xlsx`);
+    const bytes = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    await entregarArquivo(blob, `saude_acampantes_${new Date().toISOString().split('T')[0]}.xlsx`);
     return { success: true };
   } catch (error) {
     console.error('Erro ao exportar:', error);

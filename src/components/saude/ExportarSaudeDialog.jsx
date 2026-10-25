@@ -53,11 +53,11 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
       : null;
   };
 
-  const baixar = () => {
+  const baixar = async () => {
     if (colunas.length === 0) { setErro('Marque pelo menos uma coluna.'); return; }
     const escolhidas = COLUNAS_SAUDE.filter((c) => colunas.includes(c.chave));
     const linhas = pessoas.map((p) => Object.fromEntries(escolhidas.map((c) => [c.rotulo, c.valor(p)])));
-    const r = exportSaudeToExcel(linhas, montarResumo());
+    const r = await exportSaudeToExcel(linhas, montarResumo());
     if (!r.success) { setErro(r.error || 'Não foi possível gerar a planilha.'); return; }
     onExportado?.(linhas.length);
     onFechar();

@@ -1,4 +1,5 @@
 import { carregarFonte } from '@/utils/relacaoNominal';
+import { entregarArquivo } from '@/utils/entregarArquivo';
 
 /**
  * PDF da tela da saude (25/10/2026, Patrick): mesmo visual dos outros PDFs
@@ -140,5 +141,5 @@ export const exportarSaudePdf = async (pessoas, colunas, resumo) => {
     doc.text(`Metanoia Radical Serra · Página ${pg} de ${total}`, W / 2, H - 16, { align: 'center' });
   }
 
-  doc.save(`saude_acampantes_${new Date().toISOString().split('T')[0]}.pdf`);
+  await entregarArquivo(doc.output('blob'), `saude_acampantes_${new Date().toISOString().split('T')[0]}.pdf`);
 };

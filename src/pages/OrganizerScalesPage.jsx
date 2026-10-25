@@ -17,7 +17,7 @@ import { batchUpdateWorkScheduleStatus } from '@/services/workScheduleService';
 import { alocarEquipanteManualmente, realocarAlocacao, removerAlocacao, alocarAreasEspeciaisPorCpf, fetchAreasFixas, limparArea, marcarAreaFixa } from '@/services/equipanteAllocationService';
 import { fetchConfiguracoes, updateCpfsAreaEspecial } from '@/services/organizerConfigService';
 import { fetchEquipantesParaSelecao } from '@/services/equipantesService';
-import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus, ChevronDown, ChevronUp, Pin, ArrowUpDown, Plus, Church, UserCog } from 'lucide-react';
+import { Grid, Loader2, AlertTriangle, CheckCircle, Download, AlertCircle, Search, Send, Undo2, X, Truck, Sparkles, Wand2, ChevronRight, ClipboardCheck, Repeat, BadgeCheck, UserPlus, ChevronDown, ChevronUp, Pin, ArrowUpDown, Plus, Church, UserCog, Camera } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import AreaLimitHeader from '@/components/scales/AreaLimitHeader';
@@ -29,6 +29,7 @@ import AreasExtraDialog from '@/components/scales/AreasExtraDialog';
 import ResponsaveisReuniaoDialog from '@/components/scales/ResponsaveisReuniaoDialog';
 import ExportarRelacaoMenu from '@/components/scales/ExportarRelacaoMenu';
 import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
+import FotosTrilhaDialog from '@/components/scales/FotosTrilhaDialog';
 import PreEscalaDialog from '@/components/scales/PreEscalaDialog';
 import TrocarAreaDialog from '@/components/scales/TrocarAreaDialog';
 import ChamadaQuadro from '@/components/scales/ChamadaQuadro';
@@ -204,6 +205,7 @@ const OrganizerScalesPage = () => {
   const [verAreasExtra, setVerAreasExtra] = useState(false);
   const [verResponsaveis, setVerResponsaveis] = useState(false);
   const [verAreasEspeciais, setVerAreasEspeciais] = useState(false);
+  const [verFotosTrilha, setVerFotosTrilha] = useState(false);
   const [verRecepcaoIgreja, setVerRecepcaoIgreja] = useState(false);
 
   // Pre-escala: so leitura, ve-se a demanda por area entre TODO MUNDO ja
@@ -2061,6 +2063,12 @@ const OrganizerScalesPage = () => {
                   <Sparkles className="mr-2 h-4 w-4" /> Áreas Especiais ({totalEspeciais})
                   <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
                 </Button>
+                <Button data-dica="Banco de fotos da equipe de trilha (Guias, Inimigo, Infiltrados, Espírito Santo) e a arte de cada grupo, montada pela escala."
+                  onClick={() => setVerFotosTrilha(true)} variant="outline"
+                  className="bg-pink-600/15 text-pink-300 border-pink-600/40 hover:bg-pink-600/30 hover:text-pink-200">
+                  <Camera className="mr-2 h-4 w-4" /> Fotos da trilha
+                  <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
+                </Button>
                 <Button data-dica="Equipe da igreja no dia da saída: Recepção Igreja, Cozinha Igreja, Som / Multimídia, Estacionamento e Mesa crachá. Pré-cadastro e alocação, como nas Áreas Especiais."
                   onClick={() => setVerRecepcaoIgreja(true)} variant="outline"
                   className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
@@ -2373,6 +2381,13 @@ const OrganizerScalesPage = () => {
               inicial={trocaAberta.inicial}
               onClose={() => setTrocaAberta(null)}
               onTrocado={() => fetchBackgroundData(false)}
+            />
+          )}
+          {verFotosTrilha && (
+            <FotosTrilhaDialog
+              allocations={allocations}
+              atuacoesPorArea={atuacoesPorArea}
+              onClose={() => setVerFotosTrilha(false)}
             />
           )}
           {verAreasEspeciais && (

@@ -55,10 +55,11 @@ const LgpdApagamentosCard = () => {
           <span>LGPD — apagamentos automáticos</span>
         </CardTitle>
         <CardDescription className="text-gray-400">
-          Todo dia às 03:30 o sistema apaga sozinho o que o aviso de privacidade do equipante promete:
-          saúde, áreas de trabalho e autorização do responsável 12 meses após o evento; o cadastro inteiro
-          24 meses após a última participação. Do que sai, fica só o código interno. Só a conta
-          Desenvolvedores vê este quadro.
+          Cumpre os prazos do aviso de privacidade do equipante. Todo dia às 03:30 o sistema só confere
+          os prazos; um dado é apagado apenas quando o prazo dele vence:
+          saúde, áreas de trabalho e autorização do responsável, 12 meses após o evento;
+          o cadastro inteiro, 24 meses após a última participação da pessoa.
+          Do que é apagado, fica só o código interno. Só a conta Desenvolvedores vê este quadro.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">

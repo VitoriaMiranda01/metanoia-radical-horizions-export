@@ -26,6 +26,7 @@ import SenhasOrganizadoresManager from '@/components/organizer/SenhasOrganizador
 import Recolhivel, { RecolhivelBotoesGerais } from '@/components/organizer/Recolhivel';
 import BackupStatusCard from '@/components/organizer/BackupStatusCard';
 import AuditoriaCard from '@/components/organizer/AuditoriaCard';
+import LgpdApagamentosCard from '@/components/organizer/LgpdApagamentosCard';
 import AmbienteTesteCard from '@/components/organizer/AmbienteTesteCard';
 import DatasReunioesCard from '@/components/organizer/DatasReunioesCard';
 import ExcluirCadastroCard from '@/components/organizer/ExcluirCadastroCard';
@@ -933,6 +934,11 @@ const OrganizerConfigPage = () => {
           {/* Auditoria: tambem so a conta Desenvolvedores ve. */}
           <Recolhivel chave="cfg-auditoria" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
             <AuditoriaCard />
+          </Recolhivel>
+
+          {/* LGPD do equipante: o que o banco apaga sozinho -- so Desenvolvedores (24/10/2026). */}
+          <Recolhivel chave="cfg-lgpd" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
+            <LgpdApagamentosCard />
           </Recolhivel>
 
           {/* Acampantes que desistiram -- 20/10/2026. */}

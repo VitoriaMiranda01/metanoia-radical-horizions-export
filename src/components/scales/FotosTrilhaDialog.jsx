@@ -252,13 +252,12 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
   const [links, setLinks] = useState({});
   const [carregando, setCarregando] = useState(true);
   const [recorte, setRecorte] = useState(null); // { arquivo, pessoa, nomeInicial }
-  const [aviso, setAviso] = useState(null); // { semFoto, semCor }
-  const [gerando, setGerando] = useState(false);
+  const [aviso, setAviso] = useState(null); // { semFoto, semCor, alvo }
+  const [gerando, setGerando] = useState(null); // alvo sendo gerado ('TODOS' ou a cor)
   const [artes, setArtes] = useState(null); // [{ cor, url, blob }]
-  // Fundo da arte e qual grupo gerar (25/10/2026, Patrick: às vezes só um
-  // grupo precisa ser refeito; e o modelo branco da arte antiga do roxo).
+  // Fundo da arte (25/10/2026, Patrick: o modelo branco da arte antiga do
+  // roxo). Gerar um grupo só: botão no cabeçalho de cada cor.
   const [fundo, setFundo] = useState(() => { try { return localStorage.getItem('fotos_trilha_fundo') || 'escuro'; } catch { return 'escuro'; } });
-  const [grupoAlvo, setGrupoAlvo] = useState('TODOS');
   useEffect(() => { try { localStorage.setItem('fotos_trilha_fundo', fundo); } catch { /* sem armazenamento */ } }, [fundo]);
   const [adicionar, setAdicionar] = useState(false);
   const [buscaFicha, setBuscaFicha] = useState('');
@@ -373,29 +372,31 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
   }, [buscaFicha, adicionar, toast]);
 
   // ---- arte
-  const doAlvo = (p) => (grupoAlvo === 'TODOS' ? !!p.cor : p.cor === grupoAlvo);
-  const pedirArtes = () => {
-    const semFoto = escalados.filter((p) => doAlvo(p) && !fotoPorId[p.id]);
+  // alvo: 'TODOS' ou a cor de um grupo só
+  const doAlvo = (alvo) => (p) => (alvo === 'TODOS' ? !!p.cor : p.cor === alvo);
+  const pedirArtes = (alvo) => {
+    const noAlvo = doAlvo(alvo);
+    const semFoto = escalados.filter((p) => noAlvo(p) && !fotoPorId[p.id]);
     // sem cor só importa quando gera todos os grupos
-    const semCor = grupoAlvo === 'TODOS' ? escalados.filter((p) => !p.cor) : [];
-    if (escalados.filter((p) => doAlvo(p) && fotoPorId[p.id]).length === 0) {
+    const semCor = alvo === 'TODOS' ? escalados.filter((p) => !p.cor) : [];
+    if (escalados.filter((p) => noAlvo(p) && fotoPorId[p.id]).length === 0) {
       toast({
-        title: grupoAlvo === 'TODOS' ? 'Ninguém com foto e cor nos papéis da arte.' : `Ninguém com foto no grupo ${grupoAlvo.toLowerCase()}.`,
+        title: alvo === 'TODOS' ? 'Ninguém com foto e cor nos papéis da arte.' : `Ninguém com foto no grupo ${alvo.toLowerCase()}.`,
         description: 'Envie as fotos ou confira as cores na escala.',
         variant: 'destructive'
       });
       return;
     }
-    if (semFoto.length || semCor.length) setAviso({ semFoto, semCor });
-    else gerarArtes();
+    if (semFoto.length || semCor.length) setAviso({ semFoto, semCor, alvo });
+    else gerarArtes(alvo);
   };
 
-  const gerarArtes = async () => {
+  const gerarArtes = async (alvo) => {
     setAviso(null);
-    setGerando(true);
+    setGerando(alvo);
     try {
       const edicao = await dadosDaEdicaoParaArte();
-      const usados = escalados.filter((p) => doAlvo(p) && fotoPorId[p.id]);
+      const usados = escalados.filter((p) => doAlvo(alvo)(p) && fotoPorId[p.id]);
       const imagens = {};
       await Promise.all(usados.map(async (p) => {
         const blob = await baixarFoto(fotoPorId[p.id].caminho);
@@ -417,7 +418,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
     } catch (e) {
       toast({ title: 'Não foi possível gerar as artes.', description: e.message, variant: 'destructive' });
     } finally {
-      setGerando(false);
+      setGerando(null);
     }
   };
 
@@ -459,6 +460,14 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
           </span>
           <span className={`text-xs ${ok === daCor.length ? 'text-emerald-400' : 'text-amber-300'}`}>{ok} de {daCor.length} com foto</span>
           {!cor && <span className="text-xs text-gray-500">— não entram na arte até ter cor na escala.</span>}
+          {cor && (
+            <Button size="sm" onClick={() => pedirArtes(cor)} disabled={!!gerando || carregando}
+              data-dica={`Gerar (ou refazer) só a arte do grupo ${cor.toLowerCase()}.`}
+              className="ml-auto h-8 bg-pink-600/20 text-pink-200 border border-pink-600/50 hover:bg-pink-600/40">
+              {gerando === cor ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+              Gerar grupo {cor.toLowerCase()}
+            </Button>
+          )}
         </div>
         <div className="flex flex-wrap gap-x-6 gap-y-3">
           {PAPEIS.map(({ area, titulo }) => {
@@ -542,16 +551,11 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
               ))}
             </div>
           </div>
-          <select value={grupoAlvo} onChange={(e) => setGrupoAlvo(e.target.value)}
-            data-dica="Gerar todos os grupos ou refazer só um."
-            className="h-9 rounded-md border border-white/15 bg-black/40 px-2 text-sm text-white">
-            <option value="TODOS">Todos os grupos</option>
-            {CORES_ARTE.map((c) => <option key={c} value={c}>Só o grupo {c.toLowerCase()}</option>)}
-          </select>
-          <Button onClick={pedirArtes} disabled={gerando || carregando}
+          <Button onClick={() => pedirArtes('TODOS')} disabled={!!gerando || carregando}
+            data-dica="Gerar a arte de todos os grupos. Para um grupo só, use o botão no cabeçalho da cor."
             className="h-9 bg-pink-600 hover:bg-pink-500 text-white">
-            {gerando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
-            {grupoAlvo === 'TODOS' ? 'Gerar artes' : `Gerar grupo ${grupoAlvo.toLowerCase()}`}
+            {gerando === 'TODOS' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+            Gerar todos
           </Button>
         </div>
 
@@ -622,7 +626,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => { setAviso(null); setAba('escalados'); setFiltro(aviso.semFoto.length ? 'sem' : 'todos'); }}
                 className="border-white/20 bg-transparent text-gray-200 hover:bg-white/10">Corrigir antes</Button>
-              <Button onClick={gerarArtes} className="bg-pink-600 hover:bg-pink-500 text-white">Gerar assim mesmo</Button>
+              <Button onClick={() => gerarArtes(aviso.alvo)} className="bg-pink-600 hover:bg-pink-500 text-white">Gerar assim mesmo</Button>
             </div>
           </div>
         </div>

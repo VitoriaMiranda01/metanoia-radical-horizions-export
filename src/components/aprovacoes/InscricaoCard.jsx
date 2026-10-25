@@ -23,7 +23,7 @@ const InscricaoCard = ({
       {/* Header: Name and Status */}
       <div className="flex justify-between items-start gap-3">
         <h3 className="font-semibold text-white text-lg leading-tight break-words">
-          <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} />
+          <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} soDomingo={inscricao.so_domingo} />
           <SeloPastor pessoa={inscricao} className="ml-1.5 align-[-1px]" />
         </h3>
         <div className="shrink-0 mt-0.5">

@@ -28,6 +28,7 @@ import CartaoFila from '@/components/scales/CartaoFila';
 import AreasExtraDialog from '@/components/scales/AreasExtraDialog';
 import ResponsaveisReuniaoDialog from '@/components/scales/ResponsaveisReuniaoDialog';
 import ExportarRelacaoMenu from '@/components/scales/ExportarRelacaoMenu';
+import SoDomingoQuadro from '@/components/scales/SoDomingoQuadro';
 import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
 import FotosTrilhaDialog from '@/components/scales/FotosTrilhaDialog';
 import { useAtualizacaoPeriodica } from '@/hooks/useAtualizacaoPeriodica';
@@ -122,6 +123,8 @@ const OrganizerScalesPage = () => {
   // em "Gerar escalas"). Substitui o antigo `unallocated`, que so existia
   // depois de um clique manual e se perdia ao recarregar a pagina.
   const [waitlist, setWaitlist] = useState([]);
+  // Aprovados que vao so no domingo (20261025c).
+  const [soDomingo, setSoDomingo] = useState([]);
   const [manualAreaChoice, setManualAreaChoice] = useState({});
   const [manualAllocating, setManualAllocating] = useState({});
 
@@ -550,7 +553,10 @@ const OrganizerScalesPage = () => {
       // `allocations`: esta funcao roda tambem pelo intervalo de 30s, criado
       // no primeiro desenho, e la `allocations` e a lista daquele momento.
       const idsAlocados = new Set((existingAllocations || []).map(a => a.id));
-      setWaitlist((equipantes || []).filter(eq => !idsAlocados.has(eq.id)));
+      // Quem vai so no domingo (20261025c) nao entra na fila: fica no quadro
+      // "Vão somente no domingo" e nunca na escala.
+      setWaitlist((equipantes || []).filter(eq => !idsAlocados.has(eq.id) && !eq.so_domingo));
+      setSoDomingo((equipantes || []).filter(eq => eq.so_domingo));
       if (existingAllocations) {
         const changed = detectAllocationChanges(existingAllocations, previousAllocationsRef.current);
         if (changed.length > 0 || previousAllocationsRef.current.length !== existingAllocations.length) {
@@ -2196,8 +2202,8 @@ const OrganizerScalesPage = () => {
                   </Button>
                 )}
                 {/* Relacao nominal em PDF/Excel (geral, por igreja, por area) -- 17/10/2026. */}
-               <ExportarRelacaoMenu allocations={allocations} atuacoesPorArea={atuacoesPorArea}
-                  onPlanilhaDetalhada={handleExportAll} disabled={allocations.length === 0} />
+               <ExportarRelacaoMenu allocations={allocations} atuacoesPorArea={atuacoesPorArea} soDomingo={soDomingo}
+                  onPlanilhaDetalhada={handleExportAll} disabled={allocations.length === 0 && soDomingo.length === 0} />
               </div>
             </div>
           </div>
@@ -2226,6 +2232,8 @@ const OrganizerScalesPage = () => {
             vaga nas 3 opções", porque so caia aqui quem a alocacao
             automatica nao tinha conseguido encaixar. Agora a aprovacao nao
             aloca mais ninguem, entao TODO aprovado passa por aqui. */}
+        {soDomingo.length > 0 && <SoDomingoQuadro pessoas={soDomingo} />}
+
         {waitlist.length > 0 && <Card ref={filaRef} className="bg-red-900/10 border-red-900/30 scroll-mt-24">
             <div className={cn("p-3 sm:p-4 flex flex-wrap items-center gap-x-3 gap-y-2", !filaMinimizada && "border-b border-red-900/30")}>
               <div className="flex items-center gap-x-2 gap-y-1 flex-wrap flex-1 min-w-0">

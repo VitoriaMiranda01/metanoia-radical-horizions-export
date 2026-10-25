@@ -30,5 +30,6 @@ export const rotuloMotivoDesconto = (auto) => {
   const pct = auto.percentual ? ` (${Number(auto.percentual)}%)` : '';
   if (auto.motivo === 'pastor') return `Desconto de pastor${pct}`;
   if (auto.motivo === 'infiltrado') return `Desconto de infiltrado${pct}`;
+  if (auto.motivo === 'domingo') return `Taxa de quem vai só no domingo${pct}`;
   return `Desconto${pct}`;
 };

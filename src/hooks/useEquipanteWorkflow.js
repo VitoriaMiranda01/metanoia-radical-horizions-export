@@ -157,6 +157,24 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
       });
     }
 
+    // So no domingo (20261025c): nao ha escala. Aprovada, a pessoa ja esta em
+    // "Vão somente no domingo"; depois e so a taxa (50% do lote).
+    if (workflowData.so_domingo) {
+      stages.push({
+        id: 'area_domingo',
+        label: 'Área: Vão somente no domingo',
+        status: workflowData.aprovacao === 'aprovado' ? 'ok' : 'pendente',
+      });
+      stages.push({
+        id: 'payment',
+        label: !workflowData.pago && workflowData.pagamento_agendado?.agendado_para
+          ? `Pagamento da taxa de alimentação (domingo) — agendado para ${String(workflowData.pagamento_agendado.agendado_para).slice(0, 10).split('-').reverse().join('/')}`
+          : 'Pagamento da taxa de alimentação (domingo)',
+        status: workflowData.pago ? 'ok' : 'pendente',
+      });
+      return stages;
+    }
+
     // Escala PROVISORIA (05/10 e 15/10/2026): fica "em processo" ate a
     // presenca ser confirmada na reuniao de escala; confirmada, conclui com
     // "presenca confirmada". A escala OFICIAL ganha uma linha propria.
@@ -213,6 +231,7 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     // Quem autoriza o pagamento e o servidor, nunca a tela. Enquanto nao
     // houver resposta, e false -- falha fechada.
     podePagar: !!workflowData?.pode_pagar,
+    soDomingo: !!workflowData?.so_domingo,
     escalado: !!workflowData?.escalado,
     naoSeraEscalado: !!workflowData?.nao_sera_escalado,
     escalaLancada: !!workflowData?.escala_lancada,

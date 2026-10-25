@@ -126,6 +126,9 @@ const mapEquipanteToDb = (formData) => ({
     ? formData.areasTrabalhoExtra.join('; ') || null
     : (formData.areasTrabalhoExtra || null),
   metodo_pagamento: formData.metodoPagamento,
+  // So no domingo (20261025c): o servidor confere a janela propria e zera as
+  // areas de trabalho e a area extra.
+  so_domingo: !!formData.soDomingo,
 });
 
 /**
@@ -289,6 +292,9 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     const recusaDeDado = mensagemDeErro(error?.message);
     if (recusaDeDado) {
       return { success: false, error: recusaDeDado };
+    }
+    if (error?.message?.includes('INSCRICOES_DOMINGO_FECHADAS')) {
+      return { success: false, error: 'As inscrições para quem vai só no domingo não estão abertas no momento.' };
     }
     if (error?.message?.includes('INSCRICOES_FECHADAS')) {
       return { success: false, error: 'As inscrições não estão abertas no momento.' };

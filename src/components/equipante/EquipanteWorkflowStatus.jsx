@@ -13,6 +13,7 @@ import RelacaoLider from './RelacaoLider';
 import AreaOficial from './AreaOficial';
 import GrupoAcompanhamento from './GrupoAcompanhamento';
 import { presencaPropriaLider } from '@/services/liderService';
+import TagSoDomingo from '@/components/common/TagSoDomingo';
 
 // onSair: "Não sou eu" -- a janela de cadastro não fecha, então precisa ter saída.
 // onDonoAtualizado: o que a pessoa acabou de gravar (CPF, nascimento) e que
@@ -28,6 +29,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     uploadFile,
     workflowData,
     podePagar,
+    soDomingo,
     escalado,
     naoSeraEscalado,
     pago,
@@ -59,12 +61,15 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
   // Botao "Confirmar inscricao" (22/10/2026): aparece a partir do dia seguinte
   // a reuniao de leitura (ou com a oficial lancada). Enquanto nao conclui, fica
   // cinza dizendo o que falta -- so taxa de alimentacao e escala oficial.
-  const pendenciasConfirmacao = [
-    // Mesmo texto da etapa "Escala oficial" na lista (useEquipanteWorkflow).
-    naoSeraEscalado || (escalaOficial && !escalado) ? 'Você não foi escalado na escala oficial'
-      : !escalaOficial ? 'Escala oficial' : null,
-    !pago ? 'Taxa de alimentação' : null,
-  ].filter(Boolean);
+  const pendenciasConfirmacao = soDomingo
+    // So no domingo (20261025c): sem escala; aprovada + paga conclui.
+    ? [aprovacao !== 'aprovado' ? 'Aprovação da sua igreja' : null, !pago ? 'Taxa de alimentação' : null].filter(Boolean)
+    : [
+      // Mesmo texto da etapa "Escala oficial" na lista (useEquipanteWorkflow).
+      naoSeraEscalado || (escalaOficial && !escalado) ? 'Você não foi escalado na escala oficial'
+        : !escalaOficial ? 'Escala oficial' : null,
+      !pago ? 'Taxa de alimentação' : null,
+    ].filter(Boolean);
 
   // So o proprio equipante (que provou ser dono) ve a janela de correcao
   // sozinha; o organizador abrindo a ficha pela tela dele, nao.
@@ -226,6 +231,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     if (aprovacao === 'rejeitado') return 'Sua inscrição não foi aprovada pela sua igreja. Procure a organização.';
     if (aprovacao !== 'aprovado') return 'Sua igreja ainda precisa aprovar a sua inscrição. Assim que isso acontecer, esta tela avisa.';
     if (isMinor && !hasUploadedAuth) return 'Falta a autorização dos seus responsáveis: anexe o arquivo aqui embaixo, ou marque que você já entregou a carta na sua igreja.';
+    if (soDomingo) return pago ? null : 'Tudo certo! Você vai somente no domingo. Agora falta só a taxa de alimentação (50% do valor do dia), no botão abaixo.';
     // Oficial lancada e a pessoa fora dela: nao ha mais escala para aguardar.
     if (!escalado && escalaOficial) return 'Seu nome não saiu na escala oficial. Procure a coordenação do projeto.';
     if (!escalado) return 'Tudo certo até aqui. Agora é aguardar a escala: as áreas são divulgadas na reunião de equipe. Quando você for escalado, o pagamento da taxa de alimentação abre nesta tela.';
@@ -254,12 +260,21 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
   return (
     <div className="space-y-6">
       <div className="bg-black/40 border border-white/10 rounded-xl p-6">
-        <h2 className="text-2xl font-bold text-white mb-2">Acompanhamento da Inscrição</h2>
-        <p className="text-gray-400 mb-6">
-          Acompanhe as etapas necessárias para finalizar sua participação como Equipante.
-          O <strong className="text-gray-200">pagamento da taxa de alimentação é a última etapa</strong>,
-          e abre depois que você for escalado em uma área.
-        </p>
+        <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2 flex-wrap">
+          Acompanhamento da Inscrição {soDomingo && <TagSoDomingo />}
+        </h2>
+        {soDomingo ? (
+          <p className="text-gray-400 mb-6">
+            Sua inscrição é para ir <strong className="text-gray-200">somente no domingo</strong>.
+            Depois da aprovação da sua igreja, abre o pagamento da taxa de alimentação (50% do valor do dia).
+          </p>
+        ) : (
+          <p className="text-gray-400 mb-6">
+            Acompanhe as etapas necessárias para finalizar sua participação como Equipante.
+            O <strong className="text-gray-200">pagamento da taxa de alimentação é a última etapa</strong>,
+            e abre depois que você for escalado em uma área.
+          </p>
+        )}
 
         {naoSeraEscalado && (
           <div className="mb-6 bg-red-500/10 border border-red-500/30 p-4 rounded-lg">
@@ -475,7 +490,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
           </div>
         )}
 
-        {canProceedToPayment && (viuArea || !ehOProprio) && (
+        {canProceedToPayment && (viuArea || !ehOProprio || soDomingo) && (
           <div className="mt-8 pt-6 border-t border-white/10 space-y-3">
             {/* Pagamento combinado com a organizacao (19/10/2026): a etapa
                 continua pendente ate pagar. */}

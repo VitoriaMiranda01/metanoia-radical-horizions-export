@@ -64,9 +64,10 @@ const COLUNAS = [
   ['Igreja', 45, igrejaDaLinha],
   ['É pastor?', 20, ehPastorTexto],
   ['Pastor Responsável da igreja', 32, (i) => i.pastor_nome || '-'],
-  ['1ª opção de área', 28, (i) => i.area_trabalho_opcao1 || '-'],
-  ['2ª opção de área', 28, (i) => i.area_trabalho_opcao2 || '-'],
-  ['3ª opção de área', 28, (i) => i.area_trabalho_opcao3 || '-'],
+  // So no domingo (20261025c): nao escolhe area.
+  ['1ª opção de área', 28, (i) => (i.so_domingo ? 'Só Domingo' : i.area_trabalho_opcao1 || '-')],
+  ['2ª opção de área', 28, (i) => (i.so_domingo ? '-' : i.area_trabalho_opcao2 || '-')],
+  ['3ª opção de área', 28, (i) => (i.so_domingo ? '-' : i.area_trabalho_opcao3 || '-')],
   ['Inscrito em', 12, (i) => dataBR(i.created_at)],
   ['Situação', 12, (i) => SITUACAO[i.status] || i.status || '-'],
 ];

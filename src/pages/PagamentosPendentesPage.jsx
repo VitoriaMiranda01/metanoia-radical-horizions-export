@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, Gift, Download, MessageCircle, Copy, X, PhoneCall, CalendarClock, StickyNote, Pencil, Check, Undo2, FileText } from 'lucide-react';
 import Layout from '@/components/Layout';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
+import { AREA_SO_DOMINGO } from '@/components/common/TagSoDomingo';
 import { exportRelacaoPagamentos } from '@/utils/excelExport';
 import {
   fetchRelacaoDePagamentos,
@@ -353,13 +354,17 @@ const PagamentosPendentesPage = () => {
     // Equipante fora da escala (sem area ou em "Nao sera escalado"): a janela
     // avisa, mas quem decide e o organizador (22/10/2026).
     const idFicha = travado ? item.inscricao_id : item.id;
-    const areaEscala = areasDaEscala[idFicha] || null;
-    const foraDaEscala = item.tipo === 'equipante'
+    // So no domingo (20261025c): fora da escala de proposito; taxa de 50%.
+    const domingo = !travado && item.tipo === 'equipante' && !!item.so_domingo;
+    const areaEscala = areasDaEscala[idFicha] || (domingo ? AREA_SO_DOMINGO : null);
+    const foraDaEscala = item.tipo === 'equipante' && !domingo
       && (!areaEscala || areaEscala.split(', ').includes('Não será escalado'));
+    const lote = precoDoLoteHoje(lotes[item.tipo]);
     setConfirmacao({
       item: travado ? { ...item, id: item.inscricao_id } : item,
       forma: travado ? 'pix' : 'manual',
-      valorLote: precoDoLoteHoje(lotes[item.tipo]),
+      valorLote: domingo && lote != null ? Math.round(Number(lote) * 50) / 100 : lote,
+      soDomingo: domingo,
       valorCobrado: travado ? Number(item.valor) : null,
       foraDaEscala,
       areaEscala,
@@ -412,6 +417,7 @@ const PagamentosPendentesPage = () => {
     // Grupo de WhatsApp e so dos acampantes (16/10/2026): equipante nao tem.
     ...(i.tipo === 'acampante' && gruposEnviados[i.id] ? { grupo: gruposEnviados[i.id] } : {}),
     ...(i.tipo === 'equipante' && areasDaEscala[i.id] ? { area_escala: areasDaEscala[i.id] } : {}),
+    ...(i.tipo === 'equipante' && i.so_domingo && !areasDaEscala[i.id] ? { area_escala: AREA_SO_DOMINGO } : {}),
   })), [relacao, cobrancas, gruposEnviados, areasDaEscala]);
 
   // Isentos ficam na aba propria (19/10/2026): "Pagos" e quem pagou de fato.
@@ -455,8 +461,10 @@ const PagamentosPendentesPage = () => {
   // escolhido pagar em maos (71 de 942), e quem ainda nao escolheu a forma
   // (ou deixou o PIX incompleto) ficava invisivel; agora aparecem com a forma
   // "Não escolheu" / "PIX não concluído". Cobranca/agendamento de equipante: 19/10/2026.
+  // So no domingo (20261025c): entra depois de aprovado, sem escala.
   const devendo = useMemo(() => comCobranca.filter((i) => !i.quitado
-    && (i.tipo === 'acampante' || equipantesLiberados.has(i.id))),
+    && (i.tipo === 'acampante' || equipantesLiberados.has(i.id)
+        || (i.so_domingo && i.status_inscricao === 'aprovado'))),
   [comCobranca, equipantesLiberados]);
   const naoPagaram = useMemo(() => devendo.filter((i) => !i.cobranca), [devendo]);
   const emCobranca = useMemo(() => devendo.filter((i) => i.cobranca?.status === 'em_cobranca'), [devendo]);
@@ -983,7 +991,7 @@ const PagamentosPendentesPage = () => {
                       <TableRow key={item.id} className="border-white/10 hover:bg-white/5 transition-colors">
                         <TableCell className="font-medium text-white">
                           <span className="inline-flex items-start gap-1.5">
-                            <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} />
+                            <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} soDomingo={item.tipo === 'equipante' && item.so_domingo} />
                             {(aba === 'travados' ? item.inscricao_id : item.id) && (
                               <button
                                 type="button"

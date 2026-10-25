@@ -122,7 +122,7 @@ const TotalEdicaoTable = ({ acampantes, equipantesConfirmados, confirmadosDispon
                 <TableBody>
                   {paginacao.itensDaPagina.map((p) => (
                     <TableRow key={`${p.tipoNaEdicao}-${p.id}`} className="border-white/10 hover:bg-white/5">
-                      <TableCell className="text-white font-medium"><span className="inline-flex items-center gap-1.5"><NomeComBandeira nome={p.nome} nacionalidade={p.nacionalidade} /><SeloPastor pessoa={p} /></span></TableCell>
+                      <TableCell className="text-white font-medium"><span className="inline-flex items-center gap-1.5"><NomeComBandeira nome={p.nome} nacionalidade={p.nacionalidade} soDomingo={p.so_domingo} /><SeloPastor pessoa={p} /></span></TableCell>
                       <TableCell>
                         {p.tipoNaEdicao === 'equipante'
                           ? <Badge variant="outline" className="border bg-red-500/15 text-red-300 border-red-500/50">Equipante</Badge>

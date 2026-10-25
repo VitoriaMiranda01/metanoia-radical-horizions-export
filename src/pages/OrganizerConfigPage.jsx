@@ -29,6 +29,7 @@ import AuditoriaCard from '@/components/organizer/AuditoriaCard';
 import LgpdApagamentosCard from '@/components/organizer/LgpdApagamentosCard';
 import AmbienteTesteCard from '@/components/organizer/AmbienteTesteCard';
 import DatasReunioesCard from '@/components/organizer/DatasReunioesCard';
+import JanelaDomingoCard from '@/components/organizer/JanelaDomingoCard';
 import ExcluirCadastroCard from '@/components/organizer/ExcluirCadastroCard';
 import DesistentesCard from '@/components/organizer/DesistentesCard';
 import LocaisReuniaoCard from '@/components/organizer/LocaisReuniaoCard';
@@ -220,6 +221,8 @@ const OrganizerConfigPage = () => {
 
   const salvarReunioesRef = useRef(null);
   const registrarSalvarReunioes = useCallback((fn) => { salvarReunioesRef.current = fn; }, []);
+  const salvarDomingoRef = useRef(null);
+  const registrarSalvarDomingo = useCallback((fn) => { salvarDomingoRef.current = fn; }, []);
 
   const handleSaveAll = async () => {
     if (!validateGeneralConfigFields(config)) return;
@@ -244,6 +247,10 @@ const OrganizerConfigPage = () => {
       if (salvarReunioesRef.current) {
         const r = await salvarReunioesRef.current();
         if (!r.ok) throw new Error(`Datas das reuniões: ${r.erro}`);
+      }
+      if (salvarDomingoRef.current) {
+        const r = await salvarDomingoRef.current();
+        if (!r.ok) throw new Error(`Inscrição só domingo: ${r.erro}`);
       }
       
       await loadData();
@@ -556,6 +563,9 @@ const OrganizerConfigPage = () => {
 
                 {/* Reunioes da edicao: aqui, logo abaixo da Data do Evento (17/10/2026). */}
                 <DatasReunioesCard embutido registrar={registrarSalvarReunioes} />
+
+                {/* Janela da inscricao "só no domingo" (20261025c). */}
+                <JanelaDomingoCard registrar={registrarSalvarDomingo} />
 
                 <div className="pt-4 border-t border-white/10 space-y-4">
                   <h3 className="text-lg font-medium text-white flex items-center space-x-2">

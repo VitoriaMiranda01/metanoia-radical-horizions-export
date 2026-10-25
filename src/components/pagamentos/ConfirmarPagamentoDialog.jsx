@@ -93,7 +93,9 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
   // restrito que vale para a pessoa ja vem marcado (e o valor ja desconta).
   // O organizador ainda pode trocar.
   useEffect(() => {
-    if (ehPixTravado || cupom) return;
+    // So no domingo (20261025c): o valor ja vem com os 50%; pastor/infiltrado
+    // nao somam (vale o maior desconto, igual ao PIX).
+    if (ehPixTravado || cupom || pedido?.soDomingo) return;
     const automatico = ativos
       .filter((c) => c.valido && (c.so_pastor || c.so_infiltrado) && Number(c.desconto) > 0)
       .sort((a, b) => Number(b.desconto) - Number(a.desconto))[0];
@@ -150,7 +152,9 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
             {ehPixTravado
               ? `PIX pago que não confirmou sozinho. Valor da cobrança: ${formatarValor(pedido?.valorCobrado)}.`
               : lote !== null
-                ? `Valor do lote hoje: ${formatarValor(lote)}.`
+                ? (pedido?.soDomingo
+                  ? `Só domingo: 50% do lote de hoje = ${formatarValor(lote)}.`
+                  : `Valor do lote hoje: ${formatarValor(lote)}.`)
                 : 'Não há lote com valor para hoje; digite o valor recebido.'}
           </p>
 

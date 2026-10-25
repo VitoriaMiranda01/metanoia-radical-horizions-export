@@ -174,6 +174,20 @@ export const criarInscricaoPublica = async (tipo, dados, chave = null) =>
  * pessoa so. A tela e conveniencia: quem barra de verdade e criar_inscricao,
  * que exige a mesma chave no servidor.
  */
+/**
+ * Janela da inscricao "só no domingo" (20261025c): { inicio, fim, aberta }.
+ * Padrao: segunda a quarta da semana do evento. Falhou a consulta = fechada
+ * (o servidor confere de novo em criar_inscricao).
+ */
+export const fetchJanelaDomingo = async () => {
+  try {
+    return (await chamar('janela_domingo')) || { aberta: false };
+  } catch (erro) {
+    console.error('publicData - janela do domingo', erro?.message || erro);
+    return { aberta: false };
+  }
+};
+
 export const liberacaoDeTesteValida = async (chave, tipo) => {
   if (!chave) return false;
   try {

@@ -14,6 +14,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
 } from '@/components/ui/dialog';
 import Layout from '@/components/Layout';
+import TagSoDomingo, { AREA_SO_DOMINGO } from '@/components/common/TagSoDomingo';
 import { getAuthToken } from '@/services/authToken';
 import {
   darBaixaPortaria, desfazerBaixaPortaria, desfazerEntradaPortaria, fetchPortariaLista, fetchPortariaVersao, fetchValorPrevisto,
@@ -301,9 +302,11 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
           <p className="font-semibold text-white break-words flex items-center gap-2">
             {entrou && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
             {p.nome}
+            {p.so_domingo && <TagSoDomingo />}
           </p>
           <p className="text-sm text-gray-400 break-words">{p.igreja || 'Sem igreja informada'}</p>
           {p.areas?.length > 0 && <p className="text-xs text-gray-500 break-words">{p.areas.join(' · ')}</p>}
+          {p.so_domingo && <p className="text-xs text-orange-200/80 break-words">{AREA_SO_DOMINGO} · taxa de 50%</p>}
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             {entrou && (
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full border border-emerald-400 bg-emerald-500/30 text-white">
@@ -462,7 +465,8 @@ const PortariaPage = () => {
         ...p,
         areas: Array.isArray(p.areas) ? p.areas : [],
         _cadastro: diaBrasilia(p.cadastrado_em),
-        _busca: semAcento([p.nome, p.igreja, ...(Array.isArray(p.areas) ? p.areas : [])].join(' ')),
+        _busca: semAcento([p.nome, p.igreja, ...(Array.isArray(p.areas) ? p.areas : []),
+          p.so_domingo ? 'so domingo' : ''].join(' ')),
       })));
       setErro('');
     } catch (e) {

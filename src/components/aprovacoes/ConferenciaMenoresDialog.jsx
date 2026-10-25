@@ -179,7 +179,7 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
       >
         <div className="flex-1 min-w-0">
           <p className="text-white font-medium truncate">
-            <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} />
+            <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} soDomingo={item.so_domingo} />
             <span className="text-gray-400 font-normal text-sm"> · {item.idade} anos</span>
           </p>
           <p className="text-xs text-gray-400 truncate">

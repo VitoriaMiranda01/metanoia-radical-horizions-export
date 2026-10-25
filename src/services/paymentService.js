@@ -293,7 +293,7 @@ export const fetchRelacaoDePagamentos = async () => {
     ).order('id'),
       { rotulo: 'acampantes' }),
     lerTodasAsLinhas(() => supabase.from('equipantes').select(
-      `${colunasComuns}, igreja, igreja_outra, status, data_nascimento, idade, sexo, pastor_nome`
+      `${colunasComuns}, igreja, igreja_outra, status, data_nascimento, idade, sexo, pastor_nome, so_domingo`
     ).order('id'),
       { rotulo: 'equipantes' }),
     // Cobrancas PIX pagas: valor, lote, desconto e cupom (os dois ultimos so

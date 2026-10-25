@@ -46,6 +46,8 @@ O banco levanta o código (`NOME_INVALIDO`, `CPF_INVALIDO`, `CEP_INVALIDO`...). 
 - `20261009b` nascimento obrigatório no acampante (gatilho) + aviso `nascimentos_pendentes`
 - `20261016e` ficha completa na próxima edição (pastor, cargo, Radical, edições) + reinscrição de ficha manual sem as respostas "não" automáticas
 
+- `20261025c` equipante **só no domingo**: as 3 áreas deixam de ser obrigatórias (`_dados_inscricao_validos`, `_pendencias_equipante`, tela e `pendenciasEquipante.js`) só para quem tem `so_domingo`; `criar_inscricao` confere a janela própria e grava as áreas vazias
+
 ## Reinscrição
 
 Quem se inscreveu e não vai nesta edição corrige as pendências **na hora de se inscrever na edição seguinte**:

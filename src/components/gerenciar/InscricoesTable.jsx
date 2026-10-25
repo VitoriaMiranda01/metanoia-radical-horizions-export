@@ -368,7 +368,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                 <div key={item.id} className="bg-white/5 border border-white/10 shadow-sm rounded-lg p-5 flex flex-col gap-4 relative overflow-hidden transition-all hover:bg-white/10">
                   <div className="flex justify-between items-start gap-3">
                     <h3 className="font-semibold text-white text-lg leading-tight break-words">
-                      <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} />
+                      <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} soDomingo={item.so_domingo} />
                       <SeloPastor pessoa={item} className="ml-1.5 align-[-1px]" />
                     </h3>
                     <div className="shrink-0 mt-0.5">
@@ -454,7 +454,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                     <TableRow key={item.id} className="hover:bg-white/5 transition-colors border-white/10 group">
                       <TableCell className="text-white font-medium sticky left-0 z-10 bg-black group-hover:bg-neutral-900">
                           <span className="inline-flex items-center gap-1.5">
-                            <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} />
+                            <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} soDomingo={item.so_domingo} />
                             <SeloPastor pessoa={item} />
                           </span>
                       </TableCell>

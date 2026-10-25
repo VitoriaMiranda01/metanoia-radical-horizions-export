@@ -12,6 +12,7 @@ import {
 import { montarEscalaOficial } from '@/utils/escalaOficial';
 import { montarEquipeTrilha, ehAreaDaTrilha } from '@/utils/equipeTrilha';
 import { cn } from '@/lib/utils';
+import { AREA_SO_DOMINGO } from '@/components/common/TagSoDomingo';
 
 /**
  * Exportar da Geracao de Escalas (17/10/2026, Patrick): a RELAÇÃO NOMINAL no
@@ -23,14 +24,19 @@ import { cn } from '@/lib/utils';
  */
 const semAcento = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-const ExportarRelacaoMenu = ({ allocations, atuacoesPorArea, onPlanilhaDetalhada, disabled }) => {
+// soDomingo (20261025c): aprovados que vao so no domingo. Nao estao na escala
+// -- entram SO no "Por área", como a area "Vão somente no domingo".
+const ExportarRelacaoMenu = ({ allocations, atuacoesPorArea, soDomingo = [], onPlanilhaDetalhada, disabled }) => {
   const { toast } = useToast();
   const [gerando, setGerando] = useState(null);
   // { modo, formato } enquanto escolhe as igrejas/areas
   const [escolhendo, setEscolhendo] = useState(null);
 
   const gruposDe = (modo) => {
-    const linhas = montarLinhasRelacao(allocations);
+    const domingo = modo === 'area'
+      ? soDomingo.map((p) => ({ ...p, allocatedArea: AREA_SO_DOMINGO, cor: null, atuacao: null }))
+      : [];
+    const linhas = montarLinhasRelacao([...(allocations || []), ...domingo]);
     if (linhas.length === 0) throw new Error('Ninguém escalado para exportar.');
     return modo === 'oficial' ? montarEscalaOficial(linhas, atuacoesPorArea) : agruparRelacao(linhas, modo);
   };

@@ -434,7 +434,7 @@ const AprovacoesTable = ({
                                 title="Não congrega em nenhuma igreja — não há pastor ou igreja para responder por esta pessoa. Avaliem antes de aprovar."
                               />
                             )}
-                            <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} />
+                            <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} soDomingo={inscricao.so_domingo} />
                             <SeloPastor pessoa={inscricao} />
                           </span>
                         </TableCell>

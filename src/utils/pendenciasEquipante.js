@@ -93,7 +93,8 @@ export const pendenciasDaFicha = (e, { whatsRepetidos } = {}) => {
   }
 
   // Inscricao manual sem area = disponivel para qualquer area (17/10/2026).
-  if (!e.inscricao_manual_por && [e.area_trabalho_opcao1, e.area_trabalho_opcao2, e.area_trabalho_opcao3].some(vazio)) add('areas');
+  // Quem vai so no domingo nao escolhe area (20261025c).
+  if (!e.inscricao_manual_por && !e.so_domingo && [e.area_trabalho_opcao1, e.area_trabalho_opcao2, e.area_trabalho_opcao3].some(vazio)) add('areas');
 
   if (vazio(e.qual_radical_acampante)) add('radical');
   if (e.ja_trabalhou_equipe === true && vazio(e.edicao_trabalhou)) add('edicao_trabalhou');

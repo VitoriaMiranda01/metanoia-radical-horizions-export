@@ -780,7 +780,9 @@ const InscricaoPixPage = () => {
                   </p>
                   {pixData.cupom && (
                     <p className="text-emerald-300 text-sm flex items-center justify-center gap-1.5">
-                      <Tag className="w-4 h-4" /> Cupom {pixData.cupom} aplicado
+                      <Tag className="w-4 h-4" />
+                      {/* So no domingo (20261025c): o "cupom" e o desconto automatico de 50%. */}
+                      {pixData.cupom === 'SO_DOMINGO' ? 'Taxa de quem vai só no domingo (50%)' : `Cupom ${pixData.cupom} aplicado`}
                     </p>
                   )}
                   <p className="text-gray-400 text-sm">Titular: {formData.nome}</p>

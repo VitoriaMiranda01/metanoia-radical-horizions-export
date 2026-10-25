@@ -40,8 +40,10 @@ import ConfirmacaoPortaria from '@/components/equipante/ConfirmacaoPortaria';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
 import { igrejaEhOutra } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
-import { liberacaoDeTesteValida } from '@/services/publicDataService';
+import { liberacaoDeTesteValida, fetchJanelaDomingo } from '@/services/publicDataService';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
+import EscolherDiasEquipante from '@/components/inscricao/EscolherDiasEquipante';
+import TagSoDomingo from '@/components/common/TagSoDomingo';
 import AcessoCadastro from '@/components/equipante/AcessoCadastro';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
 
@@ -180,6 +182,21 @@ const EquipantePage = () => {
   // O portao efetivo do cadastro novo, usado no lugar de equipantesAbertos.
   const podeCadastrar = equipantesAbertos || sessaoDeTeste;
 
+  // Inscricao "só no domingo" (20261025c): janela propria, por padrao de
+  // segunda a quarta da semana do evento. Aberta, quem ainda nao tem
+  // inscricao nesta edicao escolhe antes do formulario: todos os dias ou so
+  // domingo. Quem barra de verdade e criar_inscricao.
+  const [janelaDomingo, setJanelaDomingo] = useState(null);
+  useEffect(() => {
+    let vivo = true;
+    fetchJanelaDomingo().then((j) => { if (vivo) setJanelaDomingo(j || { aberta: false }); });
+    return () => { vivo = false; };
+  }, []);
+  const podeDomingo = !!janelaDomingo?.aberta || sessaoDeTeste;
+  // Para onde vai cada escolha: { todos, domingo } (passos da tela).
+  const [destinosDias, setDestinosDias] = useState(null);
+  const dataCurta = (iso) => (iso ? String(iso).slice(0, 10).split('-').reverse().slice(0, 2).join('/') : '');
+
   const [currentStep, setCurrentStep] = useState('verificacao');
   const [inscricaoData, setInscricaoData] = useState(null);
 
@@ -222,7 +239,27 @@ const EquipantePage = () => {
     areasTrabalhoExtra: [],
     especialidadeSaude: '', especialidadeSaudeOutro: '', especialidadesSaudeAdicionais: [],
     metodoPagamento: '',
+    soDomingo: false,
   });
+
+  // Antes do formulario (novo ou reinscricao): na janela do domingo, pergunta
+  // os dias; fora dela, segue direto para `todos` (que ja vem resolvido com as
+  // inscricoes abertas ou fechadas).
+  const seguirParaCadastro = (todos, domingo = 'formulario') => {
+    if (podeDomingo) {
+      setDestinosDias({ todos, domingo });
+      setCurrentStep('escolher-dias');
+      return;
+    }
+    setFormData(prev => ({ ...prev, soDomingo: false }));
+    setCurrentStep(todos);
+  };
+
+  const escolherDias = (escolha) => {
+    const soDomingo = escolha === 'domingo';
+    setFormData(prev => ({ ...prev, soDomingo }));
+    setCurrentStep(soDomingo ? destinosDias.domingo : destinosDias.todos);
+  };
 
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -278,7 +315,8 @@ const EquipantePage = () => {
     setNascimentoConfirmado('');
     setNascimentoDigitado('');
     setVerificacao(null);
-    setFormData(prev => ({ ...prev, cpf: '', nome: '', semCpf: false }));
+    setFormData(prev => ({ ...prev, cpf: '', nome: '', semCpf: false, soDomingo: false }));
+    setDestinosDias(null);
     setCurrentStep('verificacao');
   };
 
@@ -343,7 +381,7 @@ const EquipantePage = () => {
         // servidor so entrega mediante CPF **e** nome completo, entao o nome
         // e pedido no passo 'reinscricao'. Quem preferir segue com o
         // formulario limpo por la mesmo.
-        setCurrentStep(podeCadastrar ? 'reinscricao' : 'fechadas');
+        seguirParaCadastro(podeCadastrar ? 'reinscricao' : 'fechadas', 'reinscricao');
       } else {
         if (hasPaid) {
           setCurrentStep('sucesso');
@@ -354,9 +392,9 @@ const EquipantePage = () => {
     } else if (!isFound && !result.semCpf && result.cpf && !podeCadastrar) {
       // Inscricoes fechadas e CPF que nao esta na base (16/10/2026): antes de
       // "encerradas", pergunta se a pessoa ja tem cadastro (AcessoCadastro).
-      setCurrentStep('tem-cadastro');
+      seguirParaCadastro('tem-cadastro');
     } else {
-      setCurrentStep(podeCadastrar ? 'formulario' : 'fechadas');
+      seguirParaCadastro(podeCadastrar ? 'formulario' : 'fechadas');
     }
   };
 
@@ -416,7 +454,9 @@ const EquipantePage = () => {
       setFormData(prev => ({ ...prev, ...mapDbToFormData(r.ficha) }));
       toast({
         title: 'Dados recuperados',
-        description: 'Confira o que mudou e escolha suas áreas de trabalho desta edição.'
+        description: formData.soDomingo
+          ? 'Confira o que mudou e envie a inscrição para domingo.'
+          : 'Confira o que mudou e escolha suas áreas de trabalho desta edição.'
       });
       setCurrentStep('formulario');
     } finally {
@@ -462,7 +502,7 @@ const EquipantePage = () => {
         // Ficha de uma edição anterior. Sem CPF não dá para trazer a ficha
         // preenchida (ficha_para_reinscricao exige CPF **e** nome), então
         // segue para o formulário com o que já sabemos.
-        setCurrentStep(podeCadastrar ? 'formulario' : 'fechadas');
+        seguirParaCadastro(podeCadastrar ? 'formulario' : 'fechadas');
       }
     } catch (err) {
       // getEquipanteWorkflow levanta com a mensagem do servidor. Aqui a causa
@@ -580,7 +620,8 @@ const EquipantePage = () => {
     // As 3 opções de área de trabalho agora são obrigatórias: sem isso, a
     // futura alocação automática (feita na aprovação, seguindo a ordem de
     // preferência) não teria o que processar pra essa pessoa.
-    if (!formData.areaTrabalhoOpcao1 || !formData.areaTrabalhoOpcao2 || !formData.areaTrabalhoOpcao3) {
+    // Quem vai so no domingo nao escolhe area (20261025c).
+    if (!formData.soDomingo && (!formData.areaTrabalhoOpcao1 || !formData.areaTrabalhoOpcao2 || !formData.areaTrabalhoOpcao3)) {
       toast({
         title: "Áreas de trabalho obrigatórias",
         description: "Selecione suas 3 opções de área de trabalho (1ª, 2ª e 3ª) antes de continuar.",
@@ -589,7 +630,7 @@ const EquipantePage = () => {
       return;
     }
     // Saude em alguma opcao: a especialidade e obrigatoria (18/10/2026).
-    if (escolheuSaude(formData)) {
+    if (!formData.soDomingo && escolheuSaude(formData)) {
       const problema = problemaEspecialidade(formData.especialidadeSaude, formData.especialidadeSaudeOutro);
       if (problema) {
         toast({ title: 'Sua especialidade na saúde', description: problema, variant: 'destructive' });
@@ -607,6 +648,13 @@ const EquipantePage = () => {
 
     try {
       let submissionData = { ...formData };
+      if (submissionData.soDomingo) {
+        // Ficha antiga pode ter vindo com areas da edicao passada.
+        submissionData = {
+          ...submissionData,
+          areaTrabalhoOpcao1: '', areaTrabalhoOpcao2: '', areaTrabalhoOpcao3: '', areasTrabalhoExtra: [],
+        };
+      }
       if (submissionData.estaAfastado === 'NÃO') {
         submissionData.igreja = 'NÃO SE APLICA (NÃO CONGREGA)';
       }
@@ -652,7 +700,7 @@ const EquipantePage = () => {
     });
   };
 
-  if (loadingStatus) {
+  if (loadingStatus || janelaDomingo === null) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-[50vh]">
@@ -695,12 +743,22 @@ const EquipantePage = () => {
                 escalado, pagar a taxa de alimentacao -- o que acontece
                 justamente depois de as inscricoes fecharem. So o cadastro
                 novo e que fica barrado. */}
-            {!podeCadastrar && (
+            {!podeCadastrar && !podeDomingo && (
               <div className="mb-6 bg-amber-500/10 border border-amber-500/25 p-4 rounded-lg flex items-start gap-3">
                 <Lock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-amber-200 text-sm">
                   As inscrições de equipante estão <strong>encerradas</strong>. Se você já se
                   inscreveu, informe seu CPF abaixo para acompanhar a situação da sua inscrição.
+                </p>
+              </div>
+            )}
+            {podeDomingo && (
+              <div className="mb-6 bg-orange-500/10 border border-orange-500/30 p-4 rounded-lg flex items-start gap-3">
+                <TagSoDomingo className="mt-0.5 shrink-0" />
+                <p className="text-orange-100 text-sm">
+                  {!podeCadastrar && 'As inscrições para todos os dias estão encerradas, mas '}
+                  {podeCadastrar ? 'A' : 'a'} inscrição para quem vai <strong>somente no domingo</strong> está
+                  aberta{janelaDomingo?.fim ? ` até ${dataCurta(janelaDomingo.fim)}` : ''}. Informe seu CPF para começar.
                 </p>
               </div>
             )}
@@ -811,22 +869,48 @@ const EquipantePage = () => {
           </Card>
         )}
 
+        {currentStep === 'escolher-dias' && destinosDias && (
+          <EscolherDiasEquipante onEscolher={escolherDias} onVoltar={sairDaInscricao} />
+        )}
+
         {currentStep === 'fechadas' && (
           <div className="max-w-xl mx-auto bg-red-900/20 border border-red-500/30 rounded-lg p-12 text-center">
             <Lock className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h3 className="text-2xl font-bold text-white mb-2">Inscrições Encerradas</h3>
-            <p className="text-gray-300">
-              Não encontramos inscrição com esses dados, e as inscrições de equipante já foram
-              encerradas. Se você acha que se inscreveu, procure a organização.
-            </p>
-            <Button variant="outline" className="mt-6" onClick={() => navigate('/')}>Voltar</Button>
+            {podeDomingo && destinosDias ? (
+              <p className="text-gray-300">
+                As inscrições para todos os dias já foram encerradas. Se você vai somente no
+                domingo, volte e escolha essa opção.
+              </p>
+            ) : (
+              <p className="text-gray-300">
+                Não encontramos inscrição com esses dados, e as inscrições de equipante já foram
+                encerradas. Se você acha que se inscreveu, procure a organização.
+              </p>
+            )}
+            <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
+              {podeDomingo && destinosDias && (
+                <Button onClick={() => setCurrentStep('escolher-dias')}>Escolher os dias de novo</Button>
+              )}
+              <Button variant="outline" onClick={() => navigate('/')}>Voltar</Button>
+            </div>
           </div>
         )}
 
         {currentStep === 'formulario' && (
           <Card className="glass-effect border-white/10 bg-black/40">
             <CardHeader>
-              <CardTitle className="text-white">Novo Cadastro</CardTitle>
+              <CardTitle className="text-white flex items-center gap-2 flex-wrap">
+                {formData.soDomingo ? 'Novo Cadastro — somente domingo' : 'Novo Cadastro'}
+                {formData.soDomingo && <TagSoDomingo />}
+              </CardTitle>
+              {destinosDias && (
+                <p className="text-sm text-gray-400">
+                  Você escolheu: <strong className="text-gray-200">{formData.soDomingo ? 'somente no domingo' : 'todos os dias'}</strong>.{' '}
+                  <button type="button" onClick={() => setCurrentStep('escolher-dias')}
+                    className="underline text-blue-300 hover:text-blue-200">Trocar</button>
+                </p>
+              )}
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -834,10 +918,13 @@ const EquipantePage = () => {
                 <InfoSaude formData={formData} handleChange={handleChange} isEquipante={true} />
                 <InfoEclesiasticas formData={formData} handleChange={handleChange} isEquipante={true} />
                 <DadosComplementaresEquipante formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} />
-                <AreasDeTrabalho formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
+                {/* Quem vai so no domingo nao escolhe area nem area extra (20261025c). */}
+                {!formData.soDomingo && (
+                  <AreasDeTrabalho formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
+                )}
                 <AvisoPrivacidadeEquipante />
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg" disabled={loading}>
-                  {loading ? <RefreshCw className="animate-spin mr-2" /> : "Enviar Inscrição"}
+                  {loading ? <RefreshCw className="animate-spin mr-2" /> : formData.soDomingo ? 'Enviar inscrição para Domingo' : 'Enviar Inscrição'}
                 </Button>
               </form>
             </CardContent>
@@ -890,9 +977,11 @@ const EquipantePage = () => {
         <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
           <AlertDialogContent className="bg-zinc-900 border border-gray-800 text-white">
             <AlertDialogHeader>
-              <AlertDialogTitle>Enviar inscrição</AlertDialogTitle>
+              <AlertDialogTitle>{formData.soDomingo ? 'Enviar inscrição para Domingo' : 'Enviar inscrição'}</AlertDialogTitle>
               <AlertDialogDescription className="text-gray-400">
-                Certeza que deseja enviar a inscrição?
+                {formData.soDomingo
+                  ? 'Certeza que deseja enviar a inscrição para ir somente no domingo?'
+                  : 'Certeza que deseja enviar a inscrição?'}
                 <br />
                 Não haverá como editar as informações após o envio.
               </AlertDialogDescription>

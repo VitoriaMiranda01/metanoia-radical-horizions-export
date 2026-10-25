@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import TagEspecialidade from '@/components/common/TagEspecialidade';
-import CampoEspecialidadeSaude from '@/components/inscricao/CampoEspecialidadeSaude';
+import CampoEspecialidadeSaude, { limparCacheEspecialidades } from '@/components/inscricao/CampoEspecialidadeSaude';
+import EspecialidadesLista from '@/components/saude/EspecialidadesLista';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { ESPECIALIDADE_OUTRO, problemaEspecialidade } from '@/constants/especialidadesSaude';
 import { linkWhatsApp } from '@/services/liderService';
@@ -53,6 +54,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
   const [salvando, setSalvando] = useState(false);
   const [outros, setOutros] = useState([]);
   const [fixando, setFixando] = useState(null);
+  const [listaVersao, setListaVersao] = useState(0); // "Tornar fixa" recarrega o quadro da lista
 
   const carregar = async () => {
     setCarregando(true);
@@ -141,6 +143,8 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
     try {
       const r = await tornarEspecialidadeFixa(texto);
       toast({ title: `“${r.nome}” agora é opção da lista`, description: `${r.pessoas} ${r.pessoas === 1 ? 'pessoa passou' : 'pessoas passaram'} para ela.`, className: 'bg-emerald-600 text-white' });
+      limparCacheEspecialidades();
+      setListaVersao((v) => v + 1);
       await carregar();
     } catch (e) {
       toast({ title: 'Não foi possível', description: e.message, variant: 'destructive' });
@@ -377,6 +381,9 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
           )}
         </section>
       )}
+
+      {/* Lista de especialidades (Vera e organizador) */}
+      <EspecialidadesLista key={listaVersao} onMudou={carregar} />
     </div>
   );
 };

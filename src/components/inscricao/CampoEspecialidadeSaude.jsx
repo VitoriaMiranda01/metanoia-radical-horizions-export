@@ -16,6 +16,8 @@ export const carregarEspecialidades = async () => {
   cache = [...lista.filter((x) => x !== ESPECIALIDADE_OUTRO), ESPECIALIDADE_OUTRO];
   return cache;
 };
+// Depois de mexer na lista (quadro "Especialidades da lista" na tela da Saude).
+export const limparCacheEspecialidades = () => { cache = null; };
 
 /**
  * "Qual a sua especialidade na área da saúde?" (18/10/2026). Botoes com as

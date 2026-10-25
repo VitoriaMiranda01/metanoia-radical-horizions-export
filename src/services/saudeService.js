@@ -57,3 +57,25 @@ export const tornarEspecialidadeFixa = async (texto, nome = null) => {
   if (!data?.ok) throw new Error(data?.erro || 'Não foi possível tornar fixa.');
   return data;
 };
+
+// ---- Lista de especialidades (24/10/2026) ---------------------------------
+// A Vera e os organizadores adicionam, renomeiam e excluem opcoes da lista.
+const rpcLista = async (fn, args, erroPadrao) => {
+  const { data, error } = await supabase.rpc(fn, args);
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.erro || erroPadrao);
+  return data;
+};
+
+export const fetchEspecialidadesLista = async () =>
+  (await rpcLista('especialidades_saude_gerenciar', {}, 'Não foi possível carregar a lista.')).lista || [];
+
+export const adicionarEspecialidade = (nome) =>
+  rpcLista('especialidade_saude_adicionar', { p_nome: nome }, 'Não foi possível adicionar.');
+
+export const renomearEspecialidade = (nome, novo) =>
+  rpcLista('especialidade_saude_renomear', { p_nome: nome, p_novo: novo }, 'Não foi possível renomear.');
+
+// Sem confirmar: com gente vinculada, devolve { precisa_confirmar, pessoas }.
+export const excluirEspecialidade = (nome, confirmar = false) =>
+  rpcLista('especialidade_saude_excluir', { p_nome: nome, p_confirmar: confirmar }, 'Não foi possível excluir.');

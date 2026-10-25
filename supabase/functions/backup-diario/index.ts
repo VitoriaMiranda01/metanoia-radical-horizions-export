@@ -21,6 +21,9 @@
 //   semanal/  12 mais recentes (copia da segunda-feira)
 //   edicao/   para sempre
 //   retidos/  para sempre: a copia de ANTES de uma queda brusca de registros
+//
+// Queda causada pelo apagamento automatico da LGPD (20261024o) nao e queda
+// brusca: vai em quedas_lgpd, sem retidos/ e sem alarme.
 // =============================================================================
 
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
@@ -184,7 +187,7 @@ async function gerar(tipo: string, rotulo: string | null) {
     // Comparacao com o ultimo backup que deu certo
     const { data: anterior } = await admin
       .from("backup_execucoes")
-      .select("contagens")
+      .select("contagens, iniciado_em")
       .in("status", ["ok", "alerta"])
       .not("contagens", "is", null)
       .neq("id", id)
@@ -192,11 +195,28 @@ async function gerar(tipo: string, rotulo: string | null) {
       .limit(1)
       .maybeSingle();
 
+    // O que o apagamento automatico da LGPD (03:30) tirou desde o backup
+    // anterior, por tabela. Antes de disparar, esses registros voltam para a
+    // conta: so e queda brusca se ainda cair mais de 20% sem eles. Se a
+    // consulta falhar, segue sem desconto (alarme por seguranca).
+    let daLgpd: Record<string, number> = {};
+    if (anterior?.iniciado_em) {
+      const { data: rem, error: eL } = await admin.rpc("lgpd_removidos_desde", { p_desde: anterior.iniciado_em });
+      if (eL) console.error("backup-diario: lgpd_removidos_desde", eL.message);
+      else daLgpd = (rem ?? {}) as Record<string, number>;
+    }
+
     const quedas = [];
+    const quedasLgpd = [];
     for (const [nome, antes] of Object.entries((anterior?.contagens ?? {}) as Record<string, number>)) {
       const agora = contagens[nome] ?? 0;
       if (antes >= QUEDA_MINIMO && agora < antes * (1 - QUEDA_PROPORCAO)) {
-        quedas.push({ tabela: nome, antes, agora });
+        const lgpd = Number(daLgpd[nome] ?? 0);
+        if (lgpd > 0 && agora + lgpd >= antes * (1 - QUEDA_PROPORCAO)) {
+          quedasLgpd.push({ tabela: nome, antes, agora, lgpd });
+        } else {
+          quedas.push(lgpd > 0 ? { tabela: nome, antes, agora, lgpd } : { tabela: nome, antes, agora });
+        }
       }
     }
 
@@ -251,6 +271,7 @@ async function gerar(tipo: string, rotulo: string | null) {
         sha256: hash,
         contagens,
         quedas: quedas.length > 0 ? quedas : null,
+        quedas_lgpd: quedasLgpd.length > 0 ? quedasLgpd : null,
         supabase_ok: true,
       })
       .eq("id", id);
@@ -265,6 +286,7 @@ async function gerar(tipo: string, rotulo: string | null) {
       semanal,
       retido,
       quedas,
+      quedas_lgpd: quedasLgpd,
       contagens,
       sha256: hash,
       bytes_gzip: bytes.length,

@@ -106,6 +106,12 @@ const BackupStatusCard = () => {
                   <Copia ok={e.supabase_ok} nome="Supabase" />
                   <Copia ok={e.github_ok} nome="GitHub" />
                   {e.erro && <span className="basis-full text-red-300/80">{e.erro}</span>}
+                  {/* Queda que o apagamento automatico da LGPD explica: sem alarme (24/10/2026). */}
+                  {e.quedas_lgpd?.length > 0 && (
+                    <span className="basis-full text-emerald-300/80">
+                      Apagamento automático da LGPD, sem alarme: {descreverQuedas(e.quedas_lgpd)}
+                    </span>
+                  )}
                 </div>
               );
             })}

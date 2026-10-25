@@ -222,7 +222,8 @@ const CartaoPessoa = ({ pessoa, foto, link, papel, onEnviar, onNome, onRemover }
       ) : (
         <p className="text-sm font-semibold text-white leading-tight truncate" title="Nome na arte">{nomeNaArte}</p>
       )}
-      <p className="text-[11px] text-gray-500 leading-tight line-clamp-2" title={pessoa.nome}>{pessoa.nome}</p>
+      {/* sempre a altura de 2 linhas: nome curto não deixa o cartão mais baixo */}
+      <p className="text-[11px] text-gray-500 leading-tight line-clamp-2 min-h-[2.5em]" title={pessoa.nome}>{pessoa.nome}</p>
       <div className="flex gap-1 mt-auto">
         <Button size="sm" variant="outline" onClick={onEnviar}
           className="h-7 flex-1 px-1 text-xs border-white/15 bg-transparent text-gray-200 hover:bg-white/10">

@@ -38,7 +38,7 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
   const [aberto, setAberto] = useState(null);
   const [geradaEm, setGeradaEm] = useState(agoraTexto());
   // Estado salvo no banco: { fechada_em, fechada_por, porPessoa: Map(chave -> onibus),
-  // naLista: Set(chave) -- quem esta na lista da recepcao }.
+  // naLista: Map(chave -> pessoa) -- quem esta na lista da recepcao }.
   const [salvo, setSalvo] = useState(null);
   const [carregando, setCarregando] = useState(false);
   const [ocupado, setOcupado] = useState(false);
@@ -51,7 +51,8 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
       const r = await fetchRecepcaoLista();
       const porPessoa = new Map();
       r.pessoas.forEach((p) => { if (p.onibus) porPessoa.set(`${p.tipo}:${p.id}`, p.onibus); });
-      const naLista = new Set(r.pessoas.map((p) => `${p.tipo}:${p.id}`));
+      // naLista: chave -> pessoa da recepcao (para quem a tela ainda nao tem).
+      const naLista = new Map(r.pessoas.map((p) => [`${p.tipo}:${p.id}`, p]));
       setSalvo({ fechada_em: r.onibus.fechada_em || null, fechada_por: r.onibus.fechada_por || null, porPessoa, naLista });
       mexeu.current = false;
       setNumero(Math.min(MAX_ONIBUS, Math.max(1, Number(r.onibus.numero) || 4)));
@@ -94,20 +95,30 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
   // Quem vai: a lista da recepcao (mesma regra do banco, _recepcao_participantes).
   // Infiltrados (equipantes da escala oficial, com cor) viajam disfarcados, no
   // grupo deles, sem nenhuma marca na folha nem no Excel.
-  const pagos = useMemo(
-    () => (salvo ? acampantes.filter((a) => salvo.naLista.has(chaveDe(a))) : []),
-    [acampantes, salvo]
-  );
+  // Quem a tela nao tem (ex.: lista da pagina ainda velha) entra com os dados
+  // da propria recepcao, para a divisao bater com a que a recepcao ve.
+  const daLista = useMemo(() => {
+    if (!salvo) return [];
+    const daTela = acampantes.filter((a) => salvo.naLista.has(chaveDe(a)));
+    const tem = new Set(daTela.map(chaveDe));
+    const faltando = [...salvo.naLista.entries()].filter(([k]) => !tem.has(k)).map(([, p]) => ({
+      id: p.id, nome: p.nome, sexo: p.sexo, whatsapp: p.whatsapp, igreja: p.igreja,
+      grupo_trailha: p.grupo || null, infiltrado: p.tipo === 'equipante',
+    }));
+    return [...daTela, ...faltando];
+  }, [acampantes, salvo]);
+  const pagos = daLista;
   const qtdInfiltrados = pagos.filter((a) => a.infiltrado).length;
-  const naoPagos = acampantes.filter((a) => !a.infiltrado).length - (pagos.length - qtdInfiltrados);
+  const naoPagos = salvo ? acampantes.filter((a) => !a.infiltrado && !salvo.naLista.has(chaveDe(a))).length : 0;
 
   const { onibus, semLugar } = useMemo(() => {
     if (fechada) {
-      const vao = acampantes.filter((a) => salvo.porPessoa.has(chaveDe(a)) || salvo.naLista.has(chaveDe(a)));
+      // Fechada: a lista + quem ja estava num onibus e saiu dela (pagamento desfeito...).
+      const vao = [...daLista, ...acampantes.filter((a) => salvo.porPessoa.has(chaveDe(a)) && !salvo.naLista.has(chaveDe(a)))];
       return montarOnibusFechados(vao, numero, lugares, (a) => salvo.porPessoa.get(chaveDe(a)) || null);
     }
     return dividirEmOnibus(pagos, numero, lugares.slice(0, numero));
-  }, [fechada, salvo, acampantes, pagos, numero, lugares]);
+  }, [fechada, salvo, acampantes, daLista, pagos, numero, lugares]);
 
   const mudarNumero = (n) => { mexeu.current = true; setNumero(Math.min(MAX_ONIBUS, Math.max(1, n))); };
   const mudarLugar = (i, v) => {

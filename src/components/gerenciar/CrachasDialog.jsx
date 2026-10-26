@@ -8,22 +8,25 @@ import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
 import { GROUPS } from '@/utils/gruposTrailha';
 import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
 import {
-  camisaNormalizada, dadosDoCracha, gerarPdfCrachas, NUMERO_DA_CAMISA, NUMERO_INFILTRADO, ordenarCrachas,
-  POR_FOLHA, situacaoDoCracha, svgPreviaCracha, TAMANHOS_CAMISA
+  AREAS_COM_CRACHA, camisaNormalizada, dadosDoCracha, ehEquipeDaTrilha, gerarPdfCrachas, NUMERO_DA_CAMISA,
+  NUMERO_INFILTRADO, ordenarCrachas, POR_FOLHA, situacaoDoCracha, svgPreviaCracha, TAMANHOS_CAMISA
 } from '@/utils/crachas';
 import { desmarcarCrachaImpresso, fetchCrachas, marcarCrachasImpressos } from '@/services/crachasService';
 import { updateAcampante } from '@/services/acampantesService';
 import { updateEquipante } from '@/services/equipantesService';
+import { definirCor } from '@/services/scalesService';
 import { dataHora, semAcento } from '@/utils/recepcao';
 
 /**
- * Crachas (Patrick, 26/10/2026, migration 20261026c). So organizador.
- * Quem ganha cracha: a mesma lista da recepcao e dos onibus (pago, isento ou
- * com pagamento agendado; infiltrados como acampantes). O cracha puxa nome,
- * cor e camisa da ficha; corrigir aqui muda a ficha (vale para o sistema
- * todo) -- a cor pela mesma troca de grupo dos Grupos de Trilha, com o aviso
- * dos vinculos. Infiltrado sai sempre com o numero 8 (a camisa dele ja foi
- * entregue e nao muda aqui).
+ * Crachas (Patrick, 26/10/2026, migrations 20261026c e 20261026d). So
+ * organizador. Quem ganha cracha: os acampantes da lista da recepcao e dos
+ * onibus (pago, isento ou com pagamento agendado) e toda a equipe da trilha
+ * escalada em Infiltrados, Espirito Santo e Inimigo -- basta estar alocado,
+ * mesmo antes da escala oficial. O cracha puxa nome, cor e camisa da ficha;
+ * corrigir aqui muda a ficha (vale para o sistema todo) -- a cor do acampante
+ * pela mesma troca de grupo dos Grupos de Trilha (com o aviso dos vinculos), a
+ * da equipe pela cor na escala. A equipe da trilha sai sempre com o numero 8
+ * (a camisa ja foi entregue e nao muda aqui).
  *
  * Gerar PDF: folha A4 com 8 crachas, no tamanho do modelo (utils/crachas.js),
  * para imprimir ou mandar para quem vai imprimir. Depois a tela pergunta se ja
@@ -40,6 +43,18 @@ const SITUACOES = {
 };
 
 const chaveDe = (p) => `${p.tipo}:${p.id}`;
+
+// Etiqueta da equipe da trilha (so nesta tela; o cracha nao mostra).
+const ETIQUETA_AREA = {
+  Infiltrados: { rotulo: 'infiltrado', classe: 'border-fuchsia-500/50 text-fuchsia-300 bg-fuchsia-500/10' },
+  'Espírito Santo': { rotulo: 'Espírito Santo', classe: 'border-sky-400/50 text-sky-200 bg-sky-400/10' },
+  Inimigo: { rotulo: 'inimigo', classe: 'border-orange-500/50 text-orange-300 bg-orange-500/10' },
+};
+const areaDe = (p) => (p.infiltrado ? 'Infiltrados' : p.area || null);
+const EtiquetaArea = ({ p }) => {
+  const e = ETIQUETA_AREA[areaDe(p)];
+  return e ? <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full border whitespace-nowrap ${e.classe}`}>{e.rotulo}</span> : null;
+};
 
 const SeloSituacao = ({ p }) => {
   const s = situacaoDoCracha(p);
@@ -59,7 +74,8 @@ const SeloSituacao = ({ p }) => {
 };
 
 // ---- Editar um cracha (muda a ficha) ------------------------------------------
-const EditarCracha = ({ pessoa, vinc, onRealocar, participantes, onFechar, onSalvo, onGerarPdf }) => {
+const EditarCracha = ({ pessoa, vinc, onRealocar, onFechar, onSalvo, onGerarPdf }) => {
+  const equipe = ehEquipeDaTrilha(pessoa);
   const { toast } = useToast();
   const [nome, setNome] = useState(pessoa.nome || '');
   const [grupo, setGrupo] = useState(pessoa.grupo || '');
@@ -71,7 +87,7 @@ const EditarCracha = ({ pessoa, vinc, onRealocar, participantes, onFechar, onSal
   const nomeLimpo = nome.trim().replace(/\s+/g, ' ');
   const mudouNome = nomeLimpo !== String(pessoa.nome || '').trim().replace(/\s+/g, ' ');
   const mudouGrupo = !!grupo && grupo !== (pessoa.grupo || '');
-  const mudouCamisa = !pessoa.infiltrado && !!camisa && camisa !== (camisaNormalizada(pessoa.camisa) || '');
+  const mudouCamisa = !equipe && !!camisa && camisa !== (camisaNormalizada(pessoa.camisa) || '');
   const mudou = mudouNome || mudouGrupo || mudouCamisa;
 
   const salvar = async (pdfDepois) => {
@@ -92,11 +108,16 @@ const EditarCracha = ({ pessoa, vinc, onRealocar, participantes, onFechar, onSal
         if (!r.success) throw new Error(r.error);
       }
       if (mudouGrupo) {
-        // Mesma troca dos Grupos de Trilha: infiltrado muda a cor na escala.
-        const participante = participantes.find((x) => x.id === pessoa.id && !!x.infiltrado === !!pessoa.infiltrado);
-        if (!participante) throw new Error('Não achei a pessoa nos grupos. Feche e abra de novo.');
-        const r = await onRealocar({ ...participante, nome: mudouNome ? nomeLimpo : participante.nome }, grupo);
-        if (!r?.success) throw new Error(r?.error || 'Não foi possível trocar a cor.');
+        if (pessoa.tipo === 'equipante') {
+          // Equipe da trilha: a cor e a da escala (a Geracao de Escalas mostra a mesma).
+          if (!pessoa.escala_id) throw new Error('Não achei a alocação na escala. Feche e abra de novo.');
+          const r = await definirCor(pessoa.escala_id, grupo);
+          if (!r?.ok) throw new Error(r?.erro || 'Não foi possível trocar a cor.');
+        } else {
+          // Acampante: a mesma troca dos Grupos de Trilha.
+          const r = await onRealocar({ id: pessoa.id, nome: mudouNome ? nomeLimpo : pessoa.nome, infiltrado: false }, grupo);
+          if (!r?.success) throw new Error(r?.error || 'Não foi possível trocar a cor.');
+        }
       }
       if (mudou) toast({ title: 'Crachá atualizado', description: 'A mudança vale para todo o sistema.', className: 'bg-emerald-600 text-white' });
       await onSalvo();
@@ -117,8 +138,8 @@ const EditarCracha = ({ pessoa, vinc, onRealocar, participantes, onFechar, onSal
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Pencil className="w-4 h-4" />Editar crachá</DialogTitle>
           <DialogDescription className="text-gray-400">
-            O que mudar aqui muda a ficha {pessoa.infiltrado ? 'do equipante' : 'do acampante'} e vale para todo o sistema
-            (grupos, ônibus, recepção, listas).
+            O que mudar aqui muda a ficha {pessoa.tipo === 'equipante' ? 'do equipante (e a cor na escala)' : 'do acampante'} e vale
+            para todo o sistema (grupos, ônibus, recepção, listas).
           </DialogDescription>
         </DialogHeader>
 
@@ -151,10 +172,10 @@ const EditarCracha = ({ pessoa, vinc, onRealocar, participantes, onFechar, onSal
           </div>
 
           <label className="block space-y-1">
-            <span className="text-sm text-gray-300">Tamanho da camisa {pessoa.infiltrado ? '' : '(define o número do crachá)'}</span>
-            {pessoa.infiltrado ? (
+            <span className="text-sm text-gray-300">Tamanho da camisa {equipe ? '' : '(define o número do crachá)'}</span>
+            {equipe ? (
               <p className="text-sm text-gray-400 rounded-md border border-white/10 bg-white/5 px-3 py-2">
-                Infiltrado: o crachá sai sempre com o número {NUMERO_INFILTRADO}. A camisa dele já foi entregue e não muda aqui.
+                {ETIQUETA_AREA[areaDe(pessoa)]?.rotulo.replace(/^./, (l) => l.toUpperCase())}: o crachá sai sempre com o número {NUMERO_INFILTRADO}. A camisa já foi entregue e não muda aqui.
               </p>
             ) : (
               <select value={camisa} onChange={(e) => setCamisa(e.target.value)}
@@ -183,12 +204,13 @@ const EditarCracha = ({ pessoa, vinc, onRealocar, participantes, onFechar, onSal
 };
 
 // ---- Janela principal -----------------------------------------------------------
-const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], onAlterado }) => {
+const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, onAlterado }) => {
   const { toast } = useToast();
   const [pessoas, setPessoas] = useState([]);
   const [carregando, setCarregando] = useState(false);
   const [filtro, setFiltro] = useState('todos');
   const [grupoFiltro, setGrupoFiltro] = useState('');
+  const [tipoFiltro, setTipoFiltro] = useState('');
   const [busca, setBusca] = useState('');
   const [selecionados, setSelecionados] = useState(() => new Set());
   const [editando, setEditando] = useState(null);
@@ -219,13 +241,20 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], 
     return c;
   }, [pessoas]);
 
+  const contagemTipo = useMemo(() => {
+    const equipe = pessoas.filter(ehEquipeDaTrilha).length;
+    return { equipe, acampantes: pessoas.length - equipe };
+  }, [pessoas]);
+
+  // tipoFiltro: '' todos | 'acampante' | uma das AREAS_COM_CRACHA.
   const visiveis = useMemo(() => {
     const termo = semAcento(busca.trim());
     return pessoas.filter((p) =>
       (filtro === 'todos' || situacaoDoCracha(p) === filtro)
       && (!grupoFiltro || (grupoFiltro === '-' ? !p.grupo : p.grupo === grupoFiltro))
+      && (!tipoFiltro || (tipoFiltro === 'acampante' ? !ehEquipeDaTrilha(p) : areaDe(p) === tipoFiltro))
       && (!termo || semAcento(p.nome).includes(termo)));
-  }, [pessoas, filtro, grupoFiltro, busca]);
+  }, [pessoas, filtro, grupoFiltro, tipoFiltro, busca]);
 
   const imprimiveis = (lista) => lista.filter((p) => situacaoDoCracha(p) !== 'pendente');
   const faltam = useMemo(() => pessoas.filter((p) => ['nao_impresso', 'alterado'].includes(situacaoDoCracha(p))), [pessoas]);
@@ -300,8 +329,9 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], 
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl"><Contact2 className="w-5 h-5" />Crachás</DialogTitle>
             <DialogDescription className="text-gray-400">
-              A mesma lista da recepção e dos ônibus (pagos, isentos e com pagamento agendado): <span className="text-white font-medium">{pessoas.length}</span>.
-              Número = camisa (1 PP · 2 P · 3 M · 4 G · 5 GG · 6 XG · 7 XXG); <span className="text-white">8 = infiltrado</span>.
+              Acampantes da lista da recepção e dos ônibus (pagos, isentos e com pagamento agendado): <span className="text-white font-medium">{contagemTipo.acampantes}</span>
+              {' '}+ equipe da trilha escalada em Infiltrados, Espírito Santo e Inimigo: <span className="text-white font-medium">{contagemTipo.equipe}</span>.
+              Número = camisa (1 PP · 2 P · 3 M · 4 G · 5 GG · 6 XG · 7 XXG); <span className="text-white">8 = infiltrado, Espírito Santo e inimigo</span>.
               Folha A4 com 8 crachás, no tamanho do modelo, em ordem de cor e nome.
             </DialogDescription>
           </DialogHeader>
@@ -349,6 +379,12 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], 
               <option value="">Todas as cores</option>
               {GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
               <option value="-">Sem cor</option>
+            </select>
+            <select value={tipoFiltro} onChange={(e) => setTipoFiltro(e.target.value)} aria-label="Filtrar por tipo"
+              className="h-9 rounded-md border border-white/10 bg-zinc-900 px-2 text-sm text-white">
+              <option value="">Acampantes e equipe</option>
+              <option value="acampante">Só acampantes</option>
+              {AREAS_COM_CRACHA.map((a) => <option key={a} value={a}>Só {a}</option>)}
             </select>
             <div className="ml-auto flex flex-wrap gap-2">
               {gerando && <span className="inline-flex items-center gap-1.5 text-sm text-gray-300"><Loader2 className="w-4 h-4 animate-spin" />Gerando o PDF…</span>}
@@ -399,12 +435,12 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], 
                       <td className="px-3 py-1.5"><input type="checkbox" checked={selecionados.has(chaveDe(p))} onChange={() => alternar(p)} aria-label={`Marcar ${p.nome}`} /></td>
                       <td className="px-3 py-1.5 text-gray-100">
                         {c.nome}
-                        {p.infiltrado && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full border border-fuchsia-500/40 text-fuchsia-300">infiltrado</span>}
+                        <EtiquetaArea p={p} />
                       </td>
                       <td className="px-3 py-1.5"><GrupoTrilhaTag grupo={c.grupo} className="text-[10px] px-2" /></td>
                       <td className="px-3 py-1.5 tabular-nums whitespace-nowrap">
                         {c.numero ? <span className="text-white font-semibold">{c.numero}</span> : <span className="text-red-300">—</span>}
-                        <span className="text-gray-500 text-xs ml-1">{p.infiltrado ? '' : (camisaNormalizada(p.camisa) || 'sem camisa')}</span>
+                        <span className="text-gray-500 text-xs ml-1">{ehEquipeDaTrilha(p) ? '' : (camisaNormalizada(p.camisa) || 'sem camisa')}</span>
                       </td>
                       <td className="px-3 py-1.5"><SeloSituacao p={p} /></td>
                       <td className="px-3 py-1.5">
@@ -444,7 +480,6 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], 
           pessoa={editando}
           vinc={vinc}
           onRealocar={onRealocar}
-          participantes={participantes}
           onFechar={() => setEditando(null)}
           onSalvo={async () => { await Promise.all([carregar(), onAlterado?.()]); }}
           onGerarPdf={(p) => gerarPdf([p])}

@@ -13,13 +13,17 @@ import { GROUPS } from '@/utils/gruposTrailha';
  * mesma pagina do modelo (595,32 x 841,92 pt), para imprimir ou mandar para
  * a grafica.
  *
- * Numero: tamanho da camisa (1 PP ... 7 XXG) ou 8 para TODO infiltrado -- e a
- * unica marca que identifica o infiltrado no cracha.
+ * Numero: tamanho da camisa (1 PP ... 7 XXG) ou 8 para toda a equipe da
+ * trilha que tem cracha (Infiltrados, Espirito Santo e Inimigo, 26/10/2026) --
+ * e a unica marca que identifica o infiltrado no cracha.
  */
 
 export const NUMERO_DA_CAMISA = { PP: 1, P: 2, M: 3, G: 4, GG: 5, XG: 6, XXG: 7 };
 export const TAMANHOS_CAMISA = Object.keys(NUMERO_DA_CAMISA);
 export const NUMERO_INFILTRADO = 8;
+// Areas da escala cujos escalados ganham cracha (o banco manda em p.area).
+export const AREAS_COM_CRACHA = ['Infiltrados', 'Espírito Santo', 'Inimigo'];
+export const ehEquipeDaTrilha = (p) => !!p.infiltrado || AREAS_COM_CRACHA.includes(p.area);
 export const POR_FOLHA = 8;
 
 export const camisaNormalizada = (c) => {
@@ -34,7 +38,7 @@ export const nomeDoCracha = (nome) => String(nome || '').trim().replace(/\s+/g, 
 export const dadosDoCracha = (p) => ({
   nome: nomeDoCracha(p.nome),
   grupo: GROUPS.includes(p.grupo) ? p.grupo : null,
-  numero: p.infiltrado ? NUMERO_INFILTRADO : (NUMERO_DA_CAMISA[camisaNormalizada(p.camisa)] || null),
+  numero: ehEquipeDaTrilha(p) ? NUMERO_INFILTRADO : (NUMERO_DA_CAMISA[camisaNormalizada(p.camisa)] || null),
 });
 
 /**

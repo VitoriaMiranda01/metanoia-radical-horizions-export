@@ -115,7 +115,9 @@ const GerenciarInscricoesPage = () => {
   );
   const vinc = useVinculosAcampantes(participantesDosVinculos);
   const [vinculosAberto, setVinculosAberto] = useState(false);
-  // Listas dos onibus (12/10/2026).
+  // Listas dos onibus (12/10/2026). Recebem os acampantes + todos os escalados
+  // em Infiltrados (participantesDosVinculos): desde 26/10 (20261026d) o
+  // infiltrado entra na recepcao -- e nos onibus -- sem esperar a escala oficial.
   const [onibusAberto, setOnibusAberto] = useState(false);
   // Crachas (26/10/2026): mesma lista da recepcao e dos onibus.
   const [crachasAberto, setCrachasAberto] = useState(false);
@@ -615,7 +617,7 @@ const GerenciarInscricoesPage = () => {
           <OnibusDialog
             isOpen={onibusAberto}
             onClose={() => { setOnibusAberto(false); setOnibusFechadoEm(Date.now()); }}
-            acampantes={participantes}
+            acampantes={participantesDosVinculos}
           />
 
           <CrachasDialog
@@ -623,7 +625,6 @@ const GerenciarInscricoesPage = () => {
             onClose={() => setCrachasAberto(false)}
             vinc={vinc}
             onRealocar={handleRealocarGrupoTrailha}
-            participantes={participantes}
             onAlterado={async () => { await Promise.all([fetchAcampantesSupabase(), carregarInfiltrados(), carregarEquipantes()]); setAcampanteSalvoEm(Date.now()); }}
           />
 

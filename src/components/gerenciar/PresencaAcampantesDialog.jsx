@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, ClipboardCheck, ExternalLink, Loader2, Lock, Printer, RefreshCw, Search, Unlock, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -18,7 +19,47 @@ import { chave, dataHora, horaCurta, onibusDaRecepcao, quemFez, semAcento } from
  * /recepcao: quem chegou, com grupo e onibus. Totalizador clicavel, filtros
  * de grupo e onibus, pesquisa por nome e impressao da lista filtrada.
  * Infiltrado: marca so na tela; na folha impressa sai como acampante.
+ *
+ * 26/10/2026 (Patrick): virou janela, aberta pelo botao "Presenca dos
+ * acampantes" ao lado das Listas dos onibus -- o quadro aberto poluia a
+ * tela. O botao avisa "Chamada encerrada -- verifique" (usePresencaAcampantes).
  */
+
+// Dados da presenca para o botao e para a janela: uma leitura so, de 30 em
+// 30 s (pausa com a aba escondida). atualizar: muda quando algo da tela mexe
+// nos onibus (Listas dos onibus).
+export const usePresencaAcampantes = (atualizar = 0) => {
+  const [dados, setDados] = useState(null);
+  const [erro, setErro] = useState('');
+  const [atualizando, setAtualizando] = useState(false);
+
+  const carregar = async () => {
+    setAtualizando(true);
+    try {
+      const r = await fetchRecepcaoLista();
+      setDados({ ...r, pessoas: r.pessoas.map((p) => ({ ...p, _busca: semAcento(p.nome) })) });
+      setErro('');
+    } catch (e) {
+      setErro(e?.message || 'Não foi possível carregar a presença.');
+    } finally {
+      setAtualizando(false);
+    }
+  };
+
+  useEffect(() => { carregar(); }, [atualizar]);
+  useAtualizacaoPeriodica(carregar, 30000);
+
+  const resumo = useMemo(() => {
+    if (!dados) return null;
+    return {
+      total: dados.pessoas.length,
+      presentes: dados.pessoas.filter((p) => p.chegou_em).length,
+      encerrada: !!dados.chamada?.encerrada_em,
+    };
+  }, [dados]);
+
+  return { dados, erro, atualizando, carregar, resumo };
+};
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -85,33 +126,18 @@ const Chip = ({ ativo, onClick, children }) => (
   </button>
 );
 
-// atualizar: muda quando algo da tela mexe nos onibus (Listas dos onibus).
-const PresencaAcampantesQuadro = ({ atualizar = 0 }) => {
+// presenca: o retorno de usePresencaAcampantes (a pagina le uma vez so).
+const PresencaAcampantesDialog = ({ isOpen, onClose, presenca }) => {
   const { toast } = useToast();
-  const [dados, setDados] = useState(null);
-  const [erro, setErro] = useState('');
-  const [atualizando, setAtualizando] = useState(false);
+  const { dados, erro, atualizando, carregar } = presenca;
   const [reabrindo, setReabrindo] = useState(false);
   const [situacao, setSituacao] = useState('presentes');
   const [grupo, setGrupo] = useState('');
   const [onibusFiltro, setOnibusFiltro] = useState('');
   const [busca, setBusca] = useState('');
 
-  const carregar = async () => {
-    setAtualizando(true);
-    try {
-      const r = await fetchRecepcaoLista();
-      setDados({ ...r, pessoas: r.pessoas.map((p) => ({ ...p, _busca: semAcento(p.nome) })) });
-      setErro('');
-    } catch (e) {
-      setErro(e?.message || 'Não foi possível carregar a presença.');
-    } finally {
-      setAtualizando(false);
-    }
-  };
-
-  useEffect(() => { carregar(); }, [atualizar]);
-  useAtualizacaoPeriodica(carregar, 30000);
+  // Ao abrir, le de novo: a recepcao pode ter marcado gente agora.
+  useEffect(() => { if (isOpen) carregar(); }, [isOpen]);
 
   const pessoas = dados?.pessoas || [];
   const divisao = useMemo(() => onibusDaRecepcao(pessoas, dados?.onibus), [pessoas, dados?.onibus]);
@@ -169,13 +195,15 @@ const PresencaAcampantesQuadro = ({ atualizar = 0 }) => {
   const chamada = dados?.chamada || {};
 
   return (
+    <Dialog open={isOpen} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent overlayClassName="bg-black/70" className="bg-neutral-900 border-white/10 text-white sm:max-w-6xl max-h-[92vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl"><ClipboardCheck className="w-5 h-5" />Presença dos acampantes</DialogTitle>
+          <DialogDescription className="text-gray-400">
+            O que a recepção da igreja marcou: quem chegou, com grupo e ônibus.
+          </DialogDescription>
+        </DialogHeader>
     <div className="space-y-4">
-      <div className="flex items-center space-x-4">
-        <div className="h-px bg-white/10 flex-1" />
-        <span className="text-gray-400 font-medium text-sm uppercase tracking-wider">Presença dos Acampantes</span>
-        <div className="h-px bg-white/10 flex-1" />
-      </div>
-
       {!dados ? (
         erro ? (
           <div className="text-center text-sm text-red-300">
@@ -255,7 +283,7 @@ const PresencaAcampantesQuadro = ({ atualizar = 0 }) => {
 
             <p className="text-xs text-gray-400">{tituloFiltro} · {filtrados.length} {filtrados.length === 1 ? 'pessoa' : 'pessoas'}</p>
 
-            <div className="max-h-[480px] overflow-auto rounded-lg border border-white/10">
+            <div className="max-h-[45vh] overflow-auto rounded-lg border border-white/10">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-neutral-900 text-xs text-gray-400">
                   <tr>
@@ -299,7 +327,9 @@ const PresencaAcampantesQuadro = ({ atualizar = 0 }) => {
         </>
       )}
     </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-export default PresencaAcampantesQuadro;
+export default PresencaAcampantesDialog;

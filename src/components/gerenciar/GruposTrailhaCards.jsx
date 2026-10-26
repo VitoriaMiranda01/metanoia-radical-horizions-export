@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, UserCheck, AlertTriangle, Link2, Bus } from 'lucide-react';
+import { Users, UserCheck, AlertTriangle, Link2, Bus, ClipboardCheck, Flag } from 'lucide-react';
 import { getGroupColor, getGroupStats, GROUPS } from '@/utils/gruposTrailha';
 import { motion } from 'framer-motion';
 
@@ -73,8 +73,10 @@ const GroupCard = ({ name, data, onClick, conflitos = 0 }) => {
 
 // Vinculos (12/10/2026): cada cor mostra quantos pares vinculados estao
 // juntos nela, e o botao abre a visao geral (sugestoes da inscricao etc.).
-// Ao lado, as listas dos onibus (OnibusDialog).
-const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, resumoVinculos = null, onAbrirVinculos, onAbrirOnibus, infiltradosSemCor = 0 }) => {
+// Ao lado, as listas dos onibus (OnibusDialog) e a presenca dos acampantes
+// (PresencaAcampantesDialog, 26/10/2026), que avisa quando a recepcao
+// encerra a chamada.
+const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, resumoVinculos = null, onAbrirVinculos, onAbrirOnibus, onAbrirPresenca, resumoPresenca = null, infiltradosSemCor = 0 }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-4">
@@ -83,7 +85,7 @@ const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, 
         <div className="h-px bg-white/10 flex-1" />
       </div>
 
-      {(onAbrirVinculos || onAbrirOnibus) && (
+      {(onAbrirVinculos || onAbrirOnibus || onAbrirPresenca) && (
         <div className="flex flex-wrap justify-center gap-2">
           {onAbrirVinculos && (
           <button
@@ -109,6 +111,24 @@ const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, 
               className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
             >
               <Bus className="w-4 h-4" />Listas dos ônibus
+            </button>
+          )}
+          {onAbrirPresenca && (
+            <button
+              type="button" onClick={onAbrirPresenca}
+              data-dica="Ver quem a recepção da igreja marcou como presente, com grupo e ônibus, e imprimir a lista."
+              className={`inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-md border px-4 py-2 text-sm text-gray-200 ${
+                resumoPresenca?.encerrada ? 'border-red-500/60 bg-red-500/15 hover:bg-red-500/25' : 'border-white/15 bg-white/5 hover:bg-white/10'}`}
+            >
+              <span className="inline-flex items-center gap-1.5 font-medium"><ClipboardCheck className="w-4 h-4" />Presença dos acampantes</span>
+              {resumoPresenca && (
+                <span className="text-xs text-emerald-300 tabular-nums">{resumoPresenca.presentes}/{resumoPresenca.total} presentes</span>
+              )}
+              {resumoPresenca?.encerrada && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white animate-pulse">
+                  <Flag className="w-3 h-3" />Chamada encerrada — verifique
+                </span>
+              )}
             </button>
           )}
         </div>

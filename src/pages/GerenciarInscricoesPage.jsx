@@ -15,7 +15,7 @@ import GruposTrailhaCards from '@/components/gerenciar/GruposTrailhaCards';
 import GruposTrailhaModal from '@/components/gerenciar/GruposTrailhaModal';
 import VinculosAcampantesDialog from '@/components/gerenciar/VinculosAcampantesDialog';
 import OnibusDialog from '@/components/gerenciar/OnibusDialog';
-import PresencaAcampantesQuadro from '@/components/gerenciar/PresencaAcampantesQuadro';
+import PresencaAcampantesDialog, { usePresencaAcampantes } from '@/components/gerenciar/PresencaAcampantesDialog';
 import { useVinculosAcampantes } from '@/hooks/useVinculosAcampantes';
 import { textoDosVinculos } from '@/utils/vinculosAcampantes';
 import AcampantesStatsCards from '@/components/gerenciar/AcampantesStatsCards';
@@ -118,6 +118,9 @@ const GerenciarInscricoesPage = () => {
   const [onibusAberto, setOnibusAberto] = useState(false);
   // Ao fechar as listas, a Presenca dos Acampantes relê os onibus.
   const [onibusFechadoEm, setOnibusFechadoEm] = useState(0);
+  // Presenca dos acampantes (recepcao da igreja): botao + janela (26/10/2026).
+  const presenca = usePresencaAcampantes(onibusFechadoEm);
+  const [presencaAberta, setPresencaAberta] = useState(false);
 
   useEffect(() => {
     carregarEquipantes();
@@ -510,13 +513,10 @@ const GerenciarInscricoesPage = () => {
                       resumoVinculos={vinc.carregado ? { sugestoes: vinc.sugestoes.length, conflitos: vinc.conflitos.length } : null}
                       onAbrirVinculos={() => setVinculosAberto(true)}
                       onAbrirOnibus={() => setOnibusAberto(true)}
+                      onAbrirPresenca={() => setPresencaAberta(true)}
+                      resumoPresenca={presenca.resumo}
                       infiltradosSemCor={infiltrados.oficial ? infiltrados.semCor : 0}
                     />
-                  </div>
-
-                  {/* Presenca dos Acampantes (25/10/2026): o que a recepcao da igreja marcou. */}
-                  <div className="mb-8">
-                    <PresencaAcampantesQuadro atualizar={onibusFechadoEm} />
                   </div>
 
                   <AcampantesTable
@@ -612,6 +612,12 @@ const GerenciarInscricoesPage = () => {
             isOpen={onibusAberto}
             onClose={() => { setOnibusAberto(false); setOnibusFechadoEm(Date.now()); }}
             acampantes={participantes}
+          />
+
+          <PresencaAcampantesDialog
+            isOpen={presencaAberta}
+            onClose={() => setPresencaAberta(false)}
+            presenca={presenca}
           />
 
           <VinculosAcampantesDialog

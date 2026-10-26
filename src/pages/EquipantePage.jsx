@@ -38,7 +38,7 @@ import { calcularIdade } from '@/utils/formatters';
 import { getEquipanteWorkflow, getConfirmacaoPortaria } from '@/services/equipantesService';
 import ConfirmacaoPortaria from '@/components/equipante/ConfirmacaoPortaria';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
-import { igrejaEhOutra } from '@/constants/igrejas';
+import { igrejaEhOutra, igrejaSeparaGrupoEEbd } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { liberacaoDeTesteValida, fetchJanelaDomingo } from '@/services/publicDataService';
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
@@ -89,6 +89,9 @@ const mapDbToFormData = (dbData) => {
 
     // Participação
     frequentaGrupoCuidado: simNao(dbData.frequenta_grupo_cuidado),
+    // Igreja 64 (20261026f): as duas perguntas voltam SEMPRE em branco, de
+    // proposito -- a pessoa informa de novo a cada inscricao.
+    grupoCuidado: '', liderGrupoCuidado: '', frequentaEbd: '',
 
     // Habilidades
     voceCanta: simNao(dbData.voce_canta),
@@ -227,6 +230,7 @@ const EquipantePage = () => {
     igrejaOutra: '', ePastor: '', ePastorOutro: '', pastor: '', estaAfastado: '',
     cargoIgreja: '', cargoIgrejaOutro: '',
     frequentaGrupoCuidado: '',
+    grupoCuidado: '', liderGrupoCuidado: '', frequentaEbd: '',
     voceCanta: '', tocaInstrumento: '',
     familiarTrabalhando: '', familiarTrabalhandoOutro: '',
     parentesco: '', familiarNome: '',
@@ -589,6 +593,12 @@ const EquipantePage = () => {
       if (!(formData.pastor || '').trim()) faltando.push('Nome do Pastor');
       if (!formData.cargoIgreja) faltando.push('Cargo na Igreja');
       else if (formData.cargoIgreja === 'OUTRO' && !(formData.cargoIgrejaOutro || '').trim()) faltando.push('Qual é o seu cargo?');
+    }
+    // Igreja 64 (20261026f): Grupo de Cuidado e EBD sao obrigatorios.
+    if (formData.estaAfastado === 'SIM' && igrejaSeparaGrupoEEbd(formData.igreja)) {
+      if (!formData.grupoCuidado) faltando.push('Frequenta Grupo de Cuidado?');
+      else if (formData.grupoCuidado === 'SIM' && !(formData.liderGrupoCuidado || '').trim()) faltando.push('Nome do líder do grupo');
+      if (!formData.frequentaEbd) faltando.push('Frequenta a Escola Bíblica (EBD)?');
     }
     if (!formData.familiarTrabalhando) faltando.push('Tem algum familiar que vai trabalhar no projeto?');
     if (!formData.parentesco) faltando.push('Tem algum conhecido / familiar que vai participar como ACAMPANTE?');

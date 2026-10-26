@@ -332,6 +332,12 @@ export const IGREJAS_RESPONSAVEL_ACAMPANTE = [...IGREJAS_PARCEIRAS, IGREJA_RADIC
 
 export const igrejaEhOutra = (valor) => (valor || '') === OUTRA_IGREJA;
 
+// Igreja 64 (Metodista Centenario, 26/10/2026): a pergunta "Grupo de Cuidado,
+// Celula ou EBD?" vira duas -- Grupo de Cuidado (com o nome do lider) e EBD.
+// Pelo CODIGO, que nao muda se o nome da igreja for corrigido. O servidor usa
+// a mesma regra (_dados_inscricao_validos, migration 20261026f).
+export const igrejaSeparaGrupoEEbd = (valor) => /^0*64 - /.test(String(valor || '').trim());
+
 // O que mostrar nas telas do organizador: "OUTRA — NOME DIGITADO".
 export const nomeDaIgreja = (inscricao) => {
   const igreja = inscricao?.igreja || inscricao?.nome_igreja || '';

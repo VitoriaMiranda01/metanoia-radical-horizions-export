@@ -6,6 +6,7 @@ import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
 import { formatarDataHora } from '@/utils/columnVisibility';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import SeloPastor from '@/components/common/SeloPastor';
+import { respondeuGrupoEEbd, respostasGrupoEEbd } from '@/utils/grupoCuidadoEbd';
 
 const InscricaoCard = ({ 
   inscricao, 
@@ -47,6 +48,13 @@ const InscricaoCard = ({
           <span className="font-medium text-gray-500 shrink-0">Igreja:</span>
           <span className="text-gray-300 text-right truncate">{nomeDaIgreja(inscricao) || 'Não informada'}</span>
         </div>
+        {/* Igreja 64 (20261026f): as respostas a vista, para analisar antes de aprovar. */}
+        {respondeuGrupoEEbd(inscricao) && respostasGrupoEEbd(inscricao).map(({ rotulo, curto, valor }) => (
+          <div key={rotulo} className="flex justify-between items-start gap-2">
+            <span className="font-medium text-gray-500 shrink-0">{curto}</span>
+            <span className="text-gray-300 text-right break-words">{valor}</span>
+          </div>
+        ))}
         {(inscricao.inscrito_em || inscricao.created_at) && (
           <div className="flex justify-between items-center gap-2">
             <span className="font-medium text-gray-500 shrink-0">Inscrito em:</span>

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
-import { IGREJA_DIVERSOS, IGREJA_RADICAL_36, OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
+import { IGREJA_DIVERSOS, IGREJA_RADICAL_36, OUTRA_IGREJA, igrejaEhOutra, igrejaSeparaGrupoEEbd } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { toBoolean } from '@/utils/formatters';
 import { mascararTelefone, problemaTelefone, ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
@@ -242,6 +242,7 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
       ['quem_indicou_nome', 'Nome de quem indicou', () => problemaNomeSimples(form.quem_indicou_nome)],
       ['nome_familiar_conhecido', 'Nome do conhecido/familiar', () => problemaNomeSimples(form.nome_familiar_conhecido)],
       ['familiar_nome', 'Nome do familiar', () => problemaNomeSimples(form.familiar_nome)],
+      ['lider_grupo_cuidado', 'Líder do grupo', () => problemaNomeSimples(form.lider_grupo_cuidado)],
     ];
     for (const [campo, rotulo, conferir] of formatos) {
       if (!(campo in alterados)) continue;
@@ -476,7 +477,16 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
             )}
             <CampoTexto label="Cargo na Igreja" valor={form.cargo_igreja} onChange={set('cargo_igreja')} />
             <CampoTexto label="Cargo na Igreja (Outro)" valor={form.cargo_igreja_outro} onChange={set('cargo_igreja_outro')} />
-            {isEquipante && (
+            {/* Igreja 64 (20261026f): Grupo de Cuidado, lider e EBD em separado. */}
+            {isEquipante && igrejaSeparaGrupoEEbd(form.igreja) ? (
+              <>
+                <CampoBooleano label="Frequenta Grupo de Cuidado?" name="frequenta_grupo_cuidado" valor={form.frequenta_grupo_cuidado} onChange={set('frequenta_grupo_cuidado')} />
+                {toBoolean(form.frequenta_grupo_cuidado) && (
+                  <CampoTexto label="Nome do líder do grupo" valor={form.lider_grupo_cuidado} onChange={set('lider_grupo_cuidado')} />
+                )}
+                <CampoBooleano label="Frequenta a Escola Bíblica (EBD)?" name="frequenta_ebd" valor={form.frequenta_ebd} onChange={set('frequenta_ebd')} />
+              </>
+            ) : isEquipante && (
               <CampoBooleano label="Frequenta Grupo de Cuidado, Célula ou EBD?" name="frequenta_grupo_cuidado" valor={form.frequenta_grupo_cuidado} onChange={set('frequenta_grupo_cuidado')} />
             )}
             {isEquipante && (

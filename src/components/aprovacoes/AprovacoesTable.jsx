@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDropdown';
 import InscricaoCard from '@/components/aprovacoes/InscricaoCard';
 import { naoCongrega, nomeDaIgreja } from '@/constants/igrejas';
+import { resumoGrupoEEbd } from '@/utils/grupoCuidadoEbd';
 import { casaBusca } from '@/utils/busca';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import SeloPastor from '@/components/common/SeloPastor';
@@ -437,6 +438,12 @@ const AprovacoesTable = ({
                             <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} soDomingo={inscricao.so_domingo} />
                             <SeloPastor pessoa={inscricao} />
                           </span>
+                          {/* Igreja 64 (20261026f): Grupo de Cuidado e EBD a vista. */}
+                          {resumoGrupoEEbd(inscricao) && (
+                            <span className="block mt-0.5 text-xs font-normal text-blue-200/80 whitespace-normal max-w-[320px]">
+                              {resumoGrupoEEbd(inscricao)}
+                            </span>
+                          )}
                         </TableCell>
                         
                         {visibleColumns.map(colKey => {

@@ -41,9 +41,14 @@ const MENSAGENS = {
   RADICAL_OBRIGATORIO: 'Responda qual Radical você fez como acampante.',
   EDICAO_ACAMPANTE_OBRIGATORIA: 'Informe o número da edição do Radical que você fez como acampante.',
   EDICAO_EQUIPE_OBRIGATORIA: 'Informe em qual edição você trabalhou na equipe.',
+  // Igreja 64: Grupo de Cuidado e EBD separados (migration 20261026f).
+  GRUPO_CUIDADO_OBRIGATORIO: 'Responda se frequenta um Grupo de Cuidado.',
+  LIDER_GRUPO_OBRIGATORIO: 'Escreva o nome do líder do seu Grupo de Cuidado.',
+  EBD_OBRIGATORIA: 'Responda se frequenta a Escola Bíblica (EBD).',
 };
 
 const CAMPO_DE_TEXTO = {
+  lider_grupo_cuidado: 'do líder do grupo',
   pastor_nome: 'do pastor',
   quem_indicou_nome: 'de quem indicou',
   nome_familiar_conhecido: 'do familiar / conhecido',

@@ -2,7 +2,7 @@ import { supabase } from '@/services/supabaseClient';
 import { ESPECIALIDADE_OUTRO, escolheuSaude } from '@/constants/especialidadesSaude';
 import { mensagemDeErro } from '@/utils/errosDeDados';
 import { ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
-import { OUTRA_IGREJA } from '@/constants/igrejas';
+import { OUTRA_IGREJA, igrejaSeparaGrupoEEbd } from '@/constants/igrejas';
 import { mapFormDataToDb as mapAcampanteToDb } from '@/utils/acampanteForm';
 import { toBoolean } from '@/utils/formatters';
 import {
@@ -90,7 +90,18 @@ const mapEquipanteToDb = (formData) => ({
   esta_afastado: toBoolean(formData.estaAfastado),
   cargo_igreja: formData.cargoIgreja,
   cargo_igreja_outro: formData.cargoIgrejaOutro,
-  frequenta_grupo_cuidado: toBoolean(formData.frequentaGrupoCuidado),
+  // Igreja 64 (20261026f): duas perguntas no lugar da combinada. Vazio vai
+  // NULO (o servidor recusa) -- toBoolean('') daria "nao" sem a pessoa
+  // responder. O lider so existe na 64 com grupo SIM; nas demais vai NULO para
+  // a reinscricao que troca de igreja nao levar o nome antigo.
+  ...(igrejaSeparaGrupoEEbd(formData.igreja) ? {
+    frequenta_grupo_cuidado: formData.grupoCuidado ? formData.grupoCuidado === 'SIM' : null,
+    lider_grupo_cuidado: formData.grupoCuidado === 'SIM' ? ((formData.liderGrupoCuidado || '').trim().replace(/\s+/g, ' ') || null) : null,
+    frequenta_ebd: formData.frequentaEbd ? formData.frequentaEbd === 'SIM' : null,
+  } : {
+    frequenta_grupo_cuidado: toBoolean(formData.frequentaGrupoCuidado),
+    lider_grupo_cuidado: null,
+  }),
   voce_canta: toBoolean(formData.voceCanta),
   toca_instrumento: toBoolean(formData.tocaInstrumento),
   familiar_trabalhando: formData.familiarTrabalhando && formData.familiarTrabalhando !== 'NÃO TENHO',

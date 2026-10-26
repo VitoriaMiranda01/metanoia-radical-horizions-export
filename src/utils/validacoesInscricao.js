@@ -1,5 +1,6 @@
 import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
 import { calcularIdade } from '@/utils/formatters';
+import { igrejaSeparaGrupoEEbd } from '@/constants/igrejas';
 
 /**
  * Validacoes dos campos de texto das inscricoes (Patrick, 06/10/2026): a
@@ -78,9 +79,16 @@ export const conferirInscricao = (f, tipo) => {
         && (m = problemaNomePessoa(f.nomeFamiliarConhecido))) {
       return p('Confira o nome do familiar / conhecido', m, 'nomeFamiliarConhecido');
     }
-  } else if (f.parentesco && f.parentesco !== 'NÃO TENHO') {
-    m = problemaNomeSimples(f.familiarNome) || (!String(f.familiarNome || '').trim() ? 'Escreva o nome.' : null);
-    if (m) return p('Confira o nome do conhecido / familiar', m, 'familiarNome');
+  } else {
+    if (f.parentesco && f.parentesco !== 'NÃO TENHO') {
+      m = problemaNomeSimples(f.familiarNome) || (!String(f.familiarNome || '').trim() ? 'Escreva o nome.' : null);
+      if (m) return p('Confira o nome do conhecido / familiar', m, 'familiarNome');
+    }
+    // Igreja 64 (20261026f): lider do Grupo de Cuidado, so letras.
+    if (f.estaAfastado === 'SIM' && igrejaSeparaGrupoEEbd(f.igreja) && f.grupoCuidado === 'SIM'
+        && (m = problemaNomeSimples(f.liderGrupoCuidado))) {
+      return p('Confira o nome do líder do grupo', m, 'liderGrupoCuidado');
+    }
   }
   return null;
 };

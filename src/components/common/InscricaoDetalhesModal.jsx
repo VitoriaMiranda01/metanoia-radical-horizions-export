@@ -9,6 +9,7 @@ import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { bandeiraENome } from '@/constants/nacionalidades';
 import { getEquipanteStageLabel } from '@/utils/equipanteWorkflow';
 import { ehPastorTexto } from '@/utils/pastor';
+import { respostasGrupoEEbd } from '@/utils/grupoCuidadoEbd';
 
 const getStatusBadge = (status) => {
   const variants = {
@@ -305,12 +306,14 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
                 <p className="text-white font-medium">{displayValue(inscricao.pastor_nome || inscricao.pastor)}</p>
               </div>
               {/* frequenta_grupo_cuidado/e_pastor só existem na tabela equipantes */}
-              {isEquipante && (
-                <div className="bg-white/5 p-3 rounded-md">
-                  <span className="text-sm text-gray-400 block mb-1">Frequenta Grupo de Cuidado, Célula ou Escola Bíblica (EBD)?</span>
-                  <p className="text-white font-medium">{formatBoolean(inscricao.frequenta_grupo_cuidado)}</p>
+              {/* Igreja 64 (20261026f): Grupo de Cuidado (com o lider) e EBD
+                  em separado; as demais seguem com a pergunta combinada. */}
+              {isEquipante && respostasGrupoEEbd(inscricao).map(({ rotulo, valor }) => (
+                <div key={rotulo} className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">{rotulo}</span>
+                  <p className="text-white font-medium">{valor}</p>
                 </div>
-              )}
+              ))}
               {isEquipante && (
                 <div className="bg-white/5 p-3 rounded-md">
                   <span className="text-sm text-gray-400 block mb-1">É Pastor?</span>

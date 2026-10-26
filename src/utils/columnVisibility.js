@@ -49,6 +49,9 @@ export const COLUMN_DEFINITIONS = {
     { key: 'esta_afastado', label: 'Congrega em Igreja', group: 'Igreja' },
     { key: 'pastor_nome', label: 'Nome do Pastor', group: 'Igreja' },
     { key: 'frequenta_grupo_cuidado', label: 'Frequenta Grupo de Cuidado, Célula ou Escola Bíblica (EBD)', group: 'Igreja' },
+    // Igreja 64 (20261026f): perguntas separadas.
+    { key: 'lider_grupo_cuidado', label: 'Líder do Grupo de Cuidado (igreja 64)', group: 'Igreja' },
+    { key: 'frequenta_ebd', label: 'Frequenta EBD (igreja 64)', group: 'Igreja' },
     { key: 'voce_canta', label: 'Canta', group: 'Igreja' },
     { key: 'toca_instrumento', label: 'Toca Instrumento', group: 'Igreja' },
 

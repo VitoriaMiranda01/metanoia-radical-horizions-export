@@ -6,8 +6,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import FormSection from './FormSection';
 import IgrejaSelect from './IgrejaSelect';
 import CampoPastor from './CampoPastor';
-import { OUTRA_IGREJA, igrejaEhOutra } from '@/constants/igrejas';
+import { OUTRA_IGREJA, igrejaEhOutra, igrejaSeparaGrupoEEbd } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
+import { limparNomeSimples } from '@/utils/validacoesInscricao';
+
+// SIM / NAO em botoes de radio, sem nada marcado ate a pessoa escolher.
+const PerguntaSimNao = ({ id, label, valor, onChange }) => (
+  <div className="space-y-2">
+    <Label className="text-white">{label}</Label>
+    <div className="flex gap-4 pt-2 h-10 items-center">
+      {['SIM', 'NÃO'].map((opcao) => (
+        <div key={opcao} className="flex items-center space-x-2">
+          <input
+            type="radio"
+            id={`${id}${opcao === 'SIM' ? 'Sim' : 'Nao'}`}
+            name={id}
+            value={opcao}
+            checked={valor === opcao}
+            onChange={onChange}
+            className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500 ring-offset-gray-800"
+          />
+          <Label htmlFor={`${id}${opcao === 'SIM' ? 'Sim' : 'Nao'}`} className="text-white font-normal cursor-pointer">{opcao}</Label>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 const InfoEclesiasticas = ({
   formData,
@@ -150,6 +174,42 @@ const InfoEclesiasticas = ({
                     </div>
                   )}
 
+                  {/* Igreja 64 (20261026f): duas perguntas no lugar da
+                      combinada, as duas obrigatorias e em branco de proposito
+                      -- a igreja ve as respostas na Aprovacao. */}
+                  {igrejaSeparaGrupoEEbd(formData.igreja) ? (
+                    <>
+                      <PerguntaSimNao
+                        id="grupoCuidado"
+                        label="Frequenta Grupo de Cuidado?"
+                        valor={formData.grupoCuidado}
+                        onChange={handleChange}
+                      />
+                      {formData.grupoCuidado === 'SIM' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="liderGrupoCuidado" className="text-white">Nome do líder do grupo</Label>
+                          <Input
+                            id="liderGrupoCuidado"
+                            name="liderGrupoCuidado"
+                            value={formData.liderGrupoCuidado || ''}
+                            onChange={(e) => handleChange({
+                              target: { name: 'liderGrupoCuidado', value: limparNomeSimples(e.target.value) }
+                            })}
+                            maxLength={80}
+                            required
+                            className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                            placeholder="Nome do líder do seu Grupo de Cuidado"
+                          />
+                        </div>
+                      )}
+                      <PerguntaSimNao
+                        id="frequentaEbd"
+                        label="Frequenta a Escola Bíblica (EBD)?"
+                        valor={formData.frequentaEbd}
+                        onChange={handleChange}
+                      />
+                    </>
+                  ) : (
                   <div className="space-y-2">
                     <Label className="text-white">Frequenta Grupo de Cuidado, Célula ou Escola Bíblica (EBD)?</Label>
                     <div className="flex gap-4 pt-2 h-10 items-center">
@@ -179,6 +239,7 @@ const InfoEclesiasticas = ({
                       </div>
                     </div>
                   </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="voceCanta" className="text-white">Você canta?</Label>

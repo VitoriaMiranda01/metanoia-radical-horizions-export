@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Contact2, FileDown, Loader2, Pencil, Search, Undo2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Contact2, FileDown, FileSpreadsheet, HeartPulse, Loader2, Pencil, Search, Undo2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,8 @@ import {
   AREAS_COM_CRACHA, camisaNormalizada, dadosDoCracha, ehEquipeDaTrilha, gerarPdfCrachas, NUMERO_DA_CAMISA,
   NUMERO_INFILTRADO, ordenarCrachas, POR_FOLHA, situacaoDoCracha, svgPreviaCracha, TAMANHOS_CAMISA
 } from '@/utils/crachas';
-import { desmarcarCrachaImpresso, fetchCrachas, marcarCrachasImpressos } from '@/services/crachasService';
+import { desmarcarCrachaImpresso, fetchCrachas, fetchSaudeDosCrachas, marcarCrachasImpressos } from '@/services/crachasService';
+import { contarRelacaoSaude, exportarRelacaoSaudeExcel, exportarRelacaoSaudePdf, montarRelacaoSaude } from '@/utils/crachasSaude';
 import { updateAcampante } from '@/services/acampantesService';
 import { updateEquipante } from '@/services/equipantesService';
 import { definirCor } from '@/services/scalesService';
@@ -203,6 +204,113 @@ const EditarCracha = ({ pessoa, vinc, onRealocar, onFechar, onSalvo, onGerarPdf 
   );
 };
 
+// ---- Relacao de saude (quem leva marcacao no cracha) ----------------------------
+const RelacaoSaude = ({ pessoas, onFechar }) => {
+  const { toast } = useToast();
+  const [linhas, setLinhas] = useState(null);
+  const [baixando, setBaixando] = useState('');
+
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      try {
+        const mapa = await fetchSaudeDosCrachas(pessoas);
+        if (vivo) setLinhas(montarRelacaoSaude(pessoas, mapa));
+      } catch (e) {
+        if (vivo) { toast({ title: 'Não foi possível montar a relação', description: e?.message || 'Tente de novo.', variant: 'destructive' }); onFechar(); }
+      }
+    })();
+    return () => { vivo = false; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const total = linhas ? contarRelacaoSaude(linhas) : null;
+
+  const baixar = async (formato) => {
+    setBaixando(formato);
+    try {
+      await (formato === 'pdf' ? exportarRelacaoSaudePdf(linhas) : exportarRelacaoSaudeExcel(linhas));
+    } catch (e) {
+      toast({ title: 'Não foi possível gerar o arquivo', description: e?.message || 'Tente de novo.', variant: 'destructive' });
+    } finally {
+      setBaixando('');
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onFechar(); }}>
+      <DialogContent overlayClassName="bg-black/70" className="bg-neutral-900 border-white/10 text-white sm:max-w-3xl max-h-[92vh] flex flex-col gap-3">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><HeartPulse className="w-4 h-4 text-rose-300" />Relação de saúde dos crachás</DialogTitle>
+          <DialogDescription className="text-gray-400">
+            Quem leva marcação no crachá: problema de saúde, medicamento ou restrição alimentar. Mesma lista e mesma ordem dos crachás (cor e nome).
+          </DialogDescription>
+        </DialogHeader>
+
+        {!linhas ? (
+          <div className="py-12 text-center text-gray-400"><Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />Montando a relação…</div>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-2 text-sm">
+              <span className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5"><span className="text-white font-semibold tabular-nums">{linhas.length}</span> pessoas</span>
+              <span className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-rose-300">Saúde <span className="text-white font-semibold tabular-nums">{total.problema}</span></span>
+              <span className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sky-300">Remédio <span className="text-white font-semibold tabular-nums">{total.medicamento}</span></span>
+              <span className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-amber-300">Alimento <span className="text-white font-semibold tabular-nums">{total.alimento}</span></span>
+            </div>
+            <div className="flex-1 min-h-0 max-h-[52vh] overflow-auto rounded-lg border border-white/10">
+              <table className="w-full text-sm">
+                <thead className="text-gray-400 text-xs sticky top-0 bg-neutral-900">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Nome no crachá</th>
+                    <th className="px-3 py-2 text-left">Cor</th>
+                    <th className="px-3 py-2 text-left">Nº</th>
+                    <th className="px-2 py-2 text-center">Saúde</th>
+                    <th className="px-2 py-2 text-center">Remédio</th>
+                    <th className="px-2 py-2 text-center">Alimento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!linhas.length && <tr><td colSpan={6} className="text-center py-10 text-gray-500">Ninguém com crachá tem informação de saúde.</td></tr>}
+                  {linhas.map((l, i) => (
+                    <tr key={`${l.nome}-${i}`} className="border-t border-white/5 align-top">
+                      <td className="px-3 py-1.5 text-gray-100">
+                        {l.nome}
+                        {l.tipo === 'Equipe' && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full border border-white/20 text-gray-300">equipe</span>}
+                        <p className="text-xs text-gray-500 font-normal">
+                          {['problema', 'medicamento', 'alimento'].filter((k) => l.marcas[k]).map((k) => l.detalhes[k]).join(' · ')}
+                        </p>
+                      </td>
+                      <td className="px-3 py-1.5"><GrupoTrilhaTag grupo={l.grupo} className="text-[10px] px-2" /></td>
+                      <td className="px-3 py-1.5 tabular-nums text-white font-semibold">{l.numero || '—'}</td>
+                      {['problema', 'medicamento', 'alimento'].map((k) => (
+                        <td key={k} className="px-2 py-1.5 text-center font-bold text-white">{l.marcas[k] ? 'X' : ''}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button variant="outline" onClick={onFechar} className="border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">Fechar</Button>
+          <Button disabled={!linhas?.length || !!baixando} onClick={() => baixar('excel')}
+            className="bg-white/10 hover:bg-white/20 text-white">
+            {baixando === 'excel' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}Baixar Excel
+          </Button>
+          <Button disabled={!linhas?.length || !!baixando} onClick={() => baixar('pdf')}
+            className="bg-blue-600 hover:bg-blue-700 text-white">
+            {baixando === 'pdf' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileDown className="w-4 h-4 mr-2" />}Baixar PDF
+          </Button>
+        </div>
+        <p className="text-[11px] text-gray-500">
+          A ficha do equipante não pergunta medicamento: para a equipe da trilha só saem saúde e alimento.
+        </p>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // ---- Janela principal -----------------------------------------------------------
 const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, onAlterado }) => {
   const { toast } = useToast();
@@ -220,6 +328,7 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, onAlterado }) => {
   // false ou { feitos, total } enquanto o PDF e montado.
   const [gerando, setGerando] = useState(false);
   const [ocupado, setOcupado] = useState(false);
+  const [relacaoSaude, setRelacaoSaude] = useState(false);
 
   const carregar = async () => {
     setCarregando(true);
@@ -403,6 +512,11 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, onAlterado }) => {
                 className="bg-white/5 border-white/15 text-gray-200 hover:bg-white/10 hover:text-white">
                 PDF da lista: {qtdTexto(imprimiveis(visiveis).length)}
               </Button>
+              <Button type="button" variant="outline" disabled={!pessoas.length || carregando} onClick={() => setRelacaoSaude(true)}
+                data-dica="Relação de quem tem problema de saúde, usa medicamento ou tem restrição alimentar: são os crachás que levam marcação à mão. PDF ou Excel."
+                className="bg-white/5 border-white/15 text-gray-200 hover:bg-white/10 hover:text-white">
+                <HeartPulse className="w-4 h-4 mr-2 text-rose-300" />Relação de saúde
+              </Button>
               <Button type="button" variant="outline" disabled={!escolhidos.length || !!aConfirmar || gerando}
                 onClick={() => setAConfirmar({ itens: itensDe(escolhidos), pdf: false })}
                 data-dica="Marcar os crachás marcados na lista como já impressos (por exemplo, o PDF foi impresso depois, por outra pessoa)."
@@ -475,6 +589,8 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, onAlterado }) => {
           </p>
         </DialogContent>
       </Dialog>
+
+      {relacaoSaude && <RelacaoSaude pessoas={pessoas} onFechar={() => setRelacaoSaude(false)} />}
 
       {editando && (
         <EditarCracha

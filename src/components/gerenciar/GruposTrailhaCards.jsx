@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, UserCheck, AlertTriangle, Link2, Bus, ClipboardCheck, Flag, Contact2, BookHeart } from 'lucide-react';
+import { Users, UserCheck, AlertTriangle, Link2, Bus, ClipboardCheck, Flag, Contact2, BookHeart, ChevronDown, Printer, FileDown, FileText } from 'lucide-react';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { getGroupColor, getGroupStats, GROUPS } from '@/utils/gruposTrailha';
 import { motion } from 'framer-motion';
 
@@ -143,13 +144,22 @@ const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, 
             </button>
           )}
           {onJoelhos && (
-            <button
-              type="button" onClick={onJoelhos}
-              data-dica="Imprimir os nomes da lista da recepção em letra grande, dois por folha, para o Momento de joelhos."
-              className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
-            >
-              <BookHeart className="w-4 h-4" />Momento de joelhos
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  data-dica="Os nomes da lista da recepção em letra grande, dois por folha, para o Momento de joelhos: imprimir, baixar em PDF ou em Word."
+                  className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
+                >
+                  <BookHeart className="w-4 h-4" />Momento de joelhos<ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-neutral-900 border-white/10 text-white">
+                <DropdownMenuItem onSelect={() => onJoelhos('imprimir')}><Printer className="w-4 h-4 mr-2" />Imprimir</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onJoelhos('pdf')}><FileDown className="w-4 h-4 mr-2" />Baixar PDF</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onJoelhos('docx')}><FileText className="w-4 h-4 mr-2" />Baixar Word (.docx)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       )}

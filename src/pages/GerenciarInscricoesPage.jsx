@@ -16,7 +16,7 @@ import GruposTrailhaModal from '@/components/gerenciar/GruposTrailhaModal';
 import VinculosAcampantesDialog from '@/components/gerenciar/VinculosAcampantesDialog';
 import OnibusDialog from '@/components/gerenciar/OnibusDialog';
 import CrachasDialog from '@/components/gerenciar/CrachasDialog';
-import { imprimirMomentoDeJoelhos } from '@/utils/joelhos';
+import { imprimirMomentoDeJoelhos, exportarMomentoDeJoelhosPdf, exportarMomentoDeJoelhosDocx } from '@/utils/joelhos';
 import PresencaAcampantesDialog, { usePresencaAcampantes } from '@/components/gerenciar/PresencaAcampantesDialog';
 import { useVinculosAcampantes } from '@/hooks/useVinculosAcampantes';
 import { textoDosVinculos } from '@/utils/vinculosAcampantes';
@@ -126,6 +126,24 @@ const GerenciarInscricoesPage = () => {
   const [onibusFechadoEm, setOnibusFechadoEm] = useState(0);
   // Presenca dos acampantes (recepcao da igreja): botao + janela (26/10/2026).
   const presenca = usePresencaAcampantes(onibusFechadoEm);
+
+  // Momento de joelhos: imprimir, PDF ou Word, com todos da lista da recepcao.
+  const handleJoelhos = async (modo) => {
+    const pessoas = presenca.dados?.pessoas;
+    if (!pessoas?.length) {
+      toast({ title: 'A lista da recepção ainda não carregou', description: 'Espere um instante e tente de novo.', variant: 'destructive' });
+      return;
+    }
+    try {
+      if (modo === 'pdf') await exportarMomentoDeJoelhosPdf(pessoas);
+      else if (modo === 'docx') await exportarMomentoDeJoelhosDocx(pessoas);
+      else if (!imprimirMomentoDeJoelhos(pessoas)) {
+        toast({ title: 'O navegador bloqueou a janela de impressão', description: 'Permita pop-ups para este site e tente de novo.', variant: 'destructive' });
+      }
+    } catch (e) {
+      toast({ title: 'Não foi possível gerar o arquivo', description: e?.message || 'Tente de novo.', variant: 'destructive' });
+    }
+  };
   const [presencaAberta, setPresencaAberta] = useState(false);
 
   useEffect(() => {
@@ -521,13 +539,7 @@ const GerenciarInscricoesPage = () => {
                       onAbrirCrachas={() => setCrachasAberto(true)}
                       onAbrirOnibus={() => setOnibusAberto(true)}
                       onAbrirPresenca={() => setPresencaAberta(true)}
-                      onJoelhos={() => {
-                        if (!presenca.dados?.pessoas?.length) {
-                          toast({ title: 'A lista da recepção ainda não carregou', description: 'Espere um instante e tente de novo.', variant: 'destructive' });
-                        } else if (!imprimirMomentoDeJoelhos(presenca.dados.pessoas)) {
-                          toast({ title: 'O navegador bloqueou a janela de impressão', description: 'Permita pop-ups para este site e tente de novo.', variant: 'destructive' });
-                        }
-                      }}
+                      onJoelhos={handleJoelhos}
                       resumoPresenca={presenca.resumo}
                       infiltradosSemCor={infiltrados.oficial ? infiltrados.semCor : 0}
                     />

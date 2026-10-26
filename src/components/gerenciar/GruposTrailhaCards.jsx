@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, UserCheck, AlertTriangle, Link2, Bus, ClipboardCheck, Flag, Contact2 } from 'lucide-react';
+import { Users, UserCheck, AlertTriangle, Link2, Bus, ClipboardCheck, Flag, Contact2, BookHeart } from 'lucide-react';
 import { getGroupColor, getGroupStats, GROUPS } from '@/utils/gruposTrailha';
 import { motion } from 'framer-motion';
 
@@ -76,7 +76,7 @@ const GroupCard = ({ name, data, onClick, conflitos = 0 }) => {
 // Ao lado, as listas dos onibus (OnibusDialog) e a presenca dos acampantes
 // (PresencaAcampantesDialog, 26/10/2026), que avisa quando a recepcao
 // encerra a chamada. Antes dos onibus, os Crachas (CrachasDialog, 26/10/2026).
-const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, resumoVinculos = null, onAbrirVinculos, onAbrirCrachas, onAbrirOnibus, onAbrirPresenca, resumoPresenca = null, infiltradosSemCor = 0 }) => {
+const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, resumoVinculos = null, onAbrirVinculos, onAbrirCrachas, onAbrirOnibus, onAbrirPresenca, onJoelhos, resumoPresenca = null, infiltradosSemCor = 0 }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-4">
@@ -85,7 +85,7 @@ const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, 
         <div className="h-px bg-white/10 flex-1" />
       </div>
 
-      {(onAbrirVinculos || onAbrirCrachas || onAbrirOnibus || onAbrirPresenca) && (
+      {(onAbrirVinculos || onAbrirCrachas || onAbrirOnibus || onAbrirPresenca || onJoelhos) && (
         <div className="flex flex-wrap justify-center gap-2">
           {onAbrirVinculos && (
           <button
@@ -140,6 +140,15 @@ const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, 
                   <Flag className="w-3 h-3" />Chamada encerrada — verifique
                 </span>
               )}
+            </button>
+          )}
+          {onJoelhos && (
+            <button
+              type="button" onClick={onJoelhos}
+              data-dica="Imprimir uma folha por acampante da lista da recepção, só com o nome em letra grande, para o Momento de joelhos."
+              className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
+            >
+              <BookHeart className="w-4 h-4" />Momento de joelhos
             </button>
           )}
         </div>

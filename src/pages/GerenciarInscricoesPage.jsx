@@ -16,6 +16,7 @@ import GruposTrailhaModal from '@/components/gerenciar/GruposTrailhaModal';
 import VinculosAcampantesDialog from '@/components/gerenciar/VinculosAcampantesDialog';
 import OnibusDialog from '@/components/gerenciar/OnibusDialog';
 import CrachasDialog from '@/components/gerenciar/CrachasDialog';
+import { imprimirMomentoDeJoelhos } from '@/utils/joelhos';
 import PresencaAcampantesDialog, { usePresencaAcampantes } from '@/components/gerenciar/PresencaAcampantesDialog';
 import { useVinculosAcampantes } from '@/hooks/useVinculosAcampantes';
 import { textoDosVinculos } from '@/utils/vinculosAcampantes';
@@ -520,6 +521,13 @@ const GerenciarInscricoesPage = () => {
                       onAbrirCrachas={() => setCrachasAberto(true)}
                       onAbrirOnibus={() => setOnibusAberto(true)}
                       onAbrirPresenca={() => setPresencaAberta(true)}
+                      onJoelhos={() => {
+                        if (!presenca.dados?.pessoas?.length) {
+                          toast({ title: 'A lista da recepção ainda não carregou', description: 'Espere um instante e tente de novo.', variant: 'destructive' });
+                        } else if (!imprimirMomentoDeJoelhos(presenca.dados.pessoas)) {
+                          toast({ title: 'O navegador bloqueou a janela de impressão', description: 'Permita pop-ups para este site e tente de novo.', variant: 'destructive' });
+                        }
+                      }}
                       resumoPresenca={presenca.resumo}
                       infiltradosSemCor={infiltrados.oficial ? infiltrados.semCor : 0}
                     />

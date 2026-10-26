@@ -213,3 +213,6 @@ Só visual (sem banco/migration). `components/organizer/Recolhivel.jsx` envolve 
 - **Guia da portaria dentro do site** (24/10, commit 6735dbe, só tela, sem banco): link "Como usar a portaria" no canto direito acima dos quatro números da `PortariaPage` (Apoio e organizador) abre uma janela com `public/guia-portaria.html` (iframe, sempre escuro, noindex). Fonte editável: `docs/GUIA-PORTARIA.html` (sem o passo "Entrar"; igreja fictícia "Igreja Exemplo Central"); ao mudar o texto, regerar a cópia em `public/` (acrescenta doctype, tema escuro e noindex). Telas do guia são simuladas, nomes fictícios. Janela não testada logada.
 
 - 26/10: tag "infiltrado" removida da lista da Recepção (RecepcaoPage.jsx); a tela não revela mais quem é infiltrado. Só front, sem migration; falta subir o deploy.
+
+## 26/10/2026 — Momento de joelhos
+Botão "Momento de joelhos" à direita de "Presença dos acampantes" (Gerenciar Inscrições, Grupos de Trilha). Imprime 1 folha A4 paisagem por nome (todos da lista da recepção, alfabético, sem filtro, nome 85pt), como o "joelhos 36.docx". Só front-end: `src/utils/joelhos.js`, `GruposTrailhaCards.jsx`, `GerenciarInscricoesPage.jsx`. Sem migration. Build ok; falta subir (deploy) e conferir a impressão em papel.

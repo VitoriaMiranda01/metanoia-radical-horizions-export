@@ -77,6 +77,17 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
     return () => clearTimeout(t);
   }, [numero, lugares, isOpen, salvo, fechada]);
 
+  // Fechar a janela logo depois de mudar o numero cancelaria o salvamento
+  // acima: salva antes de fechar (a Presenca dos acampantes rele ao fechar).
+  const fecharJanela = async () => {
+    if (salvo && !fechada && mexeu.current) {
+      mexeu.current = false;
+      await salvarConfigOnibus(numero, lugares).catch((e) =>
+        toast({ title: 'Não foi possível salvar o número de ônibus', description: e.message, variant: 'destructive' }));
+    }
+    onClose();
+  };
+
   // Infiltrados (equipantes da escala oficial, com cor) viajam disfarcados:
   // entram sempre, no grupo deles, sem nenhuma marca na folha nem no Excel.
   const pagos = useMemo(
@@ -145,7 +156,8 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
     }
   };
 
-  const SeletorOnibus = ({ p, atual }) => (
+  // Funcao (e nao componente) para o select nao ser recriado a cada desenho.
+  const seletorOnibus = (p, atual) => (
     <select value={atual || ''} disabled={ocupado} onChange={(e) => mover(p, e.target.value)}
       aria-label={`Ônibus de ${p.nome}`}
       className="h-7 rounded border border-white/15 bg-zinc-900 px-1.5 text-xs text-white">
@@ -156,7 +168,7 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog open={isOpen} onOpenChange={(o) => { if (!o) fecharJanela(); }}>
       <DialogContent overlayClassName="bg-black/70" className="bg-neutral-900 border-white/10 text-white sm:max-w-4xl max-h-[90vh] flex flex-col gap-3">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl"><Bus className="w-5 h-5" />Listas dos ônibus</DialogTitle>
@@ -270,7 +282,7 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
                   <li key={chaveDe(p)} className="flex flex-wrap items-center gap-2 text-xs">
                     <span className="flex-1 min-w-[160px] text-gray-100">{p.nome}</span>
                     <GrupoTrilhaTag grupo={p.grupo_trailha} className="text-[10px] px-2" />
-                    <SeletorOnibus p={p} atual={null} />
+                    {seletorOnibus(p, null)}
                   </li>
                 ))}
               </ul>
@@ -326,7 +338,7 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
                             <td className="px-3 py-1"><GrupoTrilhaTag grupo={p.grupo_trailha} className="text-[10px] px-2" /></td>
                             <td className="px-3 py-1 text-gray-400 whitespace-nowrap">{documentoDe(p)}</td>
                             <td className="px-3 py-1 text-gray-400 whitespace-nowrap">{telefoneDe(p)}</td>
-                            {fechada && <td className="px-3 py-1"><SeletorOnibus p={p} atual={o.numero} /></td>}
+                            {fechada && <td className="px-3 py-1">{seletorOnibus(p, o.numero)}</td>}
                           </tr>
                         ))}
                       </tbody>

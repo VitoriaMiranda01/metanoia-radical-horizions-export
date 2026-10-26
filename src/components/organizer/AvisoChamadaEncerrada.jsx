@@ -53,7 +53,7 @@ const AvisoChamadaEncerrada = () => {
           </p>
         </div>
         <Link to="/gerenciar" className="text-xs text-violet-100 underline underline-offset-2 hover:text-white shrink-0">
-          ver a presença
+          ver em Gerenciar Inscrições → Presença dos acampantes
         </Link>
         <button type="button" onClick={fechar} aria-label="Fechar aviso" className="text-violet-200 hover:text-white shrink-0 self-end sm:self-auto">
           <X className="w-4 h-4" />

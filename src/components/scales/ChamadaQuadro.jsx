@@ -8,6 +8,10 @@ import { nomeDaIgreja } from '@/constants/igrejas';
 import { formatarTelefone } from '@/utils/telefone';
 import { fetchChamadaDaEscala, decidirAusente } from '@/services/scalesService';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 import ChamadaAreaDialog from './ChamadaAreaDialog';
 import ChamadaSituacaoLista, { SITUACOES, contaNaChamada, manterEm } from './ChamadaSituacaoLista';
 import { carregarChamada } from '@/services/chamadaStore';
@@ -95,6 +99,27 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
       description: acao === 'manter' ? undefined : 'Está em “Não será escalado”. Dá para trazer de volta em Separados.',
       className: 'bg-green-600 text-white'
     });
+    await carregar(true);
+    recarregarTudo?.();
+  };
+
+  // Botao de seguranca no fim do quadro: manda todos os "Ausentes a definir"
+  // (sem olhar o filtro da busca) para o Nao sera escalado, de uma vez.
+  const [confirmarTodos, setConfirmarTodos] = useState(false);
+  const [enviandoTodos, setEnviandoTodos] = useState(false);
+  const separarTodos = async () => {
+    const lista = (dados?.ausentes || []).filter((p) => contaNaChamada(p.area));
+    setConfirmarTodos(false);
+    setEnviandoTodos(true);
+    let falhas = 0;
+    for (const p of lista) {
+      const r = await decidirAusente(p.escala_id, 'separar');
+      if (!r.success) falhas += 1;
+    }
+    setEnviandoTodos(false);
+    toast(falhas
+      ? { title: 'Alguns não foram', description: `${lista.length - falhas} separados; ${falhas} deram erro. Tente de novo.`, variant: 'destructive' }
+      : { title: `${lista.length} separados`, description: 'Estão em “Não será escalado”. Dá para trazer de volta em Separados.', className: 'bg-green-600 text-white' });
     await carregar(true);
     recarregarTudo?.();
   };
@@ -302,7 +327,33 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
             )}
           </div>
         )}
+
+        {todosAusentes.length > 0 && (
+          <div className="pt-3 border-t border-white/10 flex justify-end">
+            <Button size="sm" variant="outline" onClick={() => setConfirmarTodos(true)} disabled={enviandoTodos}
+              data-dica="Manda todos os ausentes a definir para o Não será escalado de uma vez."
+              className="border-red-500/40 bg-transparent text-red-300 hover:bg-red-500/15 hover:text-red-200">
+              {enviandoTodos ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <UserMinus className="h-4 w-4 mr-1" />}
+              Enviar todos para o Não será escalado ({todosAusentes.length})
+            </Button>
+          </div>
+        )}
       </div>}
+      <AlertDialog open={confirmarTodos} onOpenChange={setConfirmarTodos}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Enviar todos para o Não será escalado?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {todosAusentes.length} {todosAusentes.length === 1 ? 'pessoa ausente sai' : 'pessoas ausentes saem'} das áreas de uma vez.
+              Ninguém é apagado: dá para trazer de volta em Separados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={separarTodos}>Sim, enviar todos</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {areaAberta && (
         <ChamadaAreaDialog area={areaAberta}
           onClose={() => { setAreaAberta(null); carregar(true); recarregarTela?.(); carregarChamada(); }}

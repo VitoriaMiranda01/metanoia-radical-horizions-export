@@ -13,6 +13,7 @@ Leia este arquivo primeiro. Estado atual no topo; mapa do que existe, por assunt
 - Ao terminar cada tarefa: atualizar este arquivo e avisar que pode dar `/clear`. Pedidos novos: sugerir modelo/esforço (ver memória).
 
 ## Estado do evento
+- **Botão "Enviar todos para o Não será escalado"** (26/10, Sonnet baixo, só código, sem migration): no fim do quadro `ChamadaQuadro.jsx`, com confirmação (AlertDialog). Manda TODOS os "Ausentes a definir" (ignora a busca) usando `decidirAusente(..., 'separar')` um a um. Não há bloqueio de escala oficial por ausente pendente (só aviso). Build OK; **NÃO commitado/publicado nem testado logado**.
 - **Crachás dos acampantes** (26/10, Opus médio, migration **20261026c nos dois bancos** (teste primeiro; md5 das 3 funções iguais)). Pedido do Patrick, com o modelo `CRACHA.pdf` (Word, nos Downloads dele):
   - **Gerenciar Inscrições → aba Acampantes → botão "Crachás"** à esquerda de "Listas dos ônibus" (`components/gerenciar/CrachasDialog.jsx`). Só organizador (banco confere `eh_organizador()`).
   - **Quem ganha crachá** = a MESMA lista da recepção e dos ônibus (`_recepcao_participantes`: pago, isento ou com pagamento agendado; "Não pagaram" fica fora; infiltrados da escala oficial com cor, pela mesma regra). Oficial em 26/10: 188 pessoas, 0 sem cor/camisa, 0 infiltrados (escala oficial ainda não lançada).

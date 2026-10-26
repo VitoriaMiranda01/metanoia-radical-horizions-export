@@ -10,7 +10,7 @@ import {
   listarFotosTrilha, buscarFichasParaFoto, linksDasFotos, baixarFoto, salvarFoto, salvarNomeArte, removerFoto,
   dadosDaEdicaoParaArte
 } from '@/services/fotosTrilhaService';
-import { CORES_ARTE, FUNDOS_ARTE, desenharArteGrupo } from '@/utils/arteTrilha';
+import { CORES_ARTE, FUNDOS_ARTE, desenharArteGrupo, desenharArteInfiltrados } from '@/utils/arteTrilha';
 
 /**
  * FOTOS DA TRILHA (24/10/2026, Patrick): banco de fotos da equipe de trilha e
@@ -382,15 +382,22 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
 
   // ---- arte
   // alvo: 'TODOS' ou a cor de um grupo só
-  const doAlvo = (alvo) => (p) => (alvo === 'TODOS' ? !!p.cor : p.cor === alvo);
+  // 'INFILTRADOS' = imagem única só com a área Infiltrados (todas as cores juntas)
+  const ehInfil = (p) => p.papel.area === 'infiltrados';
+  const doAlvo = (alvo) => (p) => {
+    if (alvo === 'INFILTRADOS') return ehInfil(p) && !!p.cor;
+    return alvo === 'TODOS' ? !!p.cor : p.cor === alvo;
+  };
   const pedirArtes = (alvo) => {
     const noAlvo = doAlvo(alvo);
     const semFoto = escalados.filter((p) => noAlvo(p) && !fotoPorId[p.id]);
-    // sem cor só importa quando gera todos os grupos
-    const semCor = alvo === 'TODOS' ? escalados.filter((p) => !p.cor) : [];
+    // sem cor só importa quando gera todos os grupos (ou só os infiltrados)
+    const semCor = alvo === 'TODOS' ? escalados.filter((p) => !p.cor)
+      : alvo === 'INFILTRADOS' ? escalados.filter((p) => ehInfil(p) && !p.cor) : [];
     if (escalados.filter((p) => noAlvo(p) && fotoPorId[p.id]).length === 0) {
       toast({
-        title: alvo === 'TODOS' ? 'Ninguém com foto e cor nos papéis da arte.' : `Ninguém com foto no grupo ${alvo.toLowerCase()}.`,
+        title: alvo === 'TODOS' ? 'Ninguém com foto e cor nos papéis da arte.'
+          : alvo === 'INFILTRADOS' ? 'Nenhum infiltrado com foto e cor.' : `Ninguém com foto no grupo ${alvo.toLowerCase()}.`,
         description: 'Envie as fotos ou confira as cores na escala.',
         variant: 'destructive'
       });
@@ -412,6 +419,12 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
         imagens[p.id] = await createImageBitmap(blob);
       }));
       const novas = [];
+      if (alvo === 'INFILTRADOS') {
+        const pessoas = usados.map((p) => ({ nome: fotoPorId[p.id].nome_arte || nomeCurto(p.nome), cor: p.cor, imagem: imagens[p.id] }));
+        const blob = await desenharArteInfiltrados(pessoas, edicao);
+        setArtes([{ cor: 'INFILTRADOS', blob, url: await lerComoDataUrl(blob) }]);
+        return;
+      }
       for (const cor of CORES_ARTE) {
         const doGrupo = usados.filter((p) => p.cor === cor);
         if (doGrupo.length === 0) continue;
@@ -441,7 +454,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
-  const nomeArquivo = (cor) => `Grupo_${cor.charAt(0) + cor.slice(1).toLowerCase()}.png`;
+  const nomeArquivo = (cor) => (cor === 'INFILTRADOS' ? 'Infiltrados.png' : `Grupo_${cor.charAt(0) + cor.slice(1).toLowerCase()}.png`);
   const baixarTodas = async () => {
     const JSZip = (await import('jszip')).default;
     const zip = new JSZip();
@@ -560,6 +573,12 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
               ))}
             </div>
           </div>
+          <Button onClick={() => pedirArtes('INFILTRADOS')} disabled={!!gerando || carregando}
+            data-dica="Gerar uma imagem só com os infiltrados (fundo branco, cores aglutinadas)."
+            className="h-9 border border-white/20 bg-transparent text-gray-100 hover:bg-white/10">
+            {gerando === 'INFILTRADOS' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+            Gerar só infiltrados
+          </Button>
           <Button onClick={() => pedirArtes('TODOS')} disabled={!!gerando || carregando}
             data-dica="Gerar a arte de todos os grupos. Para um grupo só, use o botão no cabeçalho da cor."
             className="h-9 bg-pink-600 hover:bg-pink-500 text-white">
@@ -646,7 +665,8 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
           <div className="bg-zinc-900 border border-white/10 rounded-lg w-full max-w-6xl p-5 space-y-4 max-h-[94vh] flex flex-col">
             <div className="flex justify-between items-center gap-3">
               <h4 className="text-lg font-bold text-white">
-                {artes.length === 1 ? `Arte do grupo ${artes[0].cor.toLowerCase()}` : `Artes geradas (${artes.length})`}
+                {artes[0].cor === 'INFILTRADOS' ? 'Arte dos infiltrados'
+                  : artes.length === 1 ? `Arte do grupo ${artes[0].cor.toLowerCase()}` : `Artes geradas (${artes.length})`}
               </h4>
               <div className="flex gap-2">
                 {artes.length > 1 && <Button onClick={baixarTodas} className="bg-emerald-600 hover:bg-emerald-500 text-white"><Download className="mr-2 h-4 w-4" /> Baixar todas (.zip)</Button>}
@@ -659,7 +679,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
                   <img src={a.url} alt={`Grupo ${a.cor}`} className="w-full rounded border border-white/10" />
                   <Button size="sm" variant="outline" onClick={() => baixar(a.blob, nomeArquivo(a.cor))}
                     className="border-white/20 bg-transparent text-gray-200 hover:bg-white/10">
-                    <Download className="mr-2 h-4 w-4" /> Grupo {a.cor.toLowerCase()} (PNG)
+                    <Download className="mr-2 h-4 w-4" /> {a.cor === 'INFILTRADOS' ? 'Infiltrados' : `Grupo ${a.cor.toLowerCase()}`} (PNG)
                   </Button>
                 </div>
               ))}

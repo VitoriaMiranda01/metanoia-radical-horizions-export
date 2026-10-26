@@ -353,6 +353,57 @@ export const desenharArteGrupo = async (grupo, edicao, { fundo = 'escuro' } = {}
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 };
 
+/**
+ * Arte só dos infiltrados (26/10/2026, Patrick): uma imagem única, fundo
+ * branco, título e os cartões com as cores aglutinadas (ordem de CORES_ARTE),
+ * o nome embaixo de cada foto na cor do grupo. Linhas centralizadas.
+ * pessoas: [{ nome, cor, imagem }]. Devolve um Blob PNG.
+ */
+export const desenharArteInfiltrados = async (pessoas, edicao) => {
+  const lista = CORES_ARTE.flatMap((cor) => pessoas.filter((p) => p.cor === cor));
+  const AW = 1600;
+  const CW = 170; // cartão (foto)
+  const CH = 212;
+  const GAPX = 40;
+  const LINHA = CH + 62;
+  const topo = 100;
+  const porLinha = Math.max(1, Math.min(8, Math.floor((AW - 40 + GAPX) / (CW + GAPX))));
+  const nLinhas = Math.max(1, Math.ceil(lista.length / porLinha));
+  const AH = topo + nLinhas * LINHA + 20;
+  const canvas = document.createElement('canvas');
+  canvas.width = AW * ESCALA;
+  canvas.height = AH * ESCALA;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(ESCALA, ESCALA);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, AW, AH);
+
+  const titulo = ['INFILTRADOS -', edicao.titulo, ...(edicao.datas || [])].filter(Boolean).join(' ').replace(/\s+/g, ' ');
+  ctx.fillStyle = '#111111';
+  ajustarFonte(ctx, titulo, 900, 36, FONTE, AW - 80);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(titulo, AW / 2, 44);
+
+  for (let l = 0; l < nLinhas; l += 1) {
+    const daLinha = lista.slice(l * porLinha, (l + 1) * porLinha);
+    const larguraLinha = daLinha.length * CW + (daLinha.length - 1) * GAPX;
+    let x = (AW - larguraLinha) / 2;
+    const y = topo + l * LINHA;
+    daLinha.forEach((p) => {
+      const forte = PALETA[p.cor].forte;
+      desenharCartao(ctx, x, y, CW, CH, p.imagem, forte, true);
+      ctx.fillStyle = forte;
+      ajustarFonte(ctx, p.nome, 700, 18, FONTE_TEXTO, CW + GAPX - 6);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.nome, x + CW / 2, y + CH + 22);
+      x += CW + GAPX;
+    });
+  }
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+};
+
 // "04, 05 e 06 de setembro de 2026" -> ['04, 05 e 06 de setembro', 'de 2026']
 export const quebrarDatas = (texto) => {
   const m = String(texto || '').match(/^(.*)\s(de \d{4})$/);

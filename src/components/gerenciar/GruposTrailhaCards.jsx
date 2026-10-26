@@ -145,7 +145,7 @@ const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, 
           {onJoelhos && (
             <button
               type="button" onClick={onJoelhos}
-              data-dica="Imprimir uma folha por acampante da lista da recepção, só com o nome em letra grande, para o Momento de joelhos."
+              data-dica="Imprimir os nomes da lista da recepção em letra grande, dois por folha, para o Momento de joelhos."
               className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
             >
               <BookHeart className="w-4 h-4" />Momento de joelhos

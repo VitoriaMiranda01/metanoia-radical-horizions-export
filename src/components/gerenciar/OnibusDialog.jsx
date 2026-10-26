@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
-import { estaQuitada } from '@/services/paymentService';
 import {
   desfazerDivisaoOnibus, fecharDivisaoOnibus, fetchRecepcaoLista, moverDeOnibus, salvarConfigOnibus
 } from '@/services/recepcaoService';
@@ -14,7 +13,9 @@ import { exportarOnibusExcel, imprimirOnibus } from '@/utils/onibusImpressao';
 import { dataHora } from '@/utils/recepcao';
 
 /**
- * Listas dos onibus (Patrick, 12/10/2026). So acampantes que pagaram; os
+ * Listas dos onibus (Patrick, 12/10/2026). Desde 26/10/2026 a lista e a
+ * MESMA da recepcao (e dos crachas): pagos, isentos e com pagamento agendado,
+ * infiltrados pela mesma regra -- quem esta em "Nao pagaram" fica de fora. Os
  * grupos entram na ordem fixa das cores e, dentro do grupo, por nome.
  * O numero de onibus (e, se quiser, os lugares de cada um) e escolhido aqui.
  * Imprimir: uma folha A4 por onibus. Excel: uma aba por onibus.
@@ -36,7 +37,8 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
   const [lugares, setLugares] = useState([]);
   const [aberto, setAberto] = useState(null);
   const [geradaEm, setGeradaEm] = useState(agoraTexto());
-  // Estado salvo no banco: { fechada_em, fechada_por, porPessoa: Map(chave -> onibus) }.
+  // Estado salvo no banco: { fechada_em, fechada_por, porPessoa: Map(chave -> onibus),
+  // naLista: Set(chave) -- quem esta na lista da recepcao }.
   const [salvo, setSalvo] = useState(null);
   const [carregando, setCarregando] = useState(false);
   const [ocupado, setOcupado] = useState(false);
@@ -49,7 +51,8 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
       const r = await fetchRecepcaoLista();
       const porPessoa = new Map();
       r.pessoas.forEach((p) => { if (p.onibus) porPessoa.set(`${p.tipo}:${p.id}`, p.onibus); });
-      setSalvo({ fechada_em: r.onibus.fechada_em || null, fechada_por: r.onibus.fechada_por || null, porPessoa });
+      const naLista = new Set(r.pessoas.map((p) => `${p.tipo}:${p.id}`));
+      setSalvo({ fechada_em: r.onibus.fechada_em || null, fechada_por: r.onibus.fechada_por || null, porPessoa, naLista });
       mexeu.current = false;
       setNumero(Math.min(MAX_ONIBUS, Math.max(1, Number(r.onibus.numero) || 4)));
       setLugares((r.onibus.lugares || []).map((l) => (Number(l) > 0 ? String(l) : '')));
@@ -88,18 +91,19 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
     onClose();
   };
 
-  // Infiltrados (equipantes da escala oficial, com cor) viajam disfarcados:
-  // entram sempre, no grupo deles, sem nenhuma marca na folha nem no Excel.
+  // Quem vai: a lista da recepcao (mesma regra do banco, _recepcao_participantes).
+  // Infiltrados (equipantes da escala oficial, com cor) viajam disfarcados, no
+  // grupo deles, sem nenhuma marca na folha nem no Excel.
   const pagos = useMemo(
-    () => acampantes.filter((a) => a.infiltrado || estaQuitada(a.status_pagamento)),
-    [acampantes]
+    () => (salvo ? acampantes.filter((a) => salvo.naLista.has(chaveDe(a))) : []),
+    [acampantes, salvo]
   );
   const qtdInfiltrados = pagos.filter((a) => a.infiltrado).length;
   const naoPagos = acampantes.filter((a) => !a.infiltrado).length - (pagos.length - qtdInfiltrados);
 
   const { onibus, semLugar } = useMemo(() => {
     if (fechada) {
-      const vao = acampantes.filter((a) => salvo.porPessoa.has(chaveDe(a)) || a.infiltrado || estaQuitada(a.status_pagamento));
+      const vao = acampantes.filter((a) => salvo.porPessoa.has(chaveDe(a)) || salvo.naLista.has(chaveDe(a)));
       return montarOnibusFechados(vao, numero, lugares, (a) => salvo.porPessoa.get(chaveDe(a)) || null);
     }
     return dividirEmOnibus(pagos, numero, lugares.slice(0, numero));
@@ -173,9 +177,9 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl"><Bus className="w-5 h-5" />Listas dos ônibus</DialogTitle>
           <DialogDescription className="text-gray-400">
-            Só acampantes que pagaram: <span className="text-white font-medium">{pagos.length - qtdInfiltrados}</span>
+            Mesma lista da recepção (pagos, isentos e com pagamento agendado): <span className="text-white font-medium">{pagos.length - qtdInfiltrados}</span>
             {qtdInfiltrados > 0 && <> + {qtdInfiltrados} {qtdInfiltrados === 1 ? 'infiltrado' : 'infiltrados'} (saem na lista como acampantes)</>}
-            {naoPagos > 0 && <> · {naoPagos} {naoPagos === 1 ? 'ainda não pagou e fica' : 'ainda não pagaram e ficam'} de fora</>}.
+            {naoPagos > 0 && <> · {naoPagos} {naoPagos === 1 ? 'está em “Não pagaram” e fica' : 'estão em “Não pagaram” e ficam'} de fora</>}.
             Os grupos entram na ordem das cores (Vermelho, Amarelo, Verde, Azul, Roxo) e, dentro do grupo, por nome.
             {fechada ? ' A divisão está fechada: só muda a mão.' : ' A divisão é refeita sempre que algo muda, até ser fechada.'}
           </DialogDescription>
@@ -273,7 +277,7 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
             <p className="flex gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
               {fechada
-                ? <span>{semLugar.length} {semLugar.length === 1 ? 'pessoa pagou e está' : 'pessoas pagaram e estão'} sem ônibus. Escolha o ônibus de cada uma.</span>
+                ? <span>{semLugar.length} {semLugar.length === 1 ? 'pessoa entrou na lista e está' : 'pessoas entraram na lista e estão'} sem ônibus. Escolha o ônibus de cada uma.</span>
                 : <span>Faltam {semLugar.length} {semLugar.length === 1 ? 'lugar' : 'lugares'}: os lugares informados não dão para todos. Quem sobrou vai na aba "Sem lugar" do Excel e não sai na impressão.</span>}
             </p>
             {fechada && (
@@ -291,7 +295,7 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
         )}
 
         <div className="flex-1 min-h-0 max-h-[50vh] overflow-y-auto pr-1 space-y-2">
-          {!pagos.length && <p className="text-center py-10 text-gray-500">Nenhum acampante pagou ainda.</p>}
+          {!pagos.length && <p className="text-center py-10 text-gray-500">{salvo ? 'Ninguém na lista da recepção ainda.' : 'Carregando…'}</p>}
           {onibus.map((o) => {
             const expandido = aberto === o.numero;
             return (

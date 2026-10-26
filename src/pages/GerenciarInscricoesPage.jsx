@@ -15,6 +15,7 @@ import GruposTrailhaCards from '@/components/gerenciar/GruposTrailhaCards';
 import GruposTrailhaModal from '@/components/gerenciar/GruposTrailhaModal';
 import VinculosAcampantesDialog from '@/components/gerenciar/VinculosAcampantesDialog';
 import OnibusDialog from '@/components/gerenciar/OnibusDialog';
+import CrachasDialog from '@/components/gerenciar/CrachasDialog';
 import PresencaAcampantesDialog, { usePresencaAcampantes } from '@/components/gerenciar/PresencaAcampantesDialog';
 import { useVinculosAcampantes } from '@/hooks/useVinculosAcampantes';
 import { textoDosVinculos } from '@/utils/vinculosAcampantes';
@@ -116,6 +117,8 @@ const GerenciarInscricoesPage = () => {
   const [vinculosAberto, setVinculosAberto] = useState(false);
   // Listas dos onibus (12/10/2026).
   const [onibusAberto, setOnibusAberto] = useState(false);
+  // Crachas (26/10/2026): mesma lista da recepcao e dos onibus.
+  const [crachasAberto, setCrachasAberto] = useState(false);
   // Ao fechar as listas, a Presenca dos Acampantes relê os onibus.
   const [onibusFechadoEm, setOnibusFechadoEm] = useState(0);
   // Presenca dos acampantes (recepcao da igreja): botao + janela (26/10/2026).
@@ -512,6 +515,7 @@ const GerenciarInscricoesPage = () => {
                       conflitosPorGrupo={vinc.conflitosPorGrupo}
                       resumoVinculos={vinc.carregado ? { sugestoes: vinc.sugestoes.length, conflitos: vinc.conflitos.length } : null}
                       onAbrirVinculos={() => setVinculosAberto(true)}
+                      onAbrirCrachas={() => setCrachasAberto(true)}
                       onAbrirOnibus={() => setOnibusAberto(true)}
                       onAbrirPresenca={() => setPresencaAberta(true)}
                       resumoPresenca={presenca.resumo}
@@ -612,6 +616,15 @@ const GerenciarInscricoesPage = () => {
             isOpen={onibusAberto}
             onClose={() => { setOnibusAberto(false); setOnibusFechadoEm(Date.now()); }}
             acampantes={participantes}
+          />
+
+          <CrachasDialog
+            isOpen={crachasAberto}
+            onClose={() => setCrachasAberto(false)}
+            vinc={vinc}
+            onRealocar={handleRealocarGrupoTrailha}
+            participantes={participantes}
+            onAlterado={async () => { await Promise.all([fetchAcampantesSupabase(), carregarInfiltrados(), carregarEquipantes()]); setAcampanteSalvoEm(Date.now()); }}
           />
 
           <PresencaAcampantesDialog

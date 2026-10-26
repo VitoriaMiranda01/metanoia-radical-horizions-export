@@ -32,8 +32,9 @@ export const comoParticipante = (p) => ({ ...p, grupo_trailha: p.grupo || null }
 /**
  * Onibus de cada um, igual as Listas dos onibus do organizador. Divisao
  * fechada: o que foi gravado (inclusive quem o organizador pos a mao).
- * Aberta: a conta ao vivo, com o numero de onibus e os lugares salvos -- so
- * quem pagou (infiltrado entra sempre, vem como pago).
+ * Aberta: a conta ao vivo, com o numero de onibus e os lugares salvos. Vai
+ * todo mundo da lista: o banco ja so manda pago, isento ou com pagamento
+ * agendado (26/10/2026: antes o agendado ficava fora dos onibus).
  * Devolve { onibus, semLugar, fechada, porPessoa: Map(chave -> numero) }.
  */
 export const onibusDaRecepcao = (pessoas, cfg = {}) => {
@@ -42,8 +43,8 @@ export const onibusDaRecepcao = (pessoas, cfg = {}) => {
   const lugares = Array.isArray(cfg.lugares) ? cfg.lugares : [];
   const lista = pessoas.map(comoParticipante);
   const r = fechada
-    ? montarOnibusFechados(lista.filter((p) => p.pago || p.onibus), numero, lugares, (p) => p.onibus || null)
-    : dividirEmOnibus(lista.filter((p) => p.pago), numero, lugares.slice(0, numero));
+    ? montarOnibusFechados(lista, numero, lugares, (p) => p.onibus || null)
+    : dividirEmOnibus(lista, numero, lugares.slice(0, numero));
   const porPessoa = new Map();
   r.onibus.forEach((o) => o.pessoas.forEach((p) => porPessoa.set(chave(p), o.numero)));
   return { ...r, fechada, porPessoa };

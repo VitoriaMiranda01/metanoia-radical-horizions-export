@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, UserCheck, AlertTriangle, Link2, Bus, ClipboardCheck, Flag } from 'lucide-react';
+import { Users, UserCheck, AlertTriangle, Link2, Bus, ClipboardCheck, Flag, Contact2 } from 'lucide-react';
 import { getGroupColor, getGroupStats, GROUPS } from '@/utils/gruposTrailha';
 import { motion } from 'framer-motion';
 
@@ -75,8 +75,8 @@ const GroupCard = ({ name, data, onClick, conflitos = 0 }) => {
 // juntos nela, e o botao abre a visao geral (sugestoes da inscricao etc.).
 // Ao lado, as listas dos onibus (OnibusDialog) e a presenca dos acampantes
 // (PresencaAcampantesDialog, 26/10/2026), que avisa quando a recepcao
-// encerra a chamada.
-const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, resumoVinculos = null, onAbrirVinculos, onAbrirOnibus, onAbrirPresenca, resumoPresenca = null, infiltradosSemCor = 0 }) => {
+// encerra a chamada. Antes dos onibus, os Crachas (CrachasDialog, 26/10/2026).
+const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, resumoVinculos = null, onAbrirVinculos, onAbrirCrachas, onAbrirOnibus, onAbrirPresenca, resumoPresenca = null, infiltradosSemCor = 0 }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-4">
@@ -85,7 +85,7 @@ const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, 
         <div className="h-px bg-white/10 flex-1" />
       </div>
 
-      {(onAbrirVinculos || onAbrirOnibus || onAbrirPresenca) && (
+      {(onAbrirVinculos || onAbrirCrachas || onAbrirOnibus || onAbrirPresenca) && (
         <div className="flex flex-wrap justify-center gap-2">
           {onAbrirVinculos && (
           <button
@@ -104,10 +104,19 @@ const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, 
             )}
           </button>
           )}
+          {onAbrirCrachas && (
+            <button
+              type="button" onClick={onAbrirCrachas}
+              data-dica="Gerar e imprimir os crachás (nome, cor do grupo e número da camisa) e corrigir nome, cor ou camisa de alguém."
+              className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
+            >
+              <Contact2 className="w-4 h-4" />Crachás
+            </button>
+          )}
           {onAbrirOnibus && (
             <button
               type="button" onClick={onAbrirOnibus}
-              data-dica="Dividir os acampantes que pagaram pelos ônibus, por grupo, e imprimir uma lista por ônibus (ou baixar em Excel)."
+              data-dica="Dividir pelos ônibus os acampantes da lista da recepção (pagos, isentos e com pagamento agendado), por grupo, por grupo, e imprimir uma lista por ônibus (ou baixar em Excel)."
               className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
             >
               <Bus className="w-4 h-4" />Listas dos ônibus

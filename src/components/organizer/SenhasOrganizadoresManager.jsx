@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { KeyRound, ShieldCheck, RefreshCw, Copy, Check, MessageSquare, X, AlertTriangle, Eye, EyeOff, DoorOpen, HeartPulse, UserPlus, Trash2 } from 'lucide-react';
+import { KeyRound, ShieldCheck, RefreshCw, Copy, Check, MessageSquare, X, AlertTriangle, Eye, EyeOff, DoorOpen, HeartPulse, UserPlus, Trash2, ClipboardCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -544,7 +544,7 @@ const SenhasOrganizadoresManager = () => {
           </div>
           <p className="text-gray-400 text-sm mb-5">
             Login <strong className="text-gray-200">Apoio</strong> da tela de entrada: a pessoa entra com o nome
-            cadastrado aqui e só vê a tela da área dela (saúde dos acampantes ou portaria). A conta nasce com uma senha
+            cadastrado aqui e só vê a tela da área dela (saúde dos acampantes, portaria ou recepção dos acampantes). A conta nasce com uma senha
             inicial — ao entrar, ela cria a própria. Se esquecer, gere uma senha nova.
           </p>
 
@@ -559,6 +559,7 @@ const SenhasOrganizadoresManager = () => {
               <select value={novoApoioArea} onChange={(e) => setNovoApoioArea(e.target.value)}
                 className="h-10 rounded-md border border-white/20 bg-zinc-900 px-3 text-sm text-white">
                 <option value="portaria">Portaria</option>
+                <option value="recepcao">Recepção (acampantes)</option>
                 <option value="saude">Saúde</option>
               </select>
             </div>
@@ -593,6 +594,10 @@ const SenhasOrganizadoresManager = () => {
                         {c.area === 'portaria' ? (
                           <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/15">
                             <DoorOpen className="w-3 h-3 mr-1" />portaria
+                          </Badge>
+                        ) : c.area === 'recepcao' ? (
+                          <Badge className="bg-violet-500/15 text-violet-300 border-violet-500/30 hover:bg-violet-500/15">
+                            <ClipboardCheck className="w-3 h-3 mr-1" />recepção
                           </Badge>
                         ) : (
                           <Badge className="bg-sky-500/15 text-sky-300 border-sky-500/30 hover:bg-sky-500/15">

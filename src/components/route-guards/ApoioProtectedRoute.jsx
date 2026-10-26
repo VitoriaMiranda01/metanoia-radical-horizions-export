@@ -4,10 +4,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 // Tela de cada area de apoio. Conta antiga sem area = saude.
-export const rotaDoApoio = (apoio) => (apoio?.area === 'portaria' ? '/portaria' : '/saude');
+const ROTA_DA_AREA = { portaria: '/portaria', recepcao: '/recepcao' };
+export const rotaDoApoio = (apoio) => ROTA_DA_AREA[apoio?.area] || '/saude';
 
 /**
- * Telas de apoio: /saude (lider da saude) e /portaria (24/10/2026). Entra o
+ * Telas de apoio: /saude (lider da saude), /portaria (24/10/2026) e
+ * /recepcao (recepcao dos acampantes na igreja, 25/10/2026). Entra o
  * login de apoio DA AREA -- quem e de outra area vai para a propria tela -- e
  * o organizador tambem, para conferir o que eles veem. O banco confere de
  * novo (saude_acampantes, portaria_lista...): esconder a rota e so conforto.

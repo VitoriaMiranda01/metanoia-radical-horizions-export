@@ -8,7 +8,10 @@ import { nomeDoPais } from '@/constants/nacionalidades';
  * divide os acampantes que PAGARAM pelo numero de onibus (listas iguais, no
  * maximo 1 pessoa de diferenca) e vai enchendo o onibus 1 com os grupos na
  * ordem fixa das cores; quando enche, o resto do grupo comeca o proximo onibus.
- * Dentro do grupo, ordem alfabetica. Recalculada sempre -- nada fica salvo.
+ * Dentro do grupo, ordem alfabetica. Enquanto a divisao nao e fechada, e
+ * recalculada sempre (o numero de onibus e os lugares ficam salvos, para a
+ * recepcao ver a mesma conta); fechada, vale o que foi gravado
+ * (montarOnibusFechados, 25/10/2026).
  *
  * Lugares por onibus sao opcionais: um onibus menor recebe no maximo os seus
  * lugares e a diferenca vai para os outros. Se nao couber todo mundo, quem
@@ -61,30 +64,57 @@ export const dividirEmOnibus = (acampantes, numero, lugares = []) => {
   const caps = Array.from({ length: n }, (_, i) => lugares[i] ?? null);
 
   // Ordem fixa das cores; quem esta sem grupo vai no fim.
-  const fila = [];
-  [...GROUPS, null].forEach((g) => {
-    acampantes
-      .filter((a) => (g ? a.grupo_trailha === g : !GROUPS.includes(a.grupo_trailha)))
-      .sort(porNome)
-      .forEach((a) => fila.push(a));
-  });
+  const fila = ordemDaFila(acampantes);
 
   const { tamanhos } = tamanhosDosOnibus(fila.length, caps);
   let pos = 0;
   const onibus = tamanhos.map((t, i) => {
     const pessoas = fila.slice(pos, pos + t);
     pos += t;
-    const composicao = [];
-    pessoas.forEach((p) => {
-      const grupo = GROUPS.includes(p.grupo_trailha) ? p.grupo_trailha : 'Sem grupo';
-      const ultimo = composicao[composicao.length - 1];
-      if (ultimo && ultimo.grupo === grupo) ultimo.qtd += 1;
-      else composicao.push({ grupo, qtd: 1 });
-    });
-    return { numero: i + 1, lugares: caps[i] && Number(caps[i]) > 0 ? Number(caps[i]) : null, pessoas, composicao };
+    return { numero: i + 1, lugares: caps[i] && Number(caps[i]) > 0 ? Number(caps[i]) : null, pessoas, composicao: composicaoDe(pessoas) };
   });
 
   return { onibus, semLugar: fila.slice(pos) };
+};
+
+// Grupos na ordem fixa das cores e, dentro do grupo, por nome.
+const ordemDaFila = (lista) => {
+  const fila = [];
+  [...GROUPS, null].forEach((g) => {
+    lista
+      .filter((a) => (g ? a.grupo_trailha === g : !GROUPS.includes(a.grupo_trailha)))
+      .sort(porNome)
+      .forEach((a) => fila.push(a));
+  });
+  return fila;
+};
+
+const composicaoDe = (pessoas) => {
+  const composicao = [];
+  pessoas.forEach((p) => {
+    const grupo = GROUPS.includes(p.grupo_trailha) ? p.grupo_trailha : 'Sem grupo';
+    const ultimo = composicao[composicao.length - 1];
+    if (ultimo && ultimo.grupo === grupo) ultimo.qtd += 1;
+    else composicao.push({ grupo, qtd: 1 });
+  });
+  return composicao;
+};
+
+/**
+ * Divisao FECHADA (25/10/2026, migration 20261025g): o organizador gravou
+ * quem vai em qual onibus e pode mudar cada um a mao. onibusDe(p) devolve o
+ * numero gravado (ou null). Mesmo formato de dividirEmOnibus; quem pagou e
+ * ficou sem onibus (pagou depois de fechar, ou foi tirado) vai em semLugar.
+ */
+export const montarOnibusFechados = (vao, numero, lugares = [], onibusDe) => {
+  const n = Math.max(1, Math.floor(Number(numero) || 1));
+  const fila = ordemDaFila(vao);
+  const onibus = Array.from({ length: n }, (_, i) => {
+    const pessoas = fila.filter((p) => onibusDe(p) === i + 1);
+    const cap = Number(lugares[i]) > 0 ? Number(lugares[i]) : null;
+    return { numero: i + 1, lugares: cap, pessoas, composicao: composicaoDe(pessoas) };
+  });
+  return { onibus, semLugar: fila.filter((p) => !onibusDe(p)) };
 };
 
 export const textoComposicao = (composicao) =>

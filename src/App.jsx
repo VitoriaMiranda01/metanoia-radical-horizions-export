@@ -46,6 +46,7 @@ const PagamentosPendentesPage = carregarPagina(() => import('@/pages/PagamentosP
 const SenhasParceirosPage = carregarPagina(() => import('@/pages/SenhasParceirosPage'));
 const SaudePage = carregarPagina(() => import('@/pages/SaudePage'));
 const PortariaPage = carregarPagina(() => import('@/pages/PortariaPage'));
+const RecepcaoPage = carregarPagina(() => import('@/pages/RecepcaoPage'));
 
 const Carregando = () => (
   <div className="min-h-screen flex items-center justify-center bg-black text-gray-400 text-sm">Carregando...</div>
@@ -186,6 +187,15 @@ function App() {
               element={
                 <ApoioProtectedRoute area="portaria">
                   <PortariaPage />
+                </ApoioProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/recepcao"
+              element={
+                <ApoioProtectedRoute area="recepcao">
+                  <RecepcaoPage />
                 </ApoioProtectedRoute>
               }
             />

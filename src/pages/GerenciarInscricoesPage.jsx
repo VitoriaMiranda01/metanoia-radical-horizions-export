@@ -15,6 +15,7 @@ import GruposTrailhaCards from '@/components/gerenciar/GruposTrailhaCards';
 import GruposTrailhaModal from '@/components/gerenciar/GruposTrailhaModal';
 import VinculosAcampantesDialog from '@/components/gerenciar/VinculosAcampantesDialog';
 import OnibusDialog from '@/components/gerenciar/OnibusDialog';
+import PresencaAcampantesQuadro from '@/components/gerenciar/PresencaAcampantesQuadro';
 import { useVinculosAcampantes } from '@/hooks/useVinculosAcampantes';
 import { textoDosVinculos } from '@/utils/vinculosAcampantes';
 import AcampantesStatsCards from '@/components/gerenciar/AcampantesStatsCards';
@@ -115,6 +116,8 @@ const GerenciarInscricoesPage = () => {
   const [vinculosAberto, setVinculosAberto] = useState(false);
   // Listas dos onibus (12/10/2026).
   const [onibusAberto, setOnibusAberto] = useState(false);
+  // Ao fechar as listas, a Presenca dos Acampantes relê os onibus.
+  const [onibusFechadoEm, setOnibusFechadoEm] = useState(0);
 
   useEffect(() => {
     carregarEquipantes();
@@ -511,6 +514,11 @@ const GerenciarInscricoesPage = () => {
                     />
                   </div>
 
+                  {/* Presenca dos Acampantes (25/10/2026): o que a recepcao da igreja marcou. */}
+                  <div className="mb-8">
+                    <PresencaAcampantesQuadro atualizar={onibusFechadoEm} />
+                  </div>
+
                   <AcampantesTable
                     data={acampantesDaTabela}
                     loading={loadingAcampantes}
@@ -602,7 +610,7 @@ const GerenciarInscricoesPage = () => {
 
           <OnibusDialog
             isOpen={onibusAberto}
-            onClose={() => setOnibusAberto(false)}
+            onClose={() => { setOnibusAberto(false); setOnibusFechadoEm(Date.now()); }}
             acampantes={participantes}
           />
 

@@ -14,7 +14,7 @@ import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimi
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
-import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users, Church, BookUser, HeartPulse, Star, DoorOpen } from 'lucide-react';
+import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, DollarSign, CalendarDays, Tag, Plus, Trash2, Clock, Save, RefreshCw, Users, Church, BookUser, HeartPulse, Star, DoorOpen, ClipboardCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
@@ -468,6 +468,12 @@ const OrganizerConfigPage = () => {
             data-dica="Abrir a tela da portaria: entrada dos equipantes, pagamentos feitos na hora e observações da portaria."
             className="border-emerald-500/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 hover:text-white">
             <Link to="/portaria"><DoorOpen className="w-4 h-4 mr-2" />Portaria</Link>
+          </Button>
+          {/* A tela da recepcao na igreja (login Apoio, 25/10/2026): chamada dos acampantes. */}
+          <Button asChild variant="outline"
+            data-dica="Abrir a tela da recepção: chamada dos acampantes na igreja, termo de responsabilidade e ônibus."
+            className="border-violet-500/40 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 hover:text-white">
+            <Link to="/recepcao"><ClipboardCheck className="w-4 h-4 mr-2" />Recepção</Link>
           </Button>
           </div>
         </motion.div>

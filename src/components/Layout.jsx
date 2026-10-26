@@ -7,6 +7,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { fetchContadoresDoMenu } from '@/services/menuContadoresService';
 import AvisoBackup from '@/components/organizer/AvisoBackup';
+import AvisoChamadaEncerrada from '@/components/organizer/AvisoChamadaEncerrada';
 
 // Selo vermelho de "tem coisa te esperando aqui". Some sozinho quando o
 // numero e zero -- selo permanente vira paisagem e para de ser aviso.
@@ -243,6 +244,8 @@ const Layout = ({ children, largo = false }) => {
 
       {/* So a conta Desenvolvedores chega a ver: o banco devolve nada para os outros. */}
       {isOrganizer && <AvisoBackup />}
+      {/* Recepcao da igreja encerrou a chamada dos acampantes (25/10/2026). */}
+      {isOrganizer && <AvisoChamadaEncerrada />}
 
       {/* largo="tela": a tela inteira do monitor (17/10/2026: Pagamentos ainda
           pedia barra de rolagem lateral para ver o grupo do WhatsApp). */}

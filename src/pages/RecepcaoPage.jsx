@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  AlertTriangle, ArrowLeft, Baby, Bus, CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, FileText, Flag,
+  AlertTriangle, ArrowLeft, Baby, BookOpen, Bus, CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, FileText, Flag,
   Loader2, Lock, LogOut, MessageSquare, Phone, RefreshCw, Search, Undo2, Unlock, UserCheck, X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,10 +35,11 @@ import {
  * chegou, em mais de um aparelho ao mesmo tempo: a tela confere a assinatura
  * do banco a cada 5 s e o banco barra presenca em dobro.
  *
- * Aparecem todos os acampantes da edicao, pagos ou nao (por enquanto), e os
- * infiltrados da escala oficial como acampantes (sigilo: nada os diferencia
- * aqui). "Chegou" pede "ciente do termo"; menor de idade mostra o contato de
- * emergencia e pede "responsavel ciente". "Encerrar chamada" avisa os
+ * Aparecem so os acampantes pagos (isento conta) ou com pagamento agendado
+ * (20261026b; a tela nao mostra a situacao do pagamento), e os infiltrados da
+ * escala oficial como acampantes (sigilo: nada os diferencia aqui). "Chegou"
+ * pede "ciente do termo" (o mesmo da inscricao); menor de idade pede tambem
+ * "autorizacao dos responsaveis entregue". "Encerrar chamada" avisa os
  * organizadores no painel (e a recepcao avisa tambem pelo WhatsApp).
  * Organizador tambem abre esta tela (Configuracoes -> Recepcao).
  */
@@ -131,9 +132,23 @@ const ChegouDialog = ({ pessoa, numeroOnibus, onFechar, onFeito }) => {
               <span className="inline-flex items-center gap-1 text-gray-300"><Bus className="w-4 h-4" />
                 {numeroOnibus ? `Ônibus ${numeroOnibus}` : 'Sem ônibus'}
               </span>
-              {!pessoa.pago && (
-                <span className="text-xs px-2 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/15 text-amber-200">Pagamento em aberto</span>
-              )}
+            </div>
+
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-2">
+              <p className="text-sm text-gray-300 flex items-center gap-2">
+                <FileText className="w-4 h-4" />Termo de responsabilidade
+              </p>
+              <p className="text-xs text-gray-400">
+                É o mesmo termo aceito na inscrição e repassado no grupo de WhatsApp dos acampantes.
+                {' '}Na inscrição: {pessoa.termo_inscricao ? <span className="text-emerald-300">aceito (“Estou Ciente”)</span> : <span className="text-amber-300">não consta aceite</span>}
+                {' · '}<a href={linkTermo()} target="_blank" rel="noopener noreferrer" className="text-sky-300 underline underline-offset-2">abrir o termo (PDF)</a>
+              </p>
+              <label className="flex items-start gap-3 cursor-pointer pt-1">
+                <Checkbox checked={termo} onCheckedChange={(v) => setTermo(v === true)} className={CAIXA} />
+                <span className="text-sm text-gray-100">
+                  {pessoa.menor ? 'Termo de responsabilidade' : 'Ciente do termo de responsabilidade'}
+                </span>
+              </label>
             </div>
 
             {pessoa.menor && (
@@ -141,35 +156,21 @@ const ChegouDialog = ({ pessoa, numeroOnibus, onFechar, onFeito }) => {
                 <p className="flex items-center gap-2 font-semibold text-amber-200">
                   <Baby className="w-4 h-4" />Menor de idade{pessoa.idade != null ? ` (${pessoa.idade} anos)` : ''}
                 </p>
-                <p className="text-sm text-amber-100/90">Precisa da autorização do responsável. Confira o contato de emergência:</p>
-                <div className="text-sm space-y-1">
+                <p className="text-sm text-amber-100/90">
+                  Precisa entregar a <strong>autorização dos responsáveis</strong>. Se não trouxe, o responsável assina
+                  agora, no papel da recepção, e entrega.
+                </p>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <Checkbox checked={responsavel} onCheckedChange={(v) => setResponsavel(v === true)} className={CAIXA} />
+                  <span className="text-sm text-gray-100">Autorização dos responsáveis entregue</span>
+                </label>
+                <div className="text-sm space-y-1 pt-1 border-t border-amber-500/20">
+                  <p className="text-xs text-amber-100/70 pt-1">Contato de emergência:</p>
                   <p className="text-white">{pessoa.emergencia_nome || 'Contato de emergência não informado'}</p>
                   <Telefone numero={pessoa.emergencia_telefone} />
                 </div>
               </div>
             )}
-
-            <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-2">
-              <p className="text-sm text-gray-300 flex items-center gap-2">
-                <FileText className="w-4 h-4" />Termo de responsabilidade
-              </p>
-              <p className="text-xs text-gray-400">
-                Na inscrição: {pessoa.termo_inscricao ? <span className="text-emerald-300">aceito (“Estou Ciente”)</span> : <span className="text-amber-300">não consta aceite</span>}
-                {' · '}<a href={linkTermo()} target="_blank" rel="noopener noreferrer" className="text-sky-300 underline underline-offset-2">abrir o termo (PDF)</a>
-              </p>
-              <label className="flex items-start gap-3 cursor-pointer pt-1">
-                <Checkbox checked={termo} onCheckedChange={(v) => setTermo(v === true)} className={CAIXA} />
-                <span className="text-sm text-gray-100">
-                  {pessoa.menor ? 'O acampante está ciente do termo de responsabilidade' : 'Ciente do termo de responsabilidade'}
-                </span>
-              </label>
-              {pessoa.menor && (
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <Checkbox checked={responsavel} onCheckedChange={(v) => setResponsavel(v === true)} className={CAIXA} />
-                  <span className="text-sm text-gray-100">Responsável ciente</span>
-                </label>
-              )}
-            </div>
           </div>
         )}
 
@@ -186,6 +187,19 @@ const ChegouDialog = ({ pessoa, numeroOnibus, onFechar, onFeito }) => {
     </Dialog>
   );
 };
+
+// ---- Janela "Como usar a recepcao" (guia em /guia-recepcao.html) ---------------------
+const GuiaDialog = ({ aberto, onFechar }) => (
+  <Dialog open={aberto} onOpenChange={(a) => { if (!a) onFechar(); }}>
+    <DialogContent className="bg-zinc-950 border-white/10 text-white max-w-3xl w-[95vw] h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogHeader className="px-5 py-3 border-b border-white/10 text-left">
+        <DialogTitle>Como usar a recepção</DialogTitle>
+        <DialogDescription className="sr-only">Guia passo a passo da tela da recepção dos acampantes.</DialogDescription>
+      </DialogHeader>
+      {aberto && <iframe title="Como usar a recepção" src="/guia-recepcao.html" className="flex-1 w-full border-0 bg-[#0d1511]" />}
+    </DialogContent>
+  </Dialog>
+);
 
 // ---- Janela "Encerrar chamada" -------------------------------------------------------
 const EncerrarDialog = ({ aberto, numeros, onFechar, onFeito }) => {
@@ -313,16 +327,10 @@ const CartaoPessoa = ({ p, numeroOnibus, travada, onChegou, onAtualizado }) => {
                 Chegou às {horaCurta(p.chegou_em)}
               </span>
             )}
-            {!p.pago && (
-              <span className="text-xs px-2.5 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/15 text-amber-200">Pagamento em aberto</span>
-            )}
-            <span className={`text-[11px] ${p.termo_inscricao ? 'text-gray-400' : 'text-amber-300'}`}>
-              Termo na inscrição: {p.termo_inscricao ? 'aceito' : 'não consta'}
-            </span>
           </div>
           {chegou && (
             <p className="text-[11px] text-gray-500 mt-1">
-              Marcado por {maiusculas(quemFez(p.chegou_por))} · ciente do termo{p.responsavel_ciente ? ' · responsável ciente' : ''}
+              Marcado por {maiusculas(quemFez(p.chegou_por))} · ciente do termo{p.responsavel_ciente ? ' · autorização dos responsáveis entregue' : ''}
             </p>
           )}
         </div>
@@ -446,6 +454,7 @@ const RecepcaoPage = () => {
   const [chegando, setChegando] = useState(null);
   const [encerrarAberto, setEncerrarAberto] = useState(false);
   const [reabrindo, setReabrindo] = useState(false);
+  const [guiaAberto, setGuiaAberto] = useState(false);
 
   const nomeDaConta = apoioUser?.nome || organizadorUser?.nome || user?.nome || '';
   const ehOrganizador = !apoioUser && (!!organizadorUser || ['organizador', 'organizador-aprovador'].includes(user?.role));
@@ -586,6 +595,12 @@ const RecepcaoPage = () => {
     </div>
   ) : (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <button type="button" onClick={() => setGuiaAberto(true)}
+          className="inline-flex items-center gap-1.5 text-sm text-emerald-300 hover:text-emerald-200 underline-offset-2 hover:underline">
+          <BookOpen className="w-4 h-4" />Como usar a recepção
+        </button>
+      </div>
       {encerrada && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3">
           <Lock className="w-5 h-5 text-red-300 shrink-0" />
@@ -743,6 +758,7 @@ const RecepcaoPage = () => {
         </div>
       )}
 
+      <GuiaDialog aberto={guiaAberto} onFechar={() => setGuiaAberto(false)} />
       <ChegouDialog pessoa={chegando} numeroOnibus={chegando ? onibusDe(chegando) : null} onFechar={() => setChegando(null)}
         onFeito={() => { setChegando(null); carregar(true); }} />
       <EncerrarDialog aberto={encerrarAberto} numeros={numeros} onFechar={() => setEncerrarAberto(false)}

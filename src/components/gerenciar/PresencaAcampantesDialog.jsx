@@ -311,7 +311,7 @@ const PresencaAcampantesDialog = ({ isOpen, onClose, presenca }) => {
                       <td className="px-3 py-1.5 text-gray-300 whitespace-nowrap">{onibusDe(p) ? `Ônibus ${onibusDe(p)}` : '—'}</td>
                       <td className="px-3 py-1.5 whitespace-nowrap">
                         {p.chegou_em ? (
-                          <span className="inline-flex items-center gap-1 text-emerald-300" title={`Marcado por ${quemFez(p.chegou_por)}${p.responsavel_ciente ? ' · responsável ciente' : ''}`}>
+                          <span className="inline-flex items-center gap-1 text-emerald-300" title={`Marcado por ${quemFez(p.chegou_por)}${p.responsavel_ciente ? ' · autorização dos responsáveis entregue' : ''}`}>
                             <CheckCircle2 className="w-3.5 h-3.5" />{horaCurta(p.chegou_em)} · {quemFez(p.chegou_por)}
                           </span>
                         ) : <span className="text-amber-300">Falta</span>}

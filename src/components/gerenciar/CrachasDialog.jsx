@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Contact2, Loader2, Pencil, Printer, Search, Undo2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Contact2, FileDown, Loader2, Pencil, Search, Undo2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
 import { GROUPS } from '@/utils/gruposTrailha';
 import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
 import {
-  camisaNormalizada, dadosDoCracha, imprimirCrachas, NUMERO_DA_CAMISA, NUMERO_INFILTRADO, ordenarCrachas,
+  camisaNormalizada, dadosDoCracha, gerarPdfCrachas, NUMERO_DA_CAMISA, NUMERO_INFILTRADO, ordenarCrachas,
   POR_FOLHA, situacaoDoCracha, svgPreviaCracha, TAMANHOS_CAMISA
 } from '@/utils/crachas';
 import { desmarcarCrachaImpresso, fetchCrachas, marcarCrachasImpressos } from '@/services/crachasService';
@@ -25,10 +25,10 @@ import { dataHora, semAcento } from '@/utils/recepcao';
  * dos vinculos. Infiltrado sai sempre com o numero 8 (a camisa dele ja foi
  * entregue e nao muda aqui).
  *
- * Imprimir: folha A4 com 8 crachas, no tamanho do modelo (utils/crachas.js).
- * Depois da impressao a tela pergunta se saiu certo e so entao marca como
- * impresso, guardando o que saiu; se nome/cor/numero mudar depois, o cracha
- * aparece como "Mudou -- reimprimir".
+ * Gerar PDF: folha A4 com 8 crachas, no tamanho do modelo (utils/crachas.js),
+ * para imprimir ou mandar para quem vai imprimir. Depois a tela pergunta se ja
+ * pode marcar como impresso (guarda o que saiu); se nome/cor/numero mudar
+ * depois, o cracha aparece como "Mudou -- reimprimir".
  */
 
 const SITUACOES = {
@@ -59,7 +59,7 @@ const SeloSituacao = ({ p }) => {
 };
 
 // ---- Editar um cracha (muda a ficha) ------------------------------------------
-const EditarCracha = ({ pessoa, vinc, onRealocar, participantes, onFechar, onSalvo, onImprimir }) => {
+const EditarCracha = ({ pessoa, vinc, onRealocar, participantes, onFechar, onSalvo, onGerarPdf }) => {
   const { toast } = useToast();
   const [nome, setNome] = useState(pessoa.nome || '');
   const [grupo, setGrupo] = useState(pessoa.grupo || '');
@@ -74,7 +74,7 @@ const EditarCracha = ({ pessoa, vinc, onRealocar, participantes, onFechar, onSal
   const mudouCamisa = !pessoa.infiltrado && !!camisa && camisa !== (camisaNormalizada(pessoa.camisa) || '');
   const mudou = mudouNome || mudouGrupo || mudouCamisa;
 
-  const salvar = async (imprimirDepois) => {
+  const salvar = async (pdfDepois) => {
     if (mudouNome) {
       const problema = problemaNomePessoa(nomeLimpo);
       if (problema || !nomeLimpo) {
@@ -82,8 +82,6 @@ const EditarCracha = ({ pessoa, vinc, onRealocar, participantes, onFechar, onSal
         return;
       }
     }
-    // A aba da impressao abre ja no clique: depois de salvar, o navegador bloquearia.
-    const janela = imprimirDepois ? window.open('', '_blank') : null;
     setSalvando(true);
     try {
       const dados = {};
@@ -102,17 +100,16 @@ const EditarCracha = ({ pessoa, vinc, onRealocar, participantes, onFechar, onSal
       }
       if (mudou) toast({ title: 'Crachá atualizado', description: 'A mudança vale para todo o sistema.', className: 'bg-emerald-600 text-white' });
       await onSalvo();
-      if (imprimirDepois) onImprimir({ ...pessoa, nome: mudouNome ? nomeLimpo : pessoa.nome, grupo: grupo || pessoa.grupo, camisa: mudouCamisa ? camisa : pessoa.camisa }, janela);
+      if (pdfDepois) onGerarPdf({ ...pessoa, nome: mudouNome ? nomeLimpo : pessoa.nome, grupo: grupo || pessoa.grupo, camisa: mudouCamisa ? camisa : pessoa.camisa });
       onFechar();
     } catch (e) {
-      janela?.close();
       toast({ title: 'Não foi possível salvar', description: e?.message || 'Tente de novo.', variant: 'destructive' });
     } finally {
       setSalvando(false);
     }
   };
 
-  const podeImprimir = !!(previa.nome && previa.grupo && previa.numero);
+  const podeGerar = !!(previa.nome && previa.grupo && previa.numero);
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o && !salvando) onFechar(); }}>
@@ -172,9 +169,9 @@ const EditarCracha = ({ pessoa, vinc, onRealocar, participantes, onFechar, onSal
         <div className="flex flex-wrap justify-end gap-2 pt-1">
           <Button variant="outline" disabled={salvando} onClick={onFechar}
             className="border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">Cancelar</Button>
-          <Button variant="outline" disabled={salvando || !podeImprimir} onClick={() => salvar(true)}
+          <Button variant="outline" disabled={salvando || !podeGerar} onClick={() => salvar(true)}
             className="border-white/15 bg-white/5 text-gray-200 hover:bg-white/10 hover:text-white">
-            <Printer className="w-4 h-4 mr-2" />{mudou ? 'Salvar e imprimir' : 'Imprimir este crachá'}
+            <FileDown className="w-4 h-4 mr-2" />{mudou ? 'Salvar e gerar PDF' : 'Gerar PDF deste crachá'}
           </Button>
           <Button disabled={salvando || !mudou} onClick={() => salvar(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white">
             {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
@@ -195,8 +192,10 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], 
   const [busca, setBusca] = useState('');
   const [selecionados, setSelecionados] = useState(() => new Set());
   const [editando, setEditando] = useState(null);
-  // Crachas que acabaram de ir para a impressao, esperando o "saiu certo?".
+  // Crachas esperando o "marcar como impressos": { itens, pdf } -- pdf = veio
+  // de um PDF que acabou de ser gerado (senao, marcar a mao os selecionados).
   const [aConfirmar, setAConfirmar] = useState(null);
+  const [gerando, setGerando] = useState(false);
   const [ocupado, setOcupado] = useState(false);
 
   const carregar = async () => {
@@ -232,21 +231,29 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], 
   const faltam = useMemo(() => pessoas.filter((p) => ['nao_impresso', 'alterado'].includes(situacaoDoCracha(p))), [pessoas]);
   const escolhidos = useMemo(() => imprimiveis(pessoas.filter((p) => selecionados.has(chaveDe(p)))), [pessoas, selecionados]);
 
-  const imprimir = (lista, janela = null) => {
-    const ok = imprimiveis(ordenarCrachas(lista));
-    if (!ok.length) { janela?.close(); return; }
-    const itens = ok.map((p) => ({ tipo: p.tipo, id: p.id, ...dadosDoCracha(p) }));
-    if (!imprimirCrachas(itens, janela)) {
-      toast({ title: 'O navegador bloqueou a janela de impressão', description: 'Permita pop-ups para este site e tente de novo.', variant: 'destructive' });
-      return;
+  const itensDe = (lista) => imprimiveis(ordenarCrachas(lista)).map((p) => ({ tipo: p.tipo, id: p.id, ...dadosDoCracha(p) }));
+
+  const gerarPdf = async (lista) => {
+    const itens = itensDe(lista);
+    if (!itens.length) return;
+    setGerando(true);
+    try {
+      const nome = itens.length === 1
+        ? `cracha_${semAcento(itens[0].nome).replace(/[^a-z ]/g, '').trim().replace(/ +/g, '_')}.pdf`
+        : `crachas_metanoia_${new Date().toISOString().split('T')[0]}_${itens.length}.pdf`;
+      await gerarPdfCrachas(itens, nome);
+      setAConfirmar({ itens, pdf: true });
+    } catch (e) {
+      toast({ title: 'Não foi possível gerar o PDF', description: e?.message || 'Tente de novo.', variant: 'destructive' });
+    } finally {
+      setGerando(false);
     }
-    setAConfirmar(itens);
   };
 
   const confirmarImpressos = async () => {
     setOcupado(true);
     try {
-      await marcarCrachasImpressos(aConfirmar);
+      await marcarCrachasImpressos(aConfirmar.itens);
       toast({ title: 'Crachás marcados como impressos', className: 'bg-emerald-600 text-white' });
       setAConfirmar(null);
       setSelecionados(new Set());
@@ -301,12 +308,14 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], 
 
           {aConfirmar && (
             <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm flex flex-wrap items-center gap-2">
-              <Printer className="w-4 h-4 text-emerald-300 shrink-0" />
+              <FileDown className="w-4 h-4 text-emerald-300 shrink-0" />
               <span className="flex-1 min-w-[220px] text-emerald-100">
-                {aConfirmar.length} {aConfirmar.length === 1 ? 'crachá foi' : 'crachás foram'} para a impressão. Saiu tudo certo?
+                {aConfirmar.pdf
+                  ? <>PDF com {aConfirmar.itens.length} {aConfirmar.itens.length === 1 ? 'crachá gerado' : 'crachás gerados'}. Já marcar como {aConfirmar.itens.length === 1 ? 'impresso' : 'impressos'}? Se vai imprimir depois, marque pela lista quando estiver pronto.</>
+                  : <>Marcar {aConfirmar.itens.length} {aConfirmar.itens.length === 1 ? 'crachá' : 'crachás'} como {aConfirmar.itens.length === 1 ? 'impresso' : 'impressos'}?</>}
               </span>
               <Button size="sm" variant="outline" disabled={ocupado} onClick={() => setAConfirmar(null)}
-                className="h-8 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">Não, deixar como estava</Button>
+                className="h-8 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">{aConfirmar.pdf ? 'Ainda não' : 'Não'}</Button>
               <Button size="sm" disabled={ocupado} onClick={confirmarImpressos} className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white">
                 {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4 mr-1.5" />Sim, marcar como impressos</>}
               </Button>
@@ -325,7 +334,7 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], 
           {contagem.pendente > 0 && (
             <p className="flex gap-1.5 text-xs text-red-300">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-              {contagem.pendente} {contagem.pendente === 1 ? 'pessoa está' : 'pessoas estão'} sem cor ou sem camisa e não {contagem.pendente === 1 ? 'sai' : 'saem'} na impressão. Clique em Editar para completar.
+              {contagem.pendente} {contagem.pendente === 1 ? 'pessoa está' : 'pessoas estão'} sem cor ou sem camisa e não {contagem.pendente === 1 ? 'sai' : 'saem'} no PDF. Clique em Editar para completar.
             </p>
           )}
 
@@ -342,19 +351,26 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], 
               <option value="-">Sem cor</option>
             </select>
             <div className="ml-auto flex flex-wrap gap-2">
-              <Button type="button" disabled={!faltam.length || !!aConfirmar} onClick={() => imprimir(faltam)}
-                data-dica="Imprimir só os que ainda não foram impressos e os que mudaram depois de impressos."
+              {gerando && <span className="inline-flex items-center gap-1.5 text-sm text-gray-300"><Loader2 className="w-4 h-4 animate-spin" />Gerando o PDF…</span>}
+              <Button type="button" disabled={!faltam.length || !!aConfirmar || gerando} onClick={() => gerarPdf(faltam)}
+                data-dica="PDF só com os que ainda não foram impressos e os que mudaram depois de impressos."
                 className="bg-blue-600 hover:bg-blue-700 text-white">
-                <Printer className="w-4 h-4 mr-2" />Imprimir os que faltam: {qtdTexto(faltam.length)}
+                <FileDown className="w-4 h-4 mr-2" />PDF dos que faltam: {qtdTexto(faltam.length)}
               </Button>
-              <Button type="button" variant="outline" disabled={!escolhidos.length || !!aConfirmar} onClick={() => imprimir(escolhidos)}
+              <Button type="button" variant="outline" disabled={!escolhidos.length || !!aConfirmar || gerando} onClick={() => gerarPdf(escolhidos)}
                 className="bg-white/5 border-white/15 text-gray-200 hover:bg-white/10 hover:text-white">
-                Imprimir marcados: {qtdTexto(escolhidos.length)}
+                PDF dos marcados: {qtdTexto(escolhidos.length)}
               </Button>
-              <Button type="button" variant="outline" disabled={!imprimiveis(visiveis).length || !!aConfirmar} onClick={() => imprimir(visiveis)}
-                data-dica="Imprimir todos os que estão na lista abaixo (com os filtros), inclusive os já impressos."
+              <Button type="button" variant="outline" disabled={!imprimiveis(visiveis).length || !!aConfirmar || gerando} onClick={() => gerarPdf(visiveis)}
+                data-dica="PDF com todos os que estão na lista abaixo (com os filtros), inclusive os já impressos."
                 className="bg-white/5 border-white/15 text-gray-200 hover:bg-white/10 hover:text-white">
-                Imprimir a lista: {qtdTexto(imprimiveis(visiveis).length)}
+                PDF da lista: {qtdTexto(imprimiveis(visiveis).length)}
+              </Button>
+              <Button type="button" variant="outline" disabled={!escolhidos.length || !!aConfirmar || gerando}
+                onClick={() => setAConfirmar({ itens: itensDe(escolhidos), pdf: false })}
+                data-dica="Marcar os crachás marcados na lista como já impressos (por exemplo, o PDF foi impresso depois, por outra pessoa)."
+                className="bg-white/5 border-white/15 text-gray-200 hover:bg-white/10 hover:text-white">
+                <CheckCircle2 className="w-4 h-4 mr-2" />Marcar como impressos: {escolhidos.length}
               </Button>
             </div>
           </div>
@@ -397,10 +413,10 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], 
                             className="h-7 px-2 border-white/10 bg-white/5 text-gray-200 hover:bg-white/10 hover:text-white">
                             <Pencil className="w-3.5 h-3.5 mr-1" />Editar
                           </Button>
-                          <Button size="sm" variant="outline" disabled={s === 'pendente' || !!aConfirmar} onClick={() => imprimir([p])}
-                            data-dica="Imprimir só este crachá." aria-label={`Imprimir o crachá de ${p.nome}`}
+                          <Button size="sm" variant="outline" disabled={s === 'pendente' || !!aConfirmar || gerando} onClick={() => gerarPdf([p])}
+                            data-dica="Gerar o PDF só deste crachá." aria-label={`PDF do crachá de ${p.nome}`}
                             className="h-7 px-2 border-white/10 bg-white/5 text-gray-200 hover:bg-white/10 hover:text-white">
-                            <Printer className="w-3.5 h-3.5" />
+                            <FileDown className="w-3.5 h-3.5" />
                           </Button>
                           {p.impresso && (
                             <Button size="sm" variant="outline" disabled={ocupado} onClick={() => desmarcar(p)}
@@ -418,7 +434,7 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], 
             </table>
           </div>
           <p className="text-[11px] text-gray-500">
-            Na impressão: escala 100% (tamanho real), margens “Nenhuma” e sem cabeçalhos e rodapés — assim o crachá sai do tamanho do saquinho.
+            O PDF já sai no tamanho do modelo. Ao imprimir (ou mandar imprimir), use escala 100% / “Tamanho real” — nunca “Ajustar à página” — para o crachá caber no saquinho.
           </p>
         </DialogContent>
       </Dialog>
@@ -431,7 +447,7 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, participantes = [], 
           participantes={participantes}
           onFechar={() => setEditando(null)}
           onSalvo={async () => { await Promise.all([carregar(), onAlterado?.()]); }}
-          onImprimir={(p, janela) => imprimir([p], janela)}
+          onGerarPdf={(p) => gerarPdf([p])}
         />
       )}
     </>

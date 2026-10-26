@@ -107,7 +107,7 @@ const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, 
           {onAbrirCrachas && (
             <button
               type="button" onClick={onAbrirCrachas}
-              data-dica="Gerar e imprimir os crachás (nome, cor do grupo e número da camisa) e corrigir nome, cor ou camisa de alguém."
+              data-dica="Gerar o PDF dos crachás (nome, cor do grupo e número da camisa) e corrigir nome, cor ou camisa de alguém."
               className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
             >
               <Contact2 className="w-4 h-4" />Crachás

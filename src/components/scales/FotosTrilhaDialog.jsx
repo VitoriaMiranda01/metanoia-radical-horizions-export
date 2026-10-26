@@ -421,7 +421,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
       const novas = [];
       if (alvo === 'INFILTRADOS') {
         const pessoas = usados.map((p) => ({ nome: fotoPorId[p.id].nome_arte || nomeCurto(p.nome), cor: p.cor, imagem: imagens[p.id] }));
-        const blob = await desenharArteInfiltrados(pessoas, edicao);
+        const blob = await desenharArteInfiltrados(pessoas, edicao, { fundo });
         setArtes([{ cor: 'INFILTRADOS', blob, url: await lerComoDataUrl(blob) }]);
         return;
       }
@@ -574,7 +574,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
             </div>
           </div>
           <Button onClick={() => pedirArtes('INFILTRADOS')} disabled={!!gerando || carregando}
-            data-dica="Gerar uma imagem só com os infiltrados (fundo branco, cores aglutinadas)."
+            data-dica="Gerar uma imagem só com os infiltrados (cores aglutinadas, no fundo escolhido)."
             className="h-9 border border-white/20 bg-transparent text-gray-100 hover:bg-white/10">
             {gerando === 'INFILTRADOS' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
             Gerar só infiltrados

@@ -128,7 +128,7 @@ const carregarLogo = () => {
 };
 
 // Fundo escuro com leve granulado (como a textura da arte original), ou branco.
-const desenharFundo = (ctx, tema) => {
+const desenharFundo = (ctx, tema, W = 1280, H = 720) => {
   if (tema.branco) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, W, H);
@@ -143,7 +143,7 @@ const desenharFundo = (ctx, tema) => {
   // granulado determinístico (mesma arte sempre igual)
   let s = 7;
   const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-  for (let i = 0; i < 9000; i += 1) {
+  for (let i = 0; i < Math.round(9000 * (W * H) / (1280 * 720)); i += 1) {
     ctx.fillStyle = rnd() > 0.5 ? 'rgba(255,255,255,0.035)' : 'rgba(0,0,0,0.18)';
     ctx.fillRect(rnd() * W, rnd() * H, 1 + rnd() * 2, 1 + rnd() * 2);
   }
@@ -359,7 +359,8 @@ export const desenharArteGrupo = async (grupo, edicao, { fundo = 'escuro' } = {}
  * o nome embaixo de cada foto na cor do grupo. Linhas centralizadas.
  * pessoas: [{ nome, cor, imagem }]. Devolve um Blob PNG.
  */
-export const desenharArteInfiltrados = async (pessoas, edicao) => {
+export const desenharArteInfiltrados = async (pessoas, edicao, { fundo = 'branco' } = {}) => {
+  const escuro = fundo === 'escuro';
   const lista = CORES_ARTE.flatMap((cor) => pessoas.filter((p) => p.cor === cor));
   const AW = 1600;
   const CW = 170; // cartão (foto)
@@ -375,11 +376,10 @@ export const desenharArteInfiltrados = async (pessoas, edicao) => {
   canvas.height = AH * ESCALA;
   const ctx = canvas.getContext('2d');
   ctx.scale(ESCALA, ESCALA);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, AW, AH);
+  desenharFundo(ctx, { branco: !escuro }, AW, AH);
 
   const titulo = ['INFILTRADOS -', edicao.titulo, ...(edicao.datas || [])].filter(Boolean).join(' ').replace(/\s+/g, ' ');
-  ctx.fillStyle = '#111111';
+  ctx.fillStyle = escuro ? '#ffffff' : '#111111';
   ajustarFonte(ctx, titulo, 900, 36, FONTE, AW - 80);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -391,13 +391,17 @@ export const desenharArteInfiltrados = async (pessoas, edicao) => {
     let x = (AW - larguraLinha) / 2;
     const y = topo + l * LINHA;
     daLinha.forEach((p) => {
-      const forte = PALETA[p.cor].forte;
-      desenharCartao(ctx, x, y, CW, CH, p.imagem, forte, true);
-      ctx.fillStyle = forte;
-      ajustarFonte(ctx, p.nome, 700, 18, FONTE_TEXTO, CW + GAPX - 6);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(p.nome, x + CW / 2, y + CH + 22);
+      const paleta = PALETA[p.cor];
+      desenharCartao(ctx, x, y, CW, CH, p.imagem, escuro ? paleta.destaque : paleta.forte, !escuro);
+      if (escuro) {
+        desenharEtiqueta(ctx, p.nome, x + CW / 2, y + CH + 8, CW + GAPX - 6, '#ffffff', '#222222');
+      } else {
+        ctx.fillStyle = paleta.forte;
+        ajustarFonte(ctx, p.nome, 700, 18, FONTE_TEXTO, CW + GAPX - 6);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.nome, x + CW / 2, y + CH + 22);
+      }
       x += CW + GAPX;
     });
   }

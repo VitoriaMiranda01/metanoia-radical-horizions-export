@@ -384,20 +384,30 @@ const PagamentosPendentesPage = () => {
     return data;
   };
 
-  // Desfazer pagamento confirmado por engano (Patrick, 08/10/2026): so em
-  // maos e isencao; a pessoa volta para "Nao pagaram". Confirmacao na propria
-  // linha, como o isentar.
+  // Desfazer pagamento (Patrick, 08/10/2026): em maos e isencao; desde
+  // 25/10/2026 tambem PIX (ex.: desistiu e passou o valor para outra pessoa),
+  // com motivo obrigatorio. A pessoa volta para "Nao pagaram". Confirmacao na
+  // propria linha, como o isentar.
   const [desfazendo, setDesfazendo] = useState(null); // id em confirmacao
+  const [motivoDesfazer, setMotivoDesfazer] = useState('');
   // Ficha de inscricao aberta pelo icone ao lado do nome: { tipo, id } ou null.
   const [fichaAberta, setFichaAberta] = useState(null);
   const [desfazendoAgora, setDesfazendoAgora] = useState(false);
-  const podeDesfazer = (item) => ['manual', 'isento'].includes(String(item.metodo_pagamento || '').toLowerCase());
+  const ehPix = (item) => String(item.metodo_pagamento || '').toLowerCase() === 'pix';
+  const podeDesfazer = (item) => ['manual', 'isento', 'pix'].includes(String(item.metodo_pagamento || '').toLowerCase());
+  const abrirDesfazer = (id) => { setMotivoDesfazer(''); setDesfazendo(id); };
 
   const desfazer = async (item) => {
+    const motivo = motivoDesfazer.trim();
+    if (ehPix(item) && !motivo) {
+      toast({ title: 'Informe o motivo', description: 'Para desfazer um PIX, escreva o motivo (ex.: transferido para outra pessoa).', variant: 'destructive' });
+      return;
+    }
     setDesfazendoAgora(true);
-    const { error: err } = await desfazerPagamento(item.tipo, item.id);
+    const { error: err } = await desfazerPagamento(item.tipo, item.id, motivo);
     setDesfazendoAgora(false);
     setDesfazendo(null);
+    setMotivoDesfazer('');
     if (err) {
       toast({ title: 'Não deu para desfazer', description: err.message, variant: 'destructive' });
       return;
@@ -1064,7 +1074,16 @@ const PagamentosPendentesPage = () => {
                               <span className="text-gray-500 text-xs mt-0.5">{dataHoraBR(item.data_pagamento) || '—'}</span>
                               {podeDesfazer(item) && (
                                 desfazendo === item.id ? (
-                                  <span className="mt-1 inline-flex items-center gap-1 text-xs">
+                                  <span className="mt-1 inline-flex flex-wrap items-center gap-1 text-xs whitespace-normal max-w-[16rem]">
+                                    {ehPix(item) && (
+                                      <span className="w-full text-gray-400">O PIX fica registrado como desfeito; o dinheiro não é devolvido.</span>
+                                    )}
+                                    <input
+                                      type="text" value={motivoDesfazer} maxLength={500} autoFocus
+                                      onChange={(e) => setMotivoDesfazer(e.target.value)}
+                                      placeholder={ehPix(item) ? 'Motivo (obrigatório)' : 'Motivo (opcional)'}
+                                      className="w-full mb-0.5 px-2 py-1 rounded bg-black/40 border border-white/15 text-gray-200 placeholder:text-gray-500 focus:outline-none focus:border-amber-400"
+                                    />
                                     <span className="text-amber-300 mr-0.5">Voltar para não pago?</span>
                                     <button
                                       type="button" disabled={desfazendoAgora} onClick={() => setDesfazendo(null)}
@@ -1081,8 +1100,10 @@ const PagamentosPendentesPage = () => {
                                   </span>
                                 ) : (
                                   <button
-                                    type="button" onClick={() => setDesfazendo(item.id)}
-                                    data-dica="Confirmou por engano? A pessoa volta para Não pagaram (valor, cupom e quem confirmou são apagados)."
+                                    type="button" onClick={() => abrirDesfazer(item.id)}
+                                    data-dica={ehPix(item)
+                                      ? 'Desistiu ou transferiu o valor? A pessoa volta para Não pagaram; o PIX fica registrado como desfeito, com o motivo.'
+                                      : 'Confirmou por engano? A pessoa volta para Não pagaram (valor, cupom e quem confirmou são apagados).'}
                                     className="mt-1 inline-flex items-center gap-1 w-fit text-xs text-gray-500 hover:text-red-300"
                                   >
                                     <Undo2 className="w-3 h-3" /> Desfazer pagamento

@@ -164,12 +164,12 @@ export const registrarPagamento = async (tipo, id, forma, valor = null, cupom = 
 };
 
 /**
- * Desfaz um pagamento confirmado por engano (em maos ou isencao): a pessoa
- * volta para "Nao pagaram". PIX o servidor recusa -- o dinheiro entrou pelo
- * banco. Sem reenvio automatico: e uma gravacao.
+ * Desfaz um pagamento: a pessoa volta para "Nao pagaram". PIX exige motivo
+ * (25/10/2026) e a cobranca fica gravada como 'desfeito' -- o dinheiro segue
+ * com a organizacao. Sem reenvio automatico: e uma gravacao.
  */
-export const desfazerPagamento = async (tipo, id) => {
-  const { data, error } = await supabase.rpc('desfazer_pagamento', { p_tipo: tipo, p_id: id });
+export const desfazerPagamento = async (tipo, id, motivo = null) => {
+  const { data, error } = await supabase.rpc('desfazer_pagamento', { p_tipo: tipo, p_id: id, p_motivo: motivo || null });
   if (error) return { error };
   if (!data?.ok) return { error: new Error(data?.erro || 'Não foi possível desfazer o pagamento.') };
   return { data };

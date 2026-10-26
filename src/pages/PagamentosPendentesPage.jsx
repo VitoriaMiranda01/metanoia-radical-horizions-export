@@ -22,6 +22,7 @@ import {
   removerCobranca
 } from '@/services/paymentService';
 import CobrancaDialog from '@/components/pagamentos/CobrancaDialog';
+import DebitosAnteriores from '@/components/pagamentos/DebitosAnteriores';
 import ConfirmarPagamentoDialog from '@/components/pagamentos/ConfirmarPagamentoDialog';
 import ResumoPagamentos from '@/components/pagamentos/ResumoPagamentos';
 import FichaInscricaoDialog from '@/components/common/FichaInscricaoDialog';
@@ -762,6 +763,8 @@ const PagamentosPendentesPage = () => {
             </div>
           </motion.div>
         )}
+
+        <DebitosAnteriores />
 
         {error ? (
           <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 text-center">

@@ -176,6 +176,9 @@ const montarResultadoVerificacao = (resultado, cpfDigitado) => {
     // (20261021h). Desde 20261021i o equipante nunca volta 'concluido' aqui (vai
     // para o acompanhamento); fica para o acampante.
     nomeCompleto: resultado.nome_completo || null,
+    // Pagamento agendado de edicao anterior que nao foi pago (20261025e): lista
+    // das edicoes devidas; com ela a pessoa nao se inscreve (so com autorizacao).
+    debito: Array.isArray(resultado.debito) && resultado.debito.length ? resultado.debito : null,
     // Ficha manual ainda sem CPF e sem nascimento: nao ha data para confirmar;
     // a pessoa entra pelo nome e completa o cadastro (migration 20261006l).
     completarManual: !!resultado.completar_manual,
@@ -292,6 +295,9 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     const recusaDeDado = mensagemDeErro(error?.message);
     if (recusaDeDado) {
       return { success: false, error: recusaDeDado };
+    }
+    if (error?.message?.includes('DEBITO_PENDENTE')) {
+      return { success: false, error: 'Você tem um pagamento pendente de uma edição anterior. Procure a organização para regularizar e liberar a sua inscrição.' };
     }
     if (error?.message?.includes('INSCRICOES_DOMINGO_FECHADAS')) {
       return { success: false, error: 'As inscrições para quem vai só no domingo não estão abertas no momento.' };

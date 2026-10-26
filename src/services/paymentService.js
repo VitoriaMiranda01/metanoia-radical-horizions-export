@@ -457,6 +457,34 @@ export const removerCobranca = async (tipo, id) => {
 };
 
 /**
+ * Debitos de edicoes anteriores (migration 20261025e, Patrick 25/10/2026): na
+ * virada, quem estava com pagamento AGENDADO e nao pagou vira debito e nao se
+ * inscreve na edicao seguinte ate quitar -- salvo autorizacao do organizador
+ * (vale so para a edicao atual; o debito segue em aberto).
+ * As funcoes devolvem { ok, erro }; erro vira Error com a frase do servidor.
+ */
+const rpcDebito = async (nome, args) => {
+  const { data, error } = await supabase.rpc(nome, args);
+  if (error) throw new Error('Não foi possível falar com o servidor. Tente de novo.');
+  if (!data?.ok) throw new Error(data?.erro || 'Não deu certo.');
+  return data;
+};
+
+export const fetchDebitos = async () => {
+  const r = await rpcDebito('debitos_listar');
+  return { edicaoAtual: r.edicao_atual, debitos: r.debitos || [] };
+};
+
+export const quitarDebito = (id, meio, valor, observacao) =>
+  rpcDebito('debito_quitar', { p_id: id, p_meio: meio, p_valor: valor, p_obs: observacao || null });
+
+export const autorizarInscricaoComDebito = (id, autorizar) =>
+  rpcDebito('debito_autorizar', { p_id: id, p_autorizar: autorizar });
+
+export const retirarDebito = (id, motivo) =>
+  rpcDebito('debito_retirar', { p_id: id, p_motivo: motivo });
+
+/**
  * Equipantes que aparecem em Pagamentos: quem esta escalado numa area de
  * verdade (qualquer uma, menos "Não será escalado").
  *

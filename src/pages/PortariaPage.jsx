@@ -71,7 +71,13 @@ const pagoNaPortaria = (p) => p.pago && p.metodo === 'manual' && String(p.confir
 const NOME_MEIO = { dinheiro: 'Dinheiro', cartao: 'Cartão', pix: 'PIX' };
 
 // Texto da situacao do pagamento.
+// Pagamento agendado (20261025e): o organizador combinou uma data; a pessoa
+// entra sem pagar e segue "em aberto" ate quitar.
+const agendado = (p) => !p.pago && !!p.agendado_para;
+const dataCurta = (iso) => String(iso || '').slice(0, 10).split('-').reverse().join('/');
+
 const situacao = (p) => {
+  if (agendado(p)) return { texto: `Pagamento agendado · ${dataCurta(p.agendado_para)}`, classe: 'border-violet-500/40 bg-violet-500/15 text-violet-200' };
   if (!p.pago) return { texto: 'Pagamento em aberto', classe: 'border-amber-500/40 bg-amber-500/15 text-amber-200' };
   if (p.metodo === 'isento') return { texto: 'Isento', classe: 'border-sky-500/40 bg-sky-500/15 text-sky-200' };
   if (p.metodo === 'pix') return { texto: 'Pago · PIX', classe: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-200' };
@@ -339,7 +345,7 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
               <Wallet className="w-4 h-4 mr-1.5" />Pagar agora
             </Button>
           )}
-          {!entrou && p.pago && (
+          {!entrou && (p.pago || (agendado(p) && p.na_escala)) && (
             <Button size="sm" disabled={ocupado} onClick={liberar} className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white">
               {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : <><DoorOpen className="w-4 h-4 mr-1.5" />Liberar entrada</>}
             </Button>

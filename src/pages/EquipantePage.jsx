@@ -195,6 +195,7 @@ const EquipantePage = () => {
   const podeDomingo = !!janelaDomingo?.aberta || sessaoDeTeste;
   // Para onde vai cada escolha: { todos, domingo } (passos da tela).
   const [destinosDias, setDestinosDias] = useState(null);
+  const [debitoPendente, setDebitoPendente] = useState(null);
   const dataCurta = (iso) => (iso ? String(iso).slice(0, 10).split('-').reverse().slice(0, 2).join('/') : '');
 
   const [currentStep, setCurrentStep] = useState('verificacao');
@@ -370,7 +371,12 @@ const EquipantePage = () => {
 
       guardarSessao({ id: loadedData.id, nome: loadedData.nome, cpf: result.cpf || null });
 
-      if (!isEnrolled) {
+      if (!isEnrolled && result.debito) {
+        // Pagamento agendado de edicao anterior sem pagar (20261025e): nem
+        // mostra o formulario; o servidor tambem recusa em criar_inscricao.
+        setDebitoPendente(result.debito);
+        setCurrentStep('debito');
+      } else if (!isEnrolled) {
         setFormData(prev => ({
           ...prev,
           ...mapDbToFormData(loadedData)
@@ -871,6 +877,21 @@ const EquipantePage = () => {
 
         {currentStep === 'escolher-dias' && destinosDias && (
           <EscolherDiasEquipante onEscolher={escolherDias} onVoltar={sairDaInscricao} />
+        )}
+
+        {currentStep === 'debito' && (
+          <div className="max-w-xl mx-auto bg-red-900/20 border border-red-500/30 rounded-lg p-10 text-center">
+            <Lock className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold text-white mb-2">Pagamento pendente</h3>
+            <p className="text-gray-300">
+              Ficou em aberto a taxa de alimentação da{' '}
+              {(debitoPendente || []).map((ed) => `${ed}ª`).join(' e da ')} edição. Para se inscrever
+              nesta edição, procure a organização para regularizar o pagamento.
+            </p>
+            <div className="mt-6 flex justify-center">
+              <Button variant="outline" onClick={sairDaInscricao}>Voltar</Button>
+            </div>
+          </div>
         )}
 
         {currentStep === 'fechadas' && (

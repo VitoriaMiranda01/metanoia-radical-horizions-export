@@ -21,7 +21,7 @@ const OPCOES = [
     valor: 'domingo',
     icone: CalendarDays,
     titulo: 'Somente no domingo',
-    texto: 'Inscrição só para o domingo, sem áreas de trabalho. Taxa de alimentação de 50%.',
+    texto: 'Inscrição só para o domingo, sem áreas de trabalho.',
   },
 ];
 

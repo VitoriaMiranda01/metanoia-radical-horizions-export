@@ -39,7 +39,8 @@ const SeloPago = ({ pago }) => pago ? (
  * Depois da chamada o Dudu REFAZ a escala: quem ficou ausente sai da escala
  * oficial -- mas nao sozinho, e nao de vez. Cada ausente fica "a definir"
  * aqui, e ele decide:
- *   - Manter na área: algumas vezes a pessoa entra mesmo ausente.
+ *   - Manter na área: vira PRESENTE definido pela organizacao (26/10/2026;
+ *     antes seguia contando como ausente). mantido_em fica como registro.
  *   - Separar: vai para "Não será escalado", guardando de qual area saiu.
  *     Fica na lista "Separados" e volta quando quiser por "Trocar de área".
  * Nada e apagado.
@@ -96,7 +97,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
     }
     toast({
       title: acao === 'manter' ? `${p.nome} fica em ${p.area}` : `${p.nome} foi separado`,
-      description: acao === 'manter' ? undefined : 'Está em “Não será escalado”. Dá para trazer de volta em Separados.',
+      description: acao === 'manter' ? 'Agora conta como presente (definido pela organização).' :'Está em “Não será escalado”. Dá para trazer de volta em Separados.',
       className: 'bg-green-600 text-white'
     });
     await carregar(true);
@@ -259,7 +260,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
                   </div>
                   <div className="flex gap-1.5 shrink-0">
                     <Button size="sm" variant="outline" onClick={() => decidir(p, 'manter')} disabled={!!ocupado[p.escala_id]}
-                      data-dica="A pessoa continua na área mesmo ausente na chamada."
+                      data-dica="A pessoa continua na área e passa a contar como presente (definido pela organização)."
                       className="h-8 border-green-600/40 bg-transparent text-green-300 hover:bg-green-600/15 hover:text-green-200">
                       {ocupado[p.escala_id] === 'manter' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><UserCheck className="h-3.5 w-3.5 mr-1" /> {manterEm(p.area)}</>}
                     </Button>
@@ -314,7 +315,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
             <button type="button" onClick={() => setVerMantidos((v) => !v)}
               className="text-xs text-gray-400 underline underline-offset-2 hover:text-white flex items-center gap-1">
               <Undo2 className="h-3 w-3" />
-              {verMantidos ? 'esconder' : `ver ausentes mantidos na área (${mantidos.length})`}
+              {verMantidos ? 'esconder' : `ver quem faltou e foi mantido na área — agora presente (${mantidos.length})`}
             </button>
             {verMantidos && (
               <ul className="mt-2 space-y-0.5 text-xs text-gray-300">

@@ -96,7 +96,9 @@ const GruposTrailhaCards = ({ groupsData, onGroupClick, conflitosPorGrupo = {}, 
             <span className="inline-flex items-center gap-1.5 font-medium"><Link2 className="w-4 h-4" />Vínculos entre acampantes</span>
             {resumoVinculos && (
               <>
-                <span className="text-xs text-sky-300">{resumoVinculos.sugestoes} {resumoVinculos.sugestoes === 1 ? 'sugestão' : 'sugestões'} para confirmar</span>
+                {resumoVinculos.sugestoes > 0 && (
+                  <span className="text-xs text-sky-300">{resumoVinculos.sugestoes} {resumoVinculos.sugestoes === 1 ? 'sugestão' : 'sugestões'} para confirmar</span>
+                )}
                 {resumoVinculos.conflitos > 0 && (
                   <span className="inline-flex items-center gap-1 text-xs text-amber-300"><AlertTriangle className="w-3 h-3" />{resumoVinculos.conflitos} no mesmo grupo</span>
                 )}

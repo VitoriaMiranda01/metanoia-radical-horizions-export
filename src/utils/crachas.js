@@ -181,49 +181,79 @@ const comoDataUrl = async (src) => {
 // Os textos vao no PDF como imagem de 600 dpi desenhada com a Arial do
 // computador (a fonte do modelo; ela nao pode ser embutida no site). Fios,
 // moldura e imagens vao em vetor/original.
+//
+// Desempenho (26/10/2026): antes era uma imagem transparente (PNG) da celula
+// quase inteira por cracha, que o jsPDF decodifica em JavaScript -- ~0,35 s
+// por cracha. Agora sao dois recortes so onde ha texto, em fundo branco (as
+// duas areas ficam dentro da moldura, longe dos fios, da logo e do escudo) e
+// em JPEG, que o navegador codifica e o PDF guarda sem reprocessar.
 const DPI_TEXTO = 600;
-const ALTURA_TEXTO = 150; // pt a partir do topo da celula: cobre nome, cor e numero
+// Areas de texto em pt, a partir do canto da celula.
+// Nome + cor: a parte de dentro da moldura (15,48 a 260,88), de 20 a 100 pt de altura.
+// Numero: entre a logo (termina em 77,16) e o escudo (comeca em 201,84).
+const AREAS_TEXTO = [
+  { x: 15.5, y: 20, largura: 245.36, altura: 80, de: (t) => t.centro },
+  { x: 118, y: 118, largura: 40, altura: 26, de: (t) => !t.centro },
+];
 
-const textosComoImagem = (textos, x, y) => {
+const telas = new Map();
+const telaDe = (area, escala) => {
+  if (!telas.has(area)) {
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(area.largura * escala);
+    canvas.height = Math.ceil(area.altura * escala);
+    telas.set(area, canvas);
+  }
+  return telas.get(area);
+};
+
+const recorteDeTexto = (area, textos, x, y) => {
   const escala = DPI_TEXTO / 72;
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.ceil(CELULA.largura * escala);
-  canvas.height = Math.ceil(ALTURA_TEXTO * escala);
+  const canvas = telaDe(area, escala);
   const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#000';
   ctx.textBaseline = 'alphabetic';
   ctx.fontKerning = 'none';
-  textos.forEach((t) => {
+  textos.filter(area.de).forEach((t) => {
     ctx.font = `${t.negrito ? 'bold ' : ''}${t.tamanho * escala}px ${FONTE}`;
     ctx.textAlign = t.centro ? 'center' : 'left';
-    ctx.fillText(t.texto, (t.x - x) * escala, (t.y - y) * escala);
+    ctx.fillText(t.texto, (t.x - x - area.x) * escala, (t.y - y - area.y) * escala);
   });
-  return canvas;
+  return canvas.toDataURL('image/jpeg', 0.92);
 };
 
 /**
  * Gera o PDF dos crachas (folha A4 do tamanho do modelo, 8 por folha) e
  * entrega o arquivo: no computador baixa; no celular abre o compartilhar.
- * crachas: [{nome, grupo, numero}] ja na ordem.
+ * crachas: [{nome, grupo, numero}] ja na ordem. onProgresso(feitos, total):
+ * a cada folha, para a tela mostrar o andamento.
  */
-export const gerarPdfCrachas = async (crachas, nomeArquivo) => {
+export const gerarPdfCrachas = async (crachas, nomeArquivo, onProgresso) => {
   const [{ jsPDF }, { entregarArquivo }, logo, escudo] = await Promise.all([
     import('jspdf'), import('@/utils/entregarArquivo'), comoDataUrl(IMAGEM_LOGO), comoDataUrl(IMAGEM_ESCUDO),
   ]);
   const dados = { [IMAGEM_LOGO]: logo, [IMAGEM_ESCUDO]: escudo };
   const doc = new jsPDF({ unit: 'pt', format: [FOLHA.largura, FOLHA.altura], orientation: 'portrait', compress: true });
   doc.setProperties({ title: 'Crachás - Metanoia Radical' });
-  crachas.forEach((c, i) => {
+  for (let i = 0; i < crachas.length; i += 1) {
     const pos = i % POR_FOLHA;
-    if (i > 0 && pos === 0) doc.addPage([FOLHA.largura, FOLHA.altura], 'portrait');
+    if (pos === 0) {
+      if (i > 0) doc.addPage([FOLHA.largura, FOLHA.altura], 'portrait');
+      onProgresso?.(i, crachas.length);
+      // Devolve a vez ao navegador a cada folha (a tela nao congela).
+      await new Promise((ok) => setTimeout(ok, 0));
+    }
     const linha = Math.floor(pos / 2);
     const x = CELULA.x[pos % 2];
     const y = CELULA.topo[linha];
-    const m = montarCracha(c, x, y, linha);
+    const m = montarCracha(crachas[i], x, y, linha);
     doc.setFillColor(0, 0, 0);
     m.retangulos.forEach(([rx, ry, rw, rh]) => doc.rect(rx, ry, rw, rh, 'F'));
     m.imagens.forEach((im) => doc.addImage(dados[im.src], 'JPEG', im.x, im.y, im.largura, im.altura, im.src, 'NONE'));
-    doc.addImage(textosComoImagem(m.textos, x, y), 'PNG', x, y, CELULA.largura, ALTURA_TEXTO, undefined, 'FAST');
-  });
+    AREAS_TEXTO.forEach((a) => doc.addImage(recorteDeTexto(a, m.textos, x, y), 'JPEG', x + a.x, y + a.y, a.largura, a.altura));
+  }
+  onProgresso?.(crachas.length, crachas.length);
   await entregarArquivo(doc.output('blob'), nomeArquivo);
 };

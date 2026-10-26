@@ -217,6 +217,7 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, onAlterado }) => {
   // Crachas esperando o "marcar como impressos": { itens, pdf } -- pdf = veio
   // de um PDF que acabou de ser gerado (senao, marcar a mao os selecionados).
   const [aConfirmar, setAConfirmar] = useState(null);
+  // false ou { feitos, total } enquanto o PDF e montado.
   const [gerando, setGerando] = useState(false);
   const [ocupado, setOcupado] = useState(false);
 
@@ -265,12 +266,12 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, onAlterado }) => {
   const gerarPdf = async (lista) => {
     const itens = itensDe(lista);
     if (!itens.length) return;
-    setGerando(true);
+    setGerando({ feitos: 0, total: itens.length });
     try {
       const nome = itens.length === 1
         ? `cracha_${semAcento(itens[0].nome).replace(/[^a-z ]/g, '').trim().replace(/ +/g, '_')}.pdf`
         : `crachas_metanoia_${new Date().toISOString().split('T')[0]}_${itens.length}.pdf`;
-      await gerarPdfCrachas(itens, nome);
+      await gerarPdfCrachas(itens, nome, (feitos, total) => setGerando({ feitos, total }));
       setAConfirmar({ itens, pdf: true });
     } catch (e) {
       toast({ title: 'Não foi possível gerar o PDF', description: e?.message || 'Tente de novo.', variant: 'destructive' });
@@ -387,7 +388,7 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, onAlterado }) => {
               {AREAS_COM_CRACHA.map((a) => <option key={a} value={a}>Só {a}</option>)}
             </select>
             <div className="ml-auto flex flex-wrap gap-2">
-              {gerando && <span className="inline-flex items-center gap-1.5 text-sm text-gray-300"><Loader2 className="w-4 h-4 animate-spin" />Gerando o PDF…</span>}
+              {gerando && <span className="inline-flex items-center gap-1.5 text-sm text-gray-300"><Loader2 className="w-4 h-4 animate-spin" />Gerando o PDF… <span className="tabular-nums">{gerando.feitos}/{gerando.total}</span></span>}
               <Button type="button" disabled={!faltam.length || !!aConfirmar || gerando} onClick={() => gerarPdf(faltam)}
                 data-dica="PDF só com os que ainda não foram impressos e os que mudaram depois de impressos."
                 className="bg-blue-600 hover:bg-blue-700 text-white">

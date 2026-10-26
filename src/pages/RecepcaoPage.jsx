@@ -311,9 +311,6 @@ const CartaoPessoa = ({ p, numeroOnibus, travada, onChegou, onAtualizado }) => {
                 <Baby className="w-3 h-3" />Menor{p.idade != null ? ` · ${p.idade} anos` : ''}
               </span>
             )}
-            {p.infiltrado && (
-              <span className="text-[11px] px-2 py-0.5 rounded-full border border-fuchsia-500/40 bg-fuchsia-500/15 text-fuchsia-200">infiltrado</span>
-            )}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             <GrupoTrilhaTag grupo={p.grupo} />

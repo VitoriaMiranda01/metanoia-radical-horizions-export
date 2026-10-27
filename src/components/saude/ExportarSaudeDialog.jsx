@@ -31,6 +31,7 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
   const [colunas, setColunas] = useState(COLUNAS_SAUDE_PADRAO);
   const [resumo, setResumo] = useState(true);
   const [porGrupo, setPorGrupo] = useState(false);
+  const [cores, setCores] = useState([...GROUPS, 'Sem grupo']);
   const [erro, setErro] = useState('');
   const [desmarcando, setDesmarcando] = useState(null); // chave aguardando confirmacao
   const [gerandoPdf, setGerandoPdf] = useState(false);
@@ -41,11 +42,20 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
     setErro('');
     setColunas(COLUNAS_SAUDE_PADRAO);
     setDesmarcando(null);
+    setCores([...GROUPS, 'Sem grupo']);
   }, [aberto]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Confirmados (pagos) primeiro, depois os so inscritos -- igual a tela.
   const pessoas = [...(quem === 'marcados' ? selecionados : visiveis)]
     .sort((a, b) => Number(b.pago) - Number(a.pago) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
+
+  const doGrupo = (p, nome) => (nome === 'Sem grupo' ? !GROUPS.includes(p.grupo_trailha) : p.grupo_trailha === nome);
+  // Cores oferecidas: as 5 de sempre; "Sem grupo" so se alguem da lista estiver sem grupo.
+  const coresOferecidas = [...GROUPS, ...(pessoas.some((p) => doGrupo(p, 'Sem grupo')) ? ['Sem grupo'] : [])];
+  const coresAtivas = coresOferecidas.filter((c) => cores.includes(c));
+  // O que vai no arquivo: com "por grupo", so as cores marcadas.
+  const pessoasArquivo = porGrupo ? pessoas.filter((p) => coresAtivas.some((c) => doGrupo(p, c))) : pessoas;
+  const semCor = porGrupo && coresAtivas.length === 0;
 
   const alternar = (chave, v) =>
     setColunas((atual) => (v ? COLUNAS_SAUDE.map((c) => c.chave).filter((k) => k === chave || atual.includes(k))
@@ -67,11 +77,12 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
 
   const baixar = async () => {
     if (colunas.length === 0) { setErro('Marque pelo menos uma coluna.'); return; }
+    if (semCor) { setErro('Marque pelo menos uma cor.'); return; }
     const escolhidas = COLUNAS_SAUDE.filter((c) => colunas.includes(c.chave));
     if (porGrupo) {
-      const grupos = [...GROUPS, 'Sem grupo']
+      const grupos = coresAtivas
         .map((nome) => {
-          const lista = pessoas.filter((p) => (nome === 'Sem grupo' ? !GROUPS.includes(p.grupo_trailha) : p.grupo_trailha === nome));
+          const lista = pessoas.filter((p) => doGrupo(p, nome));
           const porId = new Map(lista.map((p) => [p.id, p]));
           return {
             nome,
@@ -87,7 +98,7 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
         .filter((g) => g.linhas.length > 0);
       const r = await exportSaudePorGrupoToExcel(grupos);
       if (!r.success) { setErro(r.error || 'Não foi possível gerar a planilha.'); return; }
-      onExportado?.(pessoas.length);
+      onExportado?.(pessoasArquivo.length);
       onFechar();
       return;
     }
@@ -100,12 +111,13 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
 
   const baixarPdf = async () => {
     if (colunas.length === 0) { setErro('Marque pelo menos uma coluna.'); return; }
+    if (semCor) { setErro('Marque pelo menos uma cor.'); return; }
     setErro('');
     setGerandoPdf(true);
     try {
       const escolhidas = COLUNAS_SAUDE.filter((c) => colunas.includes(c.chave));
-      await exportarSaudePdf(pessoas, escolhidas, montarResumo(), porGrupo);
-      onExportado?.(pessoas.length);
+      await exportarSaudePdf(pessoasArquivo, escolhidas, montarResumo(), porGrupo);
+      onExportado?.(pessoasArquivo.length);
       onFechar();
     } catch (e) {
       console.error('Erro ao gerar PDF da saúde:', e);
@@ -167,6 +179,24 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
               </span>
             </span>
           </label>
+
+          {porGrupo && (
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+              <p className="text-sm text-gray-300 mb-2">Cores</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {coresOferecidas.map((c) => (
+                  <label key={c} className="flex items-center gap-2 text-sm text-gray-200 cursor-pointer">
+                    <Checkbox
+                      checked={cores.includes(c)}
+                      onCheckedChange={(v) => setCores((atual) => (v === true ? [...atual, c] : atual.filter((x) => x !== c)))}
+                    />
+                    {c}
+                    <span className="text-xs text-gray-400">({pessoas.filter((p) => doGrupo(p, c)).length})</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <label className="flex items-start gap-2 text-sm text-gray-200 cursor-pointer rounded-lg border border-white/10 bg-white/5 p-3">
             <Checkbox className="mt-0.5" checked={resumo} onCheckedChange={(v) => setResumo(v === true)} />

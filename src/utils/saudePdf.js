@@ -48,7 +48,7 @@ export const resumoDoGrupo = (lista) => TIPOS_GRUPO
  * pagina nova (vai na mochila do enfermeiro do grupo), com o resumo das patologias no
  * topo; no fim, a "base da saude" com as patologias de cada cor.
  */
-export const exportarSaudePdf = async (pessoas, colunas, resumo, porGrupo = false) => {
+export const exportarSaudePdf = async (pessoas, colunas, resumo, porGrupo = false, equipePorGrupo = null) => {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
   const fonte = await carregarFonte(doc);
@@ -142,8 +142,11 @@ export const exportarSaudePdf = async (pessoas, colunas, resumo, porGrupo = fals
     y += 9;
   });
 
-  const desenharResumoGrupo = (lista) => {
-    resumoDoGrupo(lista).forEach((l) => {
+  const desenharResumoGrupo = (lista, nomeGrupo) => {
+    // Equipe de saude alocada na cor (so quando a lista da equipe foi carregada).
+    const linhaEquipe = equipePorGrupo && nomeGrupo !== 'Sem grupo'
+      ? [{ rotulo: 'Equipe de saúde', texto: (equipePorGrupo[nomeGrupo] || []).join(', ') || 'ninguém alocado ainda' }] : [];
+    [...linhaEquipe, ...resumoDoGrupo(lista)].forEach((l) => {
       doc.setFont(fonte, 'bold');
       doc.setFontSize(FONTE);
       const rot = `${l.rotulo}: `;
@@ -181,7 +184,7 @@ export const exportarSaudePdf = async (pessoas, colunas, resumo, porGrupo = fals
       doc.setTextColor(...CINZA);
       doc.text(`gerado em ${hoje}`, M, y + 8);
       y += 16;
-      desenharResumoGrupo(lista);
+      desenharResumoGrupo(lista, g);
       desenharPessoas(lista);
     });
     // Base da saude: so as patologias, uma cor depois da outra.
@@ -191,7 +194,7 @@ export const exportarSaudePdf = async (pessoas, colunas, resumo, porGrupo = fals
     secoes.forEach(([g, lista]) => {
       garantir(60);
       faixaGrupo(g, lista.length);
-      desenharResumoGrupo(lista);
+      desenharResumoGrupo(lista, g);
       y += 6;
     });
   } else {

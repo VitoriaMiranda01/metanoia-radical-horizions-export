@@ -8,7 +8,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { COLUNAS_SAUDE, COLUNAS_SAUDE_PADRAO } from '@/utils/saudeColunas';
-import { agruparTermos } from '@/utils/saude';
+import { agruparTermos, rotuloEspecialidades } from '@/utils/saude';
+import { fetchSaudeEquipe } from '@/services/saudeService';
 import { exportSaudeToExcel, exportSaudePorGrupoToExcel } from '@/utils/excelExport';
 import { GROUPS } from '@/utils/gruposTrailha';
 import { exportarSaudePdf } from '@/utils/saudePdf';
@@ -31,6 +32,7 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
   const [colunas, setColunas] = useState(COLUNAS_SAUDE_PADRAO);
   const [resumo, setResumo] = useState(true);
   const [porGrupo, setPorGrupo] = useState(false);
+  const [equipePorGrupo, setEquipePorGrupo] = useState(null); // { Vermelho: ['Ana (Enfermagem)'] } ou null se nao carregou
   const [cores, setCores] = useState([...GROUPS, 'Sem grupo']);
   const [erro, setErro] = useState('');
   const [desmarcando, setDesmarcando] = useState(null); // chave aguardando confirmacao
@@ -44,6 +46,18 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
     setDesmarcando(null);
     setCores([...GROUPS, 'Sem grupo']);
   }, [aberto]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Com "por grupo", busca quem da equipe foi alocado em cada cor (linha "Equipe de saude" na folha).
+  useEffect(() => {
+    if (!aberto || !porGrupo) return;
+    fetchSaudeEquipe().then(({ equipe }) => {
+      const m = {};
+      equipe.filter((p) => p.grupo_saude).forEach((p) => {
+        (m[p.grupo_saude] ||= []).push(`${p.nome}${rotuloEspecialidades(p) ? ` (${rotuloEspecialidades(p)})` : ''}`);
+      });
+      setEquipePorGrupo(m);
+    }).catch(() => setEquipePorGrupo(null));
+  }, [aberto, porGrupo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Ordem alfabetica -- igual a tela.
   const pessoas = [...(quem === 'marcados' ? selecionados : visiveis)]
@@ -85,12 +99,15 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
           return {
             nome,
             linhas: lista.map((p) => Object.fromEntries(escolhidas.map((c) => [c.rotulo, c.valor(p)]))),
-            resumo: TIPOS_RESUMO.flatMap(([tipo, rotulo]) => agruparTermos(lista, tipo).map((g) => ({
+            resumo: [
+              ...(equipePorGrupo ? (equipePorGrupo[nome] || ['(ninguém alocado)']).map((x) => ({ Tipo: 'Equipe de saúde do grupo', Item: x, Quantidade: '', Pessoas: '' })) : []),
+              ...TIPOS_RESUMO.flatMap(([tipo, rotulo]) => agruparTermos(lista, tipo).map((g) => ({
               Tipo: rotulo,
               Item: g.rotulo,
               Quantidade: g.ids.size,
               Pessoas: [...g.ids].map((id) => porId.get(id).nome).join(', '),
             }))),
+            ],
           };
         })
         .filter((g) => g.linhas.length > 0);
@@ -114,7 +131,7 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
     setGerandoPdf(true);
     try {
       const escolhidas = COLUNAS_SAUDE.filter((c) => colunas.includes(c.chave));
-      await exportarSaudePdf(pessoasArquivo, escolhidas, montarResumo(), porGrupo);
+      await exportarSaudePdf(pessoasArquivo, escolhidas, montarResumo(), porGrupo, equipePorGrupo);
       onExportado?.(pessoasArquivo.length);
       onFechar();
     } catch (e) {

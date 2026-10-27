@@ -528,7 +528,7 @@ const SaudePage = () => {
       <div className={aba === 'acampantes' ? 'space-y-5' : 'hidden'}>{conteudoAcampantes}</div>
       {(aba === 'equipe' || totalEquipe != null) && (
         <div className={aba === 'equipe' ? '' : 'hidden'}>
-          <EquipeSaude ehOrganizador={ehOrganizador} onTotal={setTotalEquipe} />
+          <EquipeSaude ehOrganizador={ehOrganizador} onTotal={setTotalEquipe} acampantes={lista} />
         </div>
       )}
     </>

@@ -134,5 +134,11 @@ export const agruparTermos = (pessoas, tipo) => {
   );
 };
 
+/** "Enfermagem, Socorrista" -- principal + adicionais; "Outro" vira o texto escrito. */
+export const rotuloEspecialidades = (p) => [
+  p.especialidade === 'Outro' ? p.especialidade_outro : p.especialidade,
+  ...(p.especialidades_adicionais || []),
+].filter(Boolean).join(', ');
+
 /** Busca sem acento em qualquer pedaco do texto. */
 export const contemTexto = (valor, busca) => semAcento(valor).includes(semAcento(busca).trim());

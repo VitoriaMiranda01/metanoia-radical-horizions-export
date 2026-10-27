@@ -43,6 +43,14 @@ export const definirEspecialidadeSaude = async (equipanteId, especialidade, outr
   return data;
 };
 
+// Aloca o profissional da equipe em UM grupo de trilha (null = tira). 27/10/2026.
+export const definirGrupoSaude = async (escalaId, grupo) => {
+  const { data, error } = await supabase.rpc('definir_grupo_saude', { p_escala_id: escalaId, p_grupo: grupo || null });
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.erro || 'Não foi possível salvar o grupo.');
+  return data;
+};
+
 // O que foi escrito em "Outro", agrupado, para virar opcao fixa.
 export const fetchEspecialidadesOutros = async () => {
   const { data, error } = await supabase.rpc('especialidades_saude_outros');

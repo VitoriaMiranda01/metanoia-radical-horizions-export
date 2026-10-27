@@ -10,10 +10,12 @@ import { nomeDaIgreja } from '@/constants/igrejas';
 import { ESPECIALIDADE_OUTRO, problemaEspecialidade } from '@/constants/especialidadesSaude';
 import { linkWhatsApp } from '@/services/liderService';
 import {
-  fetchSaudeEquipe, definirEspecialidadeSaude, fetchEspecialidadesOutros, tornarEspecialidadeFixa,
+  fetchSaudeEquipe, definirEspecialidadeSaude, fetchEspecialidadesOutros, tornarEspecialidadeFixa, definirGrupoSaude,
 } from '@/services/saudeService';
 import { formatarTelefone } from '@/utils/telefone';
-import { contemTexto } from '@/utils/saude';
+import { contemTexto, agruparTermos, rotuloEspecialidades } from '@/utils/saude';
+import { GROUPS } from '@/utils/gruposTrailha';
+import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
 import { cn } from '@/lib/utils';
 
 /**
@@ -42,7 +44,10 @@ const Ordenar = ({ coluna, ordem, setOrdem, children }) => {
   );
 };
 
-const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
+const temSaude = (a) => a.tem_problema_saude || a.usa_medicamento || a.tem_restricao_alimentar || a.esta_gravida
+  || (a._termos && (a._termos.problema.length > 0 || a._termos.medicamento.length > 0 || a._termos.alimento.length > 0));
+
+const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
   const { toast } = useToast();
   const [dados, setDados] = useState({ equipe: [], grupoLink: null, lancada: true });
   const [carregando, setCarregando] = useState(true);
@@ -54,6 +59,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
   const [salvando, setSalvando] = useState(false);
   const [outros, setOutros] = useState([]);
   const [fixando, setFixando] = useState(null);
+  const [gravandoGrupo, setGravandoGrupo] = useState(null); // escala_id
   const [listaVersao, setListaVersao] = useState(0); // "Tornar fixa" recarrega o quadro da lista
 
   const carregar = async () => {
@@ -81,11 +87,13 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
     return [...c.entries()].sort((a, b) => (a[0] === ESPECIALIDADE_OUTRO) - (b[0] === ESPECIALIDADE_OUTRO) || b[1] - a[1]);
   }, [equipe]);
   const semEspecialidade = equipe.filter((p) => !p.especialidade).length;
+  const semGrupo = equipe.filter((p) => !p.grupo_saude).length;
 
   const visiveis = useMemo(() => {
     const q = busca.trim();
     const lista = equipe.filter((p) => {
       if (filtro === 'sem' && p.especialidade) return false;
+      if (filtro === 'semgrupo' && p.grupo_saude) return false;
       if (filtro !== 'todas' && filtro !== 'sem' && !especialidades(p).includes(filtro)) return false;
       if (q && ![p.nome, nomeDaIgreja(p), especialidades(p).join(' '), p.especialidade_outro, p.whatsapp].some((c) => contemTexto(c, q))) return false;
       return true;
@@ -136,6 +144,44 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
       setSalvando(false);
     }
   };
+
+  // Aloca (ou tira) o profissional de um grupo. Um so grupo por pessoa.
+  const trocarGrupo = async (p, grupo) => {
+    setGravandoGrupo(p.escala_id);
+    try {
+      await definirGrupoSaude(p.escala_id, grupo);
+      setDados((d) => ({ ...d, equipe: d.equipe.map((x) => (x.escala_id === p.escala_id ? { ...x, grupo_saude: grupo || null } : x)) }));
+    } catch (e) {
+      toast({ title: 'Não foi possível salvar o grupo', description: e.message, variant: 'destructive' });
+    } finally {
+      setGravandoGrupo(null);
+    }
+  };
+
+  // Demanda (patologias dos acampantes do grupo) x equipe alocada. So mostra.
+  const cobertura = GROUPS.map((g) => {
+    const doGrupo = acampantes.filter((a) => a.grupo_trailha === g && temSaude(a));
+    return {
+      grupo: g,
+      total: doGrupo.length,
+      problemas: agruparTermos(doGrupo, 'problema'),
+      comMedicamento: doGrupo.filter((a) => a.usa_medicamento || a._termos?.medicamento.length > 0).length,
+      comRestricao: doGrupo.filter((a) => a.tem_restricao_alimentar || a._termos?.alimento.length > 0).length,
+      equipe: equipe.filter((p) => p.grupo_saude === g),
+    };
+  });
+
+  const seletorGrupo = (p) => (
+    <select
+      value={p.grupo_saude || ''} disabled={gravandoGrupo === p.escala_id}
+      onChange={(e) => trocarGrupo(p, e.target.value)}
+      aria-label={`Grupo de ${primeiroNome(p.nome)}`}
+      className="h-8 rounded-md border border-white/15 bg-neutral-900 px-2 text-xs text-gray-200 disabled:opacity-50"
+    >
+      <option value="">Sem grupo</option>
+      {GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
+    </select>
+  );
 
   const fixar = async (texto) => {
     if (!window.confirm(`Tornar “${texto}” uma opção fixa da lista?\n\nQuem escreveu isso em "Outro" passa para a opção nova, e as próximas pessoas já encontram “${texto}” para escolher.`)) return;
@@ -239,6 +285,36 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
         )}
       </section>
 
+      {/* Cobertura por grupo: a demanda de saude de cada cor x quem da equipe foi alocado */}
+      <section className="rounded-xl border border-white/10 bg-black/50 p-4 space-y-3">
+        <div>
+          <p className="text-sm font-semibold text-white">Cobertura por grupo</p>
+          <p className="text-xs text-gray-500">Patologias dos acampantes de cada cor e a equipe alocada nela. Escolha o grupo de cada profissional na lista abaixo.</p>
+        </div>
+        <div className="grid gap-2 lg:grid-cols-2">
+          {cobertura.map((c) => (
+            <div key={c.grupo} className="rounded-lg border border-white/10 bg-white/[0.03] p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <GrupoTrilhaTag grupo={c.grupo} />
+                <span className="text-xs text-gray-400">{c.total} {c.total === 1 ? 'acampante' : 'acampantes'} com saúde</span>
+              </div>
+              {c.total === 0 ? <p className="text-xs text-gray-600">Nenhuma informação de saúde.</p> : (
+                <p className="text-xs text-gray-300 leading-relaxed">
+                  {c.problemas.length > 0 && <>{c.problemas.map((g) => `${g.rotulo} (${g.ids.size})`).join(', ')}. </>}
+                  <span className="text-gray-500">{c.comMedicamento} com medicamento · {c.comRestricao} com restrição alimentar</span>
+                </p>
+              )}
+              <div className="border-t border-white/10 pt-2">
+                {c.equipe.length === 0
+                  ? <p className="text-xs text-amber-300/90">Ninguém da equipe alocado neste grupo.</p>
+                  : <p className="text-xs text-gray-200"><span className="text-gray-500">Equipe: </span>
+                    {c.equipe.map((p) => `${primeiroNome(p.nome)}${rotuloEspecialidades(p) ? ` (${rotuloEspecialidades(p)})` : ''}`).join(', ')}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Busca e filtros */}
       <section className="rounded-xl border border-white/10 bg-black/50 p-4 space-y-3">
         <div className="relative">
@@ -248,11 +324,12 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
         </div>
         <div className="flex flex-wrap gap-1.5 text-xs">
           {[['todas', `Todos · ${equipe.length}`], ...contagem.map(([esp, n]) => [esp, `${esp} · ${n}`]),
-            ...(semEspecialidade ? [['sem', `Sem especialidade · ${semEspecialidade}`]] : [])].map(([v, rot]) => (
+            ...(semEspecialidade ? [['sem', `Sem especialidade · ${semEspecialidade}`]] : []),
+            ...(semGrupo ? [['semgrupo', `Sem grupo · ${semGrupo}`]] : [])].map(([v, rot]) => (
             <button key={v} type="button" onClick={() => setFiltro(v)}
               className={cn('px-3 py-1.5 rounded-full border font-medium whitespace-nowrap transition-colors',
                 filtro === v ? 'border-emerald-400 bg-emerald-500/20 text-white'
-                  : v === 'sem' ? 'border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20'
+                  : (v === 'sem' || v === 'semgrupo') ? 'border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20'
                     : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10')}>
               {rot}
             </button>
@@ -284,6 +361,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
                     <th className="px-3 py-2 min-w-[240px]"><Ordenar coluna="nome" ordem={ordem} setOrdem={setOrdem}>Nome</Ordenar></th>
                     <th className="px-3 py-2"><Ordenar coluna="idade" ordem={ordem} setOrdem={setOrdem}>Idade</Ordenar></th>
                     <th className="px-3 py-2"><Ordenar coluna="especialidade" ordem={ordem} setOrdem={setOrdem}>Especialidade</Ordenar></th>
+                    <th className="px-3 py-2 uppercase tracking-wide">Grupo</th>
                     <th className="px-3 py-2 min-w-[160px]"><Ordenar coluna="igreja" ordem={ordem} setOrdem={setOrdem}>Igreja</Ordenar></th>
                     <th className="px-3 py-2 min-w-[170px] uppercase tracking-wide">Emergência</th>
                     <th className="px-3 py-2 uppercase tracking-wide">Ações</th>
@@ -310,6 +388,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
                               : <TagEspecialidade especialidade={p.especialidade} adicionais={p.especialidades_adicionais} semEspecialidade />}
                           </div>
                         </td>
+                        <td className="px-3 py-2.5">{seletorGrupo(p)}</td>
                         <td className="px-3 py-2.5 text-xs text-gray-300 max-w-[220px] truncate" title={nomeDaIgreja(p)}>{nomeDaIgreja(p) || '—'}</td>
                         <td className="px-3 py-2.5 text-xs">
                           <p className="text-gray-200">{p.contato_emergencia_nome || '—'}</p>
@@ -341,6 +420,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal }) => {
                       {p.idade != null ? `${p.idade} anos` : 'sem idade'}{p.sexo ? ` · ${p.sexo}` : ''}{p.eh_lider ? ' · Líder' : ''}
                     </p>
                     <p className="text-xs text-gray-500 truncate">{nomeDaIgreja(p) || '—'}</p>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">Grupo: {seletorGrupo(p)}</div>
                     {p.contato_emergencia_nome && (
                       <p className="text-xs"><span className="text-gray-500">Emergência: </span><span className="text-gray-300">{p.contato_emergencia_nome}{p.contato_emergencia_telefone ? ` · ${formatarTelefone(p.contato_emergencia_telefone)}` : ''}</span></p>
                     )}

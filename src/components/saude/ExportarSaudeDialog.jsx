@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { COLUNAS_SAUDE, COLUNAS_SAUDE_PADRAO } from '@/utils/saudeColunas';
 import { agruparTermos } from '@/utils/saude';
-import { exportSaudeToExcel } from '@/utils/excelExport';
+import { exportSaudeToExcel, exportSaudePorGrupoToExcel } from '@/utils/excelExport';
+import { GROUPS } from '@/utils/gruposTrailha';
 import { exportarSaudePdf } from '@/utils/saudePdf';
 
 const TIPOS_RESUMO = [
@@ -22,6 +23,7 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
   const [quem, setQuem] = useState('tela');
   const [colunas, setColunas] = useState(COLUNAS_SAUDE_PADRAO);
   const [resumo, setResumo] = useState(true);
+  const [porGrupo, setPorGrupo] = useState(false);
   const [erro, setErro] = useState('');
   const [gerandoPdf, setGerandoPdf] = useState(false);
 
@@ -56,6 +58,29 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
   const baixar = async () => {
     if (colunas.length === 0) { setErro('Marque pelo menos uma coluna.'); return; }
     const escolhidas = COLUNAS_SAUDE.filter((c) => colunas.includes(c.chave));
+    if (porGrupo) {
+      const grupos = [...GROUPS, 'Sem grupo']
+        .map((nome) => {
+          const lista = pessoas.filter((p) => (nome === 'Sem grupo' ? !GROUPS.includes(p.grupo_trailha) : p.grupo_trailha === nome));
+          const porId = new Map(lista.map((p) => [p.id, p]));
+          return {
+            nome,
+            linhas: lista.map((p) => Object.fromEntries(escolhidas.map((c) => [c.rotulo, c.valor(p)]))),
+            resumo: TIPOS_RESUMO.flatMap(([tipo, rotulo]) => agruparTermos(lista, tipo).map((g) => ({
+              Tipo: rotulo,
+              Item: g.rotulo,
+              Quantidade: g.ids.size,
+              Pessoas: [...g.ids].map((id) => porId.get(id).nome).join(', '),
+            }))),
+          };
+        })
+        .filter((g) => g.linhas.length > 0);
+      const r = await exportSaudePorGrupoToExcel(grupos);
+      if (!r.success) { setErro(r.error || 'Não foi possível gerar a planilha.'); return; }
+      onExportado?.(pessoas.length);
+      onFechar();
+      return;
+    }
     const linhas = pessoas.map((p) => Object.fromEntries(escolhidas.map((c) => [c.rotulo, c.valor(p)])));
     const r = await exportSaudeToExcel(linhas, montarResumo());
     if (!r.success) { setErro(r.error || 'Não foi possível gerar a planilha.'); return; }
@@ -69,7 +94,7 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
     setGerandoPdf(true);
     try {
       const escolhidas = COLUNAS_SAUDE.filter((c) => colunas.includes(c.chave));
-      await exportarSaudePdf(pessoas, escolhidas, montarResumo());
+      await exportarSaudePdf(pessoas, escolhidas, montarResumo(), porGrupo);
       onExportado?.(pessoas.length);
       onFechar();
     } catch (e) {
@@ -119,6 +144,16 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
               ))}
             </div>
           </div>
+
+          <label className="flex items-start gap-2 text-sm text-gray-200 cursor-pointer rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
+            <Checkbox className="mt-0.5" checked={porGrupo} onCheckedChange={(v) => setPorGrupo(v === true)} />
+            <span>
+              Separar por <strong>grupo de trilha</strong> (uma folha por cor)
+              <span className="block text-xs text-gray-400">
+                Cada cor começa em página nova (PDF) ou aba própria (Excel), com as patologias do grupo no topo, para a mochila do enfermeiro. No fim, a base da saúde com as patologias de cada cor.
+              </span>
+            </span>
+          </label>
 
           <label className="flex items-start gap-2 text-sm text-gray-200 cursor-pointer rounded-lg border border-white/10 bg-white/5 p-3">
             <Checkbox className="mt-0.5" checked={resumo} onCheckedChange={(v) => setResumo(v === true)} />

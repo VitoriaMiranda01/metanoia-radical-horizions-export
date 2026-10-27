@@ -399,6 +399,39 @@ export const exportSaudeToExcel = async (linhas, resumo) => {
   }
 };
 
+// Saude por grupo de trilha (27/10/2026, Vera): uma aba por cor com as pessoas do grupo
+// (impressa na mochila do enfermeiro) e a aba "Base da saude" com as patologias de cada cor.
+// `grupos`: [{ nome, linhas, resumo: [{ Tipo, Item, Quantidade, Pessoas }] }]
+export const exportSaudePorGrupoToExcel = async (grupos) => {
+  try {
+    if (!grupos || grupos.length === 0) throw new Error('Nada para exportar.');
+    const wb = XLSX.utils.book_new();
+
+    const base = grupos.flatMap((g) => g.resumo.map((r) => ({ Grupo: g.nome, ...r })));
+    if (base.length > 0) {
+      const wb0 = XLSX.utils.json_to_sheet(base);
+      wb0['!cols'] = [{ wch: 14 }, { wch: 22 }, { wch: 40 }, { wch: 12 }, { wch: 90 }];
+      XLSX.utils.book_append_sheet(wb, wb0, 'Base da saúde');
+    }
+
+    grupos.forEach((g) => {
+      const ws = XLSX.utils.json_to_sheet(g.linhas);
+      ws['!cols'] = Object.keys(g.linhas[0]).map((k) => ({
+        wch: Math.min(60, Math.max(k.length, ...g.linhas.map((l) => String(l[k] ?? '').length)) + 2),
+      }));
+      XLSX.utils.book_append_sheet(wb, ws, g.nome.slice(0, 31));
+    });
+
+    const bytes = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    await entregarArquivo(blob, `saude_por_grupo_${new Date().toISOString().split('T')[0]}.xlsx`);
+    return { success: true };
+  } catch (error) {
+    console.error('Erro ao exportar:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 // Relatorio da Pre-escala (14/10/2026): quem marcou cada area como 1ª opcao.
 // `situacao`: 'todos' | 'aprovado' | 'pendente' | 'rejeitado' -- a tela ja
 // manda a lista filtrada; aqui so muda o nome do arquivo e o resumo.

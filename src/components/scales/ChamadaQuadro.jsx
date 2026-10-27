@@ -13,6 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from '@/components/ui/alert-dialog';
 import ChamadaAreaDialog from './ChamadaAreaDialog';
+import ChamadaExportar from './ChamadaExportar';
 import ChamadaSituacaoLista, { SITUACOES, contaNaChamada, manterEm } from './ChamadaSituacaoLista';
 import { carregarChamada } from '@/services/chamadaStore';
 import { useAtualizacaoPeriodica } from '@/hooks/useAtualizacaoPeriodica';
@@ -188,6 +189,8 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
           </Button>
         </div>
       </div>
+
+      {!minimizado && <ChamadaExportar situacaoAberta={situacao} areas={porArea.map((a) => a.area).sort((a, b) => a.localeCompare(b, 'pt-BR'))} />}
 
       {verAreas && !minimizado && (
         <div className="px-4 py-3 border-b border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1 max-h-60 overflow-y-auto">

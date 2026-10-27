@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown, Check, Copy, Loader2, MessageCircle, Pencil, Phone, RefreshCw, Search, Send, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import TagEspecialidade from '@/components/common/TagEspecialidade';
 import CampoEspecialidadeSaude, { limparCacheEspecialidades } from '@/components/inscricao/CampoEspecialidadeSaude';
@@ -60,6 +62,9 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
   const [outros, setOutros] = useState([]);
   const [fixando, setFixando] = useState(null);
   const [gravandoGrupo, setGravandoGrupo] = useState(null); // escala_id
+  const [painel, setPainel] = useState(null); // cor aberta no painel da equipe do grupo
+  const [buscaPainel, setBuscaPainel] = useState('');
+  const [espPainel, setEspPainel] = useState('todas');
   const [listaVersao, setListaVersao] = useState(0); // "Tornar fixa" recarrega o quadro da lista
 
   const carregar = async () => {
@@ -289,14 +294,19 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
       <section className="rounded-xl border border-white/10 bg-black/50 p-4 space-y-3">
         <div>
           <p className="text-sm font-semibold text-white">Cobertura por grupo</p>
-          <p className="text-xs text-gray-500">Patologias dos acampantes de cada cor e a equipe alocada nela. Escolha o grupo de cada profissional na lista abaixo.</p>
+          <p className="text-xs text-gray-500">Patologias dos acampantes de cada cor e a equipe alocada nela. Clique no cartão de uma cor para escolher quem da equipe vai nela.</p>
         </div>
         <div className="grid gap-2 lg:grid-cols-2">
           {cobertura.map((c) => (
-            <div key={c.grupo} className="rounded-lg border border-white/10 bg-white/[0.03] p-3 space-y-2">
+            <div key={c.grupo} role="button" tabIndex={0}
+              onClick={() => { setPainel(c.grupo); setBuscaPainel(''); setEspPainel('todas'); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPainel(c.grupo); setBuscaPainel(''); setEspPainel('todas'); } }}
+              title={`Escolher a equipe do grupo ${c.grupo}`}
+              className="rounded-lg border border-white/10 bg-white/[0.03] p-3 space-y-2 cursor-pointer transition-colors hover:bg-white/[0.07] hover:border-white/25 focus:outline-none focus:ring-2 focus:ring-emerald-400/50">
               <div className="flex items-center gap-2">
                 <GrupoTrilhaTag grupo={c.grupo} />
                 <span className="text-xs text-gray-400">{c.total} {c.total === 1 ? 'acampante' : 'acampantes'} com saúde</span>
+                <span className="ml-auto text-[11px] text-emerald-300">Escolher equipe</span>
               </div>
               {c.total === 0 ? <p className="text-xs text-gray-600">Nenhuma informação de saúde.</p> : (
                 <p className="text-xs text-gray-300 leading-relaxed">
@@ -433,6 +443,71 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
           </>
         )}
       </section>
+
+      {/* Painel: marcar quem da equipe vai neste grupo (um grupo so por pessoa) */}
+      <Dialog open={!!painel} onOpenChange={(v) => !v && setPainel(null)}>
+        <DialogContent className="bg-zinc-900 border border-white/10 text-white sm:max-w-2xl max-h-[90dvh] flex flex-col">
+          {painel && (() => {
+            const c = cobertura.find((x) => x.grupo === painel);
+            const q = buscaPainel.trim();
+            const lista = equipe
+              .filter((p) => (espPainel === 'todas' || especialidades(p).includes(espPainel)))
+              .filter((p) => !q || [p.nome, rotuloEspecialidades(p), nomeDaIgreja(p)].some((x) => contemTexto(x, q)))
+              .sort((a, b) => (Number(b.grupo_saude === painel) - Number(a.grupo_saude === painel)) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">Equipe do grupo <GrupoTrilhaTag grupo={painel} /></DialogTitle>
+                  <DialogDescription className="text-gray-300 text-xs leading-relaxed">
+                    {c.total} {c.total === 1 ? 'acampante' : 'acampantes'} com saúde.{' '}
+                    {c.problemas.length > 0 ? c.problemas.map((g) => `${g.rotulo} (${g.ids.size})`).join(', ') : 'Nenhuma patologia informada.'}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Input value={buscaPainel} onChange={(e) => setBuscaPainel(e.target.value)} placeholder="Buscar nome ou especialidade..."
+                      className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500" />
+                  </div>
+                  <select value={espPainel} onChange={(e) => setEspPainel(e.target.value)} aria-label="Filtrar por especialidade"
+                    className="h-10 rounded-md border border-white/15 bg-neutral-900 px-2 text-sm text-gray-200">
+                    <option value="todas">Todas as especialidades</option>
+                    {contagem.map(([esp, n]) => <option key={esp} value={esp}>{esp} ({n})</option>)}
+                  </select>
+                </div>
+                <p className="text-xs text-gray-400">
+                  <strong className="text-white tabular-nums">{c.equipe.length}</strong> {c.equipe.length === 1 ? 'pessoa' : 'pessoas'} neste grupo. Quem está em outra cor muda para esta ao marcar.
+                </p>
+                <div className="flex-1 min-h-0 overflow-y-auto rounded-lg border border-white/10 divide-y divide-white/5">
+                  {lista.length === 0 && <p className="py-8 text-center text-sm text-gray-500">Ninguém com esse filtro.</p>}
+                  {lista.map((p) => {
+                    const aqui = p.grupo_saude === painel;
+                    return (
+                      <label key={p.escala_id}
+                        className={cn('flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/5', aqui && 'bg-emerald-500/10', gravandoGrupo === p.escala_id && 'opacity-60')}>
+                        <Checkbox checked={aqui} disabled={gravandoGrupo === p.escala_id}
+                          onCheckedChange={(v) => trocarGrupo(p, v === true ? painel : null)} aria-label={`Colocar ${p.nome} no grupo ${painel}`} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-white flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                            {p.eh_lider && <Star className="w-3.5 h-3.5 text-amber-300 shrink-0" aria-label="Líder" />}
+                            <span>{p.nome}</span>
+                            <TagEspecialidade especialidade={p.especialidade} outro={p.especialidade_outro} adicionais={p.especialidades_adicionais} semEspecialidade />
+                          </p>
+                          <p className="text-xs text-gray-500">{p.idade != null ? `${p.idade} anos` : 'sem idade'}{p.sexo ? ` · ${p.sexo}` : ''}</p>
+                        </div>
+                        {p.grupo_saude && !aqui && <GrupoTrilhaTag grupo={p.grupo_saude} className="text-[10px] px-2" />}
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={() => setPainel(null)} className="bg-emerald-600 hover:bg-emerald-700 text-white">Pronto</Button>
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       {/* Quadro do "Outro" (organizador) */}
       {ehOrganizador && (

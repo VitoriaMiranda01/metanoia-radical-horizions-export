@@ -21,7 +21,7 @@ const semAcento = (s) =>
   String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 // Respostas que nao dizem nada ("N", "não", "nenhum"...).
-const VAZIOS = new Set(['', 'n', 's', 'nao', 'sim', 'nenhum', 'nenhuma', 'nada', 'na', 'nt', 'x', 'ok']);
+const VAZIOS = new Set(['', 'n', 's', 'nao', 'sim', 'nenhum', 'nenhuma', 'nada', 'na', 'nt', 'x', 'ok', 'regular']);
 
 // Sinonimos: [rotulo, expressao sobre o texto ja sem acento e minusculo].
 const SINONIMOS_PROBLEMA = [
@@ -94,6 +94,8 @@ export const termosDoTexto = (texto, tipo) => {
   const { sinonimos } = CAMPOS[tipo];
   const limpo = String(texto || '')
     .replace(/\([^)]*\)?/g, ' ')                   // "(remédio de nariz)"
+    // horario / frequencia ("de 3:00 em 3:00 horas", "8h em 8h") nao e problema de saude
+    .replace(/\d{1,2}\s*(:\s*\d{2}|hs?\b|horas?\b)(\s*(em|a cada|de|até|ate)\s*\d{1,2}\s*(:\s*\d{2}|hs?\b|horas?\b)?)*(\s*horas?\b)?/gi, ' ')
     .replace(/\d+\s*\/\s*\d+/g, ' ')               // "6/200"
     .replace(/\d+([.,]\d+)?\s*(mg|mcg|mc|ml|g|ui|%)?\b/gi, ' '); // "50 mg", "40mg"
   const vistos = new Map();
@@ -101,6 +103,8 @@ export const termosDoTexto = (texto, tipo) => {
     .split(/[,;/+\n]|\s+e\s+|\.\s+/i)
     // "cetoprofeno em caso de dor" -> "cetoprofeno"
     .map((p) => p.replace(/\s+(em caso|quando|se sentir|se tiver|caso|para|pra)\s.*$/i, ''))
+    // instrucao, nao patologia ("tem que se alimentar de ...")
+    .map((p) => p.replace(/(^|\s+)(tem que|precisa|deve|devo)\s.*$/i, ''))
     .map((p) => p.replace(/[.\-–:]+$/g, '').replace(/^[.\-–:]+/g, '').replace(/\s+/g, ' ').trim())
     .forEach((pedaco) => {
       const base = semAcento(pedaco);

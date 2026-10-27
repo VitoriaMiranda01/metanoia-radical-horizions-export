@@ -57,7 +57,7 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
       });
       setEquipePorGrupo(m);
     }).catch(() => setEquipePorGrupo(null));
-  }, [aberto, porGrupo]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [aberto, porGrupo]);
 
   // Ordem alfabetica -- igual a tela.
   const pessoas = [...(quem === 'marcados' ? selecionados : visiveis)]

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown, Check, Copy, Loader2, MessageCircle, Pencil, Phone, RefreshCw, Search, Send, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,6 +65,19 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
   const [painel, setPainel] = useState(null); // cor aberta no painel da equipe do grupo
   const [buscaPainel, setBuscaPainel] = useState('');
   const [espPainel, setEspPainel] = useState('todas');
+  // No celular o mesmo toque que abre o painel "atravessava" e marcava a pessoa que
+  // ficava embaixo do dedo (visto no teste de 27/10). Ignora toques logo apos abrir.
+  const abertoEm = useRef(0);
+  // Ordem fixa enquanto o painel esta aberto (quem ja esta no grupo primeiro): marcar
+  // alguem nao reordena a lista, para o proximo toque nao cair na pessoa errada.
+  const ordemPainel = useRef(new Map());
+  const abrirPainel = (g) => {
+    abertoEm.current = Date.now();
+    ordemPainel.current = new Map([...equipe]
+      .sort((a, b) => (Number(b.grupo_saude === g) - Number(a.grupo_saude === g)) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'))
+      .map((p, i) => [p.escala_id, i]));
+    setPainel(g); setBuscaPainel(''); setEspPainel('todas');
+  };
   const [listaVersao, setListaVersao] = useState(0); // "Tornar fixa" recarrega o quadro da lista
 
   const carregar = async () => {
@@ -181,7 +194,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
       value={p.grupo_saude || ''} disabled={gravandoGrupo === p.escala_id}
       onChange={(e) => trocarGrupo(p, e.target.value)}
       aria-label={`Grupo de ${primeiroNome(p.nome)}`}
-      className="h-8 rounded-md border border-white/15 bg-neutral-900 px-2 text-xs text-gray-200 disabled:opacity-50"
+      className="h-9 md:h-8 rounded-md border border-white/15 bg-neutral-900 px-2 text-sm md:text-xs text-gray-200 disabled:opacity-50"
     >
       <option value="">Sem grupo</option>
       {GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
@@ -299,17 +312,17 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
         <div className="grid gap-2 lg:grid-cols-2">
           {cobertura.map((c) => (
             <div key={c.grupo} role="button" tabIndex={0}
-              onClick={() => { setPainel(c.grupo); setBuscaPainel(''); setEspPainel('todas'); }}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPainel(c.grupo); setBuscaPainel(''); setEspPainel('todas'); } }}
+              onClick={() => abrirPainel(c.grupo)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirPainel(c.grupo); } }}
               title={`Escolher a equipe do grupo ${c.grupo}`}
               className="rounded-lg border border-white/10 bg-white/[0.03] p-3 space-y-2 cursor-pointer transition-colors hover:bg-white/[0.07] hover:border-white/25 focus:outline-none focus:ring-2 focus:ring-emerald-400/50">
               <div className="flex items-center gap-2">
                 <GrupoTrilhaTag grupo={c.grupo} />
-                <span className="text-xs text-gray-400">{c.total} {c.total === 1 ? 'acampante' : 'acampantes'} com saúde</span>
-                <span className="ml-auto text-[11px] text-emerald-300">Escolher equipe</span>
+                <span className="text-xs text-gray-400">{c.total} com saúde</span>
+                <span className="ml-auto shrink-0 whitespace-nowrap rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-200">Escolher equipe</span>
               </div>
               {c.total === 0 ? <p className="text-xs text-gray-600">Nenhuma informação de saúde.</p> : (
-                <p className="text-xs text-gray-300 leading-relaxed">
+                <p className="text-xs text-gray-300 leading-relaxed line-clamp-3 sm:line-clamp-none">
                   {c.problemas.length > 0 && <>{c.problemas.map((g) => `${g.rotulo} (${g.ids.size})`).join(', ')}. </>}
                   <span className="text-gray-500">{c.comMedicamento} com medicamento · {c.comRestricao} com restrição alimentar</span>
                 </p>
@@ -446,14 +459,14 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
 
       {/* Painel: marcar quem da equipe vai neste grupo (um grupo so por pessoa) */}
       <Dialog open={!!painel} onOpenChange={(v) => !v && setPainel(null)}>
-        <DialogContent className="bg-zinc-900 border border-white/10 text-white sm:max-w-2xl max-h-[90dvh] flex flex-col">
+        <DialogContent className="bg-zinc-900 border border-white/10 text-white sm:max-w-2xl max-h-[92dvh] flex flex-col gap-3 p-4 sm:p-6" onOpenAutoFocus={(e) => e.preventDefault()}>
           {painel && (() => {
             const c = cobertura.find((x) => x.grupo === painel);
             const q = buscaPainel.trim();
             const lista = equipe
               .filter((p) => (espPainel === 'todas' || especialidades(p).includes(espPainel)))
               .filter((p) => !q || [p.nome, rotuloEspecialidades(p), nomeDaIgreja(p)].some((x) => contemTexto(x, q)))
-              .sort((a, b) => (Number(b.grupo_saude === painel) - Number(a.grupo_saude === painel)) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
+              .sort((a, b) => (ordemPainel.current.get(a.escala_id) ?? 9999) - (ordemPainel.current.get(b.escala_id) ?? 9999));
             return (
               <>
                 <DialogHeader>
@@ -484,9 +497,11 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
                     const aqui = p.grupo_saude === painel;
                     return (
                       <label key={p.escala_id}
-                        className={cn('flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/5', aqui && 'bg-emerald-500/10', gravandoGrupo === p.escala_id && 'opacity-60')}>
+                        className={cn('flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-white/5', aqui && 'bg-emerald-500/10', gravandoGrupo === p.escala_id && 'opacity-60')}>
                         <Checkbox checked={aqui} disabled={gravandoGrupo === p.escala_id}
-                          onCheckedChange={(v) => trocarGrupo(p, v === true ? painel : null)} aria-label={`Colocar ${p.nome} no grupo ${painel}`} />
+                          className="h-5 w-5 border-white/50 data-[state=checked]:border-emerald-400 data-[state=checked]:bg-emerald-500"
+                          onCheckedChange={(v) => { if (Date.now() - abertoEm.current < 600) return; trocarGrupo(p, v === true ? painel : null); }}
+                          aria-label={`Colocar ${p.nome} no grupo ${painel}`} />
                         <div className="min-w-0 flex-1">
                           <p className="text-sm text-white flex flex-wrap items-center gap-x-1.5 gap-y-1">
                             {p.eh_lider && <Star className="w-3.5 h-3.5 text-amber-300 shrink-0" aria-label="Líder" />}

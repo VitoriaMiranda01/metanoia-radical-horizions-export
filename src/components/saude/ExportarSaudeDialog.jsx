@@ -156,7 +156,7 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
 
   return (
     <Dialog open={aberto} onOpenChange={(v) => !v && onFechar()}>
-      <DialogContent className="bg-zinc-900 border border-white/10 text-white sm:max-w-lg">
+      <DialogContent className="bg-zinc-900 border border-white/10 text-white sm:max-w-lg max-h-[92dvh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription className="text-gray-400">
@@ -213,7 +213,7 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
             </div>
           )}
 
-          <label className="flex items-start gap-2 text-sm text-gray-200 cursor-pointer rounded-lg border border-white/10 bg-white/5 p-3">
+          {!porGrupo && <label className="flex items-start gap-2 text-sm text-gray-200 cursor-pointer rounded-lg border border-white/10 bg-white/5 p-3">
             <Checkbox className="mt-0.5" checked={resumo} onCheckedChange={(v) => setResumo(v === true)} />
             <span>
               Incluir aba <strong>Resumo</strong>
@@ -221,7 +221,7 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
                 Quantas pessoas por problema de saúde, medicamento e restrição alimentar, com os nomes.
               </span>
             </span>
-          </label>
+          </label>}
         </div>
 
         {erro && <p className="text-sm text-red-400">{erro}</p>}

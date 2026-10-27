@@ -63,15 +63,15 @@ const Cartao = ({ icone: Icone, rotulo, valor, detalhe, cor, ativo, onClick }) =
   <button
     type="button"
     onClick={onClick}
-    className={`text-left rounded-xl border p-4 transition-colors ${
+    className={`text-left rounded-xl border p-3 sm:p-4 transition-colors ${
       ativo ? 'border-emerald-400/70 bg-emerald-500/10' : 'border-white/10 bg-black/50 hover:bg-white/5'
     }`}
   >
-    <div className="flex items-center gap-2 text-sm text-gray-400">
-      <Icone className={`w-4 h-4 ${cor}`} />
+    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400 leading-tight">
+      <Icone className={`w-4 h-4 shrink-0 ${cor}`} />
       {rotulo}
     </div>
-    <p className="text-3xl font-bold text-white mt-1 tabular-nums">{valor}</p>
+    <p className="text-2xl sm:text-3xl font-bold text-white mt-1 tabular-nums">{valor}</p>
     {detalhe && <p className="text-xs text-gray-500 mt-0.5">{detalhe}</p>}
   </button>
 );
@@ -277,7 +277,7 @@ const SaudePage = () => {
                   className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
                 />
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="hidden md:flex flex-wrap gap-1.5">
                 {MOSTRAR.map((m) => (
                   <Chip key={m.valor} ativo={mostrar === m.valor} onClick={() => setMostrar(m.valor)}>
                     {m.rotulo}
@@ -323,7 +323,7 @@ const SaudePage = () => {
                 {grupos[tipo].length === 0 ? (
                   <p className="text-xs text-gray-600">Ninguém informou.</p>
                 ) : (
-                  <div className="flex flex-wrap gap-1.5 max-h-44 overflow-y-auto pr-1">
+                  <div className="flex flex-wrap gap-1.5 max-h-28 sm:max-h-44 overflow-y-auto pr-1">
                     {grupos[tipo].map((g) => {
                       const marcado = termos.some((t) => t.tipo === tipo && t.chave === g.chave);
                       return (
@@ -510,7 +510,7 @@ const SaudePage = () => {
 
   const abas = (
     <div className="flex gap-1 p-1 rounded-lg border border-white/10 bg-black/50 w-full sm:w-fit" role="tablist">
-      {[['acampantes', 'Acampantes'], ['equipe', `Equipe da Saúde${totalEquipe != null ? ` · ${totalEquipe}` : ''}`]].map(([v, r]) => (
+      {[['acampantes', 'Acampantes'], ['equipe', <>Equipe<span className="hidden sm:inline"> da Saúde</span>{totalEquipe != null ? ` · ${totalEquipe}` : ''}</>]].map(([v, r]) => (
         <button key={v} type="button" role="tab" aria-selected={aba === v} onClick={() => setAba(v)}
           className={`flex-1 sm:flex-none min-h-[40px] px-4 rounded-md text-sm font-medium transition-colors ${
             aba === v ? 'bg-emerald-600 text-white' : 'text-gray-300 hover:bg-white/10'}`}>
@@ -580,7 +580,7 @@ const SaudePage = () => {
           </div>
         </header>
 
-        <main className="max-w-[1500px] mx-auto px-4 py-6 space-y-5">
+        <main className="max-w-[1500px] mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-5">
           {conteudo}
         </main>
       </div>
@@ -591,7 +591,7 @@ const SaudePage = () => {
         onFechar={() => setExportando(false)}
         visiveis={visiveis}
         selecionados={listaSelecionados}
-        onExportado={(n) => toast({ title: 'Planilha baixada', description: `${n} ${n === 1 ? 'acampante' : 'acampantes'}.`, className: 'bg-emerald-600 text-white' })}
+        onExportado={(n) => toast({ title: 'Arquivo pronto', description: `${n} ${n === 1 ? 'acampante' : 'acampantes'}.`, className: 'bg-emerald-600 text-white' })}
       />
     </>
   );

@@ -93,16 +93,20 @@ export const exportarSaudePdf = async (pessoas, colunas, resumo, porGrupo = fals
       .map((c) => ({ rotulo: c.rotulo, texto: String(c.valor(p) ?? '').trim() }))
       .filter((l) => l.texto)
       .map((l) => {
-        doc.setFont(fonte, 'normal');
         doc.setFontSize(FONTE);
-        return { ...l, partes: doc.splitTextToSize(l.texto, largura - COL_ROTULO - 8) };
+        // rotulo longo ("Telefone de emergência") pode quebrar em 2 linhas: a altura e a maior das duas
+        doc.setFont(fonte, 'bold');
+        const rotuloPartes = doc.splitTextToSize(l.rotulo, COL_ROTULO - 8);
+        doc.setFont(fonte, 'normal');
+        const partes = doc.splitTextToSize(l.texto, largura - COL_ROTULO - 8);
+        return { ...l, partes, rotuloPartes, n: Math.max(partes.length, rotuloPartes.length) };
       });
 
     // Cartao inteiro na mesma pagina (27/10/2026): se nao couber, vai todo para a proxima.
     // So um cartao maior que a pagina inteira continua podendo quebrar.
-    const alturaCartao = 18 + linhas.reduce((t, l) => t + l.partes.length * LH + 3, 0) + 9;
+    const alturaCartao = 18 + linhas.reduce((t, l) => t + l.n * LH + 3, 0) + 9;
     if (alturaCartao <= limite - M) garantir(alturaCartao);
-    else garantir(22 + (linhas[0] ? linhas[0].partes.length * LH + 3 : 0));
+    else garantir(22 + (linhas[0] ? linhas[0].n * LH + 3 : 0));
     // Cor do grupo de trilha: faixa clara com tarja forte na esquerda e
     // bolinha + nome do grupo na direita (a Vera usa para realocar).
     const cor = CORES_GRUPO[p.grupo_trailha];
@@ -116,7 +120,13 @@ export const exportarSaudePdf = async (pessoas, colunas, resumo, porGrupo = fals
     doc.setFontSize(11);
     doc.setTextColor(0, 0, 0);
     const reservaGrupo = p.grupo_trailha ? 80 : 0;
-    doc.text(temNome ? String(p.nome || '') : `Acampante ${i + 1}`, M + 15, y + 12.5, { maxWidth: largura - 20 - reservaGrupo });
+    // Nome numa linha so (a faixa tem 18 pt): nome muito longo diminui a letra
+    const titulo = temNome ? String(p.nome || '') : `Acampante ${i + 1}`;
+    const cabe = largura - 20 - reservaGrupo;
+    let tam = 11;
+    while (tam > 7 && doc.getTextWidth(titulo) > cabe) { tam -= 0.5; doc.setFontSize(tam); }
+    doc.text(titulo, M + 15, y + 12.5);
+    doc.setFontSize(11);
     if (p.grupo_trailha) {
       doc.setFillColor(...(cor ? cor.forte : [170, 170, 170]));
       doc.circle(M + largura - 70, y + 9, 4, 'FD');
@@ -125,15 +135,15 @@ export const exportarSaudePdf = async (pessoas, colunas, resumo, porGrupo = fals
     y += 18;
 
     linhas.forEach((l) => {
-      garantir(l.partes.length * LH + 3);
+      garantir(l.n * LH + 3);
       doc.setFont(fonte, 'bold');
       doc.setFontSize(FONTE);
       doc.setTextColor(...CINZA);
-      doc.text(l.rotulo, M + 5, y + 10, { maxWidth: COL_ROTULO - 8 });
+      doc.text(l.rotuloPartes, M + 5, y + 10, { lineHeightFactor: LH / FONTE });
       doc.setFont(fonte, 'normal');
       doc.setTextColor(0, 0, 0);
-      doc.text(l.partes, M + COL_ROTULO, y + 10);
-      y += l.partes.length * LH + 3;
+      doc.text(l.partes, M + COL_ROTULO, y + 10, { lineHeightFactor: LH / FONTE });
+      y += l.n * LH + 3;
     });
 
     doc.setDrawColor(190, 190, 190);

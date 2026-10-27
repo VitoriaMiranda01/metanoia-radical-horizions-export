@@ -47,10 +47,44 @@ const igrejaDaRelacao = (eq) => {
 };
 
 /**
+ * Colunas EXTRAS que o organizador pode marcar ao exportar (27/10/2026,
+ * Patrick): vão depois das colunas do modelo. `pt`: largura no PDF (pontos);
+ * `ch`: largura no Excel (caracteres). Só equipantes, só organizador (a tela de
+ * escalas já é só dele).
+ */
+export const COLUNAS_EXTRAS = [
+  { id: 'whatsapp', rotulo: 'WHATSAPP', pt: 85, ch: 17 },
+  { id: 'idade', rotulo: 'IDADE', pt: 35, ch: 8 },
+  { id: 'nascimento', rotulo: 'NASCIMENTO', pt: 62, ch: 13 },
+  { id: 'atuacao', rotulo: 'ATUAÇÃO', pt: 90, ch: 22 },
+  { id: 'cor', rotulo: 'COR', pt: 50, ch: 11 }
+];
+export const valorExtra = (linha, coluna) => String(linha?.extras?.[coluna.id] ?? '');
+
+const dadosExtras = (a, atuacoesPorArea) => {
+  const lista = atuacoesPorArea?.[a.allocatedArea] || [];
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(a.data_nascimento || ''));
+  let idade = a.idade ?? '';
+  if (m) {
+    const hoje = new Date();
+    idade = hoje.getFullYear() - Number(m[1])
+      - ((hoje.getMonth() + 1 < Number(m[2]) || (hoje.getMonth() + 1 === Number(m[2]) && hoje.getDate() < Number(m[3]))) ? 1 : 0);
+  }
+  const cor = a.cor && String(a.cor).toLocaleLowerCase('pt-BR') !== 'sem' ? String(a.cor) : '';
+  return {
+    whatsapp: a.whatsapp || '',
+    idade: idade === '' || idade == null ? '' : String(idade),
+    nascimento: m ? `${m[3]}/${m[2]}/${m[1]}` : '',
+    atuacao: a.atuacao || lista.find((x) => x.ehPadrao)?.atuacao || '',
+    cor: cor ? cor.charAt(0).toLocaleUpperCase('pt-BR') + cor.slice(1).toLocaleLowerCase('pt-BR') : ''
+  };
+};
+
+/**
  * allocations: as linhas da tela de escalas ({ nome, igreja, igreja_outra,
  * allocatedArea }).
  */
-export const montarLinhasRelacao = (allocations) => (allocations || [])
+export const montarLinhasRelacao = (allocations, atuacoesPorArea = {}) => (allocations || [])
   .filter((a) => a.allocatedArea && a.allocatedArea !== 'Não será escalado')
   .map((a) => {
     // Area + cor (19/10/2026, Patrick, voltando atras do pedido de 17/10):
@@ -65,7 +99,8 @@ export const montarLinhasRelacao = (allocations) => (allocations || [])
       // usados pela escala oficial (escalaOficial.js)
       id: a.id,
       atuacaoBruta: a.atuacao || null,
-      corBruta: a.cor || null
+      corBruta: a.cor || null,
+      extras: dadosExtras(a, atuacoesPorArea)
     };
   })
   .sort((x, y) => compararTexto(x.nome, y.nome) || compararTexto(x.area, y.area));
@@ -127,13 +162,19 @@ export const carregarFonte = async (doc) => {
   }
 };
 
-export const exportarRelacaoPdf = async (grupos, modo) => {
-  if (modo === 'oficial') return (await import('./escalaOficial')).exportarOficialPdf(grupos);
+export const exportarRelacaoPdf = async (grupos, modo, extras = []) => {
+  if (modo === 'oficial') return (await import('./escalaOficial')).exportarOficialPdf(grupos, extras);
   const { jsPDF } = await import('jspdf');
-  const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
+  const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: extras.length ? 'landscape' : 'portrait' });
   const fonte = await carregarFonte(doc);
-  const largura = PT.colunas.reduce((a, b) => a + b, 0);
-  const xs = PT.colunas.reduce((acc, w, i) => [...acc, acc[i] + w], [PT.x0]);
+  // Com colunas extras a folha vira paisagem e as colunas encolhem para caber.
+  const pesos = [...PT.colunas, ...extras.map((c) => c.pt)];
+  const somaPesos = pesos.reduce((a, b) => a + b, 0);
+  const fator = extras.length ? Math.min(1, (doc.internal.pageSize.getWidth() - 2 * PT.x0) / somaPesos) : 1;
+  const colunas = pesos.map((w) => w * fator);
+  const limite = extras.length ? doc.internal.pageSize.getHeight() - PT.y0 : PT.limite;
+  const largura = colunas.reduce((a, b) => a + b, 0);
+  const xs = colunas.reduce((acc, w, i) => [...acc, acc[i] + w], [PT.x0]);
   let y = PT.y0;
   let inicioPagina = PT.y0;
 
@@ -164,10 +205,11 @@ export const exportarRelacaoPdf = async (grupos, modo) => {
     doc.addPage();
     y = PT.y0;
     inicioPagina = PT.y0;
+    if (extras.length) cabecalho();
   };
 
   const faixa = (texto, tamanho) => {
-    if (y + PT.faixa > PT.limite) novaPagina();
+    if (y + PT.faixa > limite) novaPagina();
     fecharPagina();
     doc.setFillColor(0x9b, 0xbb, 0x59);
     doc.rect(PT.x0, y, largura, PT.faixa, 'F');
@@ -179,23 +221,29 @@ export const exportarRelacaoPdf = async (grupos, modo) => {
     inicioPagina = y;
   };
 
-  const linha = (l) => {
-    if (y + PT.linha > PT.limite) novaPagina();
+  const desenhar = (valores, estilo) => {
+    if (y + PT.linha > limite) novaPagina();
     doc.line(PT.x0, y, PT.x0 + largura, y);
     doc.line(PT.x0, y + PT.linha, PT.x0 + largura, y + PT.linha);
-    doc.setFont(fonte, 'normal');
-    [l.nome, l.igreja, l.area].forEach((valor, i) => {
-      const t = textoQueCabe(String(valor || ''), PT.colunas[i] - 2 * PT.recuo, PT.fonte);
+    doc.setFont(fonte, estilo);
+    valores.forEach((valor, i) => {
+      const t = textoQueCabe(String(valor || ''), colunas[i] - 2 * PT.recuo, PT.fonte);
       doc.text(t, xs[i] + PT.recuo, y + PT.baseLinha);
     });
     y += PT.linha;
   };
+  const linha = (l) => desenhar([l.nome, l.igreja, l.area, ...extras.map((c) => valorExtra(l, c))], 'normal');
+  // Com colunas extras, uma linha de rotulos no topo de cada pagina.
+  function cabecalho() {
+    desenhar(['NOME', 'IGREJA', 'ÁREA', ...extras.map((c) => c.rotulo)], 'bold');
+  }
 
   faixa(MODOS_RELACAO[modo].titulo, PT.fonteTitulo);
+  if (extras.length) cabecalho();
   grupos.forEach((g) => {
     if (g.titulo) {
       // a faixa do grupo nao fica sozinha no pe da pagina
-      if (y + PT.faixa + PT.linha > PT.limite) novaPagina();
+      if (y + PT.faixa + PT.linha > limite) novaPagina();
       faixa(`${g.titulo} (${g.linhas.length})`, PT.fonteGrupo);
     }
     g.linhas.forEach(linha);
@@ -208,45 +256,56 @@ export const exportarRelacaoPdf = async (grupos, modo) => {
 
 // ------------------------------------------------------------------ Excel
 
-export const exportarRelacaoExcel = async (grupos, modo) => {
-  if (modo === 'oficial') return (await import('./escalaOficial')).exportarOficialExcel(grupos);
+export const exportarRelacaoExcel = async (grupos, modo, extras = []) => {
+  if (modo === 'oficial') return (await import('./escalaOficial')).exportarOficialExcel(grupos, extras);
   const ExcelJS = (await import('exceljs')).default;
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Metanoia Radical Serra';
+  const ncol = 3 + extras.length;
+  const indices = Array.from({ length: ncol }, (_, i) => i + 1);
   const ws = wb.addWorksheet('NOMINAL', {
     pageSetup: {
-      paperSize: 1, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0,
+      paperSize: 1, orientation: extras.length ? 'landscape' : 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0,
       margins: { left: 0.13, right: 0.4, top: 0.51, bottom: 0.4, header: 0.2, footer: 0.2 }
     },
     views: [{ showGridLines: false }]
   });
-  ws.columns = [{ width: 37.3 }, { width: 40 }, { width: 30.3 }];
+  ws.columns = [{ width: 37.3 }, { width: 40 }, { width: 30.3 }, ...extras.map((c) => ({ width: c.ch }))];
 
   const fino = { style: 'thin', color: { argb: 'FF000000' } };
   const bordas = { top: fino, left: fino, bottom: fino, right: fino };
   const fonteDados = { name: 'Calibri', size: 11, color: { argb: 'FF000000' } };
 
   const faixa = (texto, tamanho) => {
-    const row = ws.addRow([texto, '', '']);
+    const row = ws.addRow([texto, ...Array(ncol - 1).fill('')]);
     row.height = 17.25;
-    // estilo nas 3 celulas ANTES de mesclar (senao a borda some em B e C)
-    [1, 2, 3].forEach((i) => {
+    // estilo nas celulas ANTES de mesclar (senao a borda some nas outras)
+    indices.forEach((i) => {
       const c = row.getCell(i);
       c.font = { name: 'Calibri', size: tamanho, bold: true, color: { argb: 'FF000000' } };
       c.alignment = { horizontal: 'center', vertical: 'middle' };
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${VERDE}` } };
       c.border = bordas;
     });
-    ws.mergeCells(row.number, 1, row.number, 3);
+    ws.mergeCells(row.number, 1, row.number, ncol);
   };
 
   faixa(MODOS_RELACAO[modo].titulo, 14);
+  if (extras.length) {
+    const cab = ws.addRow(['NOME', 'IGREJA', 'ÁREA', ...extras.map((c) => c.rotulo)]);
+    cab.height = 14.25;
+    indices.forEach((i) => {
+      cab.getCell(i).font = { ...fonteDados, bold: true };
+      cab.getCell(i).border = bordas;
+      cab.getCell(i).alignment = { vertical: 'bottom', shrinkToFit: true };
+    });
+  }
   grupos.forEach((g) => {
     if (g.titulo) faixa(`${g.titulo} (${g.linhas.length})`, 12);
     g.linhas.forEach((l) => {
-      const row = ws.addRow([l.nome, l.igreja, l.area]);
+      const row = ws.addRow([l.nome, l.igreja, l.area, ...extras.map((c) => valorExtra(l, c))]);
       row.height = 14.25;
-      [1, 2, 3].forEach((i) => {
+      indices.forEach((i) => {
         const c = row.getCell(i);
         c.font = fonteDados;
         c.border = bordas;

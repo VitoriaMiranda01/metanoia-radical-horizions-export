@@ -1,4 +1,4 @@
-import { carregarFonte } from './relacaoNominal';
+import { carregarFonte, valorExtra } from './relacaoNominal';
 
 /**
  * ESCALA OFICIAL (22/10/2026, Patrick): reproduz a planilha "Escala 36ª EDIÇÃO
@@ -179,7 +179,7 @@ export const montarEscalaOficial = (linhas, atuacoesPorArea = {}) => {
     else grupo = 50;
 
     return {
-      nome: l.nome, igreja: l.igreja, texto, atuacaoCor, inteira,
+      nome: l.nome, igreja: l.igreja, texto, atuacaoCor, inteira, extras: l.extras,
       grupo, lider: d.lider || (area === 'recepcao sitio' && guiasLideres.has(l.id)), ordem: d.ordem, atuacaoNorm: sem(d.base), areaNorm: area, areaOriginal: l.areaBase
     };
   };
@@ -235,7 +235,7 @@ export const montarEscalaOficial = (linhas, atuacoesPorArea = {}) => {
 
   return itens.map((i) => (i.linhas
     ? { ...i, linhas: i.linhas.map((l) => ({
-      nome: l.nome, igreja: l.igreja, texto: l.texto, atuacaoCor: l.atuacaoCor, inteira: l.inteira
+      nome: l.nome, igreja: l.igreja, texto: l.texto, atuacaoCor: l.atuacaoCor, inteira: l.inteira, extras: l.extras
     })) }
     : i));
 };
@@ -261,17 +261,20 @@ const rgb = (hex) => [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
 // ------------------------------------------------------------------ PDF
 
-export const exportarOficialPdf = async (itens) => {
+export const exportarOficialPdf = async (itens, extras = []) => {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' });
   const [logo, calibri] = await Promise.all([carregarLogo(), carregarFonte(doc)]);
-  const PX = 0.75 * ESCALA; // pt por pixel da planilha
-  const RH = 15.75 * ESCALA;
   const larguraPagina = doc.internal.pageSize.getWidth();
   const alturaPagina = doc.internal.pageSize.getHeight();
+  // Colunas extras vao depois da ATUAÇÃO; se nao couberem, a tabela encolhe.
+  const pxColunas = [...PX_COLUNA, ...extras.map((c) => Math.round(c.pt * 1.3))];
+  const PX = Math.min(0.75 * ESCALA, (larguraPagina - 0.27778 * 72 - 0.5118 * 72) / pxColunas.reduce((a, b) => a + b, 0)); // pt por pixel da planilha
+  const RH = 15.75 * ESCALA;
   const topo = 0.98958 * 72;
   const limite = alturaPagina - 0.7874 * 72;
-  const xs = PX_COLUNA.reduce((acc, w, i) => [...acc, acc[i] + w * PX], [0.27778 * 72]);
+  const xs = pxColunas.reduce((acc, w, i) => [...acc, acc[i] + w * PX], [0.27778 * 72]);
+  const fim = pxColunas.length;
   const fonteDados = 11 * ESCALA;
   let y = topo;
 
@@ -290,7 +293,7 @@ export const exportarOficialPdf = async (itens) => {
   // c: índice 1..4 (B..E)
   const celula = (c, texto, { fundo = 'FFFFFF', cor = '000000', negrito = false, fonte = 'arial', centro = false, direita = false } = {}) => {
     const x = xs[c];
-    const w = PX_COLUNA[c] * PX;
+    const w = pxColunas[c] * PX;
     doc.setFillColor(...rgb(fundo));
     doc.rect(x, y, w, RH, 'FD');
     if (texto === '' || texto == null) return;
@@ -302,13 +305,13 @@ export const exportarOficialPdf = async (itens) => {
     else doc.text(t, x + 2, y + RH * 0.72);
     doc.setTextColor(0, 0, 0);
   };
-  const larguraTabela = xs[5] - xs[1];
+  const larguraTabela = xs[fim] - xs[1];
 
   const novaPagina = () => { doc.addPage(); y = topo; };
 
   // Cabeçalho (linhas 1 a 8 da planilha): moldura, logo e título.
   doc.setLineWidth(1.1);
-  doc.line(xs[1], topo, xs[5], topo);
+  doc.line(xs[1], topo, xs[fim], topo);
   doc.line(xs[1], topo, xs[1], topo + 8 * RH);
   doc.setLineWidth(0.5);
   if (logo) {
@@ -350,7 +353,7 @@ export const exportarOficialPdf = async (itens) => {
       y += RH;
     }
     celula(1, '', { fundo: VERDE });
-    CABECALHO.forEach((t, i) => celula(i + 2, t, { fundo: VERDE, negrito: true, centro: true }));
+    [...CABECALHO, ...extras.map((c) => c.rotulo)].forEach((t, i) => celula(i + 2, t, { fundo: VERDE, negrito: true, centro: true }));
     y += RH;
     item.linhas.forEach((l, n) => {
       if (y + RH > limite) novaPagina();
@@ -360,6 +363,9 @@ export const exportarOficialPdf = async (itens) => {
       celula(3, l.igreja, { fonte: 'calibri', ...(ci ? { fundo: ci.bg, cor: ci.fg, negrito: true } : {}) });
       const ac = ci || l.atuacaoCor;
       celula(4, l.texto, { negrito: true, centro: true, ...(ac ? { fundo: ac.bg, cor: ac.fg } : {}) });
+      extras.forEach((c, i) => celula(5 + i, valorExtra(l, c), {
+        fonte: 'calibri', ...(ci ? { fundo: ci.bg, cor: ci.fg, negrito: true } : {})
+      }));
       y += RH;
     });
   });
@@ -380,20 +386,24 @@ export const exportarOficialPdf = async (itens) => {
 
 // ------------------------------------------------------------------ Excel
 
-export const exportarOficialExcel = async (itens) => {
+export const exportarOficialExcel = async (itens, extras = []) => {
   const ExcelJS = (await import('exceljs')).default;
   const logo = await carregarLogo();
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Metanoia Radical Serra';
+  const ncol = 5 + extras.length;
+  const colunasTabela = Array.from({ length: ncol - 1 }, (_, i) => i + 2); // B..
   const ws = wb.addWorksheet('ESCALA ATUAL', {
     pageSetup: {
-      paperSize: 9, orientation: 'landscape', scale: 78,
+      paperSize: 9, orientation: 'landscape',
+      // Com colunas extras a planilha deixa de caber a 78 %: encaixa na largura.
+      ...(extras.length ? { fitToPage: true, fitToWidth: 1, fitToHeight: 0 } : { scale: 78 }),
       margins: { left: 0.27778, right: 0.511811, top: 0.98958, bottom: 0.787402, header: 0.31496, footer: 0.31496 }
     },
     headerFooter: { oddFooter: '&R&P' },
     views: [{ showGridLines: false, zoomScale: 90 }]
   });
-  ws.columns = LARGURAS.map((width) => ({ width }));
+  ws.columns = [...LARGURAS, ...extras.map((c) => c.ch)].map((width) => ({ width }));
 
   const fino = { style: 'thin', color: { argb: 'FF000000' } };
   const bordas = { top: fino, left: fino, bottom: fino, right: fino };
@@ -403,7 +413,7 @@ export const exportarOficialExcel = async (itens) => {
 
   for (let r = 1; r <= 8; r += 1) ws.getRow(r).height = 15.75;
   const medio = { style: 'medium', color: { argb: 'FF000000' } };
-  [2, 3, 4, 5].forEach((c) => { ws.getCell(1, c).border = { top: medio, ...(c === 2 ? { left: medio } : {}) }; });
+  colunasTabela.forEach((c) => { ws.getCell(1, c).border = { top: medio, ...(c === 2 ? { left: medio } : {}) }; });
   for (let r = 2; r <= 8; r += 1) ws.getCell(r, 2).border = { left: medio };
 
   if (logo) {
@@ -425,13 +435,13 @@ export const exportarOficialExcel = async (itens) => {
   const barra = (hex, nome) => {
     const row = ws.getRow(linha);
     row.getCell(2).value = nome || null;
-    [2, 3, 4, 5].forEach((i) => {
+    colunasTabela.forEach((i) => {
       row.getCell(i).fill = preencher(hex);
       row.getCell(i).border = bordas;
       row.getCell(i).font = arial({ bold: true });
       row.getCell(i).alignment = { horizontal: 'center', vertical: 'bottom' };
     });
-    ws.mergeCells(linha, 2, linha, 5);
+    ws.mergeCells(linha, 2, linha, ncol);
     row.height = 15.75;
     linha += 1;
   };
@@ -442,20 +452,20 @@ export const exportarOficialExcel = async (itens) => {
     if (item.titulo && !item.semTitulo) {
       const faixa = ws.getRow(linha);
       faixa.getCell(2).value = item.titulo;
-      [2, 3, 4, 5].forEach((i) => {
+      colunasTabela.forEach((i) => {
         faixa.getCell(i).font = arial({ bold: true });
         faixa.getCell(i).alignment = { horizontal: 'center', vertical: 'bottom' };
         faixa.getCell(i).fill = preencher('FFFFFF');
         faixa.getCell(i).border = bordas;
       });
-      ws.mergeCells(linha, 2, linha, 5);
+      ws.mergeCells(linha, 2, linha, ncol);
       faixa.height = 15.75;
       linha += 1;
     }
 
     const cab = ws.getRow(linha);
-    CABECALHO.forEach((t, i) => { cab.getCell(i + 3).value = t; });
-    [2, 3, 4, 5].forEach((i) => {
+    [...CABECALHO, ...extras.map((c) => c.rotulo)].forEach((t, i) => { cab.getCell(i + 3).value = t; });
+    colunasTabela.forEach((i) => {
       cab.getCell(i).font = arial({ bold: i > 2 });
       cab.getCell(i).alignment = { horizontal: 'center', vertical: 'bottom' };
       cab.getCell(i).fill = preencher(VERDE);
@@ -466,7 +476,7 @@ export const exportarOficialExcel = async (itens) => {
 
     item.linhas.forEach((l, n) => {
       const row = ws.getRow(linha);
-      row.values = [null, null, n + 1, l.nome, l.igreja, l.texto];
+      row.values = [null, null, n + 1, l.nome, l.igreja, l.texto, ...extras.map((c) => valorExtra(l, c))];
       row.height = 15.75;
       const ci = l.inteira;
       row.getCell(2).fill = preencher(VERDE);
@@ -480,7 +490,13 @@ export const exportarOficialExcel = async (itens) => {
       row.getCell(5).font = arial({ bold: true, color: { argb: ac ? `FF${ac.fg}` : 'FF000000' } });
       row.getCell(5).alignment = { horizontal: 'center', vertical: 'bottom' };
       row.getCell(5).fill = preencher(ac ? ac.bg : 'FFFFFF');
-      [2, 3, 4, 5].forEach((i) => { row.getCell(i).border = bordas; });
+      extras.forEach((_, k) => {
+        const c = row.getCell(6 + k);
+        c.font = calibri({ color: { argb: ci ? `FF${ci.fg}` : 'FF000000' }, bold: !!ci });
+        c.alignment = { horizontal: 'left', vertical: 'bottom' };
+        c.fill = preencher(ci ? ci.bg : 'FFFFFF');
+      });
+      colunasTabela.forEach((i) => { row.getCell(i).border = bordas; });
       linha += 1;
     });
   });

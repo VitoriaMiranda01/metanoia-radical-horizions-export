@@ -1,3 +1,5 @@
+import { valorExtra } from './relacaoNominal';
+
 /**
  * EQUIPE DE TRILHA - GRUPOS (23/10/2026, Patrick): reproduz a planilha "Equipe
  * de trilha 37" com os escalados. Sai pelo "Por área" quando alguma área da
@@ -58,7 +60,7 @@ export const ehAreaDaTrilha = (area) => AREAS_TRILHA.includes(sem(area));
  *   { tipo: 'pessoa', nome, igreja, cor? (linha pintada) }
  *   { tipo: 'vazia' }
  */
-export const montarEquipeTrilha = (linhas, atuacoesPorArea = {}) => {
+export const montarEquipeTrilha = (linhas, atuacoesPorArea = {}, extras = []) => {
   const trilha = linhas.filter((l) => ehAreaDaTrilha(l.areaBase));
   if (trilha.length === 0) throw new Error('Ninguém escalado na equipe de trilha.');
   const areas = new Set(trilha.map((l) => sem(l.areaBase)));
@@ -77,6 +79,8 @@ export const montarEquipeTrilha = (linhas, atuacoesPorArea = {}) => {
   const ordenar = (a, b) => (Number(b.lider) - Number(a.lider)) || comparar(a.nome, b.nome);
 
   const out = [{ tipo: 'titulo', texto: TITULO, cor: TITULO_COR }];
+  // Colunas extras (27/10/2026): uma linha de rotulos logo abaixo do titulo.
+  if (extras.length) out.push({ tipo: 'cabecalho', rotulos: ['NOME', 'IGREJA', '', ...extras.map((c) => c.rotulo)] });
   cores.forEach((cor, i) => {
     const paleta = CORES[cor];
     out.push({ tipo: 'grupo', texto: `GRUPO ${cor}`, cor: paleta.grupo }, { tipo: 'vazia' });
@@ -89,10 +93,10 @@ export const montarEquipeTrilha = (linhas, atuacoesPorArea = {}) => {
         : [];
       const pessoas = [
         ...daCor.map((l) => ({
-          tipo: 'pessoa', nome: l.nome, igreja: l.igreja,
+          tipo: 'pessoa', nome: l.nome, igreja: l.igreja, extras: l.extras,
           cor: l.lider && (s.a === 'guia' || s.a === 'invisivel') ? paleta[s.a] : null
         })),
-        ...semCor.map((l) => ({ tipo: 'pessoa', nome: l.nome, igreja: l.igreja, cor: null }))
+        ...semCor.map((l) => ({ tipo: 'pessoa', nome: l.nome, igreja: l.igreja, extras: l.extras, cor: null }))
       ];
       out.push(...pessoas);
       for (let n = pessoas.length; n < (s.min || 1); n += 1) out.push({ tipo: 'vazia' });
@@ -106,19 +110,23 @@ const ehFaixa = (it) => it.tipo === 'titulo' || it.tipo === 'grupo' || it.tipo =
 
 // ------------------------------------------------------------------ Excel
 
-export const exportarTrilhaExcel = async (itens) => {
+export const exportarTrilhaExcel = async (itens, extras = []) => {
   const ExcelJS = (await import('exceljs')).default;
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Metanoia Radical Serra';
+  const ncol = 4 + extras.length;
+  const todas = Array.from({ length: ncol }, (_, i) => i + 1);
+  const dados = todas.slice(1); // B.. (A fica escondida)
   const ws = wb.addWorksheet('GRUPOS TRILHA', {
     // sem tamanho de papel, como a original (o Excel usa o padrão)
     pageSetup: {
       orientation: 'landscape',
+      ...(extras.length ? { fitToPage: true, fitToWidth: 1, fitToHeight: 0 } : {}),
       margins: { left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0, footer: 0 }
     },
     views: [{ topLeftCell: 'B1' }]
   });
-  ws.columns = LARGURAS.map((width, i) => ({ width, hidden: i === 0 }));
+  ws.columns = [...LARGURAS, ...extras.map((c) => c.ch)].map((width, i) => ({ width, hidden: i === 0 }));
 
   const fino = { style: 'thin', color: { argb: 'FF000000' } };
   const bordas = { top: fino, left: fino, bottom: fino, right: fino };
@@ -132,23 +140,27 @@ export const exportarTrilhaExcel = async (itens) => {
     if (ehFaixa(it)) {
       // a faixa vai de A a D (A escondida), como na planilha
       row.getCell(1).value = it.texto;
-      [1, 2, 3, 4].forEach((c) => {
+      todas.forEach((c) => {
         const cell = row.getCell(c);
         cell.font = fonte('Arial', 11, it.cor.fg, true);
         cell.alignment = { horizontal: 'center' };
         cell.fill = preencher(it.cor.bg);
         cell.border = bordas;
       });
-      ws.mergeCells(r, 1, r, 4);
+      ws.mergeCells(r, 1, r, ncol);
       return;
     }
     if (it.tipo === 'pessoa') {
       row.getCell(2).value = it.nome;
       row.getCell(3).value = it.igreja || null;
+      extras.forEach((c, k) => { row.getCell(5 + k).value = valorExtra(it, c) || null; });
     }
-    [2, 3, 4].forEach((c) => {
+    if (it.tipo === 'cabecalho') {
+      it.rotulos.forEach((t, k) => { row.getCell(2 + k).value = t || null; });
+    }
+    dados.forEach((c) => {
       const cell = row.getCell(c);
-      cell.font = it.cor ? fonte('Calibri', 11, it.cor.fg, true) : fonte('Arial', 10, PRETO, false);
+      cell.font = it.cor ? fonte('Calibri', 11, it.cor.fg, true) : fonte('Arial', 10, PRETO, it.tipo === 'cabecalho');
       cell.alignment = { horizontal: 'left' };
       cell.fill = preencher(it.cor ? it.cor.bg : BRANCO);
       cell.border = bordas;
@@ -183,12 +195,18 @@ export const exportarTrilhaExcel = async (itens) => {
 // topo em 54 pt, linhas de 11,75 pt e fontes reduzidas na mesma proporção.
 const PDF = { x0: 91, larguras: [249, 266, 51], topo: 54, rodape: 54, k: 0.948, kAltura: 11.75 / 12.75 };
 
-export const exportarTrilhaPdf = async (itens) => {
+export const exportarTrilhaPdf = async (itens, extras = []) => {
   const { jsPDF } = await import('jspdf');
   const { carregarFonte } = await import('./relacaoNominal');
   const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' });
   const calibri = await carregarFonte(doc);
-  const { larguras, x0, topo, k } = PDF;
+  const { topo, k } = PDF;
+  // Colunas extras: a tabela passa a usar a folha toda; se nao couber, encolhe.
+  const bruto = [...PDF.larguras, ...extras.map((c) => c.pt)];
+  const somaBruta = bruto.reduce((a, b) => a + b, 0);
+  const x0 = extras.length ? 20 : PDF.x0;
+  const fator = extras.length ? Math.min(1, (doc.internal.pageSize.getWidth() - 2 * x0) / somaBruta) : 1;
+  const larguras = bruto.map((w) => w * fator);
   const largura = larguras.reduce((a, b) => a + b, 0);
   const limite = doc.internal.pageSize.getHeight() - PDF.rodape;
   let y = topo;
@@ -220,11 +238,13 @@ export const exportarTrilhaPdf = async (itens) => {
       larguras.forEach((w, c) => {
         doc.setFillColor(...rgb(it.cor ? it.cor.bg : BRANCO));
         doc.rect(x, y, w, h, 'FD');
-        const texto = it.tipo === 'pessoa' ? [it.nome, it.igreja, ''][c] : '';
+        let texto = '';
+        if (it.tipo === 'pessoa') texto = [it.nome, it.igreja, '', ...extras.map((e) => valorExtra(it, e))][c];
+        else if (it.tipo === 'cabecalho') texto = it.rotulos[c];
         if (texto) {
           escrever(texto, x, w, h, it.cor
             ? { fonte: calibri, estilo: 'bold', tamanho: 11 * k, cor: it.cor.fg }
-            : { fonte: 'helvetica', estilo: 'normal', tamanho: 10 * k, cor: PRETO });
+            : { fonte: 'helvetica', estilo: it.tipo === 'cabecalho' ? 'bold' : 'normal', tamanho: 10 * k, cor: PRETO });
         }
         x += w;
       });

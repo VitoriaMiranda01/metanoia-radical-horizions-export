@@ -45,9 +45,9 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
     setCores([...GROUPS, 'Sem grupo']);
   }, [aberto]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Confirmados (pagos) primeiro, depois os so inscritos -- igual a tela.
+  // Ordem alfabetica -- igual a tela.
   const pessoas = [...(quem === 'marcados' ? selecionados : visiveis)]
-    .sort((a, b) => Number(b.pago) - Number(a.pago) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
+    .sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
 
   const doGrupo = (p, nome) => (nome === 'Sem grupo' ? !GROUPS.includes(p.grupo_trailha) : p.grupo_trailha === nome);
   // Cores oferecidas: as 5 de sempre; "Sem grupo" so se alguem da lista estiver sem grupo.
@@ -68,8 +68,6 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
         Tipo: rotulo,
         Item: g.rotulo,
         Quantidade: g.ids.size,
-        Confirmados: [...g.ids].filter((id) => porId.get(id).pago).length,
-        'Só inscritos': [...g.ids].filter((id) => !porId.get(id).pago).length,
         Pessoas: [...g.ids].map((id) => porId.get(id).nome).join(', '),
       })))
       : null;
@@ -203,7 +201,7 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
             <span>
               Incluir aba <strong>Resumo</strong>
               <span className="block text-xs text-gray-400">
-                Quantas pessoas por problema de saúde, medicamento e restrição alimentar (confirmados e só inscritos), com os nomes.
+                Quantas pessoas por problema de saúde, medicamento e restrição alimentar, com os nomes.
               </span>
             </span>
           </label>

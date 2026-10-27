@@ -207,7 +207,7 @@ export const exportarSaudePdf = async (pessoas, colunas, resumo, porGrupo = fals
       faixa(tipo, 11, VERDE_CLARO, 18);
       y += 4;
       resumo.filter((r) => r.Tipo === tipo).forEach((r) => {
-        const titulo = `${r.Item} — ${r.Quantidade} (${r.Confirmados} confirmados, ${r['Só inscritos']} só inscritos)`;
+        const titulo = `${r.Item} — ${r.Quantidade}`;
         doc.setFont(fonte, 'bold');
         doc.setFontSize(FONTE);
         const t = doc.splitTextToSize(titulo, largura - 10);

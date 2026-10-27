@@ -385,7 +385,7 @@ export const exportSaudeToExcel = async (linhas, resumo) => {
 
     if (resumo && resumo.length > 0) {
       const wr = XLSX.utils.json_to_sheet(resumo);
-      wr['!cols'] = [{ wch: 22 }, { wch: 40 }, { wch: 12 }, { wch: 13 }, { wch: 13 }, { wch: 90 }];
+      wr['!cols'] = [{ wch: 22 }, { wch: 40 }, { wch: 12 }, { wch: 90 }];
       XLSX.utils.book_append_sheet(wb, wr, 'Resumo');
     }
 

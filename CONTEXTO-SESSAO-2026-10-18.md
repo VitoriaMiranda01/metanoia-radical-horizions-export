@@ -230,3 +230,4 @@ Botão "Momento de joelhos" à direita de "Presença dos acampantes" (Gerenciar 
 - 27/10: Exportar da saúde: removida a coluna Situação; desmarcar Problema/Medicamento/Restrição pede confirmação (e as colunas voltam todas marcadas a cada abertura). Só front.
 - 27/10: PDF da saúde: cartão do acampante não quebra mais entre páginas (vai inteiro para a próxima). Só front.
 - 27/10: Exportar da saúde, 'Separar por grupo': escolher quais cores (todas marcadas; 'Sem grupo' só se houver). Só front.
+- 27/10: Tela /saude sem informação de pagamento (mesma visão da portaria/recepção): removido o filtro Situação, a divisão confirmados/só inscritos nos cartões, os dois blocos da lista (agora uma lista alfabética) e as colunas de confirmados no Resumo do Excel/PDF. Só front.

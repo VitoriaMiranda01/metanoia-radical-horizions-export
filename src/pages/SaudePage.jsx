@@ -59,9 +59,7 @@ const Chip = ({ ativo, onClick, children, dica }) => (
   </button>
 );
 
-// divisao: { confirmados, inscritos } -- quem ja pagou e quem so se inscreveu
-// (Patrick, 09/10/2026: "divida quem foi inscrito e quem esta confirmado").
-const Cartao = ({ icone: Icone, rotulo, valor, detalhe, divisao, cor, ativo, onClick }) => (
+const Cartao = ({ icone: Icone, rotulo, valor, detalhe, cor, ativo, onClick }) => (
   <button
     type="button"
     onClick={onClick}
@@ -74,14 +72,6 @@ const Cartao = ({ icone: Icone, rotulo, valor, detalhe, divisao, cor, ativo, onC
       {rotulo}
     </div>
     <p className="text-3xl font-bold text-white mt-1 tabular-nums">{valor}</p>
-    {divisao && (
-      <p className="text-xs mt-1 leading-relaxed">
-        <span className="text-emerald-300 font-medium tabular-nums">{divisao.confirmados}</span>
-        <span className="text-gray-500"> confirmados · </span>
-        <span className="text-amber-300 font-medium tabular-nums">{divisao.inscritos}</span>
-        <span className="text-gray-500"> só inscritos</span>
-      </p>
-    )}
     {detalhe && <p className="text-xs text-gray-500 mt-0.5">{detalhe}</p>}
   </button>
 );
@@ -124,7 +114,6 @@ const SaudePage = () => {
 
   const [mostrar, setMostrar] = useState('saude');
   const [busca, setBusca] = useState('');
-  const [inscricao, setInscricao] = useState('todas');
   const [sexo, setSexo] = useState('todos');
   const [grupo, setGrupo] = useState('todos');
   const [idade, setIdade] = useState('todas');
@@ -176,25 +165,19 @@ const SaudePage = () => {
   tem.saude = (p) => tem.problema(p) || tem.medicamento(p) || tem.alimento(p) || tem.gestante(p);
   tem.todos = () => true;
 
-  // Filtros "de fora" (inscricao, sexo, grupo, idade): valem para os cartoes,
+  // Filtros "de fora" (sexo, grupo, idade): valem para os cartoes,
   // para os botoes de agrupar e para a tabela.
   const base = useMemo(() => lista.filter((p) => {
-    if (inscricao === 'pagas' && !p.pago) return false;
-    if (inscricao === 'pendentes' && p.pago) return false;
     if (sexo !== 'todos' && p.sexo !== sexo) return false;
     if (grupo !== 'todos' && (grupo === 'sem' ? !!p.grupo_trailha : p.grupo_trailha !== grupo)) return false;
     if (idade === 'menores' && !(p.idade != null && p.idade < 18)) return false;
     if (idade === '60' && !(p.idade != null && p.idade >= 60)) return false;
     return true;
-  }), [lista, inscricao, sexo, grupo, idade]);
+  }), [lista, sexo, grupo, idade]);
 
-  // Cada numero vem com a divisao confirmados (pagos) x so inscritos.
+  // A tela da saude nao mostra pagamento (27/10/2026): a mesma visao da portaria e da recepcao.
   const contagem = useMemo(() => Object.fromEntries(
-    ['todos', 'saude', 'problema', 'medicamento', 'alimento', 'gestante'].map((k) => {
-      const lista = base.filter(tem[k]);
-      const confirmados = lista.filter((p) => p.pago).length;
-      return [k, { total: lista.length, confirmados, inscritos: lista.length - confirmados }];
-    })
+    ['todos', 'saude', 'problema', 'medicamento', 'alimento', 'gestante'].map((k) => [k, { total: base.filter(tem[k]).length }])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ), [base]);
 
@@ -230,18 +213,16 @@ const SaudePage = () => {
   };
 
   const limparFiltros = () => {
-    setMostrar('saude'); setBusca(''); setInscricao('todas'); setSexo('todos');
+    setMostrar('saude'); setBusca(''); setSexo('todos');
     setGrupo('todos'); setIdade('todas'); setTermos([]);
   };
 
-  const filtrosAtivos = busca || inscricao !== 'todas' || sexo !== 'todos' || grupo !== 'todos'
+  const filtrosAtivos = busca || sexo !== 'todos' || grupo !== 'todos'
     || idade !== 'todas' || termos.length > 0 || mostrar !== 'saude';
 
-  // Lista em dois blocos: confirmados (pagos) primeiro, depois quem so se
-  // inscreveu. Com o filtro de situacao ligado, um bloco so.
+  // Uma lista so, em ordem alfabetica (sem separar por pagamento).
   const secoes = [
-    { chave: 'confirmados', titulo: 'Confirmados (pagos)', cor: 'text-emerald-300 border-emerald-500/30 bg-emerald-500/5', pessoas: visiveis.filter((p) => p.pago) },
-    { chave: 'inscritos', titulo: 'Só inscritos · aguardando pagamento', cor: 'text-amber-300 border-amber-500/30 bg-amber-500/5', pessoas: visiveis.filter((p) => !p.pago) },
+    { chave: 'todos', titulo: null, cor: '', pessoas: [...visiveis].sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt-BR')) },
   ].filter((sec) => sec.pessoas.length > 0);
 
   const idsVisiveis = visiveis.map((p) => p.id);
@@ -276,18 +257,12 @@ const SaudePage = () => {
         <>
           {/* ------------------------ Numeros ------------------------ */}
           <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-            <Cartao icone={Users} cor="text-gray-300" rotulo="Acampantes" valor={contagem.todos.total}
-              divisao={contagem.todos} ativo={mostrar === 'todos'} onClick={() => setMostrar('todos')} />
-            <Cartao icone={HeartPulse} cor="text-emerald-300" rotulo="Com informação de saúde" valor={contagem.saude.total}
-              divisao={contagem.saude} ativo={mostrar === 'saude'} onClick={() => setMostrar('saude')} />
-            <Cartao icone={Activity} cor="text-rose-300" rotulo="Problema de saúde" valor={contagem.problema.total}
-              divisao={contagem.problema} ativo={mostrar === 'problema'} onClick={() => setMostrar('problema')} />
-            <Cartao icone={Pill} cor="text-sky-300" rotulo="Usam medicamento" valor={contagem.medicamento.total}
-              divisao={contagem.medicamento} ativo={mostrar === 'medicamento'} onClick={() => setMostrar('medicamento')} />
-            <Cartao icone={UtensilsCrossed} cor="text-amber-300" rotulo="Restrição alimentar" valor={contagem.alimento.total}
-              divisao={contagem.alimento} ativo={mostrar === 'alimento'} onClick={() => setMostrar('alimento')} />
-            <Cartao icone={Baby} cor="text-pink-300" rotulo="Gestantes" valor={contagem.gestante.total}
-              divisao={contagem.gestante} ativo={mostrar === 'gestante'} onClick={() => setMostrar('gestante')} />
+            <Cartao icone={Users} cor="text-gray-300" rotulo="Acampantes" valor={contagem.todos.total} ativo={mostrar === 'todos'} onClick={() => setMostrar('todos')} />
+            <Cartao icone={HeartPulse} cor="text-emerald-300" rotulo="Com informação de saúde" valor={contagem.saude.total} ativo={mostrar === 'saude'} onClick={() => setMostrar('saude')} />
+            <Cartao icone={Activity} cor="text-rose-300" rotulo="Problema de saúde" valor={contagem.problema.total} ativo={mostrar === 'problema'} onClick={() => setMostrar('problema')} />
+            <Cartao icone={Pill} cor="text-sky-300" rotulo="Usam medicamento" valor={contagem.medicamento.total} ativo={mostrar === 'medicamento'} onClick={() => setMostrar('medicamento')} />
+            <Cartao icone={UtensilsCrossed} cor="text-amber-300" rotulo="Restrição alimentar" valor={contagem.alimento.total} ativo={mostrar === 'alimento'} onClick={() => setMostrar('alimento')} />
+            <Cartao icone={Baby} cor="text-pink-300" rotulo="Gestantes" valor={contagem.gestante.total} ativo={mostrar === 'gestante'} onClick={() => setMostrar('gestante')} />
           </section>
 
           {/* ------------------------ Filtros ------------------------ */}
@@ -312,12 +287,6 @@ const SaudePage = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-gray-500 mr-1">Situação:</span>
-                <Chip ativo={inscricao === 'todas'} onClick={() => setInscricao('todas')}>Todas</Chip>
-                <Chip ativo={inscricao === 'pagas'} onClick={() => setInscricao('pagas')}>Confirmados (pagos)</Chip>
-                <Chip ativo={inscricao === 'pendentes'} onClick={() => setInscricao('pendentes')}>Só inscritos (aguardando pagamento)</Chip>
-              </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-gray-500 mr-1">Sexo:</span>
                 <Chip ativo={sexo === 'todos'} onClick={() => setSexo('todos')}>Todos</Chip>
@@ -436,11 +405,13 @@ const SaudePage = () => {
                     <tbody>
                       {secoes.map((sec) => (
                         <React.Fragment key={sec.chave}>
-                          <tr>
-                            <td colSpan={7} className={`px-3 py-2 border-y text-xs font-semibold uppercase tracking-wide ${sec.cor}`}>
-                              {sec.titulo} · {sec.pessoas.length}
-                            </td>
-                          </tr>
+                          {sec.titulo && (
+                            <tr>
+                              <td colSpan={7} className={`px-3 py-2 border-y text-xs font-semibold uppercase tracking-wide ${sec.cor}`}>
+                                {sec.titulo} · {sec.pessoas.length}
+                              </td>
+                            </tr>
+                          )}
                           {sec.pessoas.map((p) => {
                         const zap = linkWhatsApp(p.contato_emergencia_telefone);
                         return (
@@ -485,9 +456,11 @@ const SaudePage = () => {
                 <div className="md:hidden">
                   {secoes.map((sec) => (
                     <div key={sec.chave} className="divide-y divide-white/5">
-                      <p className={`px-4 py-2 border-y text-xs font-semibold uppercase tracking-wide ${sec.cor}`}>
-                        {sec.titulo} · {sec.pessoas.length}
-                      </p>
+                      {sec.titulo && (
+                        <p className={`px-4 py-2 border-y text-xs font-semibold uppercase tracking-wide ${sec.cor}`}>
+                          {sec.titulo} · {sec.pessoas.length}
+                        </p>
+                      )}
                   {sec.pessoas.map((p) => {
                     const zap = linkWhatsApp(p.contato_emergencia_telefone);
                     return (

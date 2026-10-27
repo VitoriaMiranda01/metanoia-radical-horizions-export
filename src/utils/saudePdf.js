@@ -98,7 +98,11 @@ export const exportarSaudePdf = async (pessoas, colunas, resumo, porGrupo = fals
         return { ...l, partes: doc.splitTextToSize(l.texto, largura - COL_ROTULO - 8) };
       });
 
-    garantir(22 + (linhas[0] ? linhas[0].partes.length * LH + 3 : 0));
+    // Cartao inteiro na mesma pagina (27/10/2026): se nao couber, vai todo para a proxima.
+    // So um cartao maior que a pagina inteira continua podendo quebrar.
+    const alturaCartao = 18 + linhas.reduce((t, l) => t + l.partes.length * LH + 3, 0) + 9;
+    if (alturaCartao <= limite - M) garantir(alturaCartao);
+    else garantir(22 + (linhas[0] ? linhas[0].partes.length * LH + 3 : 0));
     // Cor do grupo de trilha: faixa clara com tarja forte na esquerda e
     // bolinha + nome do grupo na direita (a Vera usa para realocar).
     const cor = CORES_GRUPO[p.grupo_trailha];

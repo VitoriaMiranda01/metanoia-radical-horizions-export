@@ -3,6 +3,10 @@ import { Download, FileText } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { COLUNAS_SAUDE, COLUNAS_SAUDE_PADRAO } from '@/utils/saudeColunas';
 import { agruparTermos } from '@/utils/saude';
 import { exportSaudeToExcel, exportSaudePorGrupoToExcel } from '@/utils/excelExport';
@@ -19,18 +23,24 @@ const TIPOS_RESUMO = [
  * Exportar (Excel ou PDF) da tela da saude: quem (marcados ou a lista da tela), quais
  * colunas, e se vai a aba "Resumo" (quantos por problema/remedio/alimento).
  */
+// Colunas da saude: desmarcar pede confirmacao (27/10/2026, Patrick).
+const COLUNAS_IMPORTANTES = ['problema', 'medicamento', 'alimento'];
+
 const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExportado }) => {
   const [quem, setQuem] = useState('tela');
   const [colunas, setColunas] = useState(COLUNAS_SAUDE_PADRAO);
   const [resumo, setResumo] = useState(true);
   const [porGrupo, setPorGrupo] = useState(false);
   const [erro, setErro] = useState('');
+  const [desmarcando, setDesmarcando] = useState(null); // chave aguardando confirmacao
   const [gerandoPdf, setGerandoPdf] = useState(false);
 
   useEffect(() => {
     if (!aberto) return;
     setQuem(selecionados.length > 0 ? 'marcados' : 'tela');
     setErro('');
+    setColunas(COLUNAS_SAUDE_PADRAO);
+    setDesmarcando(null);
   }, [aberto]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Confirmados (pagos) primeiro, depois os so inscritos -- igual a tela.
@@ -138,7 +148,10 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
               {COLUNAS_SAUDE.map((c) => (
                 <label key={c.chave} className="flex items-center gap-2 text-sm text-gray-200 cursor-pointer">
-                  <Checkbox checked={colunas.includes(c.chave)} onCheckedChange={(v) => alternar(c.chave, v === true)} />
+                  <Checkbox checked={colunas.includes(c.chave)} onCheckedChange={(v) => {
+                    if (v !== true && COLUNAS_IMPORTANTES.includes(c.chave)) setDesmarcando(c.chave);
+                    else alternar(c.chave, v === true);
+                  }} />
                   {c.rotulo}
                 </label>
               ))}
@@ -182,6 +195,27 @@ const ExportarSaudeDialog = ({ aberto, onFechar, visiveis, selecionados, onExpor
           </Button>
         </div>
       </DialogContent>
+
+      <AlertDialog open={!!desmarcando} onOpenChange={(v) => !v && setDesmarcando(null)}>
+        <AlertDialogContent className="bg-zinc-900 border border-white/10 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja desmarcar?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              {COLUNAS_SAUDE.find((c) => c.chave === desmarcando)?.rotulo} é uma informação importante da saúde.
+              Sem ela, o arquivo vai sair sem esse dado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-white/10 border-white/10 text-white hover:bg-white/20">Manter marcado</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => { alternar(desmarcando, false); setDesmarcando(null); }}
+            >
+              Desmarcar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { MessageCircle, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { grupoAbriu, grupoNaoConsegui } from '@/services/equipantesService';
+import { grupoAbriu, grupoNaoConsegui, grupoTrilhaAcao } from '@/services/equipantesService';
 
 /**
  * Grupo de WhatsApp da area na tela do equipante (21/10/2026, Patrick): o
@@ -9,6 +9,10 @@ import { grupoAbriu, grupoNaoConsegui } from '@/services/equipantesService';
  * avisa o lider; se o WhatsApp nao deixar entrar (removido de um grupo antigo),
  * "Nao consegui entrar" poe a pessoa na lista do lider para ser adicionada
  * pelo contato.
+ *
+ * 27/10/2026: o fotografo com cor tambem entra no grupo da TRILHA da cor dele
+ * (a.grupo_trilha, vem do servidor). Sao dois grupos: o da Fotografia e o da
+ * trilha. Mudou a cor, o servidor ja manda o link da cor nova.
  */
 const Linha = ({ equipanteId, dono, a }) => {
   const [aberto, setAberto] = useState(!!a.grupo_aberto_em);
@@ -22,16 +26,21 @@ const Linha = ({ equipanteId, dono, a }) => {
     setNoGrupo(!!a.no_grupo_em);
   }, [a.grupo_aberto_em, a.grupo_pedido_em, a.no_grupo_em]);
 
+  const nome = a.trilha ? `Grupo de trilha ${a.cor}` : `${a.area}${a.cor ? ` ${a.cor}` : ''}`;
+
   const entrar = () => {
     // O clique abre o WhatsApp; o aviso ao lider vai em segundo plano.
     setAberto(true);
-    grupoAbriu(equipanteId, dono, a.escala_id);
+    if (a.trilha) grupoTrilhaAcao(equipanteId, dono, a.escala_id, 'abriu');
+    else grupoAbriu(equipanteId, dono, a.escala_id);
   };
 
   const alternarPedido = async () => {
     setOcupado(true);
     const novo = !pedido;
-    const r = await grupoNaoConsegui(equipanteId, dono, a.escala_id, novo);
+    const r = a.trilha
+      ? await grupoTrilhaAcao(equipanteId, dono, a.escala_id, novo ? 'nao_consegui' : 'consegui')
+      : await grupoNaoConsegui(equipanteId, dono, a.escala_id, novo);
     setOcupado(false);
     if (r?.ok) { setPedido(novo); if (novo) setNoGrupo(false); }
   };
@@ -40,21 +49,28 @@ const Linha = ({ equipanteId, dono, a }) => {
     <div className="rounded-lg border border-[#25D366]/30 bg-[#25D366]/5 p-3 space-y-2 text-left">
       <p className="text-sm text-white font-medium flex items-center gap-2">
         <MessageCircle className="w-4 h-4 text-[#25D366]" />
-        Grupo de WhatsApp · {a.area}{a.cor ? ` ${a.cor}` : ''}
+        Grupo de WhatsApp · {nome}
       </p>
+      {a.trilha && (
+        <p className="text-xs text-gray-400">
+          Como fotógrafo da cor {a.cor}, você também entra no grupo da equipe de trilha {a.cor}.
+        </p>
+      )}
       {noGrupo ? (
         <p className="text-xs text-green-400">Você já está no grupo.</p>
       ) : (
         <>
           <a href={a.grupo_link} target="_blank" rel="noopener noreferrer" onClick={entrar}
             className="block rounded-md bg-[#25D366] hover:bg-[#20bd5a] text-white text-center text-sm font-semibold py-2.5">
-            Entrar no grupo · {a.area}
+            Entrar no grupo · {a.trilha ? `Trilha ${a.cor}` : a.area}
           </a>
           {pedido ? (
             <div className="space-y-1">
               <p className="text-xs text-amber-200 flex items-start gap-1.5">
                 <AlertCircle className="w-4 h-4 shrink-0" />
-                Avisamos o seu líder. Ele vai te adicionar ao grupo pelo seu número de WhatsApp.
+                {a.trilha
+                  ? 'Avisamos o responsável do grupo de trilha. Ele vai te adicionar ao grupo pelo seu número de WhatsApp.'
+                  : 'Avisamos o seu líder. Ele vai te adicionar ao grupo pelo seu número de WhatsApp.'}
               </p>
               <Button size="sm" variant="ghost" onClick={alternarPedido} disabled={ocupado}
                 className="h-7 px-2 text-xs text-gray-400 hover:text-white hover:bg-white/10">
@@ -73,10 +89,20 @@ const Linha = ({ equipanteId, dono, a }) => {
   );
 };
 
+// O grupo da trilha do fotografo vira uma linha a mais, logo depois da Fotografia.
+export const linhasDeGrupo = (areas = []) => areas.flatMap((a) => {
+  const t = a.grupo_trilha;
+  const trilha = t?.link && a.escala_id ? [{
+    trilha: true, escala_id: a.escala_id, area: a.area, cor: t.cor, grupo_link: t.link,
+    grupo_aberto_em: t.aberto_em, grupo_pedido_em: t.pedido_em, no_grupo_em: t.no_grupo_em
+  }] : [];
+  return [a, ...trilha];
+});
+
 const GrupoEquipante = ({ equipanteId, dono, areas = [] }) => {
   // Uma linha por link diferente (quem tem duas areas no mesmo grupo ve um so).
   const vistos = new Set();
-  const comLink = areas.filter((a) => {
+  const comLink = linhasDeGrupo(areas).filter((a) => {
     if (!a.grupo_link || !a.escala_id || vistos.has(a.grupo_link)) return false;
     vistos.add(a.grupo_link);
     return true;
@@ -84,7 +110,9 @@ const GrupoEquipante = ({ equipanteId, dono, areas = [] }) => {
   if (comLink.length === 0) return null;
   return (
     <div className="w-full space-y-2">
-      {comLink.map((a) => <Linha key={a.escala_id} equipanteId={equipanteId} dono={dono} a={a} />)}
+      {comLink.map((a) => (
+        <Linha key={`${a.escala_id}${a.trilha ? '-trilha' : ''}`} equipanteId={equipanteId} dono={dono} a={a} />
+      ))}
     </div>
   );
 };

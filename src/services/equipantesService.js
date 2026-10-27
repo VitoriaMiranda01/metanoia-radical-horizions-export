@@ -353,6 +353,11 @@ export const grupoAbriu =(equipante_id, dono, escalaId) =>
 export const grupoNaoConsegui = (equipante_id, dono, escalaId, valor) =>
   chamarGrupo('equipante_grupo_nao_consegui', equipante_id, dono, { p_escala_id: escalaId, p_valor: valor });
 
+// Fotografo com cor no grupo da trilha da cor (27/10/2026): 'abriu',
+// 'nao_consegui' ou 'consegui'.
+export const grupoTrilhaAcao = (equipante_id, dono, escalaId, acao) =>
+  chamarGrupo('equipante_grupo_trilha', equipante_id, dono, { p_escala_id: escalaId, p_acao: acao });
+
 export const getEquipantesByWorkflowStage = async () => {
   try {
     const { data, error } = await supabase

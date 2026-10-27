@@ -26,7 +26,8 @@ const GrupoAcompanhamento = ({ equipanteId, dono, modo, recarregarCom }) => {
   const areas = dados?.areas || [];
   if (areas.length === 0) return null;
 
-  const semLink = areas.every((a) => !a.grupo_link);
+  // 27/10/2026: o fotografo com cor pode ter so o link do grupo da trilha.
+  const semLink = areas.every((a) => !a.grupo_link && !a.grupo_trilha?.link);
   const algumPresente = areas.some((a) => a.presente === true);
   if (!semLink) {
     return <div className="pt-1"><GrupoEquipante equipanteId={equipanteId} dono={dono} areas={areas} /></div>;

@@ -75,6 +75,15 @@ export const marcarNoGrupo = (equipanteId, dono, escalaId, valor) =>
     p_valor: valor
   }, 'marcação do grupo');
 
+// Fotografos no grupo da trilha da cor (27/10/2026): acao 'convite',
+// 'no_grupo' ou 'fora_do_grupo'. O convite conta no mesmo limite de envios.
+export const grupoTrilhaFotografo = (equipanteId, dono, escalaId, acao) =>
+  chamar('lider_grupo_trilha_fotografo', {
+    ...credenciais(equipanteId, dono),
+    p_escala_id: escalaId,
+    p_acao: acao
+  }, 'grupo da trilha do fotógrafo');
+
 /**
  * Link do WhatsApp para um numero cadastrado. Numero brasileiro (10 ou 11
  * digitos) ganha o 55; quem ja veio com 55 ou e estrangeiro vai como esta.

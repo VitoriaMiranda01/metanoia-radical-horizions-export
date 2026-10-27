@@ -5,7 +5,7 @@ import React, {
   memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState
 } from 'react';
 import {
-  AlertTriangle, Check, CheckCircle2, ChevronDown, ChevronUp, Copy, Loader2, MapPin, MessageCircle,
+  AlertTriangle, Camera, Check, CheckCircle2, ChevronDown, ChevronUp, Copy, Loader2, MapPin, MessageCircle,
   Plus, RefreshCw, Search, Send, Trash2, Truck, UserCog, Users, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import { gerarVCard, baixarVcf } from '@/utils/vcard';
 import { cn } from '@/lib/utils';
 import {
   fetchRelacaoLider, fetchAssinaturaRelacao, marcarPresenca, salvarGrupoLider, marcarConviteLider, marcarNoGrupo,
-  linkWhatsApp, numeroWhatsApp,
+  grupoTrilhaFotografo, linkWhatsApp, numeroWhatsApp,
   trocarAtuacaoLider, definirCorLider, delegarReuniao,
   buscarParaAreaExtra, incluirNaAreaExtra, removerDaAreaExtra,
   buscarParaModulo, incluirNoModulo, removerDoModulo
@@ -130,7 +130,7 @@ const agruparTrilhaPorCor = (equipes) => {
     // lider poder marcar e escolher a cor), e a pessoa aparecia em todos os
     // grupos (caso da Laiza, 23/10/2026).
     const cor = m.cor ? (e.cor || m.cor) : 'Sem cor';
-    if (!porCor.has(cor)) porCor.set(cor, { membros: new Map(), origens: new Set() });
+    if (!porCor.has(cor)) porCor.set(cor, { membros: new Map(), origens: new Set(), fotografos: new Map() });
     const g = porCor.get(cor);
     g.origens.add(e);
     if (!g.membros.has(m.escala_id)) {
@@ -144,6 +144,15 @@ const agruparTrilhaPorCor = (equipes) => {
       });
     }
   }));
+  // Fotografos da cor (27/10/2026): o servidor manda em cada equipe da trilha
+  // com cor (Guia Verde, Invisivel Verde...); aqui ficam uma vez so por cor.
+  daTrilha.forEach((e) => {
+    if (!e.cor || !(e.fotografos || []).length) return;
+    if (!porCor.has(e.cor)) porCor.set(e.cor, { membros: new Map(), origens: new Set(), fotografos: new Map() });
+    const g = porCor.get(e.cor);
+    g.origens.add(e);
+    e.fotografos.forEach((f) => { if (!g.fotografos.has(f.escala_id)) g.fotografos.set(f.escala_id, f); });
+  });
   const ordem = [...ORDEM_CORES_TRILHA, ...[...porCor.keys()].filter((c) => !ORDEM_CORES_TRILHA.includes(c))];
   const grupos = ordem.filter((c) => porCor.has(c)).map((cor) => {
     const g = porCor.get(cor);
@@ -164,6 +173,7 @@ const agruparTrilhaPorCor = (equipes) => {
       papel: 'delegado', porCor: true, semCor, origens, ondeGuardar, grupo_link: link,
       trocados: semCor ? [] : [...new Map(origens.flatMap((e) => e.trocados || []).map((t) => [t.escala_id, t])).values()],
       membros: [...g.membros.values()].map((m) => ({ ...m, _grupo_link: link })),
+      fotografos: semCor ? [] : [...g.fotografos.values()],
       lideres: [...new Set(origens.flatMap((e) => e.lideres || []))]
     };
   });
@@ -356,6 +366,30 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
     agir(`n-${m.escala_id}`, () => marcarNoGrupo(equipanteId, dono, m.escala_id, valor));
   }, [agir, ajustarMembro, equipanteId, dono]);
 
+  // Fotografos no grupo da trilha (27/10/2026): mesmo convite e mesma marcacao,
+  // gravados a parte (o fotografo tem tambem o grupo da Fotografia).
+  const ajustarFotografo = useCallback((escalaId, mudanca) => {
+    versao.current += 1;
+    setDados((d) => d && ({
+      ...d,
+      equipes: (d.equipes || []).map((e) => (
+        (e.fotografos || []).some((f) => f.escala_id === escalaId)
+          ? { ...e, fotografos: e.fotografos.map((f) => (f.escala_id === escalaId ? { ...f, ...mudanca } : f)) }
+          : e))
+    }));
+  }, []);
+
+  const onConviteFoto = useCallback((f) => {
+    agir(`cf-${f.escala_id}`, () => grupoTrilhaFotografo(equipanteId, dono, f.escala_id, 'convite'));
+  }, [agir, equipanteId, dono]);
+
+  const onNoGrupoFoto = useCallback((f, valor) => {
+    ajustarFotografo(f.escala_id, valor
+      ? { no_grupo_em: new Date().toISOString(), grupo_pedido_em: null }
+      : { no_grupo_em: null });
+    agir(`nf-${f.escala_id}`, () => grupoTrilhaFotografo(equipanteId, dono, f.escala_id, valor ? 'no_grupo' : 'fora_do_grupo'));
+  }, [agir, ajustarFotografo, equipanteId, dono]);
+
   const onAtuacao = useCallback((m, atuacao) => {
     ajustarMembro(m.escala_id, { atuacao });
     agir(`e-${m.escala_id}`, () => trocarAtuacaoLider(equipanteId, dono, m.escala_id, atuacao),
@@ -530,6 +564,8 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
             onPresenca={onPresenca}
             onConvite={onConvite}
             onNoGrupo={onNoGrupo}
+            onConviteFoto={onConviteFoto}
+            onNoGrupoFoto={onNoGrupoFoto}
             envios={dados.envios}
             onAtuacao={onAtuacao}
             onCor={onCor}
@@ -601,6 +637,9 @@ const FILTROS = {
   da_area: (m, equipe) => m.area === equipe.area
 };
 
+// Filtros que valem tambem para os fotografos da cor (27/10/2026).
+const FILTROS_DO_GRUPO = ['todos', 'no_grupo', 'fora_do_grupo', 'nao_conseguiu'];
+
 // Area que se reune junto com esta equipe (17/10/2026).
 const AGREGADOS = {
   'Invisível': { area: 'Marcador', um: 'marcador', varios: 'Marcadores' },
@@ -612,16 +651,24 @@ const AGREGADOS = {
 const horaDe = (iso) => (iso ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '');
 const enviosEsgotados = (envios) => !!envios && envios.usados >= envios.limite;
 
-const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGrupo, envios, onAtuacao, onCor, onRemover, onBuscarModulo, onIncluirModulo, onSalvarGrupo, onSalvarGrupoCor, remetente, mostrarEquipe }) => {
+const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGrupo, onConviteFoto, onNoGrupoFoto, envios, onAtuacao, onCor, onRemover, onBuscarModulo, onIncluirModulo, onSalvarGrupo, onSalvarGrupoCor, remetente, mostrarEquipe }) => {
   const [busca, setBusca] = useState('');
   const [filtro, setFiltro] = useState('todos');
   const [atuacao, setAtuacao] = useState('');
   const termo = semAcento(useDeferredValue(busca).trim());
 
   const membros = useMemo(() => [...(equipe.membros || [])].sort(porNome), [equipe.membros]);
+  // Fotografos da cor (27/10/2026): entram no grupo de WhatsApp desta cor,
+  // mas a chamada deles e na reuniao da Fotografia.
+  const fotografos = useMemo(() => [...(equipe.fotografos || [])].sort(porNome), [equipe.fotografos]);
 
   const contas = useMemo(() => {
     const c = { total: membros.length, presentes: 0, ausentes: 0, sem: 0, pend: 0, agregados: 0, noGrupo: 0, foraGrupo: 0, naoConseguiu: 0 };
+    fotografos.forEach((f) => {
+      if (FILTROS.no_grupo(f)) c.noGrupo += 1;
+      if (FILTROS.fora_do_grupo(f)) c.foraGrupo += 1;
+      if (FILTROS.nao_conseguiu(f)) c.naoConseguiu += 1;
+    });
     membros.forEach((m) => {
       if (FILTROS.no_grupo(m)) c.noGrupo += 1;
       if (FILTROS.fora_do_grupo(m)) c.foraGrupo += 1;
@@ -633,7 +680,7 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
       if (m.area !== equipe.area) c.agregados += 1;
     });
     return c;
-  }, [membros, equipe.area]);
+  }, [membros, fotografos, equipe.area]);
   const agregado = AGREGADOS[equipe.area];
 
   const atuacoesNaLista = useMemo(
@@ -644,6 +691,14 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
     && (!atuacao || m.atuacao === atuacao)
     && (!termo || semAcento(`${m.nome} ${nomeDaIgreja(m) || ''} ${m.whatsapp || ''}`).includes(termo))),
   [membros, filtro, atuacao, termo, equipe]);
+
+  // Os filtros de chamada, pendencia e atuacao nao valem para o fotografo
+  // (somem da lista); os do grupo de WhatsApp e a busca valem.
+  const fotografosMostrados = useMemo(() => (
+    !FILTROS_DO_GRUPO.includes(filtro) || atuacao ? [] : fotografos.filter((f) => FILTROS[filtro](f, equipe)
+      && (!termo || semAcento(`${f.nome} ${nomeDaIgreja(f) || ''} ${f.whatsapp || ''}`).includes(termo)))
+  ), [fotografos, filtro, atuacao, termo, equipe]);
+  const noGrupoDaCor = useMemo(() => [...membros, ...fotografos], [membros, fotografos]);
 
   // O proprio lider criou o grupo -- nao precisa de convite.
   const prontosConvite = useMemo(
@@ -830,8 +885,33 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
           ))
           : mostrados.map(linha)}
         {membros.length === 0 && <li className="text-sm text-gray-500">Ninguém nesta equipe ainda.</li>}
-        {membros.length > 0 && mostrados.length === 0 && <li className="text-sm text-gray-500">Ninguém com esse filtro.</li>}
+        {membros.length > 0 && mostrados.length === 0 && fotografosMostrados.length === 0 && <li className="text-sm text-gray-500">Ninguém com esse filtro.</li>}
       </ul>
+
+      {/* Fotografos da cor (27/10/2026): so o grupo de WhatsApp desta cor. */}
+      {fotografosMostrados.length > 0 && (
+        <div className="space-y-2">
+          <p className="pt-2 flex items-center justify-between text-sm text-gray-300 border-b border-rose-400/30 pb-1">
+            <span className="font-semibold text-white flex items-center gap-1.5">
+              <Camera className="w-4 h-4 text-rose-300" /> Fotógrafos{equipe.cor ? ` · ${equipe.cor}` : ''}
+            </span>
+            <span className="text-xs text-gray-400">
+              {fotografosMostrados.length === fotografos.length ? fotografos.length : `${fotografosMostrados.length} de ${fotografos.length}`}
+            </span>
+          </p>
+          <p className="text-xs text-gray-400">
+            Os fotógrafos desta cor também entram no grupo de WhatsApp da trilha. A chamada deles é na reunião da Fotografia.
+          </p>
+          <ul className="space-y-2">
+            {fotografosMostrados.map((f) => (
+              <Fotografo key={f.escala_id} f={f} grupoLink={equipe.grupo_link} remetente={remetente}
+                ocupadoConvite={!!ocupado[`cf-${f.escala_id}`]} ocupadoNoGrupo={!!ocupado[`nf-${f.escala_id}`]}
+                bloqueado={enviosEsgotados(envios)} liberaEm={envios?.libera_em || null}
+                onConvite={onConviteFoto} onNoGrupo={onNoGrupoFoto} />
+            ))}
+          </ul>
+        </div>
+      )}
 
       {equipe.pode_gerenciar && (
         <IncluirNaEquipe area={equipe.area} ocupado={ocupado}
@@ -856,13 +936,13 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
       )}
 
       {equipe.escala_id && (
-        <GrupoWhatsApp equipe={equipe} prontos={prontosConvite} membros={membros} envios={envios} ocupado={!!ocupado[`g-${equipe.escala_id}`]}
+        <GrupoWhatsApp equipe={equipe} prontos={prontosConvite} membros={noGrupoDaCor} envios={envios} ocupado={!!ocupado[`g-${equipe.escala_id}`]}
           onSalvar={(link) => onSalvarGrupo(equipe, link)} mostrarEquipe={mostrarEquipe} />
       )}
 
       {/* Grupo por cor: UM grupo de WhatsApp para a cor inteira. */}
       {equipe.porCor && equipe.ondeGuardar.length > 0 && (
-        <GrupoWhatsApp equipe={equipe} prontos={prontosConvite} membros={membros} envios={envios} ocupado={!!ocupado[`g-${equipe.chave}`]}
+        <GrupoWhatsApp equipe={equipe} prontos={prontosConvite} membros={noGrupoDaCor} envios={envios} ocupado={!!ocupado[`g-${equipe.chave}`]}
           onSalvar={(link) => onSalvarGrupoCor(equipe, link)} mostrarEquipe={mostrarEquipe} />
       )}
     </section>
@@ -1091,6 +1171,106 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
   );
 }, mesmasProps);
 Membro.displayName = 'Membro';
+
+// Fotografo da cor na lista da trilha (27/10/2026, Patrick): identificado como
+// fotografo, so com o grupo de WhatsApp (convite e "ja esta no grupo"). Sem
+// chamada, cor ou atuacao: isso e da Fotografia.
+const Fotografo = memo(({ f, grupoLink, remetente, ocupadoConvite, ocupadoNoGrupo, bloqueado, liberaEm, onConvite, onNoGrupo }) => {
+  const { toast } = useToast();
+  const zap = linkWhatsApp(f.whatsapp, f.estrangeiro);
+  const podeConvidar = grupoLink && !f.eu && !!zap;
+  const pedidoGrupo = !!f.grupo_pedido_em && !f.no_grupo_em;
+
+  const salvarContato = () => {
+    const numero = numeroWhatsApp(f.whatsapp, f.estrangeiro);
+    if (!numero) return;
+    baixarVcf(gerarVCard([{ nome: f.nome, numero }], `Metanoia Fotografia ${f.cor || ''}`.trim()), `${f.nome}-Metanoia-Fotografia`);
+    toast({
+      title: 'Contato baixado',
+      description: 'Abra o arquivo baixado para adicionar à sua agenda. Depois adicione a pessoa ao grupo.',
+      className: 'bg-green-600 text-white'
+    });
+  };
+
+  const enviarConvite = () => {
+    if (bloqueado) return;
+    const quem = nomeCurto(remetente);
+    const texto = `Olá, ${(f.nome || '').split(' ')[0]}! Aqui é ${quem ? `${quem}, ` : ''}da equipe de trilha ${f.cor} do Metanoia Radical Serra. `
+      + `Como fotógrafo da cor ${f.cor}, entre no nosso grupo pelo link: ${grupoLink}`;
+    const link = linkWhatsApp(f.whatsapp, f.estrangeiro, texto);
+    if (link) window.open(link, '_blank', 'noopener,noreferrer');
+    onConvite(f);
+  };
+
+  return (
+    <li style={LINHA_LEVE} className={cn('rounded-lg border p-3',
+      pedidoGrupo ? 'border-amber-400/70 bg-amber-400/10' : 'border-rose-400/30 bg-rose-500/5')}>
+      <p className="text-white font-medium flex items-center gap-2 flex-wrap">
+        <span>{f.nome}</span>
+        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-200 flex items-center gap-1">
+          <Camera className="w-3 h-3" /> Fotógrafo
+        </span>
+        {f.eh_lider && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">líder da Fotografia</span>}
+        {f.eu && <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300">você</span>}
+      </p>
+      <p className="text-xs text-gray-400 truncate">{nomeDaIgreja(f) || 'Igreja não informada'}</p>
+      <p className="text-sm text-gray-300 flex items-center gap-2 mt-0.5 flex-wrap">
+        {numeroWhatsApp(f.whatsapp, f.estrangeiro) ? (
+          <button type="button" onClick={salvarContato} title="Toque para adicionar esta pessoa aos seus contatos"
+            className="underline decoration-dotted underline-offset-4 hover:text-white text-left">
+            {telefoneVisivel(f)}
+          </button>
+        ) : telefoneVisivel(f)}
+        {zap && (
+          <a href={zap} target="_blank" rel="noopener noreferrer" aria-label="Abrir conversa no WhatsApp"
+            className="text-green-400 hover:text-green-300">
+            <MessageCircle className="w-4 h-4" />
+          </a>
+        )}
+        {f.atuacao && <span className="text-xs text-gray-500">· {f.atuacao}</span>}
+      </p>
+
+      {podeConvidar && (
+        <div className="mt-2 flex items-center gap-2">
+          <Button size="sm" onClick={enviarConvite} disabled={ocupadoConvite || bloqueado}
+            className={cn('h-8', f.convite_enviado_em
+              ? 'bg-transparent border border-white/20 text-gray-300 hover:bg-white/10'
+              : 'bg-[#25D366] hover:bg-[#20bd5a] text-white')}>
+            <Send className="w-3.5 h-3.5 mr-1.5" />
+            {bloqueado ? `Limite de envios (libera às ${horaDe(liberaEm)})`
+              : f.convite_enviado_em ? 'Reenviar convite' : 'Enviar convite do grupo'}
+          </Button>
+          {f.convite_enviado_em && (
+            <span className="text-xs text-green-400 flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" /> convite enviado
+            </span>
+          )}
+        </div>
+      )}
+
+      {grupoLink && !f.eu && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+          {pedidoGrupo && (
+            <span className="rounded-full border border-amber-400/60 bg-amber-400/15 px-2 py-0.5 font-medium text-amber-100">
+              Não conseguiu entrar: adicione pelo contato
+            </span>
+          )}
+          {f.grupo_aberto_em && !f.no_grupo_em && !pedidoGrupo && (
+            <span className="text-sky-300">abriu o link do grupo</span>
+          )}
+          {f.no_grupo_em && (
+            <span className="text-green-400 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> está no grupo</span>
+          )}
+          <Button size="sm" variant="outline" disabled={ocupadoNoGrupo} onClick={() => onNoGrupo(f, !f.no_grupo_em)}
+            className="h-7 px-2 text-xs border-white/25 bg-transparent text-gray-200 hover:text-white hover:bg-white/10">
+            {f.no_grupo_em ? 'Desmarcar' : 'Marcar como já está no grupo'}
+          </Button>
+        </div>
+      )}
+    </li>
+  );
+});
+Fotografo.displayName = 'Fotografo';
 
 // "Delegar responsável pela reuniao da escala": quem faz a chamada e o grupo
 // quando o lider nao vai estar. So gente da propria equipe.
@@ -1402,7 +1582,8 @@ const GrupoWhatsApp = ({ equipe, prontos, membros = [], envios, ocupado, onSalva
       </p>
       {equipe.porCor && (
         <p className="text-xs text-gray-300">
-          Um grupo só para a cor inteira: Guias, Invisíveis, Marcadores, Pastores Invisíveis, Espírito Santo e Inimigo.
+          Um grupo só para a cor inteira: Guias, Invisíveis, Marcadores, Pastores Invisíveis, Espírito Santo, Inimigo
+          e os fotógrafos da cor.
         </p>
       )}
       {/* Quem conduz varias equipes: cada grupo diz de qual equipe e, para nao misturar. */}

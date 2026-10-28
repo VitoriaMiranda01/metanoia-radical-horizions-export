@@ -16,7 +16,7 @@ import { areaExtraPorChave, rotuloAreaExtra } from '@/constants/areasExtra';
 import { formatarTelefone } from '@/utils/telefone';
 import { gerarVCard, baixarVcf } from '@/utils/vcard';
 import { cn } from '@/lib/utils';
-import SeloOutraCidade, { ehPresencaAutomatica } from '@/components/scales/SeloOutraCidade';
+import SeloOutraCidade, { ehPresencaAutomatica, ehPresencaPorPagamento } from '@/components/scales/SeloOutraCidade';
 import {
   fetchRelacaoLider, fetchAssinaturaRelacao, marcarPresenca, salvarGrupoLider, marcarConviteLider, marcarNoGrupo,
   grupoTrilhaFotografo, linkWhatsApp, numeroWhatsApp,
@@ -1116,7 +1116,9 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
         <p className="mt-2 text-xs text-sky-200 flex items-start gap-1.5">
           <MapPin className="w-4 h-4 shrink-0 text-sky-400" />
           <span>
-            Presença marcada automaticamente porque a pessoa mora em outra cidade (WhatsApp DDD 22 ou 24).
+            {ehPresencaPorPagamento(m)
+              ? 'Presença marcada automaticamente porque o pagamento manual foi confirmado.'
+              : 'Presença marcada automaticamente porque a pessoa mora em outra cidade (WhatsApp DDD 22 ou 24).'}
             Se ela não vai servir, marque <strong>Ausente</strong>: vale a sua marcação.
           </span>
         </p>

@@ -495,14 +495,6 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
               Gerar grupo {cor.toLowerCase()}
             </Button>
           )}
-          {cor && (
-            <Button size="sm" onClick={() => pedirArtes(cor, 'slide')} disabled={!!gerando || carregando}
-              data-dica={`Slide simples do grupo ${cor.toLowerCase()}: Inimigo, Infiltrados e Espírito Santo, sem os Guias.`}
-              className={`h-8 border ${COR_BOTAO[cor]}`}>
-              {gerando === `slide-${cor}` ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
-              Slide {cor.toLowerCase()}
-            </Button>
-          )}
         </div>
         <div className="flex flex-wrap gap-x-6 gap-y-3">
           {PAPEIS.map(({ area, titulo }) => {

@@ -1,6 +1,7 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Check, Loader2, Search, UserCheck, UserMinus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { nomeDaIgreja } from '@/constants/igrejas';
@@ -56,6 +57,8 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir, men
   const [busca, setBusca] = useState('');
   const [area, setArea] = useState('');
   const [ocupado, setOcupado] = useState({});
+  const [lote, setLote] = useState(null); // { valor } -- confirmacao aberta
+  const [loteAndamento, setLoteAndamento] = useState(null); // { feitos, total }
   const termo = semAcento(useDeferredValue(busca).trim());
 
   const carregar = async () => {
@@ -92,6 +95,32 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir, men
     carregar();
   };
 
+  // Edicao em bloco na lista "Sem chamada" (28/10/2026): marca todo mundo da
+  // lista como presente ou ausente, pela mesma marcacao individual (4 por vez).
+  const filtrados = grupos.flatMap(([, lista]) => lista);
+  const filtroAtivo = !!pessoas && filtrados.length < pessoas.length;
+  const marcarEmBloco = async (alvo, valor) => {
+    setLote(null);
+    const fila = [...alvo];
+    let feitos = 0; let falhas = 0; let ultimoErro = '';
+    setLoteAndamento({ feitos: 0, total: fila.length });
+    const trabalhador = async () => {
+      while (fila.length) {
+        const p = fila.shift();
+        const r = await marcarChamada(p.escala_id, valor);
+        if (!r.success) { falhas += 1; ultimoErro = r.error; }
+        feitos += 1;
+        setLoteAndamento({ feitos, total: alvo.length });
+      }
+    };
+    await Promise.all([trabalhador(), trabalhador(), trabalhador(), trabalhador()]);
+    setLoteAndamento(null);
+    await carregar();
+    toast(falhas
+      ? { title: `${alvo.length - falhas} de ${alvo.length} marcados`, description: `${falhas} não deram certo: ${ultimoErro || 'tente de novo'}`, variant: 'destructive' }
+      : { title: `${alvo.length} marcados como ${valor ? 'presentes' : 'ausentes'}` });
+  };
+
   const decidir = async (p, acao) => {
     setOcupado((o) => ({ ...o, [p.escala_id]: acao }));
     await onDecidir?.(p, acao);
@@ -102,6 +131,44 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir, men
   return (
     <div className="space-y-3">
       {mensagens && situacao !== 'presentes' && <RemetenteMensagem mensagens={mensagens} />}
+      {situacao === 'sem' && pessoas && pessoas.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-2">
+          <span className="text-xs text-gray-400 mr-auto">Marcar em bloco:</span>
+          <Button size="sm" disabled={!!loteAndamento || mostrados === 0} onClick={() => setLote({ valor: true })}
+            data-dica="Marca todo mundo desta lista como presente. Pede confirmação."
+            className="h-8 bg-transparent border border-green-600/50 text-green-300 hover:bg-green-600/20">
+            {loteAndamento ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1" />} Todos presentes
+          </Button>
+          <Button size="sm" disabled={!!loteAndamento || mostrados === 0} onClick={() => setLote({ valor: false })}
+            data-dica="Marca todo mundo desta lista como ausente. Pede confirmação."
+            className="h-8 bg-transparent border border-red-600/50 text-red-300 hover:bg-red-600/20">
+            <X className="w-3.5 h-3.5 mr-1" /> Todos ausentes
+          </Button>
+          {loteAndamento && <span className="text-xs text-gray-400 w-full">Marcando {loteAndamento.feitos} de {loteAndamento.total}...</span>}
+        </div>
+      )}
+      <AlertDialog open={!!lote} onOpenChange={(o) => { if (!o) setLote(null); }}>
+        <AlertDialogContent className="bg-zinc-950 border-white/20 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Marcar como {lote?.valor ? 'presentes' : 'ausentes'}?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Vale por cima da marcação dos líderes. Cada pessoa pode ser ajustada depois, individualmente.
+              {filtroAtivo && ' Há filtro ou busca ativa: escolha se vale só para quem está na tela ou para todos os sem chamada.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel className="bg-transparent border-white/20 text-white hover:bg-white/10">Cancelar</AlertDialogCancel>
+            {filtroAtivo && (
+              <Button onClick={() => marcarEmBloco(filtrados, lote.valor)} className={lote?.valor ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}>
+                Só os {filtrados.length} da tela
+              </Button>
+            )}
+            <Button onClick={() => marcarEmBloco(pessoas, lote.valor)} className={lote?.valor ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}>
+              {filtroAtivo ? `Todos os ${pessoas.length}` : `Marcar ${pessoas?.length ?? 0}`}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />

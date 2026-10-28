@@ -417,6 +417,11 @@ export const fetchChamadaDaArea = (area) => rpcOrganizador('chamada_da_area', { 
 // situacao: 'presentes' | 'ausentes' | 'sem'
 export const fetchChamadaPorSituacao = (situacao) =>
   rpcOrganizador('chamada_por_situacao', { p_situacao: situacao }, 'lista da chamada');
+// Mensagem pelo WhatsApp para ausente / sem chamada (28/10/2026, migration
+// 20261028c): limite de 40 a cada 24h por organizador. tipo: 'ausente' | 'sem'.
+export const fetchMensagensChamada = () => rpcOrganizador('chamada_mensagens_estado', {}, 'mensagens da chamada');
+export const registrarMensagemChamada = (escalaId, tipo) =>
+  rpcOrganizador('chamada_registrar_mensagem', { p_escala_id: escalaId, p_tipo: tipo }, 'registrar a mensagem');
 export const marcarPresencaOrganizador = (escalaId, presente) =>
   rpcOrganizador('organizador_marcar_presenca', { p_escala_id: escalaId, p_presente: presente }, 'presença');
 // cor: a cor do grupo na area nova (so nas areas com cor; obrigatoria para

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import ChamadaAreaDialog from './ChamadaAreaDialog';
 import ChamadaExportar from './ChamadaExportar';
+import { BotaoMensagem, RemetenteMensagem, useMensagensChamada } from './ChamadaMensagem';
 import ChamadaSituacaoLista, { SITUACOES, contaNaChamada, manterEm } from './ChamadaSituacaoLista';
 import { carregarChamada } from '@/services/chamadaStore';
 import { useAtualizacaoPeriodica } from '@/hooks/useAtualizacaoPeriodica';
@@ -60,6 +61,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
   const [situacao, setSituacao] = useState(null);
   const [tique, setTique] = useState(0);
   const [busca, setBusca] = useState('');
+  const mensagens = useMensagensChamada();
   // Minimizado: fica so a linha do titulo, como a fila "A escalar".
   // Lembrado neste navegador.
   const [minimizado, setMinimizado] = useState(() => {
@@ -218,7 +220,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
       {situacao && !minimizado && (
         <div className="px-4 py-3 border-b border-white/10">
           <p className="text-sm text-white font-medium mb-2">{SITUACOES[situacao].rotulo}</p>
-          <ChamadaSituacaoLista situacao={situacao} atualizar={tique} onAbrirArea={setAreaAberta} onDecidir={decidir} />
+          <ChamadaSituacaoLista situacao={situacao} atualizar={tique} onAbrirArea={setAreaAberta} onDecidir={decidir} mensagens={mensagens} />
         </div>
       )}
 
@@ -238,6 +240,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
               <UserX className="h-4 w-4 text-red-400" /> Ausentes a definir ({ausentes.length})
             </p>
           </div>
+          {todosAusentes.length > 0 && <RemetenteMensagem mensagens={mensagens} />}
           {ausentes.length === 0 ? (
             <p className="text-xs text-gray-500">{todosAusentes.length === 0 ? 'Nenhum ausente para decidir agora.' : 'Ninguém com esse filtro.'}</p>
           ) : (
@@ -261,7 +264,8 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
                       {p.marcado_por ? ` · marcado por ${p.marcado_por}` : ''}
                     </p>
                   </div>
-                  <div className="flex gap-1.5 shrink-0">
+                  <div className="flex flex-wrap gap-1.5 shrink-0">
+                    <BotaoMensagem p={p} tipo="ausente" mensagens={mensagens} />
                     <Button size="sm" variant="outline" onClick={() => decidir(p, 'manter')} disabled={!!ocupado[p.escala_id]}
                       data-dica="A pessoa continua na área e passa a contar como presente (definido pela organização)."
                       className="h-8 border-green-600/40 bg-transparent text-green-300 hover:bg-green-600/15 hover:text-green-200">

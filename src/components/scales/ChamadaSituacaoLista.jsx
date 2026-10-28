@@ -8,6 +8,7 @@ import { formatarTelefone } from '@/utils/telefone';
 import { cn } from '@/lib/utils';
 import { fetchChamadaPorSituacao } from '@/services/scalesService';
 import { marcarChamada } from '@/services/chamadaStore';
+import { BotaoMensagem, RemetenteMensagem } from './ChamadaMensagem';
 
 /**
  * Lista de quem esta numa situacao da chamada -- presentes, ausentes ou sem
@@ -46,7 +47,9 @@ export const SITUACOES = {
   sem: { rotulo: 'Sem chamada', vazio: 'Todo mundo já tem a chamada marcada.' }
 };
 
-const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir }) => {
+// mensagens: useMensagensChamada() do quadro -- botao "Mensagem" nos ausentes
+// e sem chamada (28/10/2026).
+const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir, mensagens }) => {
   const { toast } = useToast();
   const [pessoas, setPessoas] = useState(null);
   const [erro, setErro] = useState('');
@@ -98,6 +101,7 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir }) =
 
   return (
     <div className="space-y-3">
+      {mensagens && situacao !== 'presentes' && <RemetenteMensagem mensagens={mensagens} />}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
@@ -155,7 +159,8 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir }) =
                       </div>
                       {situacao === 'ausentes' ? (
                         !p.mantido && (
-                          <div className="flex gap-1.5 shrink-0">
+                          <div className="flex flex-wrap gap-1.5 shrink-0">
+                            {mensagens && <BotaoMensagem p={p} tipo="ausente" mensagens={mensagens} />}
                             <Button size="sm" variant="outline" onClick={() => decidir(p, 'manter')} disabled={!!emVoo}
                               data-dica="A pessoa continua na área mesmo ausente na chamada."
                               className="h-8 border-green-600/40 bg-transparent text-green-300 hover:bg-green-600/15 hover:text-green-200">
@@ -169,7 +174,8 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir }) =
                           </div>
                         )
                       ) : (
-                      <div className="flex gap-1.5 shrink-0">
+                      <div className="flex flex-wrap gap-1.5 shrink-0">
+                        {situacao === 'sem' && mensagens && <BotaoMensagem p={p} tipo="sem" mensagens={mensagens} />}
                         <Button size="sm" disabled={!!emVoo} onClick={() => presenca(p, p.presente === true ? null : true)}
                           data-dica={p.presente === true ? 'Tirar a marcação.' : 'Marcar presente.'}
                           className={cn('h-8 px-2.5', p.presente === true

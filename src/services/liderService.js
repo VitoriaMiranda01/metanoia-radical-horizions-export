@@ -121,6 +121,15 @@ export const definirCorLider = (equipanteId, dono, escalaId, cor) =>
     p_cor: cor || null
   }, 'cor');
 
+// Fixo 📌 (28/10/2026, migration 20261028g): so o lider da area, depois da
+// escala oficial. A mesma marca da geracao de escala; nao aloca ninguem.
+export const marcarFixoLider = (equipanteId, dono, escalaId, fixo) =>
+  chamar('lider_marcar_fixo', {
+    ...credenciais(equipanteId, dono),
+    p_escala_id: escalaId,
+    p_fixo: !!fixo
+  }, 'marcação de fixo');
+
 // Responsavel pela reuniao da escala: alguem da equipe. null desfaz.
 export const delegarReuniao = (equipanteId, dono, area, cor, delegadoId) =>
   chamar('lider_delegar_reuniao', {

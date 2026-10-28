@@ -20,7 +20,7 @@ import SeloOutraCidade, { ehPresencaAutomatica, ehPresencaPorPagamento } from '@
 import {
   fetchRelacaoLider, fetchAssinaturaRelacao, marcarPresenca, salvarGrupoLider, marcarConviteLider, marcarNoGrupo,
   grupoTrilhaFotografo, linkWhatsApp, numeroWhatsApp,
-  trocarAtuacaoLider, definirCorLider, delegarReuniao,
+  trocarAtuacaoLider, definirCorLider, delegarReuniao, marcarFixoLider,
   buscarParaAreaExtra, incluirNaAreaExtra, removerDaAreaExtra,
   buscarParaModulo, incluirNoModulo, removerDoModulo
 } from '@/services/liderService';
@@ -134,6 +134,9 @@ const agruparTrilhaPorCor = (equipes) => {
     if (!porCor.has(cor)) porCor.set(cor, { membros: new Map(), origens: new Set(), fotografos: new Map() });
     const g = porCor.get(cor);
     g.origens.add(e);
+    // 📌 (28/10/2026): so o lider da area da pessoa marca. Sem cor aparece em
+    // varias equipes da area: basta uma em que ele seja o lider.
+    const podeFixar = !!e.pode_fixar && m.area === e.area;
     if (!g.membros.has(m.escala_id)) {
       g.membros.set(m.escala_id, {
         ...m,
@@ -141,8 +144,11 @@ const agruparTrilhaPorCor = (equipes) => {
         _atuacoes: !m.eh_lider && m.area === e.area ? e.atuacoes : null,
         _responsavel: responsaveisDe(e).some((d) => d.equipante_id === m.equipante_id),
         // 19/10/2026: o responsavel/lider da trilha troca a cor (mesma area).
-        _podeCor: !!e.pode_trocar_cor && !m.eh_lider
+        _podeCor: !!e.pode_trocar_cor && !m.eh_lider,
+        _podeFixar: podeFixar
       });
+    } else if (podeFixar) {
+      g.membros.get(m.escala_id)._podeFixar = true;
     }
   }));
   // Fotografos da cor (27/10/2026): o servidor manda em cada equipe da trilha
@@ -194,14 +200,18 @@ const separarSemCor = (equipes) => {
     const g = semCor.get(e.area);
     g.origens.push(e);
     fora.forEach((m) => {
+      const podeFixar = !!e.pode_fixar && m.area === e.area;
       if (!g.membros.has(m.escala_id)) {
         g.membros.set(m.escala_id, {
           ...m,
           _grupo_link: null,
           _atuacoes: !m.eh_lider && m.area === e.area ? e.atuacoes : null,
           _responsavel: responsaveisDe(e).some((d) => d.equipante_id === m.equipante_id),
-          _podeCor: !!e.pode_trocar_cor && !m.eh_lider
+          _podeCor: !!e.pode_trocar_cor && !m.eh_lider,
+          _podeFixar: podeFixar
         });
+      } else if (podeFixar) {
+        g.membros.get(m.escala_id)._podeFixar = true;
       }
     });
     return { ...e, membros: e.membros.filter((m) => m.cor) };
@@ -403,6 +413,17 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
       () => (cor ? `${(m.nome || '').split(' ')[0]} agora é ${cor}` : 'Cor retirada'));
   }, [agir, ajustarMembro, equipanteId, dono]);
 
+  // Fixo 📌 (28/10/2026): o lider marca quem e fixo na sua area, depois da
+  // escala oficial. A mesma marca da geracao de escala; nao aloca ninguem.
+  const onFixo = useCallback((m, fixo) => {
+    // eslint-disable-next-line no-alert
+    if (!fixo && m.fixo_por && !m.fixo_por.endsWith('(líder)') && !window.confirm(
+      `${m.nome} foi marcado(a) como fixo(a) por ${m.fixo_por}. Tirar o 📌 mesmo assim?`)) return;
+    ajustarMembro(m.escala_id, { fixo, fixo_por: fixo ? `${dados?.lider || ''} (líder)` : null });
+    agir(`f-${m.escala_id}`, () => marcarFixoLider(equipanteId, dono, m.escala_id, fixo),
+      () => (fixo ? `📌 ${(m.nome || '').split(' ')[0]} marcado(a) como fixo(a) em ${m.area}` : `${(m.nome || '').split(' ')[0]} não é mais fixo(a)`));
+  }, [agir, ajustarMembro, equipanteId, dono, dados?.lider]);
+
   // Lider da Recepcao Igreja: tirar alguem de uma das cinco areas da igreja.
   const onRemover = useCallback((m) => {
     // eslint-disable-next-line no-alert
@@ -570,6 +591,7 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
             envios={dados.envios}
             onAtuacao={onAtuacao}
             onCor={onCor}
+            onFixo={onFixo}
             onRemover={onRemover}
             onBuscarModulo={onBuscarModulo}
             onIncluirModulo={onIncluirModulo}
@@ -634,6 +656,7 @@ const FILTROS = {
   nao_conseguiu: (m) => !!m.grupo_pedido_em && !m.no_grupo_em && !m.eu,
   // Quem vem de outra area para a reuniao desta equipe (Marcadores na
   // Invisivel, Perseguidos na Selva).
+  fixos: (m) => !!m.fixo,
   agregados: (m, equipe) => m.area !== equipe.area,
   da_area: (m, equipe) => m.area === equipe.area
 };
@@ -652,7 +675,7 @@ const AGREGADOS = {
 const horaDe = (iso) => (iso ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '');
 const enviosEsgotados = (envios) => !!envios && envios.usados >= envios.limite;
 
-const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGrupo, onConviteFoto, onNoGrupoFoto, envios, onAtuacao, onCor, onRemover, onBuscarModulo, onIncluirModulo, onSalvarGrupo, onSalvarGrupoCor, remetente, mostrarEquipe }) => {
+const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGrupo, onConviteFoto, onNoGrupoFoto, envios, onAtuacao, onCor, onFixo, onRemover, onBuscarModulo, onIncluirModulo, onSalvarGrupo, onSalvarGrupoCor, remetente, mostrarEquipe }) => {
   const [busca, setBusca] = useState('');
   const [filtro, setFiltro] = useState('todos');
   const [atuacao, setAtuacao] = useState('');
@@ -683,6 +706,13 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
     return c;
   }, [membros, fotografos, equipe.area]);
   const agregado = AGREGADOS[equipe.area];
+
+  // 📌 so na lista do lider da area, depois da escala oficial (28/10/2026).
+  const podeFixarDe = useCallback((m) => (
+    equipe.porCor ? !!m._podeFixar : (!!equipe.pode_fixar && m.area === equipe.area)
+  ), [equipe]);
+  const comFixo = useMemo(() => membros.filter(podeFixarDe), [membros, podeFixarDe]);
+  const totalFixos = comFixo.filter((m) => m.fixo).length;
 
   const atuacoesNaLista = useMemo(
     () => [...new Set(membros.map((m) => m.atuacao).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')),
@@ -730,6 +760,7 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
       atuacoes={equipe.porCor ? m._atuacoes : (!m.eh_lider && m.area === equipe.area ? equipe.atuacoes : null)}
       responsavel={equipe.porCor ? m._responsavel : responsaveisDe(equipe).some((d) => d.equipante_id === m.equipante_id)}
       podeCor={equipe.porCor ? m._podeCor : (equipe.pode_trocar_cor && !m.eh_lider)}
+      podeFixar={podeFixarDe(m)} ocupadoFixo={!!ocupado[`f-${m.escala_id}`]} onFixo={onFixo}
       ocupadoPresenca={!!ocupado[`p-${m.escala_id}`]}
       ocupadoConvite={!!ocupado[`c-${m.escala_id}`]}
       ocupadoEdicao={!!ocupado[`e-${m.escala_id}`]}
@@ -848,6 +879,20 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
           </div>
         )}
 
+        {comFixo.length > 0 && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+            <p className="text-xs text-amber-100/90">
+              📌 Toque no alfinete de quem é <strong>fixo(a)</strong> na sua área. A organização usa essa marca
+              para montar a escala das próximas edições. A marca fica salva; não muda a escala desta edição.
+            </p>
+            <button type="button" onClick={() => alternarFiltro('fixos')}
+              className={cn('rounded-full border px-3 py-1 text-xs',
+                filtro === 'fixos' ? 'border-amber-400 bg-amber-400/15 text-amber-100' : 'border-amber-500/30 text-amber-300')}>
+              📌 Fixos: <strong>{totalFixos}</strong>
+            </button>
+          </div>
+        )}
+
         {contas.pend > 0 && (
           <div className="flex flex-wrap gap-2">
             {contas.pend > 0 && (
@@ -958,11 +1003,13 @@ const mesmasProps = (a, b) => (
   && a.podeRemover === b.podeRemover && a.ocupadoRemover === b.ocupadoRemover && a.onRemover === b.onRemover
   && a.bloqueado === b.bloqueado && a.liberaEm === b.liberaEm
   && a.onPresenca === b.onPresenca && a.onConvite === b.onConvite && a.onNoGrupo === b.onNoGrupo && a.onAtuacao === b.onAtuacao && a.onCor === b.onCor
+  && a.podeFixar === b.podeFixar && a.ocupadoFixo === b.ocupadoFixo && a.onFixo === b.onFixo
   && (a.m === b.m || JSON.stringify(a.m) === JSON.stringify(b.m))
 );
 
 const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remetente, atuacoes, podeCor, responsavel, ocupadoPresenca, ocupadoConvite, ocupadoEdicao,
-  ocupadoNoGrupo, podeRemover, ocupadoRemover, onRemover, bloqueado, liberaEm, onPresenca, onConvite, onNoGrupo, onAtuacao, onCor }) => {
+  ocupadoNoGrupo, podeRemover, ocupadoRemover, onRemover, bloqueado, liberaEm, onPresenca, onConvite, onNoGrupo, onAtuacao, onCor,
+  podeFixar, ocupadoFixo, onFixo }) => {
   const { toast } = useToast();
   const pendente = m.pendencias?.length > 0;
   const zap = linkWhatsApp(m.whatsapp, m.estrangeiro);
@@ -1009,6 +1056,20 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-white font-medium flex items-center gap-2 flex-wrap">
+            {/* Fixo 📌 (28/10/2026): apagado = nao e fixo; toque alterna. */}
+            {podeFixar && (
+              <button type="button" disabled={ocupadoFixo} onClick={() => onFixo(m, !m.fixo)}
+                aria-pressed={!!m.fixo}
+                aria-label={m.fixo ? `Tirar ${m.nome} dos fixos` : `Marcar ${m.nome} como fixo(a)`}
+                title={m.fixo
+                  ? `Fixo(a) em ${m.area}${m.fixo_por ? ` (marcado por ${m.fixo_por})` : ''}. Toque para tirar.`
+                  : `Marcar como fixo(a) em ${m.area}.`}
+                className={cn('-my-1 h-8 w-8 shrink-0 rounded-full border flex items-center justify-center text-base leading-none',
+                  m.fixo ? 'border-amber-400/70 bg-amber-400/15' : 'border-white/15 bg-transparent grayscale opacity-40',
+                  ocupadoFixo && 'animate-pulse')}>
+                📌
+              </button>
+            )}
             {/* Especialidade da Saude (18/10/2026): opcao da lista vira tag;
                 o que a pessoa escreveu em "Outro" vai ao lado do nome. */}
             <span>

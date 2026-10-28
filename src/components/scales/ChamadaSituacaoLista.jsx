@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { fetchChamadaPorSituacao } from '@/services/scalesService';
 import { marcarChamada } from '@/services/chamadaStore';
 import { BotaoMensagem, RemetenteMensagem } from './ChamadaMensagem';
+import SeloOutraCidade from './SeloOutraCidade';
 
 /**
  * Lista de quem esta numa situacao da chamada -- presentes, ausentes ou sem
@@ -216,6 +217,7 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir, men
                           {p.eh_lider && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">líder</span>}
                           {p.pago && <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-300 border border-green-500/30">pago</span>}
                           {p.mantido && <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300">mantido na área</span>}
+                          <SeloOutraCidade p={p} />
                         </p>
                         <p className="text-[11px] text-gray-400 truncate">
                           {[p.atuacao, p.cor].filter(Boolean).join(' · ') || 'Sem atuação'}

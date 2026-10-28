@@ -16,6 +16,7 @@ import { areaExtraPorChave, rotuloAreaExtra } from '@/constants/areasExtra';
 import { formatarTelefone } from '@/utils/telefone';
 import { gerarVCard, baixarVcf } from '@/utils/vcard';
 import { cn } from '@/lib/utils';
+import SeloOutraCidade, { ehPresencaAutomatica } from '@/components/scales/SeloOutraCidade';
 import {
   fetchRelacaoLider, fetchAssinaturaRelacao, marcarPresenca, salvarGrupoLider, marcarConviteLider, marcarNoGrupo,
   grupoTrilhaFotografo, linkWhatsApp, numeroWhatsApp,
@@ -1023,6 +1024,7 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
               </span>
             )}
             {m.eu && <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300">você</span>}
+            <SeloOutraCidade p={m} />
             {m.veio_de && (
               <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-sky-400/50 bg-sky-500/15 text-sky-200"
                 title="Trocado de área pela organização: confira se já está no grupo certo.">
@@ -1108,6 +1110,17 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
         </div>
         )}
       </div>
+
+      {/* DDD 22/24 (28/10/2026): ja vem presente; o lider decide se fica. */}
+      {ehPresencaAutomatica(m) && (
+        <p className="mt-2 text-xs text-sky-200 flex items-start gap-1.5">
+          <MapPin className="w-4 h-4 shrink-0 text-sky-400" />
+          <span>
+            Presença marcada automaticamente porque a pessoa mora em outra cidade (WhatsApp DDD 22 ou 24).
+            Se ela não vai servir, marque <strong>Ausente</strong>: vale a sua marcação.
+          </span>
+        </p>
+      )}
 
       {pendente && (
         <p className="mt-2 text-xs text-amber-200 flex items-start gap-1.5">

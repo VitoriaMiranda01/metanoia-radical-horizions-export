@@ -10,6 +10,7 @@ import {
   fetchChamadaDaArea, marcarPresencaOrganizador, definirAtuacao, definirCor
 } from '@/services/scalesService';
 import { registrarChamadaLocal } from '@/services/chamadaStore';
+import SeloOutraCidade from './SeloOutraCidade';
 
 /**
  * Chamada de uma area, pela organizacao (16/10/2026, Patrick).
@@ -180,6 +181,7 @@ const ChamadaAreaDialog = ({ area, onClose, onMudou }) => {
                     {m.nome}
                     {m.eh_lider && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">líder</span>}
                     {m.pago && <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-300 border border-green-500/30">pago</span>}
+                    <SeloOutraCidade p={m} />
                     {pendente && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 inline-flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3" /> pendência

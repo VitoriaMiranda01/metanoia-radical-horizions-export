@@ -12,16 +12,17 @@ import { fetchMensagensChamada, registrarMensagemChamada } from '@/services/scal
  * escala (28/10/2026, Patrick). O botao abre o WhatsApp de quem esta mexendo
  * com o texto pronto; quem aperta enviar e o organizador.
  *
- * Limite de 40 a cada 24h por organizador (migration 20261028c): mensagens em
+ * Referencia de 40 a cada 24h por login (migration 20261028c): mensagens em
  * sequencia para quem nao tem o numero salvo travaram o WhatsApp de varios
- * lideres no convite do grupo -- com ou sem link, o risco e o mesmo.
+ * lideres no convite do grupo -- com ou sem link, o risco e o mesmo. So AVISA,
+ * nao trava (20261028d): varias pessoas usam o login de Desenvolvedores, cada
+ * uma com o proprio WhatsApp.
  */
 
 const CHAVE_NOME = 'chamada_mensagem_remetente';
 // Contas que nao sao uma pessoa: nao entram na mensagem como "Aqui é ...".
 const CONTAS_GENERICAS = ['desenvolvedores'];
 
-const horaDe = (iso) => (iso ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '');
 const dataHora = (iso) => (iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '');
 
 export const textoMensagem = (p, tipo, remetente) => {
@@ -61,12 +62,11 @@ export const useMensagensChamada = () => {
   };
 
   const envios = estado?.envios;
-  const bloqueado = !!envios && Number(envios.usados) >= Number(envios.limite);
+  const passou = !!envios && Number(envios.usados) >= Number(envios.limite);
 
   // Abre o WhatsApp na hora (depois de um await o navegador bloquearia a
   // janela) e registra em seguida.
   const enviar = async (p, tipo) => {
-    if (bloqueado) return;
     const link = linkWhatsApp(p.whatsapp, false, textoMensagem(p, tipo, remetente));
     if (!link) {
       toast({ title: 'Telefone inválido', description: `${p.nome} não tem um WhatsApp válido na ficha.`, variant: 'destructive' });
@@ -78,12 +78,12 @@ export const useMensagensChamada = () => {
     recarregar();
   };
 
-  return { estado, envios, bloqueado, remetente, setRemetente, enviar, enviadas: estado?.enviadas || {} };
+  return { estado, envios, passou, remetente, setRemetente, enviar, enviadas: estado?.enviadas || {} };
 };
 
 // Barra acima das listas: o nome que vai na mensagem e a conta do limite.
 export const RemetenteMensagem = ({ mensagens }) => {
-  const { envios, bloqueado, remetente, setRemetente } = mensagens;
+  const { envios, passou, remetente, setRemetente } = mensagens;
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-md border border-green-500/20 bg-green-500/5 px-3 py-2 mb-3">
       <MessageCircle className="h-4 w-4 text-green-400 shrink-0 hidden sm:block" />
@@ -92,11 +92,11 @@ export const RemetenteMensagem = ({ mensagens }) => {
         placeholder="Ex.: Raquel" maxLength={40}
         className="h-8 bg-black/40 border-white/20 text-white sm:w-48" />
       {envios && (
-        <span className={cn('text-[11px] sm:ml-auto', bloqueado ? 'text-red-300' : 'text-gray-400')}
-          data-dica="Para o WhatsApp não travar o seu número: no máximo 40 mensagens a cada 24 horas.">
-          {bloqueado
-            ? `Limite de ${envios.limite} mensagens atingido (libera às ${horaDe(envios.libera_em)})`
-            : `${envios.usados} de ${envios.limite} mensagens nas últimas 24 h`}
+        <span className={cn('text-[11px] sm:ml-auto', passou ? 'text-amber-300 font-medium' : 'text-gray-400')}
+          data-dica={`Contado por login (todos que usam esta conta juntos). Acima de ${envios.limite} em 24 horas, o WhatsApp de quem está enviando pode travar por spam. Não bloqueia: só avisa.`}>
+          {passou
+            ? `⚠ Este login já mandou ${envios.usados} mensagens em 24 h (referência: ${envios.limite}). Cuidado: o WhatsApp pode travar o seu número.`
+            : `${envios.usados} de ${envios.limite} mensagens nas últimas 24 h (este login)`}
         </span>
       )}
     </div>
@@ -104,10 +104,10 @@ export const RemetenteMensagem = ({ mensagens }) => {
 };
 
 export const BotaoMensagem = ({ p, tipo, mensagens }) => {
-  const { bloqueado, enviar, enviadas } = mensagens;
+  const { enviar, enviadas } = mensagens;
   const ja = enviadas[p.escala_id];
   return (
-    <Button size="sm" variant="outline" onClick={() => enviar(p, tipo)} disabled={bloqueado || !p.whatsapp}
+    <Button size="sm" variant="outline" onClick={() => enviar(p, tipo)} disabled={!p.whatsapp}
       data-dica={ja
         ? `Mensagem já enviada ${dataHora(ja.em)}${ja.por ? ` por ${ja.por}` : ''}${ja.vezes > 1 ? ` (${ja.vezes} vezes)` : ''}. Clique para mandar de novo.`
         : 'Abrir o WhatsApp com a mensagem pronta perguntando se a pessoa vai nesta edição.'}

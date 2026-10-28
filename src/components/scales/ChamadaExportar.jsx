@@ -39,7 +39,7 @@ const ChamadaExportar = ({ situacaoAberta, areas }) => {
   const [area, setArea] = useState('');
   const [gerando, setGerando] = useState(false);
   const [aberto, setAberto] = useState(false);
-  const [formato, setFormato] = useState('pdf');
+  const [gerandoFormato, setGerandoFormato] = useState('');
   const [colunasDisponiveis, setColunasDisponiveis] = useState(null);
 
   useEffect(() => { setSituacoes(situacaoAberta ? [situacaoAberta] : ORDEM_SITUACOES); }, [situacaoAberta]);
@@ -61,10 +61,11 @@ const ChamadaExportar = ({ situacaoAberta, areas }) => {
     try { localStorage.setItem(CHAVE_COLUNAS, JSON.stringify(ordenada)); } catch { /* sem storage */ }
   };
 
-  const exportar = async () => {
+  const exportar = async (formato) => {
     if (!situacoes.length) { toast({ title: 'Marque ao menos uma situação', variant: 'destructive' }); return; }
     if (!colunas.length) { toast({ title: 'Marque ao menos uma coluna', variant: 'destructive' }); return; }
     setGerando(true);
+    setGerandoFormato(formato);
     try {
       const respostas = await Promise.all(situacoes.map((c) => fetchChamadaPorSituacao(c)));
       const falha = respostas.find((r) => !r.success);
@@ -90,7 +91,7 @@ const ChamadaExportar = ({ situacaoAberta, areas }) => {
   return (
     <div className="px-4 py-2 border-b border-white/10 flex items-center gap-2">
       <Button size="sm" variant="outline" onClick={() => setAberto(true)}
-        data-dica="Escolher formato (PDF ou Excel), situações, colunas e área e exportar a chamada."
+        data-dica="Escolher situações, colunas e área e exportar a chamada."
         className="h-8 border-cyan-500/40 bg-transparent text-cyan-300 hover:bg-cyan-500/15 hover:text-cyan-200">
         <FileDown className="h-4 w-4 mr-1" /> Exportar
       </Button>
@@ -99,21 +100,10 @@ const ChamadaExportar = ({ situacaoAberta, areas }) => {
           <DialogHeader>
             <DialogTitle>Exportar a chamada</DialogTitle>
             <DialogDescription className="text-gray-400">
-              Por área, em ordem alfabética, com os dados mais recentes (PDF: uma faixa por área; Excel: a mesma montagem).
+              Por área, em ordem alfabética, com os dados mais recentes (PDF e Excel saem com a mesma montagem: uma faixa por área).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <p className={titulo}>Formato</p>
-              <div className="flex gap-4">
-                {[['pdf', 'PDF'], ['excel', 'Excel']].map(([k, rotulo]) => (
-                  <label key={k} className="flex items-center gap-1.5 text-sm text-gray-200 cursor-pointer select-none">
-                    <input type="radio" name="formato-chamada" checked={formato === k} onChange={() => setFormato(k)} className="h-3.5 w-3.5 accent-cyan-500" />
-                    {rotulo}
-                  </label>
-                ))}
-              </div>
-            </div>
             <div>
               <p className={titulo}>Situação</p>
               <div className="flex flex-wrap gap-x-4 gap-y-1.5">
@@ -139,9 +129,13 @@ const ChamadaExportar = ({ situacaoAberta, areas }) => {
                 {areas.map((a) => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
-            <Button onClick={exportar} disabled={gerando || !colunasDisponiveis} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white">
-              {gerando ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FileDown className="h-4 w-4 mr-1" />} {formato === 'excel' ? 'Gerar Excel' : 'Gerar PDF'}
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              {[['pdf', 'Gerar PDF', 'bg-cyan-600 hover:bg-cyan-700'], ['excel', 'Gerar Excel', 'bg-emerald-600 hover:bg-emerald-700']].map(([k, rotulo, cor]) => (
+                <Button key={k} onClick={() => exportar(k)} disabled={gerando || !colunasDisponiveis} className={`w-full ${cor} text-white`}>
+                  {gerando && gerandoFormato === k ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FileDown className="h-4 w-4 mr-1" />} {rotulo}
+                </Button>
+              ))}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

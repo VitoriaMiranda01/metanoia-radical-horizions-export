@@ -323,12 +323,19 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
             {p.pago && p.metodo === 'manual' && p.valor != null && (
               <span className="text-xs text-gray-400">{moeda(p.valor)}</span>
             )}
-            {!p.na_escala && (
+            {!p.na_escala && !p.sem_aprovacao && (
               <span className="text-[11px] px-2 py-0.5 rounded-full border border-red-500/40 bg-red-500/10 text-red-200">
                 Fora da escala
               </span>
             )}
           </div>
+          {/* Só Domingo ainda nao aprovado = sem a carta de autorizacao pastoral
+              (20261028a). Entra normalmente; a portaria cobra a carta. */}
+          {p.sem_aprovacao && (
+            <p className="mt-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-red-500/50 bg-red-500/15 text-red-100 break-words">
+              Sem aprovação · cobrar a carta de autorização pastoral
+            </p>
+          )}
           {p.cadastrado_em && <p className="text-[11px] text-gray-500 mt-1">Cadastrou em {dataHora(p.cadastrado_em)}</p>}
           {(entrou || pagoNaPortaria(p)) && (
             <p className="text-[11px] text-gray-500 mt-1">
@@ -345,7 +352,7 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
               <Wallet className="w-4 h-4 mr-1.5" />Pagar agora
             </Button>
           )}
-          {!entrou && (p.pago || (agendado(p) && p.na_escala)) && (
+          {!entrou && (p.pago || (agendado(p) && (p.na_escala || p.sem_aprovacao))) && (
             <Button size="sm" disabled={ocupado} onClick={liberar} className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white">
               {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : <><DoorOpen className="w-4 h-4 mr-1.5" />Liberar entrada</>}
             </Button>
@@ -472,7 +479,7 @@ const PortariaPage = () => {
         areas: Array.isArray(p.areas) ? p.areas : [],
         _cadastro: diaBrasilia(p.cadastrado_em),
         _busca: semAcento([p.nome, p.igreja, ...(Array.isArray(p.areas) ? p.areas : []),
-          p.so_domingo ? 'so domingo' : ''].join(' ')),
+          p.so_domingo ? 'so domingo' : '', p.sem_aprovacao ? 'sem aprovacao carta' : ''].join(' ')),
       })));
       setErro('');
     } catch (e) {

@@ -413,16 +413,18 @@ const RelacaoLider = ({ equipanteId, dono: donoBruto, liderDe = [], delegadoDe =
       () => (cor ? `${(m.nome || '').split(' ')[0]} agora é ${cor}` : 'Cor retirada'));
   }, [agir, ajustarMembro, equipanteId, dono]);
 
-  // Fixo 📌 (28/10/2026): o lider marca quem e fixo na sua area, depois da
-  // escala oficial. A mesma marca da geracao de escala; nao aloca ninguem.
+  // Fixo 📌 (28/10/2026): o lider -- e o responsavel pela reuniao (20261028h)
+  // -- marca quem e fixo na area, depois da escala oficial. A mesma marca da
+  // geracao de escala; nao aloca ninguem.
   const onFixo = useCallback((m, fixo) => {
     // eslint-disable-next-line no-alert
-    if (!fixo && m.fixo_por && !m.fixo_por.endsWith('(líder)') && !window.confirm(
+    if (!fixo && m.fixo_por && !/\((líder|responsável)\)$/.test(m.fixo_por) && !window.confirm(
       `${m.nome} foi marcado(a) como fixo(a) por ${m.fixo_por}. Tirar o 📌 mesmo assim?`)) return;
-    ajustarMembro(m.escala_id, { fixo, fixo_por: fixo ? `${dados?.lider || ''} (líder)` : null });
+    // Quem marcou chega na proxima leitura ("<nome> (líder)" ou "(responsável)").
+    ajustarMembro(m.escala_id, { fixo, fixo_por: null });
     agir(`f-${m.escala_id}`, () => marcarFixoLider(equipanteId, dono, m.escala_id, fixo),
       () => (fixo ? `📌 ${(m.nome || '').split(' ')[0]} marcado(a) como fixo(a) em ${m.area}` : `${(m.nome || '').split(' ')[0]} não é mais fixo(a)`));
-  }, [agir, ajustarMembro, equipanteId, dono, dados?.lider]);
+  }, [agir, ajustarMembro, equipanteId, dono]);
 
   // Lider da Recepcao Igreja: tirar alguem de uma das cinco areas da igreja.
   const onRemover = useCallback((m) => {
@@ -707,7 +709,7 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
   }, [membros, fotografos, equipe.area]);
   const agregado = AGREGADOS[equipe.area];
 
-  // 📌 so na lista do lider da area, depois da escala oficial (28/10/2026).
+  // 📌 so na lista do lider/responsavel da area, depois da escala oficial (28/10/2026).
   const podeFixarDe = useCallback((m) => (
     equipe.porCor ? !!m._podeFixar : (!!equipe.pode_fixar && m.area === equipe.area)
   ), [equipe]);
@@ -882,7 +884,7 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
         {comFixo.length > 0 && (
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
             <p className="text-xs text-amber-100/90">
-              📌 Toque no alfinete de quem é <strong>fixo(a)</strong> na sua área. A organização usa essa marca
+              📌 Toque no alfinete de quem é <strong>fixo(a)</strong> {equipe.porCor ? 'na área' : 'nesta área'}. A organização usa essa marca
               para montar a escala das próximas edições. A marca fica salva; não muda a escala desta edição.
             </p>
             <button type="button" onClick={() => alternarFiltro('fixos')}

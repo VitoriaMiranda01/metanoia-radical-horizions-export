@@ -596,7 +596,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
             data-dica="Slides simples de todos os grupos (Inimigo, Infiltrados e Espírito Santo, sem os Guias), no fundo escolhido."
             className="h-9 border border-white/20 bg-transparent text-gray-100 hover:bg-white/10">
             {gerando === 'slide-TODOS' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
-            Gerar slides
+            Equipe de trilha sem guias
           </Button>
           <Button onClick={() => pedirArtes('TODOS')} disabled={!!gerando || carregando}
             data-dica="Gerar a arte de todos os grupos. Para um grupo só, use o botão no cabeçalho da cor."

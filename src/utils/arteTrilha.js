@@ -354,6 +354,89 @@ export const desenharArteGrupo = async (grupo, edicao, { fundo = 'escuro' } = {}
 };
 
 /**
+ * Slide simples do grupo (28/10/2026, Patrick): o modelo da Victória sem os
+ * Guias -- título "GRUPO X - 36ª EDIÇÃO" + datas, e três colunas (INIMIGO,
+ * INFILTRADOS, ESPÍRITO SANTO) com foto e nome. 1600x900, fundo branco ou escuro.
+ * grupo: { cor, inimigo, infiltrados, espirito } (listas de { nome, imagem }).
+ */
+export const desenharSlideGrupo = async (grupo, edicao, { fundo = 'branco' } = {}) => {
+  const paleta = temaDe(PALETA[grupo.cor], fundo);
+  const AW = 1600;
+  const AH = 900;
+  const canvas = document.createElement('canvas');
+  canvas.width = AW * ESCALA;
+  canvas.height = AH * ESCALA;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(ESCALA, ESCALA);
+  desenharFundo(ctx, paleta, AW, AH);
+
+  const corTitulo = paleta.branco ? paleta.forte : paleta.destaque;
+  const corNome = paleta.branco ? (grupo.cor === 'AMARELO' ? paleta.forte : paleta.destaque) : '#ffffff';
+  const bordaFoto = paleta.branco ? '#e6d9d9' : paleta.destaque;
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = corTitulo;
+  ajustarFonte(ctx, `GRUPO ${grupo.cor} - ${edicao.titulo}`, 900, 34, FONTE, AW - 120);
+  ctx.fillText(`GRUPO ${grupo.cor} - ${edicao.titulo}`, AW / 2, 120);
+  const datas = (edicao.datas || []).join(' ');
+  if (datas) {
+    ctx.fillStyle = corTitulo;
+    ajustarFonte(ctx, datas, 900, 30, FONTE, AW - 120);
+    ctx.fillText(datas, AW / 2, 160);
+  }
+
+  const secoes = [
+    { titulo: 'INIMIGO', pessoas: grupo.inimigo },
+    { titulo: 'INFILTRADOS', pessoas: grupo.infiltrados },
+    { titulo: 'ESPÍRITO SANTO', pessoas: grupo.espirito }
+  ].filter((s) => s.pessoas.length > 0).map((s) => {
+    const colunas = Math.min(s.pessoas.length, 4);
+    return { ...s, colunas, linhas: Math.ceil(s.pessoas.length / colunas) };
+  });
+  if (secoes.length === 0) return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+
+  const topoTitulos = 285;
+  const topoCartoes = 340;
+  const base = { cw: 180, ch: 240, gx: 48, gy: 62, entre: 110 };
+  const largura = (k) => secoes.reduce((a, s) => a + s.colunas * base.cw * k + (s.colunas - 1) * base.gx * k, 0)
+    + (secoes.length - 1) * base.entre * k;
+  const maxLinhas = Math.max(...secoes.map((s) => s.linhas));
+  const altura = (k) => maxLinhas * base.ch * k + (maxLinhas - 1) * base.gy * k + 30 * k;
+  const k = Math.min(1, (AW - 100) / largura(1), (AH - topoCartoes - 40) / altura(1));
+  const cw = base.cw * k;
+  const ch = base.ch * k;
+  const gx = base.gx * k;
+  const gy = base.gy * k;
+  const entre = base.entre * k;
+
+  let x = (AW - largura(k)) / 2;
+  secoes.forEach((s) => {
+    const larguraSecao = s.colunas * cw + (s.colunas - 1) * gx;
+    ctx.fillStyle = corTitulo;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ajustarFonte(ctx, s.titulo, 900, 30, FONTE, Math.max(larguraSecao + entre - 20, 200));
+    ctx.fillText(s.titulo, x + larguraSecao / 2, topoTitulos);
+    s.pessoas.forEach((p, i) => {
+      const linha = Math.floor(i / s.colunas);
+      const doLinha = Math.min(s.colunas, s.pessoas.length - linha * s.colunas);
+      const larguraLinha = doLinha * cw + (doLinha - 1) * gx;
+      const px = x + (larguraSecao - larguraLinha) / 2 + (i % s.colunas) * (cw + gx);
+      const py = topoCartoes + linha * (ch + gy);
+      desenharCartao(ctx, px, py, cw, ch, p.imagem, bordaFoto, paleta.branco);
+      ctx.fillStyle = corNome;
+      ajustarFonte(ctx, p.nome, 700, 20 * Math.max(k, 0.7), FONTE_TEXTO, cw + gx - 6);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.nome, px + cw / 2, py + ch + 22);
+    });
+    x += larguraSecao + entre;
+  });
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+};
+
+/**
  * Arte só dos infiltrados (26/10/2026, Patrick): uma imagem única, fundo
  * branco, título e os cartões com as cores aglutinadas (ordem de CORES_ARTE),
  * o nome embaixo de cada foto na cor do grupo. Linhas centralizadas.

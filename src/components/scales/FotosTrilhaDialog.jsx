@@ -10,7 +10,7 @@ import {
   listarFotosTrilha, buscarFichasParaFoto, linksDasFotos, baixarFoto, salvarFoto, salvarNomeArte, removerFoto,
   dadosDaEdicaoParaArte
 } from '@/services/fotosTrilhaService';
-import { CORES_ARTE, FUNDOS_ARTE, desenharArteGrupo, desenharArteInfiltrados } from '@/utils/arteTrilha';
+import { CORES_ARTE, FUNDOS_ARTE, desenharArteGrupo, desenharArteInfiltrados, desenharSlideGrupo } from '@/utils/arteTrilha';
 
 /**
  * FOTOS DA TRILHA (24/10/2026, Patrick): banco de fotos da equipe de trilha e
@@ -384,15 +384,17 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
   // alvo: 'TODOS' ou a cor de um grupo só
   // 'INFILTRADOS' = imagem única só com a área Infiltrados (todas as cores juntas)
   const ehInfil = (p) => p.papel.area === 'infiltrados';
-  const doAlvo = (alvo) => (p) => {
+  // modelo 'slide' = slide simples, sem os Guias
+  const doAlvo = (alvo, modelo = 'completo') => (p) => {
+    if (modelo === 'slide' && p.papel.area === 'guia') return false;
     if (alvo === 'INFILTRADOS') return ehInfil(p) && !!p.cor;
     return alvo === 'TODOS' ? !!p.cor : p.cor === alvo;
   };
-  const pedirArtes = (alvo) => {
-    const noAlvo = doAlvo(alvo);
+  const pedirArtes = (alvo, modelo = 'completo') => {
+    const noAlvo = doAlvo(alvo, modelo);
     const semFoto = escalados.filter((p) => noAlvo(p) && !fotoPorId[p.id]);
     // sem cor só importa quando gera todos os grupos (ou só os infiltrados)
-    const semCor = alvo === 'TODOS' ? escalados.filter((p) => !p.cor)
+    const semCor = alvo === 'TODOS' ? escalados.filter((p) => !p.cor && !(modelo === 'slide' && p.papel.area === 'guia'))
       : alvo === 'INFILTRADOS' ? escalados.filter((p) => ehInfil(p) && !p.cor) : [];
     if (escalados.filter((p) => noAlvo(p) && fotoPorId[p.id]).length === 0) {
       toast({
@@ -403,16 +405,16 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
       });
       return;
     }
-    if (semFoto.length || semCor.length) setAviso({ semFoto, semCor, alvo });
-    else gerarArtes(alvo);
+    if (semFoto.length || semCor.length) setAviso({ semFoto, semCor, alvo, modelo });
+    else gerarArtes(alvo, modelo);
   };
 
-  const gerarArtes = async (alvo) => {
+  const gerarArtes = async (alvo, modelo = 'completo') => {
     setAviso(null);
-    setGerando(alvo);
+    setGerando(modelo === 'slide' ? `slide-${alvo}` : alvo);
     try {
       const edicao = await dadosDaEdicaoParaArte();
-      const usados = escalados.filter((p) => doAlvo(alvo)(p) && fotoPorId[p.id]);
+      const usados = escalados.filter((p) => doAlvo(alvo, modelo)(p) && fotoPorId[p.id]);
       const imagens = {};
       await Promise.all(usados.map(async (p) => {
         const blob = await baixarFoto(fotoPorId[p.id].caminho);
@@ -433,8 +435,10 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
           grupo[chave] = doGrupo.filter((p) => p.papel.area === area)
             .map((p) => ({ nome: fotoPorId[p.id].nome_arte || nomeCurto(p.nome), imagem: imagens[p.id] }));
         });
-        const blob = await desenharArteGrupo(grupo, edicao, { fundo });
-        novas.push({ cor, blob, url: await lerComoDataUrl(blob) });
+        const blob = modelo === 'slide'
+          ? await desenharSlideGrupo(grupo, edicao, { fundo })
+          : await desenharArteGrupo(grupo, edicao, { fundo });
+        novas.push({ cor, blob, url: await lerComoDataUrl(blob), slide: modelo === 'slide' });
       }
       setArtes(novas);
     } catch (e) {
@@ -454,11 +458,12 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
-  const nomeArquivo = (cor) => (cor === 'INFILTRADOS' ? 'Infiltrados.png' : `Grupo_${cor.charAt(0) + cor.slice(1).toLowerCase()}.png`);
+  const nomeArquivo = (cor, slide) => (cor === 'INFILTRADOS' ? 'Infiltrados.png'
+    : `${slide ? 'Slide_Grupo' : 'Grupo'}_${cor.charAt(0) + cor.slice(1).toLowerCase()}.png`);
   const baixarTodas = async () => {
     const JSZip = (await import('jszip')).default;
     const zip = new JSZip();
-    artes.forEach((a) => zip.file(nomeArquivo(a.cor), a.blob));
+    artes.forEach((a) => zip.file(nomeArquivo(a.cor, a.slide), a.blob));
     baixar(await zip.generateAsync({ type: 'blob' }), `Artes_Equipe_de_Trilha_${new Date().toISOString().slice(0, 10)}.zip`);
   };
 
@@ -488,6 +493,14 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
               className={`ml-auto h-8 border ${COR_BOTAO[cor]}`}>
               {gerando === cor ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
               Gerar grupo {cor.toLowerCase()}
+            </Button>
+          )}
+          {cor && (
+            <Button size="sm" onClick={() => pedirArtes(cor, 'slide')} disabled={!!gerando || carregando}
+              data-dica={`Slide simples do grupo ${cor.toLowerCase()}: Inimigo, Infiltrados e Espírito Santo, sem os Guias.`}
+              className={`h-8 border ${COR_BOTAO[cor]}`}>
+              {gerando === `slide-${cor}` ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+              Slide {cor.toLowerCase()}
             </Button>
           )}
         </div>
@@ -579,6 +592,12 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
             {gerando === 'INFILTRADOS' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
             Gerar só infiltrados
           </Button>
+          <Button onClick={() => pedirArtes('TODOS', 'slide')} disabled={!!gerando || carregando}
+            data-dica="Slides simples de todos os grupos (Inimigo, Infiltrados e Espírito Santo, sem os Guias), no fundo escolhido."
+            className="h-9 border border-white/20 bg-transparent text-gray-100 hover:bg-white/10">
+            {gerando === 'slide-TODOS' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+            Gerar slides
+          </Button>
           <Button onClick={() => pedirArtes('TODOS')} disabled={!!gerando || carregando}
             data-dica="Gerar a arte de todos os grupos. Para um grupo só, use o botão no cabeçalho da cor."
             className="h-9 bg-pink-600 hover:bg-pink-500 text-white">
@@ -654,7 +673,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => { setAviso(null); setAba('escalados'); setFiltro(aviso.semFoto.length ? 'sem' : 'todos'); }}
                 className="border-white/20 bg-transparent text-gray-200 hover:bg-white/10">Corrigir antes</Button>
-              <Button onClick={() => gerarArtes(aviso.alvo)} className="bg-pink-600 hover:bg-pink-500 text-white">Gerar assim mesmo</Button>
+              <Button onClick={() => gerarArtes(aviso.alvo, aviso.modelo)}className="bg-pink-600 hover:bg-pink-500 text-white">Gerar assim mesmo</Button>
             </div>
           </div>
         </div>
@@ -677,9 +696,9 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
               {artes.map((a) => (
                 <div key={a.cor} className="space-y-2">
                   <img src={a.url} alt={`Grupo ${a.cor}`} className="w-full rounded border border-white/10" />
-                  <Button size="sm" variant="outline" onClick={() => baixar(a.blob, nomeArquivo(a.cor))}
+                  <Button size="sm" variant="outline" onClick={() => baixar(a.blob, nomeArquivo(a.cor, a.slide))}
                     className="border-white/20 bg-transparent text-gray-200 hover:bg-white/10">
-                    <Download className="mr-2 h-4 w-4" /> {a.cor === 'INFILTRADOS' ? 'Infiltrados' : `Grupo ${a.cor.toLowerCase()}`} (PNG)
+                    <Download className="mr-2 h-4 w-4" /> {a.cor === 'INFILTRADOS' ? 'Infiltrados' : `${a.slide ? 'Slide ' : 'Grupo '}${a.cor.toLowerCase()}`} (PNG)
                   </Button>
                 </div>
               ))}

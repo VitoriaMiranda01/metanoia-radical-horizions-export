@@ -27,8 +27,8 @@ const igrejaDe = (p) => {
 };
 
 export const ROTULO_PRESENCA = { presentes: 'Presente', ausentes: 'Ausente', sem: 'Sem chamada' };
-const PLURAL = { presentes: (n) => (n === 1 ? 'presente' : 'presentes'), ausentes: (n) => (n === 1 ? 'ausente' : 'ausentes'), sem: () => 'sem chamada' };
-const COR_PRESENCA = { presentes: [22, 128, 60], ausentes: [190, 30, 30], sem: [200, 105, 0] };
+export const PLURAL = { presentes: (n) => (n === 1 ? 'presente' : 'presentes'), ausentes: (n) => (n === 1 ? 'ausente' : 'ausentes'), sem: () => 'sem chamada' };
+export const COR_PRESENCA = { presentes: [22, 128, 60], ausentes: [190, 30, 30], sem: [200, 105, 0] };
 
 // peso = largura relativa em pt numa folha retrato de 523 pt.
 export const COLUNAS = {

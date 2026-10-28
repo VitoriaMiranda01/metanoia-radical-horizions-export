@@ -99,7 +99,7 @@ const ChamadaExportar = ({ situacaoAberta, areas }) => {
           <DialogHeader>
             <DialogTitle>Exportar a chamada</DialogTitle>
             <DialogDescription className="text-gray-400">
-              Por área, em ordem alfabética, com os dados mais recentes (PDF: uma faixa por área; Excel: uma aba por área).
+              Por área, em ordem alfabética, com os dados mais recentes (PDF: uma faixa por área; Excel: a mesma montagem).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Banknote, BookOpen, CheckCircle2, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, RefreshCw, Search, Undo2, Wallet, X
+  ArrowLeft, Banknote, BookOpen, CheckCircle2, FileCheck, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, RefreshCw, Search, Undo2, Wallet, X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -18,7 +18,7 @@ import TagSoDomingo, { AREA_SO_DOMINGO } from '@/components/common/TagSoDomingo'
 import { getAuthToken } from '@/services/authToken';
 import {
   darBaixaPortaria, desfazerBaixaPortaria, desfazerEntradaPortaria, fetchPortariaLista, fetchPortariaVersao, fetchValorPrevisto,
-  liberarEntradaPortaria, salvarObservacaoPortaria
+  liberarEntradaPortaria, salvarObservacaoPortaria, receberCartaPortaria, desfazerCartaPortaria
 } from '@/services/portariaService';
 
 /**
@@ -254,10 +254,14 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
   const [editando, setEditando] = useState(false);
   const [texto, setTexto] = useState(p.observacao || '');
   const [salvando, setSalvando] = useState(false);
-  const [confirmando, setConfirmando] = useState(''); // 'entrada' | 'pagamento'
+  const [confirmando, setConfirmando] = useState(''); // 'entrada' | 'pagamento' | 'carta'
   const [ocupado, setOcupado] = useState(false);
+  const [recebendoCarta, setRecebendoCarta] = useState(false);
+  const [textoCarta, setTextoCarta] = useState('');
   const s = situacao(p);
   const entrou = !!p.entrou_em;
+  // Só Domingo sem aprovação: pagar e entrar só depois de receber a carta.
+  const faltaCarta = !!p.sem_aprovacao && !p.carta_recebida;
 
   // Toda gravacao recarrega a lista, deu certo ou nao: "ja entrou" ou "ja esta
   // paga" (outra pessoa da portaria foi mais rapida) passa a aparecer na hora.
@@ -283,6 +287,24 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
   });
   const desfazerPagamento = () => executar(() => desfazerBaixaPortaria('equipante', p.id), {
     title: 'Pagamento desfeito', description: `${p.nome} voltou para "Pagamento em aberto".`,
+  });
+
+  const receberCarta = async () => {
+    setOcupado(true);
+    try {
+      await receberCartaPortaria(p.id, textoCarta);
+      toast({ title: 'Carta recebida', description: `${p.nome} · liberado para pagar e entrar.`, className: 'bg-emerald-600 text-white' });
+      setRecebendoCarta(false);
+      setTextoCarta('');
+    } catch (e) {
+      toast({ title: 'Não deu certo', description: e?.message || 'Tente de novo.', variant: 'destructive' });
+    } finally {
+      setOcupado(false);
+      onAtualizado();
+    }
+  };
+  const desfazerCarta = () => executar(() => desfazerCartaPortaria(p.id), {
+    title: 'Carta desfeita', description: `${p.nome} voltou a ficar sem a carta.`,
   });
 
   const salvarObs = async () => {
@@ -331,9 +353,14 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
           </div>
           {/* Só Domingo ainda nao aprovado = sem a carta de autorizacao pastoral
               (20261028a). Entra normalmente; a portaria cobra a carta. */}
-          {p.sem_aprovacao && (
+          {faltaCarta && (
             <p className="mt-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-red-500/50 bg-red-500/15 text-red-100 break-words">
-              Sem aprovação · cobrar a carta de autorização pastoral
+              Sem aprovação · receber a carta de autorização pastoral antes de pagar ou entrar
+            </p>
+          )}
+          {p.sem_aprovacao && p.carta_recebida && (
+            <p className="mt-1.5 text-xs px-2.5 py-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-100 break-words">
+              Carta recebida · {semPrefixo(p.carta_por)}{p.carta_em ? `, ${dataHora(p.carta_em)}` : ''}
             </p>
           )}
           {p.cadastrado_em && <p className="text-[11px] text-gray-500 mt-1">Cadastrou em {dataHora(p.cadastrado_em)}</p>}
@@ -347,14 +374,27 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
         </div>
 
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          {faltaCarta && !entrou && (
+            <Button size="sm" disabled={ocupado} onClick={() => setRecebendoCarta(!recebendoCarta)}
+              className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white">
+              <FileCheck className="w-4 h-4 mr-1.5" />Receber carta
+            </Button>
+          )}
           {!entrou && !p.pago && (
-            <Button size="sm" onClick={() => onPagar(p)} className="flex-1 sm:flex-none bg-amber-600 hover:bg-amber-700 text-white">
+            <Button size="sm" disabled={faltaCarta} onClick={() => onPagar(p)}
+              className="flex-1 sm:flex-none bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-40">
               <Wallet className="w-4 h-4 mr-1.5" />Pagar agora
             </Button>
           )}
           {!entrou && (p.pago || (agendado(p) && (p.na_escala || p.sem_aprovacao))) && (
-            <Button size="sm" disabled={ocupado} onClick={liberar} className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Button size="sm" disabled={ocupado || faltaCarta} onClick={liberar}
+              className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40">
               {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : <><DoorOpen className="w-4 h-4 mr-1.5" />Liberar entrada</>}
+            </Button>
+          )}
+          {!entrou && p.sem_aprovacao && p.carta_recebida && !confirmando && (
+            <Button size="sm" variant="outline" onClick={() => setConfirmando('carta')} className={botaoSecundario}>
+              <Undo2 className="w-4 h-4 mr-1.5" />Desfazer carta
             </Button>
           )}
           {entrou && !confirmando && (
@@ -381,6 +421,29 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
       {confirmando === 'pagamento' && (
         <Confirmar texto='Desfazer o pagamento feito na portaria? Volta para "Pagamento em aberto".' rotulo="Sim, desfazer"
           ocupado={ocupado} onNao={() => setConfirmando('')} onSim={desfazerPagamento} />
+      )}
+
+      {confirmando === 'carta' && (
+        <Confirmar texto='Desfazer o recebimento da carta? Volta a ficar bloqueado para pagar e entrar.' rotulo="Sim, desfazer"
+          ocupado={ocupado} onNao={() => setConfirmando('')} onSim={desfazerCarta} />
+      )}
+
+      {recebendoCarta && faltaCarta && (
+        <div className="mt-3 space-y-2">
+          <Textarea value={textoCarta} onChange={(e) => setTextoCarta(e.target.value.slice(0, 500))} rows={3}
+            placeholder="Observação sobre a carta (opcional)"
+            className="bg-white/5 border-white/20 text-white" />
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-gray-500 mr-auto">{textoCarta.length}/500 · pode salvar sem escrever</span>
+            <Button size="sm" variant="outline" disabled={ocupado} onClick={() => setRecebendoCarta(false)}
+              className="h-8 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
+              Cancelar
+            </Button>
+            <Button size="sm" disabled={ocupado} onClick={receberCarta} className="h-8 bg-blue-600 hover:bg-blue-700 text-white">
+              {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar carta recebida'}
+            </Button>
+          </div>
+        </div>
       )}
 
       {editando ? (

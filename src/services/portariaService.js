@@ -70,3 +70,12 @@ export const desfazerBaixaPortaria = (tipo, id) =>
 export const salvarObservacaoPortaria = (tipo, id, texto) =>
   gravar('portaria_salvar_observacao', { p_tipo: tipo, p_id: id, p_texto: texto },
     'Não foi possível salvar a observação.');
+
+// Só Domingo sem aprovação: a portaria registra o recebimento da carta pastoral
+// (observação opcional) antes de poder cobrar ou liberar a entrada.
+export const receberCartaPortaria = (id, texto) =>
+  gravar('portaria_receber_carta', { p_id: id, p_texto: texto || null },
+    'Não foi possível registrar a carta.');
+
+export const desfazerCartaPortaria = (id) =>
+  gravar('portaria_desfazer_carta', { p_id: id }, 'Não foi possível desfazer a carta.');

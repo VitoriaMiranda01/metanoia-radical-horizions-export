@@ -39,6 +39,7 @@ const ChamadaExportar = ({ situacaoAberta, areas }) => {
   const [area, setArea] = useState('');
   const [gerando, setGerando] = useState(false);
   const [aberto, setAberto] = useState(false);
+  const [formato, setFormato] = useState('pdf');
   const [colunasDisponiveis, setColunasDisponiveis] = useState(null);
 
   useEffect(() => { setSituacoes(situacaoAberta ? [situacaoAberta] : ORDEM_SITUACOES); }, [situacaoAberta]);
@@ -71,12 +72,14 @@ const ChamadaExportar = ({ situacaoAberta, areas }) => {
       const pessoas = situacoes.flatMap((c, i) => (respostas[i].data.pessoas || [])
         .filter((p) => contaNaChamada(p.area) && (!area || p.area === area))
         .map((p) => ({ ...p, situacao: c })));
-      const { exportarChamadaPdf } = await import('@/utils/chamadaPdf');
-      const total = await exportarChamadaPdf({ pessoas, colunas, situacoes, area });
+      const excel = formato === 'excel';
+      const total = excel
+        ? await (await import('@/utils/chamadaExcel')).exportarChamadaExcel({ pessoas, colunas, situacoes, area })
+        : await (await import('@/utils/chamadaPdf')).exportarChamadaPdf({ pessoas, colunas, situacoes, area });
       setAberto(false);
-      toast({ title: 'PDF da chamada pronto', description: `${total} ${total === 1 ? 'pessoa' : 'pessoas'} no arquivo.`, className: 'bg-green-600 text-white' });
+      toast({ title: excel ? 'Excel da chamada pronto' : 'PDF da chamada pronto', description: `${total} ${total === 1 ? 'pessoa' : 'pessoas'} no arquivo.`, className: 'bg-green-600 text-white' });
     } catch (e) {
-      toast({ title: 'Não deu para gerar o PDF', description: e?.message || 'Tente de novo.', variant: 'destructive' });
+      toast({ title: `Não deu para gerar o ${formato === 'excel' ? 'Excel' : 'PDF'}`, description: e?.message || 'Tente de novo.', variant: 'destructive' });
     } finally {
       setGerando(false);
     }
@@ -87,19 +90,30 @@ const ChamadaExportar = ({ situacaoAberta, areas }) => {
   return (
     <div className="px-4 py-2 border-b border-white/10 flex items-center gap-2">
       <Button size="sm" variant="outline" onClick={() => setAberto(true)}
-        data-dica="Escolher situações, colunas e área e gerar o PDF da chamada."
+        data-dica="Escolher formato (PDF ou Excel), situações, colunas e área e exportar a chamada."
         className="h-8 border-cyan-500/40 bg-transparent text-cyan-300 hover:bg-cyan-500/15 hover:text-cyan-200">
-        <FileDown className="h-4 w-4 mr-1" /> Exportar PDF
+        <FileDown className="h-4 w-4 mr-1" /> Exportar
       </Button>
       <Dialog open={aberto} onOpenChange={(v) => !gerando && setAberto(v)}>
         <DialogContent className="bg-zinc-950 border-white/10 text-white max-w-md">
           <DialogHeader>
-            <DialogTitle>Exportar a chamada em PDF</DialogTitle>
+            <DialogTitle>Exportar a chamada</DialogTitle>
             <DialogDescription className="text-gray-400">
-              Uma faixa por área, em ordem alfabética, com os dados mais recentes.
+              Por área, em ordem alfabética, com os dados mais recentes (PDF: uma faixa por área; Excel: uma aba por área).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <p className={titulo}>Formato</p>
+              <div className="flex gap-4">
+                {[['pdf', 'PDF'], ['excel', 'Excel']].map(([k, rotulo]) => (
+                  <label key={k} className="flex items-center gap-1.5 text-sm text-gray-200 cursor-pointer select-none">
+                    <input type="radio" name="formato-chamada" checked={formato === k} onChange={() => setFormato(k)} className="h-3.5 w-3.5 accent-cyan-500" />
+                    {rotulo}
+                  </label>
+                ))}
+              </div>
+            </div>
             <div>
               <p className={titulo}>Situação</p>
               <div className="flex flex-wrap gap-x-4 gap-y-1.5">
@@ -126,7 +140,7 @@ const ChamadaExportar = ({ situacaoAberta, areas }) => {
               </select>
             </div>
             <Button onClick={exportar} disabled={gerando || !colunasDisponiveis} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white">
-              {gerando ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FileDown className="h-4 w-4 mr-1" />} Gerar PDF
+              {gerando ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FileDown className="h-4 w-4 mr-1" />} {formato === 'excel' ? 'Gerar Excel' : 'Gerar PDF'}
             </Button>
           </div>
         </DialogContent>

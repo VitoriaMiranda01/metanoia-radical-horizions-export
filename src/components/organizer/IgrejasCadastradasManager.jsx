@@ -101,6 +101,7 @@ const IgrejasCadastradasManager = () => {
         ? (r.igreja !== r.antes
           ? `${r.antes} agora é ${r.igreja}${r.fichas ? ` (${r.fichas} ${r.fichas === 1 ? 'ficha atualizada' : 'fichas atualizadas'})` : ''}.${r.codigoMudou ? ' O parceiro passa a entrar com o código novo.' : ''}`
           : `${r.igreja}: pastor atualizado.`)
+          + (r.fichasPastor ? ` Pastor levado para ${r.fichasPastor} ${r.fichasPastor === 1 ? 'ficha' : 'fichas'}.` : '')
         : `${r.igreja}, com limite de ${r.limite} ${r.limite === 1 ? 'inscrição' : 'inscrições'}.`,
       className: 'bg-emerald-600 text-white border-none',
     });

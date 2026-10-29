@@ -135,6 +135,7 @@ const InfoEclesiasticas = ({
                     igreja={formData.igreja}
                     value={formData.pastor}
                     onChange={(v) => handleChange({ target: { name: 'pastor', value: v } })}
+                    doQuadro
                   />
 
                   {/* Equipante specific Cargo options */}

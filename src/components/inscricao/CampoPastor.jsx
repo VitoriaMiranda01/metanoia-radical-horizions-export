@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/services/supabaseClient';
 import { limparNomeSimples } from '@/utils/validacoesInscricao';
 import { igrejaEhOutra } from '@/constants/igrejas';
+import usePastorDoQuadro from '@/hooks/usePastorDoQuadro';
 import { cn } from '@/lib/utils';
 
 /**
@@ -15,12 +16,24 @@ import { cn } from '@/lib/utils';
  *
  * So troca o que o PROPRIO campo preencheu -- o que a pessoa digitou nunca e
  * apagado. A consulta (pastores_da_igreja) devolve so nomes.
+ *
+ * doQuadro (equipante, 29/10/2026): igreja com pastor no quadro "Todas as
+ * igrejas cadastradas" tranca o campo com esse nome -- o banco grava o mesmo
+ * de qualquer jeito (20261029e).
  */
-const CampoPastor = ({ igreja, value, onChange, esperar = 0 }) => {
+const CampoPastor = ({ igreja, value, onChange, esperar = 0, doQuadro = false }) => {
   const [pastores, setPastores] = useState([]);
   const automatico = useRef('');
   const valorAtual = useRef(value);
   valorAtual.current = value;
+  const pastorQuadro = usePastorDoQuadro(doQuadro ? igreja : null, esperar);
+
+  useEffect(() => {
+    if (!pastorQuadro) return;
+    // Conta como preenchido pelo campo: some se a pessoa trocar de igreja.
+    automatico.current = pastorQuadro;
+    if (valorAtual.current !== pastorQuadro) onChange(pastorQuadro);
+  }, [pastorQuadro]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const texto = String(igreja || '').trim();
@@ -57,6 +70,19 @@ const CampoPastor = ({ igreja, value, onChange, esperar = 0 }) => {
     automatico.current = nome;
     onChange(nome);
   };
+
+  if (pastorQuadro) {
+    return (
+      <div className="space-y-2">
+        <Label htmlFor="pastor" className="text-white">Nome do Pastor</Label>
+        <Input
+          id="pastor" name="pastor" value={pastorQuadro} readOnly
+          className="bg-white/5 border-white/15 text-white/80 cursor-not-allowed"
+        />
+        <p className="text-[11px] text-emerald-300/90">Pastor cadastrado pela organização para esta igreja.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">

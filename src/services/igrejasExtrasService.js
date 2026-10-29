@@ -142,7 +142,7 @@ export const editarIgreja = async (codigo, { codigoNovo, nome, pastor }) => {
   });
   if (error) return { success: false, error: error.message || 'Erro ao salvar a igreja' };
   if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar a igreja' };
-  return { success: true, igreja: data.igreja, antes: data.antes, codigoMudou: !!data.codigo_mudou, fichas: data.fichas || 0 };
+  return { success: true, igreja: data.igreja, antes: data.antes, codigoMudou: !!data.codigo_mudou, fichas: data.fichas || 0, fichasPastor: data.fichas_pastor || 0 };
 };
 
 /**

@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
 import { IGREJA_DIVERSOS, IGREJA_RADICAL_36, OUTRA_IGREJA, igrejaEhOutra, igrejaSeparaGrupoEEbd } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
+import usePastorDoQuadro from '@/hooks/usePastorDoQuadro';
 import { toBoolean } from '@/utils/formatters';
 import { mascararTelefone, problemaTelefone, ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
 import { limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE, mesmoNome, AVISO_MESMO_NOME } from '@/utils/contatoEmergencia';
@@ -189,6 +190,12 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
   );
 
   const set = (campo) => (valor) => setForm((prev) => ({ ...prev, [campo]: valor }));
+
+  // Igreja com pastor no quadro: o nome dele vale na ficha (20261029e).
+  const pastorQuadro = usePastorDoQuadro(isEquipante ? form.igreja : null);
+  useEffect(() => {
+    if (pastorQuadro) setForm((prev) => (prev.pastor_nome === pastorQuadro ? prev : { ...prev, pastor_nome: pastorQuadro }));
+  }, [pastorQuadro]);
 
   if (!inscricao) return null;
 
@@ -470,7 +477,13 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
               <CampoTexto label="Nome da Igreja (digitado em OUTRA)" valor={form.igreja_outra} onChange={set('igreja_outra')} />
             )}
             <CampoBooleano label="Congrega em alguma igreja?" name="esta_afastado" valor={form.esta_afastado} onChange={set('esta_afastado')} />
-            {isEquipante ? (
+            {isEquipante && pastorQuadro ? (
+              <div className="space-y-1.5">
+                <Label className="text-white text-sm">Pastor Responsável</Label>
+                <Input value={pastorQuadro} readOnly className="bg-white/5 border-white/15 text-white/80 cursor-not-allowed" />
+                <p className="text-[11px] text-emerald-300/90">Pastor do quadro "Todas as igrejas cadastradas" (vale para todas as fichas da igreja).</p>
+              </div>
+            ) : isEquipante ? (
               <CampoTexto label="Pastor Responsável" valor={form.pastor_nome} onChange={set('pastor_nome')} />
             ) : (
               <CampoTexto label="Pastor Responsável" valor={form.pastor} onChange={set('pastor')} />

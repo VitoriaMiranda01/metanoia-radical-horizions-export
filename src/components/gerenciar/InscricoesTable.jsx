@@ -238,6 +238,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
     if (key === 'igreja') return nomeDaIgreja(item) || '-';
     if (key === 'endereco_completo') return formatEnderecoCompleto(item) || '-';
     if (key === 'area_trabalho') return formatAreaTrabalho(item) || '-';
+    if (key === 'inscrito_em' || key === 'decidido_em' || key === 'data_pagamento') return getColumnValue(item, key) || '-';
     if (typeof item[key] === 'boolean') return item[key] ? 'Sim' : 'Não';
     return item[key] || '-';
   };

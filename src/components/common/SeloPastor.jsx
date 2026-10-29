@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 // Selos da organizacao (15/10/2026): NAO estao na ficha do equipante -- vem
 // da tabela selos_organizacao (ver services/selosOrganizacao.js).
-const SELOS = {
+export const SELOS = {
   pastor_diretor: {
     titulo: (p) => (p?.sexo === 'Feminino' ? 'Pastora Diretora' : 'Pastor Diretor'),
     Icone: Crown, cor: 'text-amber-400', cheio: true

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Banknote, BookOpen, CheckCircle2, Church, FileCheck, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, RefreshCw, Search, Undo2, Wallet, X
+  ArrowLeft, Banknote, BookOpen, CheckCircle2, Church, FileCheck, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, RefreshCw, Search, Undo2, UserCog, Wallet, X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import Layout from '@/components/Layout';
 import TagSoDomingo, { AREA_SO_DOMINGO } from '@/components/common/TagSoDomingo';
+import { SELOS } from '@/components/common/SeloPastor';
 import { getAuthToken } from '@/services/authToken';
 import {
   darBaixaPortaria, desfazerBaixaPortaria, desfazerEntradaPortaria, fetchPortariaLista, fetchPortariaVersao, fetchValorPrevisto,
@@ -262,6 +263,8 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
   const entrou = !!p.entrou_em;
   // Só Domingo sem aprovação: pagar e entrar só depois de receber a carta.
   const faltaCarta = !!p.sem_aprovacao && !p.carta_recebida;
+  const selo = SELOS[p.selo];
+  const tituloSelo = selo?.titulo({ sexo: p.feminino ? 'Feminino' : 'Masculino' });
 
   // Toda gravacao recarrega a lista, deu certo ou nao: "ja entrou" ou "ja esta
   // paga" (outra pessoa da portaria foi mais rapida) passa a aparecer na hora.
@@ -330,9 +333,20 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
           <p className="font-semibold text-white break-words flex items-center gap-2">
             {entrou && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
             {p.nome}
-            {p.pastor && (
+            {p.pastor && !selo?.cheio && (
               <span title={p.pastor} aria-label={p.pastor} role="img" className="inline-flex shrink-0 text-sky-400">
                 <Church className="h-4 w-4" />
+              </span>
+            )}
+            {selo && (
+              <span title={tituloSelo} aria-label={tituloSelo} role="img" className={`inline-flex shrink-0 ${selo.cor}`}>
+                <selo.Icone className="h-4 w-4" fill={selo.cheio ? 'currentColor' : 'none'} />
+              </span>
+            )}
+            {p.lider_de && (
+              <span title={`Líder · ${p.lider_de}`} aria-label={`Líder · ${p.lider_de}`} role="img"
+                className="inline-flex shrink-0 text-yellow-300">
+                <UserCog className="h-4 w-4" />
               </span>
             )}
             {p.so_domingo && <TagSoDomingo />}

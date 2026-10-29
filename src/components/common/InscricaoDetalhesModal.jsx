@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, AlertTriangle, Pencil } from 'lucide-react';
-import { naoCongrega, nomeDaIgreja } from '@/constants/igrejas';
+import { X, AlertTriangle, Pencil, UserPlus, Check, Loader2 } from 'lucide-react';
+import { naoCongrega, nomeDaIgreja, IGREJA_DIVERSOS } from '@/constants/igrejas';
+import { useAuth } from '@/contexts/AuthContext';
+import { fetchPastores, salvarPastor } from '@/services/pastoresService';
 import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { bandeiraENome } from '@/constants/nacionalidades';
@@ -35,6 +37,90 @@ const formatarData = (dataString) => {
   });
 };
 
+const soDigitos = (v) => String(v || '').replace(/\D/g, '');
+
+// Codigo da igreja da ficha ("12 - NOME" -> "12"), so quando e uma igreja do
+// sistema. OUTRA, DIVERSOS e "nao congrega" ficam de fora (Patrick, 29/10/2026).
+const codigoIgrejaDoSistema = (igreja) => {
+  const valor = String(igreja || '').trim();
+  if (!valor || valor === IGREJA_DIVERSOS) return null;
+  const m = valor.match(/^(\d+) - /);
+  return m ? m[1] : null;
+};
+
+// "Tornar pastor parceiro" (Patrick, 29/10/2026): poe o pastor da ficha no
+// quadro Pastores Parceiros de Configuracoes, com um clique. Nao cria login.
+// So organizador; o servidor confere (salvar_pastor) e recusa CPF repetido.
+const BotaoPastorParceiro = ({ inscricao }) => {
+  const codigo = codigoIgrejaDoSistema(inscricao.igreja);
+  const cpf = soDigitos(inscricao.cpf);
+  const [estado, setEstado] = useState('carregando'); // carregando | livre | ja | salvando | erro
+  const [jaComo, setJaComo] = useState('');
+  const [erro, setErro] = useState('');
+
+  useEffect(() => {
+    let vivo = true;
+    fetchPastores()
+      .then((lista) => {
+        if (!vivo) return;
+        const nome = String(inscricao.nome || '').trim().toUpperCase();
+        const achado = lista.find((p) => (cpf && soDigitos(p.cpf) === cpf)
+          || (String(p.nome || '').trim().toUpperCase() === nome && p.igreja_codigo === codigo));
+        if (achado) {
+          setJaComo(achado.igreja_codigo ? `${achado.igreja_codigo} - ${achado.igreja_nome}` : '');
+          setEstado('ja');
+        } else setEstado('livre');
+      })
+      .catch(() => vivo && setEstado('livre'));
+    return () => { vivo = false; };
+  }, [inscricao.id, cpf, codigo, inscricao.nome]);
+
+  const tornar = async () => {
+    setEstado('salvando'); setErro('');
+    const tel = soDigitos(inscricao.whatsapp);
+    const r = await salvarPastor({
+      nome: inscricao.nome, cpf,
+      telefone: tel.length >= 10 && tel.length <= 13 ? tel : '',
+      igrejaCodigo: codigo,
+    });
+    if (r.success) { setJaComo(r.igreja || ''); setEstado('ja'); }
+    else { setErro(r.error); setEstado('erro'); }
+  };
+
+  if (estado === 'ja') {
+    return (
+      <div className="md:col-span-2 flex items-center gap-2 rounded-md border border-green-500/40 bg-green-500/10 px-3 py-2 text-sm text-green-300">
+        <Check className="w-4 h-4 shrink-0" />
+        Já está no quadro de Pastores Parceiros{jaComo ? ` (${jaComo})` : ''}.
+      </div>
+    );
+  }
+
+  return (
+    <div className="md:col-span-2 flex flex-col gap-1">
+      <Button
+        size="sm" onClick={tornar}
+        disabled={!codigo || estado === 'carregando' || estado === 'salvando'}
+        data-dica={codigo
+          ? 'Coloca este pastor no quadro Pastores Parceiros (Configurações). Não cria login.'
+          : 'Só dá para cadastrar quando a igreja da ficha está no sistema (não vale OUTRA nem DIVERSOS).'}
+        className="self-start h-8 bg-blue-600 hover:bg-blue-700 text-white"
+      >
+        {estado === 'salvando' || estado === 'carregando'
+          ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+          : <UserPlus className="w-4 h-4 mr-1.5" />}
+        Tornar pastor parceiro
+      </Button>
+      {!codigo && (
+        <span className="text-xs text-amber-300">
+          A igreja desta ficha não está no sistema (OUTRA, DIVERSOS ou não congrega). Vincule a igreja primeiro.
+        </span>
+      )}
+      {estado === 'erro' && <span className="text-xs text-red-400">{erro}</span>}
+    </div>
+  );
+};
+
 const formatBoolean = (value) => {
   if (value === true || value === 'SIM') return 'Sim';
   if (value === false || value === 'NÃO') return 'Não';
@@ -52,6 +138,8 @@ const formatBoolean = (value) => {
 // a ficha e edita na mesma janela -- FichaInscricaoDialog.jsx).
 const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
   const isEquipante = inscricao?.tipo === 'equipante';
+  const { isOrganizador, isParceiro } = useAuth();
+  const podeTornarParceiro = isEquipante && isOrganizador && !isParceiro && ehPastorTexto(inscricao) !== 'Não';
 
   const displayValue = (value) => {
     if (value === null || value === undefined || value === '') return '-';
@@ -327,6 +415,7 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
                   <p className="text-white font-medium">{displayValue(inscricao.e_pastor_outro)}</p>
                 </div>
               )}
+              {podeTornarParceiro && <BotaoPastorParceiro inscricao={inscricao} />}
             </div>
           </div>
 

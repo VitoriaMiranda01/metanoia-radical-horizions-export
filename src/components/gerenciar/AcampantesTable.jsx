@@ -30,6 +30,12 @@ const formatarData = (dataString) => {
   return new Date(dataString).toLocaleDateString('pt-BR');
 };
 
+// "1990-05-12" -> "12/05/1990" sem passar por Date (evita voltar um dia pelo fuso).
+const nascimentoBR = (v) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || ''));
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(v || '');
+};
+
 const getColumnValue = (item, filterKey) => {
   if (filterKey === 'endereco_completo') {
     return formatEnderecoCompleto(item);
@@ -225,6 +231,8 @@ const AcampantesTable = ({
 
   const renderCellContent = (item, key) => {
     if (key === 'endereco_completo') return formatEnderecoCompleto(item) || '-';
+    if (key === 'data_pagamento') return getColumnValue(item, key) || '-';
+    if (key === 'data_nascimento') return nascimentoBR(item[key]) || '-';
     if (typeof item[key] === 'boolean') return item[key] ? 'Sim' : 'Não';
     return item[key] || '-';
   };

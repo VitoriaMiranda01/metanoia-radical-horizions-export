@@ -239,6 +239,10 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
     if (key === 'endereco_completo') return formatEnderecoCompleto(item) || '-';
     if (key === 'area_trabalho') return formatAreaTrabalho(item) || '-';
     if (key === 'inscrito_em' || key === 'decidido_em' || key === 'data_pagamento') return getColumnValue(item, key) || '-';
+    if (key === 'data_nascimento') {
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(item[key] || ''));
+      return m ? `${m[3]}/${m[2]}/${m[1]}` : (item[key] || '-');
+    }
     if (typeof item[key] === 'boolean') return item[key] ? 'Sim' : 'Não';
     return item[key] || '-';
   };

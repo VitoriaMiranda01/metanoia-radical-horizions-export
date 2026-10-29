@@ -495,6 +495,7 @@ const PortariaPage = () => {
   const [busca, setBusca] = useState('');
   const [pagamento, setPagamento] = useState('todos');
   const [soObservacao, setSoObservacao] = useState(false);
+  const [soDomingo, setSoDomingo] = useState(false);
   const [desde, setDesde] = useState('');
   const [limite, setLimite] = useState(POR_PAGINA);
   const [pagando, setPagando] = useState(null);
@@ -591,7 +592,7 @@ const PortariaPage = () => {
     };
   }, []);
 
-  useEffect(() => { setLimite(POR_PAGINA); }, [aba, busca, pagamento, soObservacao, desde]);
+  useEffect(() => { setLimite(POR_PAGINA); }, [aba, busca, pagamento, soObservacao, soDomingo, desde]);
 
   const sair = () => {
     logout();
@@ -623,10 +624,11 @@ const PortariaPage = () => {
       if (aba !== 'entrou' && pagamento === 'pagos' && !p.pago) return false;
       if (aba !== 'entrou' && pagamento === 'aberto' && p.pago) return false;
       if (soObservacao && !p.observacao) return false;
+      if (soDomingo && !p.so_domingo) return false;
       if (desde && !(p._cadastro && p._cadastro >= desde)) return false;
       return termos.every((t) => p._busca.includes(t));
     });
-  }, [lista, aba, busca, pagamento, soObservacao, desde]);
+  }, [lista, aba, busca, pagamento, soObservacao, soDomingo, desde]);
 
   const conteudo = carregando ? (
     <div className="py-20 text-center text-gray-400">
@@ -688,6 +690,7 @@ const PortariaPage = () => {
               <span className="w-px bg-white/10 mx-1" />
             </>
           )}
+          <Chip ativo={soDomingo} onClick={() => setSoDomingo(!soDomingo)}>Domingo</Chip>
           <Chip ativo={soObservacao} onClick={() => setSoObservacao(!soObservacao)}>Com observação</Chip>
         </div>
 

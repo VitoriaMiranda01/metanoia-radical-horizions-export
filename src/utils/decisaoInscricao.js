@@ -44,9 +44,12 @@ export function decisaoDaInscricao(inscricao) {
       : 'Decidida';
 
   const ehParceiro = inscricao.decidido_por_tipo === 'parceiro';
+  // 'automatico' (20261029f): CPF no quadro Pastores Parceiros, aprovado pelo banco.
   const origem = ehParceiro
     ? (inscricao.decidido_por_igreja || 'igreja parceira')
-    : 'organizador';
+    : inscricao.decidido_por_tipo === 'automatico'
+      ? 'pastor parceiro'
+      : 'organizador';
 
   const quando = quandoLegivel(inscricao.decidido_em);
 

@@ -805,7 +805,8 @@ const OrganizerConfigPage = () => {
                         <Label htmlFor="desconto_fixo" className="text-gray-300">
                           {newCoupon.tipo_desconto === 'percentual' ? 'Desconto (%)' : 'Valor do Desconto (R$)'}
                         </Label>
-                        <Input id="desconto_fixo" type="number" step={newCoupon.tipo_desconto === 'percentual' ? '1' : '0.01'} min="0.01"
+                        <Input id="desconto_fixo" type="number" step={newCoupon.tipo_desconto === 'percentual' ? '1' : '0.01'}
+                          min={newCoupon.tipo_desconto === 'percentual' ? '1' : '0.01'}
                           max={newCoupon.tipo_desconto === 'percentual' ? '99' : undefined}
                           placeholder={newCoupon.tipo_desconto === 'percentual' ? '50' : '50.00'}
                           value={newCoupon.desconto_fixo} onChange={e => setNewCoupon({ ...newCoupon, desconto_fixo: e.target.value })} className="bg-white/5 border-white/10 text-white placeholder:text-gray-600" disabled={isCreatingCoupon} />

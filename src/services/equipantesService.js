@@ -494,6 +494,18 @@ export const updateEquipanteStatus = async (id, newStatus) => {
   return { data };
 };
 
+// Organizador passa uma inscricao PENDENTE para "Só Domingo" (ou de volta
+// para todos os dias). As travas ficam no servidor (20261029d).
+export const definirSoDomingoPendente = async (id, soDomingo) => {
+  const { data, error } = await supabase.rpc('definir_so_domingo_pendente', {
+    p_id: id,
+    p_so_domingo: soDomingo
+  });
+  if (error) return { error };
+  if (!data?.ok) return { error: new Error(data?.erro || 'Não foi possível fazer a mudança.') };
+  return { data };
+};
+
 // Tabela geral dos organizadores: só mostra equipantes cuja inscrição já foi
 // aprovada (pelo pastor/organizador, na tela de Aprovações). Inscrições
 // pendentes ou rejeitadas ficam visíveis apenas na tela de Aprovações.

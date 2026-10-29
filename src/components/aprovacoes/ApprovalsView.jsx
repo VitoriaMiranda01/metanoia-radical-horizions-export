@@ -9,7 +9,7 @@ import ConferenciaMenoresDialog from '@/components/aprovacoes/ConferenciaMenores
 import AprovacoesStatsCards from '@/components/aprovacoes/AprovacoesStatsCards';
 import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
 import AprovacoesTable from '@/components/aprovacoes/AprovacoesTable';
-import { fetchEquipantesRaw, updateEquipanteStatus, fetchMenoresParaConferencia } from '@/services/equipantesService';
+import { fetchEquipantesRaw, updateEquipanteStatus, fetchMenoresParaConferencia, definirSoDomingoPendente } from '@/services/equipantesService';
 import { useAuth } from '@/contexts/AuthContext';
 import { liberarVagaERealocar } from '@/services/equipanteAllocationService';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -24,6 +24,8 @@ const ApprovalsView = ({
   const [inscricoes, setInscricoes] = useState([]);
   const [selectedInscricao, setSelectedInscricao] = useState(null);
   const [inscricaoParaCancelar, setInscricaoParaCancelar] = useState(null);
+  // Pendente que vai mudar para "Só Domingo" (ou voltar para todos os dias).
+  const [inscricaoParaDomingo, setInscricaoParaDomingo] = useState(null);
   const [loading, setLoading] = useState(true);
   
   // Global Search states
@@ -287,6 +289,46 @@ const ApprovalsView = ({
     }
   };
 
+  // Quem se inscreveu para todos os dias e avisou que so vai no domingo
+  // (29/10/2026). So organizador, so pendente; o servidor confere tudo de novo
+  // (20261029d). Mudar apaga as areas escolhidas; voltar nao as devolve.
+  const solicitarMudancaDomingo = (id) => {
+    const inscricao = inscricoes.find(i => i.id === id);
+    if (inscricao) setInscricaoParaDomingo(inscricao);
+  };
+
+  const confirmarMudancaDomingo = async () => {
+    if (!inscricaoParaDomingo) return;
+    const inscricao = inscricaoParaDomingo;
+    const paraDomingo = !inscricao.so_domingo;
+    setInscricaoParaDomingo(null);
+
+    const { error } = await definirSoDomingoPendente(inscricao.id, paraDomingo);
+    if (error) {
+      toast({ title: 'Não foi possível mudar', description: error.message, variant: 'destructive' });
+      return;
+    }
+
+    setInscricoes(lista => lista.map(i => (i.id === inscricao.id
+      ? {
+          ...i,
+          so_domingo: paraDomingo,
+          ...(paraDomingo
+            ? { area_trabalho_opcao1: null, area_trabalho_opcao2: null, area_trabalho_opcao3: null, area_trabalho_extra: null, areaTrabalho: null }
+            : {})
+        }
+      : i)));
+    carregarInscricoes(false);
+
+    toast({
+      title: paraDomingo ? 'Movido para Só Domingo' : 'Voltou para todos os dias',
+      description: paraDomingo
+        ? `${inscricao.nome} segue pendente. Aprovada, vai para "Vão somente no domingo" e paga 50%.`
+        : `${inscricao.nome} precisa escolher as 3 áreas de novo no acompanhamento da inscrição.`,
+      className: 'bg-green-600 text-white'
+    });
+  };
+
   // A busca em si fica na tabela (AprovacoesTable, utils/busca.js): filtrar
   // aqui e de novo la, com campos diferentes, fazia sumir quem casava pela
   // igreja (04/10/2026). A lista vai inteira.
@@ -367,6 +409,7 @@ const ApprovalsView = ({
             situacao="pendente"
             podeAprovarEmLote={isOrganizador && !isParceiro}
             onLoteConcluido={() => carregarInscricoes(false)}
+            onMudarDomingo={isOrganizador && !isParceiro ? solicitarMudancaDomingo : undefined}
             searchTerm={searchTermPendentes}
             onSearchChange={setSearchTermPendentes}
             buscaRef={buscaPendentesRef}
@@ -448,6 +491,47 @@ const ApprovalsView = ({
               className="bg-red-600 hover:bg-red-700 text-white border-none"
             >
               Sim, cancelar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!inscricaoParaDomingo}
+        onOpenChange={(open) => {
+          if (!open) setInscricaoParaDomingo(null);
+        }}
+      >
+        <AlertDialogContent className="bg-zinc-900 border border-gray-800 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {inscricaoParaDomingo?.so_domingo ? 'Voltar para todos os dias' : 'Mover para Só Domingo'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              {inscricaoParaDomingo?.so_domingo ? (
+                <>
+                  <strong className="text-white">{inscricaoParaDomingo?.nome}</strong> volta a ir todos os dias.
+                  As áreas de trabalho não voltam: a pessoa precisa escolher as 3 áreas de novo no acompanhamento da inscrição.
+                </>
+              ) : (
+                <>
+                  <strong className="text-white">{inscricaoParaDomingo?.nome}</strong> passa a ir somente no domingo.
+                  As áreas de trabalho escolhidas são apagadas e a pessoa nunca entra na escala.
+                  A inscrição continua pendente; depois de aprovada, vai para "Vão somente no domingo" e paga 50% do lote.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
+              Voltar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmarMudancaDomingo}
+              className="bg-amber-600 hover:bg-amber-700 text-white border-none"
+            >
+              {inscricaoParaDomingo?.so_domingo ? 'Sim, todos os dias' : 'Sim, só domingo'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

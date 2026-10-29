@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Eye, CheckCircle, XCircle, Clock, Search, Filter, X, AlertTriangle, Download, CheckCheck } from 'lucide-react';
+import { Users, Eye, CheckCircle, XCircle, Clock, Search, Filter, X, AlertTriangle, Download, CheckCheck, CalendarDays } from 'lucide-react';
 import ExportarAprovacoesDialog from '@/components/aprovacoes/ExportarAprovacoesDialog';
 import AprovacaoEmLoteDialog from '@/components/aprovacoes/AprovacaoEmLoteDialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -148,7 +148,9 @@ const AprovacoesTable = ({
   situacao = 'pendente',
   // So organizador, so na aba de pendentes (ApprovalsView decide).
   podeAprovarEmLote = false,
-  onLoteConcluido
+  onLoteConcluido,
+  // So organizador, so na aba de pendentes: passar para "Só Domingo" e voltar.
+  onMudarDomingo
 }) => {
   const { isParceiro } = useAuth();
   const [filters, setFilters] = useState({});
@@ -359,6 +361,7 @@ const AprovacoesTable = ({
                     onCancelar={onCancelar}
                     showCancelAction={showCancelAction}
                     showApproveOnly={showApproveOnly}
+                    onMudarDomingo={onMudarDomingo}
                   />
                 ))
               )}
@@ -467,6 +470,22 @@ const AprovacoesTable = ({
                             <Button data-dica="Ver a ficha completa." variant="ghost" size="sm" onClick={() => onSelect(inscricao)} className="hover:bg-blue-500/20 text-blue-300 transition-colors">
                               <Eye className="w-4 h-4" />
                             </Button>
+                            {onMudarDomingo && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onMudarDomingo(inscricao.id)}
+                                aria-label={inscricao.so_domingo ? 'Voltar para todos os dias' : 'Mover para Só Domingo'}
+                                data-dica={inscricao.so_domingo
+                                  ? 'Voltar para todos os dias (a pessoa escolhe as áreas de novo). Pede confirmação.'
+                                  : 'Mover para Só Domingo: apaga as áreas e a pessoa não entra na escala. Pede confirmação.'}
+                                className={cn('transition-colors', inscricao.so_domingo
+                                  ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
+                                  : 'text-amber-300 hover:bg-amber-500/20')}
+                              >
+                                <CalendarDays className="w-4 h-4" />
+                              </Button>
+                            )}
                             {showActions && (
                               <>
                                 <Button data-dica="Aprovar: a pessoa entra para a escala." variant="ghost" size="sm" onClick={() => onAprovar(inscricao.id)} className="hover:bg-green-500/20 text-green-300 transition-colors">

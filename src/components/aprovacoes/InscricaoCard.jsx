@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, CheckCircle, XCircle, AlertTriangle, UserCheck } from 'lucide-react';
+import { Eye, CheckCircle, XCircle, AlertTriangle, UserCheck, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { naoCongrega, nomeDaIgreja } from '@/constants/igrejas';
 import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
@@ -17,7 +17,8 @@ const InscricaoCard = ({
   showActions, 
   onCancelar, 
   showCancelAction, 
-  showApproveOnly 
+  showApproveOnly,
+  onMudarDomingo
 }) => {
   return (
     <div className="bg-white/5 border border-white/10 rounded-lg p-4 flex flex-col gap-4 relative overflow-hidden transition-all hover:bg-white/10">
@@ -91,24 +92,33 @@ const InscricaoCard = ({
         <Button 
           variant="outline" 
           onClick={() => onSelect(inscricao)} 
-          className="flex-1 h-11 bg-transparent border-white/10 text-blue-300 hover:text-white hover:bg-blue-500/20 transition-colors"
+          className="flex-1 min-w-0 h-11 bg-transparent border-white/10 text-blue-300 hover:text-white hover:bg-blue-500/20 transition-colors"
         >
           <Eye className="w-4 h-4 mr-2" /> 
           Detalhes
         </Button>
         
+        {onMudarDomingo && (
+          <Button
+            onClick={() => onMudarDomingo(inscricao.id)}
+            className={`h-11 px-3 border border-amber-500/30 text-amber-300 transition-colors ${inscricao.so_domingo ? 'bg-amber-500/30 hover:bg-amber-500/40' : 'bg-amber-500/10 hover:bg-amber-500/30'}`}
+            aria-label={inscricao.so_domingo ? 'Voltar para todos os dias' : 'Mover para Só Domingo'}
+          >
+            <CalendarDays className="w-5 h-5" />
+          </Button>
+        )}
         {showActions && (
           <>
-            <Button 
-              onClick={() => onAprovar(inscricao.id)} 
-              className="h-11 px-4 bg-green-500/20 hover:bg-green-500/40 text-green-400 border border-green-500/30 transition-colors"
+            <Button
+              onClick={() => onAprovar(inscricao.id)}
+              className="h-11 px-3 bg-green-500/20 hover:bg-green-500/40 text-green-400 border border-green-500/30 transition-colors"
               aria-label="Aprovar"
             >
               <CheckCircle className="w-5 h-5" />
             </Button>
             <Button 
               onClick={() => onRejeitar(inscricao.id)} 
-              className="h-11 px-4 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 transition-colors"
+              className="h-11 px-3 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 transition-colors"
               aria-label="Rejeitar"
             >
               <XCircle className="w-5 h-5" />
@@ -118,7 +128,7 @@ const InscricaoCard = ({
         {showApproveOnly && (
           <Button 
             onClick={() => onAprovar(inscricao.id)} 
-            className="h-11 px-4 bg-green-500/20 hover:bg-green-500/40 text-green-400 border border-green-500/30 transition-colors"
+            className="h-11 px-3 bg-green-500/20 hover:bg-green-500/40 text-green-400 border border-green-500/30 transition-colors"
             aria-label="Aprovar"
           >
             <CheckCircle className="w-5 h-5" />
@@ -127,7 +137,7 @@ const InscricaoCard = ({
         {showCancelAction && (
           <Button 
             onClick={() => onCancelar(inscricao.id)} 
-            className="h-11 px-4 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 transition-colors"
+            className="h-11 px-3 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 transition-colors"
             aria-label="Cancelar aprovação"
           >
             <XCircle className="w-5 h-5" />

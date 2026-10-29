@@ -147,6 +147,9 @@ export const COLUMN_DEFINITIONS = {
     { key: 'conhecido_no_projeto', label: 'Conhecido no Projeto', group: 'Indicação' },
     { key: 'nome_familiar_conhecido', label: 'Nome do Familiar/Conhecido', group: 'Indicação' },
 
+    // Observação digitada pela organização (Gerenciar Inscrições, 29/10/2026).
+    { key: 'observacoes_organizador', label: 'Observações', group: 'Acampamento' },
+
     // Status (removido em 2026-09-01 a pedido da usuaria -- coluna "status"
     // nao aparece mais como opcao pra acampantes; continua existindo pra
     // equipantes, acima)

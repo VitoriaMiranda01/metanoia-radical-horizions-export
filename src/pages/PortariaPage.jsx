@@ -257,6 +257,7 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
   const [salvando, setSalvando] = useState(false);
   const [confirmando, setConfirmando] = useState(''); // 'entrada' | 'pagamento' | 'carta'
   const [ocupado, setOcupado] = useState(false);
+  const [legenda, setLegenda] = useState(''); // toque no selo mostra o significado (celular nao tem hover)
   const [recebendoCarta, setRecebendoCarta] = useState(false);
   const [textoCarta, setTextoCarta] = useState('');
   const s = situacao(p);
@@ -334,23 +335,39 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
             {entrou && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
             {p.nome}
             {p.pastor && !selo?.cheio && (
-              <span title={p.pastor} aria-label={p.pastor} role="img" className="inline-flex shrink-0 text-sky-400">
+              <span title={p.pastor} aria-label={p.pastor} role="button" tabIndex={0}
+                onClick={() => setLegenda((l) => (l === p.pastor ? '' : p.pastor))}
+                className="inline-flex shrink-0 cursor-pointer text-sky-400">
                 <Church className="h-4 w-4" />
               </span>
             )}
             {selo && (
-              <span title={tituloSelo} aria-label={tituloSelo} role="img" className={`inline-flex shrink-0 ${selo.cor}`}>
+              <span title={tituloSelo} aria-label={tituloSelo} role="button" tabIndex={0}
+                onClick={() => setLegenda((l) => (l === tituloSelo ? '' : tituloSelo))}
+                className={`inline-flex shrink-0 cursor-pointer ${selo.cor}`}>
                 <selo.Icone className="h-4 w-4" fill={selo.cheio ? 'currentColor' : 'none'} />
               </span>
             )}
             {p.lider_de && (
-              <span title={`Líder · ${p.lider_de}`} aria-label={`Líder · ${p.lider_de}`} role="img"
-                className="inline-flex shrink-0 text-yellow-300">
+              <span title={`Líder · ${p.lider_de}`} aria-label={`Líder · ${p.lider_de}`} role="button" tabIndex={0}
+                onClick={() => setLegenda((l) => (l === `Líder · ${p.lider_de}` ? '' : `Líder · ${p.lider_de}`))}
+                className="inline-flex shrink-0 cursor-pointer text-yellow-300">
                 <UserCog className="h-4 w-4" />
               </span>
             )}
-            {p.so_domingo && <TagSoDomingo />}
+            {p.so_domingo && (
+              <span role="button" tabIndex={0} className="cursor-pointer"
+                onClick={() => setLegenda((l) => (l === 'sd' ? '' : 'sd'))}>
+                <TagSoDomingo />
+              </span>
+            )}
           </p>
+          {legenda && (
+            <p className="mt-1 text-xs px-2.5 py-1 rounded-lg border border-white/15 bg-white/10 text-gray-100 break-words"
+              onClick={() => setLegenda('')}>
+              {legenda === 'sd' ? 'Vai só no domingo: não entra na escala; taxa de 50%' : legenda}
+            </p>
+          )}
           <p className="text-sm text-gray-400 break-words">{p.igreja || 'Sem igreja informada'}</p>
           {p.areas?.length > 0 && <p className="text-xs text-gray-500 break-words">{p.areas.join(' · ')}</p>}
           {p.so_domingo && <p className="text-xs text-orange-200/80 break-words">{AREA_SO_DOMINGO} · taxa de 50%</p>}

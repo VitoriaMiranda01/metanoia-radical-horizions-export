@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Banknote, BookOpen, CheckCircle2, FileCheck, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, RefreshCw, Search, Undo2, Wallet, X
+  ArrowLeft, Banknote, BookOpen, CheckCircle2, Church, FileCheck, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, RefreshCw, Search, Undo2, Wallet, X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -330,6 +330,11 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
           <p className="font-semibold text-white break-words flex items-center gap-2">
             {entrou && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
             {p.nome}
+            {p.pastor && (
+              <span title={p.pastor} aria-label={p.pastor} role="img" className="inline-flex shrink-0 text-sky-400">
+                <Church className="h-4 w-4" />
+              </span>
+            )}
             {p.so_domingo && <TagSoDomingo />}
           </p>
           <p className="text-sm text-gray-400 break-words">{p.igreja || 'Sem igreja informada'}</p>

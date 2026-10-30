@@ -56,7 +56,7 @@ const FORMA_DE_QUEM_DEVE = { pix: 'PIX não concluído', manual: 'Manual', isent
 // Quem ja pagou: por onde o dinheiro entrou.
 const FORMA_DE_QUEM_PAGOU = { pix: 'PIX', manual: 'Em mãos', isento: 'Isento' };
 // Em maos, o meio (16/10/2026): quem recebeu escolhe na confirmacao.
-const MEIO_DO_PAGAMENTO = { dinheiro: 'Dinheiro', cartao: 'Cartão', pix: 'PIX (conferido)' };
+const MEIO_DO_PAGAMENTO = { dinheiro: 'Dinheiro', cartao: 'Cartão', pix: 'Pix externo' };
 
 // "2026-10-10" -> "10/10/2026"
 const dataBR = (iso) => (iso ? String(iso).slice(0, 10).split('-').reverse().join('/') : '');
@@ -378,7 +378,7 @@ const PagamentosPendentesPage = () => {
     setConfirmacao(null);
     toast({
       title: 'Pagamento confirmado',
-      description: `${pedido.item.nome}: ${formatarValor(valor)}${meio ? (meio === 'pix' ? ' por PIX' : ` em ${MEIO_DO_PAGAMENTO[meio].toLowerCase()}`) : ''}${cupom ? ` com o cupom ${cupom}` : ''}. Foi para a aba Pagos.`,
+      description: `${pedido.item.nome}: ${formatarValor(valor)}${meio ? (meio === 'pix' ? ' por Pix externo' : ` em ${MEIO_DO_PAGAMENTO[meio].toLowerCase()}`) : ''}${cupom ? ` com o cupom ${cupom}` : ''}. Foi para a aba Pagos.`,
       className: 'bg-emerald-600 text-white border-none'
     });
     await carregar();

@@ -90,7 +90,7 @@ nav.indice a:hover,nav.indice a:focus-visible{border-color:var(--accent);outline
 .t-modal{background:#09090b;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
 .t-modal h4{margin:0;font-family:var(--display);font-size:16px}
 .t-modal .sub{color:#9ca3af;font-size:12px}
-.t-meios{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.t-meios{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .t-meio{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#d1d5db;border-radius:12px;padding:12px 6px;text-align:center;font-weight:600}
 .t-meio.on{border-color:#34d399;background:rgba(16,185,129,.2);color:#fff}
 .t-meio i{display:block;font-style:normal;font-size:20px}
@@ -135,7 +135,7 @@ footer{color:var(--muted);font-size:.88rem;border-top:1px solid var(--line);padd
   <div class="resumo">
     <div><b>Só equipantes</b><span>Acampantes e infiltrados não aparecem nesta tela.</span></div>
     <div><b>Controla a pulseira</b><span>"Entrada liberada" quer dizer que a pulseira foi entregue.</span></div>
-    <div><b>Dinheiro ou cartão</b><span>O PIX o equipante paga sozinho, pelo site.</span></div>
+    <div><b>Dinheiro, cartão ou Pix externo</b><span>O PIX do site o equipante paga sozinho. Pix externo = pagou por fora e mostrou o comprovante.</span></div>
   </div>
 </header>
 
@@ -245,12 +245,12 @@ footer{color:var(--muted);font-size:.88rem;border-top:1px solid var(--line);padd
     <div class="texto">
       <p>Quem ainda não pagou aparece com a etiqueta amarela <b>Pagamento em aberto</b> e o botão <b>Pagar agora</b>. Ao tocar nele, abre uma janela:</p>
       <ol>
-        <li><span class="num-ref">1</span><b>Como pagou?</b> Escolha <i>Dinheiro</i> ou <i>Cartão</i>.</li>
+        <li><span class="num-ref">1</span><b>Como pagou?</b> Escolha <i>Dinheiro</i>, <i>Cartão</i> ou <i>Pix externo</i> (a pessoa pagou por PIX fora do site e está mostrando o comprovante: confira nome e valor).</li>
         <li><span class="num-ref">2</span><b>Valor recebido.</b> A tela já sugere o valor do lote atual, com desconto de pastor ou infiltrado quando houver. <b>Confira com o que a pessoa realmente entregou</b> e corrija se for diferente.</li>
         <li><span class="num-ref">3</span><b>Liberar a entrada agora.</b> Vem marcado. Deixe marcado se você vai entregar a pulseira neste momento.</li>
         <li>Toque em <b>Confirmar pagamento</b>.</li>
       </ol>
-      <div class="atencao">O botão de confirmar só liga depois que você escolhe o meio de pagamento e o valor está certo. Receba o dinheiro ou passe o cartão <b>antes</b> de confirmar.</div>
+      <div class="atencao">O botão de confirmar só liga depois que você escolhe o meio de pagamento e o valor está certo. Receba o dinheiro, passe o cartão ou confira o comprovante do PIX <b>antes</b> de confirmar.</div>
       <div class="dica">Desmarcou "Liberar a entrada agora"? O pagamento fica registrado e a pessoa continua em <i>Entrada pendente</i>, já com o botão <b>Liberar entrada</b>.</div>
     </div>
     <div class="figura">
@@ -258,7 +258,7 @@ footer{color:var(--muted);font-size:.88rem;border-top:1px solid var(--line);padd
         <div class="t-modal">
           <div><h4>Pagar agora</h4><div class="sub">Carlos Eduardo Reis · Igreja Exemplo Norte</div></div>
           <div><div class="sub" style="margin-bottom:6px"><span class="num-ref">1</span>Como pagou?</div>
-            <div class="t-meios"><div class="t-meio on"><i>💵</i>Dinheiro</div><div class="t-meio"><i>💳</i>Cartão</div></div></div>
+            <div class="t-meios"><div class="t-meio on"><i>💵</i>Dinheiro</div><div class="t-meio"><i>💳</i>Cartão</div><div class="t-meio"><i>🔳</i>Pix externo</div></div></div>
           <div><div class="sub" style="margin-bottom:6px"><span class="num-ref">2</span>Valor recebido (R$)</div>
             <div class="t-input">80,00</div>
             <div class="t-hint" style="margin-top:5px">Valor do último lote: R$ 80,00. Confira antes de confirmar.</div></div>
@@ -342,7 +342,7 @@ footer{color:var(--muted);font-size:.88rem;border-top:1px solid var(--line);padd
     <thead><tr><th>Etiqueta</th><th>Significado</th><th>O que fazer</th></tr></thead>
     <tbody>
       <tr><td><span class="tag ab" style="background:#3a2b0c;color:#fde68a">Pagamento em aberto</span></td><td>Ainda não pagou.</td><td>Receba e toque em <b>Pagar agora</b>.</td></tr>
-      <tr><td><span class="tag pg" style="background:#0f3d2c;color:#a7f3d0">Pago · PIX / Dinheiro / Cartão</span></td><td>Pagamento confirmado.</td><td>Entregue a pulseira e toque em <b>Liberar entrada</b>.</td></tr>
+      <tr><td><span class="tag pg" style="background:#0f3d2c;color:#a7f3d0">Pago · PIX / Dinheiro / Cartão / Pix externo</span></td><td>Pagamento confirmado.</td><td>Entregue a pulseira e toque em <b>Liberar entrada</b>.</td></tr>
       <tr><td><span class="tag is" style="background:#0c3350;color:#bae6fd">Isento</span></td><td>Não precisa pagar.</td><td>Igual a quem já pagou: <b>Liberar entrada</b>.</td></tr>
       <tr><td><span class="tag en" style="background:#0f5a3f;color:#fff">Entrada liberada</span></td><td>A pulseira já foi entregue.</td><td>Nada. Só <b>Desfazer entrada</b> se foi engano.</td></tr>
       <tr><td><span class="tag fe" style="background:#3a1414;color:#fecaca">Fora da escala</span></td><td>A pessoa não está em nenhuma área da escala oficial.</td><td>Registre o que acontecer em <b>Observação</b> para a organização decidir.</td></tr>

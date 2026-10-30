@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Banknote, BookOpen, CheckCircle2, Church, FileCheck, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, RefreshCw, Search, Undo2, UserCog, Wallet, X
+  ArrowLeft, Banknote, BookOpen, CheckCircle2, Church, FileCheck, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, QrCode, RefreshCw, Search, Undo2, UserCog, Wallet, X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -29,7 +29,7 @@ import {
  * equipantes (os da escala, ou que ja pagaram). Quem ja pagou -- PIX, em maos
  * ou isento -- recebe a pulseira e a portaria toca em "Liberar entrada": a
  * pessoa vai para "Ja entrou" e fica verde. Quem nao pagou usa "Pagar agora"
- * (dinheiro ou cartao) e, no mesmo passo, ja tem a entrada liberada.
+ * (dinheiro, cartao ou Pix externo) e, no mesmo passo, ja tem a entrada liberada.
  *
  * Uma pesquisa so: nome, igreja ou area. Observacao livre por pessoa para a
  * organizacao. Os dados vem de portaria_lista() -- a conta de apoio nao le
@@ -67,9 +67,12 @@ const semPrefixo = (quem) => maiusculas(String(quem || '').replace(/^Portaria: /
 
 const pagoNaPortaria = (p) => p.pago && p.metodo === 'manual' && String(p.confirmado_por || '').startsWith('Portaria: ');
 
-// Na portaria so se recebe dinheiro ou cartao (Patrick, 24/10/2026): o PIX o
-// equipante paga sozinho na propria area. 'pix' fica so para quem ja pagou assim.
-const NOME_MEIO = { dinheiro: 'Dinheiro', cartao: 'Cartão', pix: 'PIX' };
+// Na portaria se recebe dinheiro ou cartao (Patrick, 24/10/2026): o PIX do site
+// o equipante paga sozinho na propria area. "Pix externo" (30/10/2026, 20261030a):
+// pagou por PIX direto, fora do site, e mostra o comprovante -- meio 'pix' com
+// metodo 'manual', o mesmo "Pix externo" da tela de Pagamentos, a parte do
+// PIX automatico do banco (metodo 'pix').
+const NOME_MEIO = { dinheiro: 'Dinheiro', cartao: 'Cartão', pix: 'Pix externo' };
 
 // Texto da situacao do pagamento.
 // Pagamento agendado (20261025e): o organizador combinou uma data; a pessoa
@@ -170,19 +173,24 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
         <div className="space-y-4">
           <div>
             <p className="text-sm text-gray-300 mb-2">Como pagou?</p>
-            <div className="grid grid-cols-2 gap-3">
-              {[['dinheiro', 'Dinheiro', [Banknote]], ['cartao', 'Cartão', [CreditCard]]].map(([v, rotulo, icones]) => (
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              {[['dinheiro', 'Dinheiro', [Banknote]], ['cartao', 'Cartão', [CreditCard]], ['pix', 'Pix externo', [QrCode]]].map(([v, rotulo, icones]) => (
                 <button key={v} type="button" onClick={() => setMeio(v)}
-                  className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border p-4 transition-colors ${
+                  className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border px-2 py-4 text-center transition-colors ${
                     meio === v ? 'border-emerald-400 bg-emerald-500/20 text-white' : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
                   }`}>
                   <span className="flex items-center gap-1.5">
                     {icones.map((Icone, i) => <Icone key={i} className="w-6 h-6" />)}
                   </span>
-                  <span className="font-medium">{rotulo}</span>
+                  <span className="font-medium text-sm sm:text-base leading-tight">{rotulo}</span>
                 </button>
               ))}
             </div>
+            {meio === 'pix' && (
+              <p className="text-xs text-gray-400 mt-2">
+                Pagou por PIX fora do site e mostrou o comprovante. Confira o valor e o nome no comprovante antes de confirmar.
+              </p>
+            )}
           </div>
 
           <div>

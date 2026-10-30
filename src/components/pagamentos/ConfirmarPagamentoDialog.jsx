@@ -24,7 +24,7 @@ import { cuponsDoPagamento } from '@/services/paymentService';
 const MEIOS = [
   { valor: 'dinheiro', rotulo: 'Dinheiro', Icone: Banknote },
   { valor: 'cartao', rotulo: 'Cartão', Icone: CreditCard },
-  { valor: 'pix', rotulo: 'PIX', Icone: QrCode }
+  { valor: 'pix', rotulo: 'Pix externo', Icone: QrCode }
 ];
 
 const formatarValor = (n) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(n) || 0);
@@ -191,7 +191,7 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
               </div>
               {meio === 'pix' && (
                 <p className="text-xs text-gray-400">
-                  PIX recebido direto, conferido por você. Fica separado do PIX automático do banco nos relatórios.
+                  PIX recebido direto, fora do site, conferido por você. Fica separado do PIX automático do banco nos relatórios.
                 </p>
               )}
             </div>

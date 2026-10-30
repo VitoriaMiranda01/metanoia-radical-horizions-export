@@ -115,6 +115,7 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
   const [meio, setMeio] = useState('');
   const [valor, setValor] = useState('');
   const [liberar, setLiberar] = useState(true);
+  const [obs, setObs] = useState('');
   const [previsto, setPrevisto] = useState(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -123,6 +124,7 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
     setMeio('');
     setValor('');
     setLiberar(true);
+    setObs('');
     setPrevisto(null);
     let vivo = true;
     fetchValorPrevisto('equipante', pessoa.id).then((r) => {
@@ -138,11 +140,14 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
   const valorNumero = Number(valorTexto.includes(',') ? valorTexto.replace(/\./g, '').replace(',', '.') : valorTexto);
   const valorOk = Number.isFinite(valorNumero) && valorNumero > 0 && valorNumero <= 5000;
 
+  // Pix externo: a observacao (data, hora e valor conferidos) e obrigatoria.
+  const obsOk = meio !== 'pix' || obs.trim().length > 0;
+
   const confirmar = async () => {
-    if (!meio || !valorOk) return;
+    if (!meio || !valorOk || !obsOk) return;
     setSalvando(true);
     try {
-      await darBaixaPortaria('equipante', pessoa.id, meio, valorNumero, liberar);
+      await darBaixaPortaria('equipante', pessoa.id, meio, valorNumero, liberar, meio === 'pix' ? obs.trim() : null);
       toast({
         title: liberar ? 'Pago e entrada liberada' : 'Pagamento registrado',
         description: `${pessoa.nome} · ${NOME_MEIO[meio]} · ${moeda(valorNumero)}${liberar ? ' · entregue a pulseira' : ''}`,
@@ -187,9 +192,15 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
               ))}
             </div>
             {meio === 'pix' && (
-              <p className="text-xs text-gray-400 mt-2">
-                Pagou por PIX fora do site e mostrou o comprovante. Confira o valor e o nome no comprovante antes de confirmar.
-              </p>
+              <div className="mt-2 space-y-2">
+                <p className="text-xs text-gray-400">
+                  Pagou por PIX fora do site e mostrou o comprovante. Confira o valor e o nome no comprovante antes de confirmar.
+                </p>
+                <p className="text-sm text-gray-300">Observação (obrigatória)</p>
+                <Textarea value={obs} onChange={(e) => setObs(e.target.value)} maxLength={500} rows={2}
+                  placeholder="Ex.: Conferido: 30/10, 14h20, R$ 150,00"
+                  className="bg-white/5 border-white/20 text-white" />
+              </div>
             )}
           </div>
 
@@ -220,7 +231,7 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
             className="border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
             Cancelar
           </Button>
-          <Button disabled={salvando || !meio || !valorOk} onClick={confirmar}
+          <Button disabled={salvando || !meio || !valorOk || !obsOk} onClick={confirmar}
             className="bg-emerald-600 hover:bg-emerald-700 text-white">
             {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar pagamento'}
           </Button>

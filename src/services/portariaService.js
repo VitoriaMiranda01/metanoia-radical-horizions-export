@@ -51,9 +51,11 @@ const gravar = async (funcao, args, falha) => {
 };
 
 // "Pagar agora": so equipante. liberarEntrada = ja entrega a pulseira no mesmo passo.
-export const darBaixaPortaria = (tipo, id, meio, valor, liberarEntrada = false) =>
+// observacao: obrigatoria no Pix externo (o banco confere); nos outros meios e opcional.
+export const darBaixaPortaria = (tipo, id, meio, valor, liberarEntrada = false, observacao = null) =>
   gravar('portaria_dar_baixa', {
     p_tipo: tipo, p_id: id, p_meio: meio, p_valor: valor, p_liberar_entrada: liberarEntrada,
+    p_observacao: observacao,
   }, 'Não foi possível registrar o pagamento.');
 
 // Entrada (pulseira entregue): so quem ja pagou ou e isento.

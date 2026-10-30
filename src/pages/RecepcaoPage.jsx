@@ -36,8 +36,9 @@ import {
  * do banco a cada 5 s e o banco barra presenca em dobro.
  *
  * Aparecem so os acampantes pagos (isento conta) ou com pagamento agendado
- * (20261026b; a tela nao mostra a situacao do pagamento), e os infiltrados da
- * escala oficial como acampantes (sigilo: nada os diferencia aqui). "Chegou"
+ * (20261026b; a tela nao mostra a situacao do pagamento), e os infiltrados
+ * escalados com cor como acampantes, pagos ou nao (20261030c: o nao pago
+ * leva so a etiqueta discreta "pagamento pendente"). "Chegou"
  * pede "ciente do termo" (o mesmo da inscricao); menor de idade pede tambem
  * "autorizacao dos responsaveis entregue". "Encerrar chamada" avisa os
  * organizadores no painel (e a recepcao avisa tambem pelo WhatsApp).
@@ -309,6 +310,11 @@ const CartaoPessoa = ({ p, numeroOnibus, travada, onChegou, onAtualizado }) => {
             {p.menor && (
               <span className="text-[11px] px-2 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/15 text-amber-200 inline-flex items-center gap-1">
                 <Baby className="w-3 h-3" />Menor{p.idade != null ? ` · ${p.idade} anos` : ''}
+              </span>
+            )}
+            {p.pagamento_pendente && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-white/15 text-gray-400 font-normal">
+                pagamento pendente
               </span>
             )}
           </p>

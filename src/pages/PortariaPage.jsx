@@ -196,7 +196,7 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
                 <p className="text-xs text-gray-400">
                   Pagou por PIX fora do site e mostrou o comprovante. Confira o valor e o nome no comprovante antes de confirmar.
                 </p>
-                <p className="text-sm text-gray-300">Observação (obrigatória)</p>
+                <p className="text-sm text-gray-300">Observação (obrigatória) <span className="text-red-500 font-bold">*</span></p>
                 <Textarea value={obs} onChange={(e) => setObs(e.target.value)} maxLength={500} rows={2}
                   placeholder="Ex.: Conferido: 30/10, 14h20, R$ 150,00"
                   className="bg-white/5 border-white/20 text-white" />

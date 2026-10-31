@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Banknote, BookOpen, CheckCircle2, Church, FileCheck, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, QrCode, RefreshCw, Search, Undo2, UserCog, Wallet, X
+  ArrowLeft, Banknote, BookOpen, CalendarClock, CheckCircle2, Church, FileCheck, CreditCard, DoorOpen, Loader2, LogOut, MessageSquare, QrCode, RefreshCw, Search, Undo2, UserCog, Wallet, X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -18,7 +18,7 @@ import TagSoDomingo, { AREA_SO_DOMINGO } from '@/components/common/TagSoDomingo'
 import { SELOS } from '@/components/common/SeloPastor';
 import { getAuthToken } from '@/services/authToken';
 import {
-  darBaixaPortaria, desfazerBaixaPortaria, desfazerEntradaPortaria, fetchPortariaLista, fetchPortariaVersao, fetchValorPrevisto,
+  agendarPagamentoPortaria, darBaixaPortaria, desfazerAgendamentoPortaria, desfazerBaixaPortaria, desfazerEntradaPortaria, fetchPortariaLista, fetchPortariaVersao, fetchValorPrevisto,
   liberarEntradaPortaria, salvarObservacaoPortaria, receberCartaPortaria, desfazerCartaPortaria
 } from '@/services/portariaService';
 
@@ -78,6 +78,8 @@ const NOME_MEIO = { dinheiro: 'Dinheiro', cartao: 'Cartão', pix: 'Pix externo' 
 // Pagamento agendado (20261025e): o organizador combinou uma data; a pessoa
 // entra sem pagar e segue "em aberto" ate quitar.
 const agendado = (p) => !p.pago && !!p.agendado_para;
+// Agendado pela propria portaria (30/10/2026, 20261030d): so esse ela desfaz.
+const agendadoNaPortaria = (p) => agendado(p) && String(p.agendado_por || '').startsWith('Portaria: ');
 const dataCurta = (iso) => String(iso || '').slice(0, 10).split('-').reverse().join('/');
 
 const situacao = (p) => {
@@ -274,7 +276,10 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
   const [editando, setEditando] = useState(false);
   const [texto, setTexto] = useState(p.observacao || '');
   const [salvando, setSalvando] = useState(false);
-  const [confirmando, setConfirmando] = useState(''); // 'entrada' | 'pagamento' | 'carta'
+  const [confirmando, setConfirmando] = useState(''); // 'entrada' | 'pagamento' | 'carta' | 'agendamento'
+  const [agendando, setAgendando] = useState(false);
+  const [dataAgenda, setDataAgenda] = useState('');
+  const [obsAgenda, setObsAgenda] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [legenda, setLegenda] = useState(''); // toque no selo mostra o significado (celular nao tem hover)
   const [recebendoCarta, setRecebendoCarta] = useState(false);
@@ -326,6 +331,28 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
       onAtualizado();
     }
   };
+  // Agendar pagamento (autorizado pela Raquel): data e observacao obrigatorias.
+  const agendar = async () => {
+    if (!dataAgenda || !obsAgenda.trim()) return;
+    setOcupado(true);
+    try {
+      await agendarPagamentoPortaria(p.id, dataAgenda, obsAgenda.trim());
+      toast({ title: 'Pagamento agendado', description: `${p.nome} · ${dataCurta(dataAgenda)}. Já pode liberar a entrada.`, className: 'bg-emerald-600 text-white' });
+      setAgendando(false);
+      setDataAgenda('');
+      setObsAgenda('');
+    } catch (e) {
+      toast({ title: 'Não deu certo', description: e?.message || 'Tente de novo.', variant: 'destructive' });
+      if (e?.recusadoPeloBanco) setAgendando(false);
+    } finally {
+      setOcupado(false);
+      onAtualizado();
+    }
+  };
+  const desfazerAgendamento = () => executar(() => desfazerAgendamentoPortaria(p.id), {
+    title: 'Agendamento desfeito', description: `${p.nome} voltou para "Pagamento em aberto".`,
+  });
+
   const desfazerCarta = () => executar(() => desfazerCartaPortaria(p.id), {
     title: 'Carta desfeita', description: `${p.nome} voltou a ficar sem a carta.`,
   });
@@ -436,10 +463,18 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
             </Button>
           )}
           {!entrou && !p.pago && (
-            <Button size="sm" disabled={faltaCarta} onClick={() => onPagar(p)}
-              className="flex-1 sm:flex-none bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-40">
-              <Wallet className="w-4 h-4 mr-1.5" />Pagar agora
-            </Button>
+            <div className="flex flex-col gap-2 flex-1 sm:flex-none">
+              <Button size="sm" disabled={faltaCarta} onClick={() => onPagar(p)}
+                className="bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-40">
+                <Wallet className="w-4 h-4 mr-1.5" />Pagar agora
+              </Button>
+              {!agendado(p) && (
+                <Button size="sm" disabled={faltaCarta || ocupado} onClick={() => setAgendando(!agendando)}
+                  className="bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40">
+                  <CalendarClock className="w-4 h-4 mr-1.5" />Agendar pagamento
+                </Button>
+              )}
+            </div>
           )}
           {!entrou && (p.pago || (agendado(p) && (p.na_escala || p.sem_aprovacao))) && (
             <Button size="sm" disabled={ocupado || faltaCarta} onClick={liberar}
@@ -455,6 +490,11 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
           {entrou && !confirmando && (
             <Button size="sm" variant="outline" onClick={() => setConfirmando('entrada')} className={botaoSecundario}>
               <Undo2 className="w-4 h-4 mr-1.5" />Desfazer entrada
+            </Button>
+          )}
+          {!entrou && agendadoNaPortaria(p) && !confirmando && (
+            <Button size="sm" variant="outline" onClick={() => setConfirmando('agendamento')} className={botaoSecundario}>
+              <Undo2 className="w-4 h-4 mr-1.5" />Desfazer agendamento
             </Button>
           )}
           {!entrou && pagoNaPortaria(p) && !confirmando && (
@@ -476,6 +516,46 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
       {confirmando === 'pagamento' && (
         <Confirmar texto='Desfazer o pagamento feito na portaria? Volta para "Pagamento em aberto".' rotulo="Sim, desfazer"
           ocupado={ocupado} onNao={() => setConfirmando('')} onSim={desfazerPagamento} />
+      )}
+
+      {confirmando === 'agendamento' && (
+        <Confirmar texto='Desfazer o agendamento feito na portaria? Volta para "Pagamento em aberto".' rotulo="Sim, desfazer"
+          ocupado={ocupado} onNao={() => setConfirmando('')} onSim={desfazerAgendamento} />
+      )}
+
+      {agendado(p) && !p.pago && (p.agendado_obs || p.agendado_por) && (
+        <div className="mt-3 rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-2">
+          {p.agendado_obs && <p className="text-sm text-violet-100 whitespace-pre-wrap break-words">{p.agendado_obs}</p>}
+          <p className="text-[11px] text-gray-400 mt-1">
+            Agendado para {dataCurta(p.agendado_para)}{p.agendado_por ? ` · ${semPrefixo(p.agendado_por)}` : ''}
+          </p>
+        </div>
+      )}
+
+      {agendando && !agendado(p) && !p.pago && !entrou && (
+        <div className="mt-3 space-y-2 rounded-lg border border-violet-500/30 bg-violet-500/5 p-3">
+          <p className="text-sm text-gray-200">Agendar pagamento</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <label htmlFor={`agenda-${p.id}`} className="text-xs text-gray-400">Data combinada</label>
+            <Input id={`agenda-${p.id}`} type="date" value={dataAgenda} onChange={(e) => setDataAgenda(e.target.value)}
+              className="w-auto h-9 bg-white/5 border-white/20 text-white [color-scheme:dark]" />
+          </div>
+          <p className="text-sm text-gray-300">Observação (obrigatória) <span className="text-red-500 font-bold">*</span></p>
+          <Textarea value={obsAgenda} onChange={(e) => setObsAgenda(e.target.value.slice(0, 200))} rows={2}
+            placeholder="Ex.: Combinou pagar por PIX no dia 15"
+            className="bg-white/5 border-white/20 text-white" />
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-gray-500 mr-auto">{obsAgenda.length}/200</span>
+            <Button size="sm" variant="outline" disabled={ocupado} onClick={() => setAgendando(false)}
+              className="h-8 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
+              Cancelar
+            </Button>
+            <Button size="sm" disabled={ocupado || !dataAgenda || !obsAgenda.trim()} onClick={agendar}
+              className="h-8 bg-violet-600 hover:bg-violet-700 text-white">
+              {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar agendamento'}
+            </Button>
+          </div>
+        </div>
       )}
 
       {confirmando === 'carta' && (

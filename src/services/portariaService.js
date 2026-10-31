@@ -79,5 +79,15 @@ export const receberCartaPortaria = (id, texto) =>
   gravar('portaria_receber_carta', { p_id: id, p_texto: texto || null },
     'Não foi possível registrar a carta.');
 
+// Agendar pagamento (30/10/2026, autorizado pela Raquel): data combinada e
+// observacao obrigatoria. Entra em Pagamentos > Pagamento agendado como
+// "Portaria: <nome>". A portaria so desfaz o agendamento que ela mesma fez.
+export const agendarPagamentoPortaria = (id, data, observacao) =>
+  gravar('portaria_agendar_pagamento', { p_id: id, p_data: data, p_observacao: observacao },
+    'Não foi possível agendar o pagamento.');
+
+export const desfazerAgendamentoPortaria = (id) =>
+  gravar('portaria_desfazer_agendamento', { p_id: id }, 'Não foi possível desfazer o agendamento.');
+
 export const desfazerCartaPortaria = (id) =>
   gravar('portaria_desfazer_carta', { p_id: id }, 'Não foi possível desfazer a carta.');

@@ -1070,7 +1070,12 @@ const PagamentosPendentesPage = () => {
                               <span className="text-gray-500"> · {item.cobranca?.marcado_por}</span>
                             </span>
                           ) : aba === 'agendado' ? (
-                            <DataCombinada iso={item.cobranca?.agendado_para} />
+                            <div className="flex flex-col items-start">
+                              <DataCombinada iso={item.cobranca?.agendado_para} />
+                              {item.cobranca?.marcado_por && (
+                                <span className="text-gray-500 text-xs mt-0.5 whitespace-nowrap">{item.cobranca.marcado_por}</span>
+                              )}
+                            </div>
                           ) : aba === 'pagos' || aba === 'isentos' ? (
                             <div className="flex flex-col whitespace-nowrap">
                               <span className="text-gray-300">{valorDaColuna(item, 'pagamento')}</span>

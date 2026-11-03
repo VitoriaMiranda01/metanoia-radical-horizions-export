@@ -166,6 +166,14 @@ export const redefinirSenhaOrganizador = async (nome) =>
     p_nome: String(nome || '').trim(),
   }, 'nova senha do organizador');
 
+// Cadastro e exclusao de organizadores (migration 20261103a): so a conta
+// Desenvolvedores. A conta nasce com senha temporaria, como na redefinicao.
+export const criarOrganizador = async (nome) =>
+  gravar('criar_organizador', { p_nome: String(nome || '').trim() });
+
+export const excluirOrganizador = async (nome) =>
+  gravar('excluir_organizador', { p_nome: String(nome || '').trim() });
+
 // ---------------------------------------------------------------------------
 // Contas de APOIO (lider de area -- a primeira e a da saude, 09/10/2026)
 //

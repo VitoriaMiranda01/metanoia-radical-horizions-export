@@ -13,6 +13,8 @@ import {
   souOrganizadorMaximo,
   listarOrganizadores,
   redefinirSenhaOrganizador,
+  criarOrganizador,
+  excluirOrganizador,
   listarContasApoio,
   redefinirSenhaApoio,
   criarContaApoio,
@@ -34,7 +36,8 @@ import BloqueioLogin from '@/components/organizer/BloqueioLogin';
  *  - "Trocar minha senha": qualquer organizador, provando quem e com a senha
  *    atual;
  *  - "Organizadores": so aparece para a conta de permissao maxima
- *    ("Desenvolvedores"), que gera senha nova para os outros;
+ *    ("Desenvolvedores"), que gera senha nova para os outros e, desde
+ *    03/11/2026, cadastra e exclui organizadores;
  *  - "Contas de apoio" (09/10/2026): idem, para o login "Apoio" (a lider da
  *    saude). Senha nova e temporaria: ela cria a propria ao entrar. Desde
  *    24/10/2026 as contas (saude ou portaria) sao criadas e excluidas aqui.
@@ -107,6 +110,8 @@ const SenhasOrganizadoresManager = () => {
   const [novoApoioNome, setNovoApoioNome] = useState('');
   const [novoApoioArea, setNovoApoioArea] = useState('portaria');
   const [criandoApoio, setCriandoApoio] = useState(false);
+  const [novoOrgNome, setNovoOrgNome] = useState('');
+  const [criandoOrg, setCriandoOrg] = useState(false);
 
   // Interruptor do botao "Primeiro acesso" na tela de login do parceiro.
   const [primeiroAcesso, setPrimeiroAcesso] = useState(false);
@@ -251,6 +256,52 @@ const SenhasOrganizadoresManager = () => {
       carregarLista();
     } catch (err) {
       console.error('SenhasOrganizadoresManager - redefinir', err?.message || err);
+      toast({ title: 'Erro de conexão', description: 'Tente de novo.', variant: 'destructive' });
+    } finally {
+      setOcupado(null);
+    }
+  };
+
+  const criarOrg = async (e) => {
+    e.preventDefault();
+    const nome = novoOrgNome.trim();
+    if (!nome) return;
+    setCriandoOrg(true);
+    try {
+      const r = await criarOrganizador(nome);
+      if (!r?.ok) {
+        toast({ title: 'Não deu certo', description: r?.erro, variant: 'destructive' });
+        return;
+      }
+      setNovoOrgNome('');
+      setSenhaGerada({ nome: r.nome, senha: r.senha, mensagem: r.mensagem, tipo: 'organizador', criada: true });
+      carregarLista();
+    } catch (err) {
+      console.error('SenhasOrganizadoresManager - criar organizador', err?.message || err);
+      toast({ title: 'Erro de conexão', description: 'Confira a lista antes de tentar de novo.', variant: 'destructive' });
+      carregarLista();
+    } finally {
+      setCriandoOrg(false);
+    }
+  };
+
+  const excluirOrg = async (nome) => {
+    setConfirmando(null);
+    setOcupado(`organizador:${nome}`);
+    try {
+      const r = await excluirOrganizador(nome);
+      if (!r?.ok) {
+        toast({ title: 'Não deu certo', description: r?.erro, variant: 'destructive' });
+        return;
+      }
+      toast({
+        title: `${r.nome} excluído(a) dos organizadores`,
+        description: 'Não consegue mais entrar. Se estava com o site aberto, a sessão acaba em até 8 horas.'
+      });
+      if (senhaGerada?.tipo !== 'apoio' && senhaGerada?.nome === r.nome) setSenhaGerada(null);
+      carregarLista();
+    } catch (err) {
+      console.error('SenhasOrganizadoresManager - excluir organizador', err?.message || err);
       toast({ title: 'Erro de conexão', description: 'Tente de novo.', variant: 'destructive' });
     } finally {
       setOcupado(null);
@@ -450,8 +501,25 @@ const SenhasOrganizadoresManager = () => {
             </Badge>
           </div>
           <p className="text-gray-400 text-sm mb-5">
-            Gere uma senha nova para quem esqueceu. Quem receber será obrigado a criar a própria senha no primeiro acesso.
+            Cadastre quem entrou na organização, exclua quem saiu e gere uma senha nova para quem esqueceu.
+            Conta nova e senha nova são temporárias: a pessoa é obrigada a criar a própria senha no primeiro acesso.
           </p>
+
+          <form onSubmit={criarOrg} className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border border-white/10 bg-white/5 p-4">
+            <div className="space-y-2">
+              <Label className="text-gray-200">Nome (usuário do login)</Label>
+              <Input value={novoOrgNome} onChange={(e) => setNovoOrgNome(e.target.value)} maxLength={41}
+                className="bg-white/5 border-white/20 text-white w-56" placeholder="Ex.: Carlos" />
+            </div>
+            <Button data-dica="Cadastrar o organizador com uma senha inicial (a pessoa troca no primeiro acesso)." type="submit"
+              disabled={criandoOrg || !novoOrgNome.trim()} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {criandoOrg ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-4 h-4 mr-1.5" />Cadastrar organizador</>}
+            </Button>
+            <p className="text-xs text-gray-500 basis-full">
+              Só letras: o primeiro nome, ou nome e sobrenome se já existir alguém com o mesmo nome.
+              Entra como organizador, com as mesmas permissões dos demais (inclusive aprovar inscrições).
+            </p>
+          </form>
 
           {senhaGerada && senhaGerada.tipo !== 'apoio' && quadroSenhaGerada}
 
@@ -497,6 +565,29 @@ const SenhasOrganizadoresManager = () => {
 
                   {o.eh_o_maximo ? (
                     <span className="text-xs text-gray-500">use "Trocar minha senha" acima</span>
+                  ) : confirmando === `excluir:organizador:${o.nome}` ? (
+                    <div className="flex flex-col items-end gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-red-300">Excluir {o.nome} dos organizadores?</span>
+                        <Button size="sm" variant="outline" disabled={ocupado === `organizador:${o.nome}`}
+                          onClick={() => setConfirmando(null)}
+                          className="h-8 px-3 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
+                          Cancelar
+                        </Button>
+                        <Button size="sm" disabled={ocupado === `organizador:${o.nome}`} onClick={() => excluirOrg(o.nome)}
+                          className="h-8 px-4 bg-red-600 hover:bg-red-700 text-white">
+                          {ocupado === `organizador:${o.nome}` ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Excluir'}
+                        </Button>
+                      </div>
+                      {/* Permissoes especiais sao pelo NOME no banco (_gere_escala,
+                          pode_inscrever_manual, camisas_pendentes). */}
+                      {['raquel', 'eduardo'].includes(o.nome.toLowerCase()) && (
+                        <span className="text-xs text-amber-300 max-w-sm text-right">
+                          Atenção: esta conta gera a escala e faz inscrição manual. Depois de excluída,
+                          só Desenvolvedores (e {o.nome.toLowerCase() === 'raquel' ? 'Eduardo' : 'Raquel'}) continuam podendo.
+                        </span>
+                      )}
+                    </div>
                   ) : confirmando === `organizador:${o.nome}` ? (
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-400">Gerar nova senha?</span>
@@ -511,11 +602,18 @@ const SenhasOrganizadoresManager = () => {
                       </Button>
                     </div>
                   ) : (
-                    <Button data-dica="Gerar uma senha nova para este organizador (a antiga para de funcionar)." size="sm" onClick={() => setConfirmando(`organizador:${o.nome}`)}
-                      className="h-8 bg-blue-600 hover:bg-blue-700 text-white">
-                      <KeyRound className="w-4 h-4 mr-1.5" />
-                      Nova senha
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button data-dica="Gerar uma senha nova para este organizador (a antiga para de funcionar)." size="sm" onClick={() => setConfirmando(`organizador:${o.nome}`)}
+                        className="h-8 bg-blue-600 hover:bg-blue-700 text-white">
+                        <KeyRound className="w-4 h-4 mr-1.5" />
+                        Nova senha
+                      </Button>
+                      <Button data-dica="Excluir este organizador (não consegue mais entrar)." size="sm" variant="outline"
+                        onClick={() => setConfirmando(`excluir:organizador:${o.nome}`)}
+                        className="h-8 border-red-500/30 bg-transparent text-red-300 hover:text-white hover:bg-red-500/20">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               ))}

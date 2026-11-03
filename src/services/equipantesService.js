@@ -422,8 +422,11 @@ export const updateEquipante = async (equipanteId, dados) => {
   }
 };
 
+// So quem se inscreveu na edicao (03/11/2026): depois da virada as fichas da
+// edicao anterior ficam com status 'pendente' e inscrito = false, e nao sao
+// inscricoes para aprovar.
 export const fetchEquipantesRaw = async () =>
-  comReenvio(() => supabase.from('equipantes').select('*, idade'), { rotulo: 'equipantes' });
+  comReenvio(() => supabase.from('equipantes').select('*, idade').eq('inscrito', true), { rotulo: 'equipantes' });
 
 /**
  * Lista enxuta para o organizador ESCOLHER pessoas pelo nome (ex.: as areas

@@ -30,7 +30,10 @@ const formatCurrencyInput = (val) => {
   return v;
 };
 
+// Lote sem data (a virada de edicao apaga as datas e deixa o valor, 03/11/2026)
+// devolve null: nao vale para nenhum dia ate alguem preencher.
 const parseDate = (str) => {
+  if (!str) return null;
   const parts = str.split('/');
   if (parts.length !== 3) return null;
   const [d, m, y] = parts;
@@ -62,8 +65,8 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
     setError('');
     setEditingId(period.id);
     setFormData({
-      start_date: period.start_date,
-      end_date: period.end_date,
+      start_date: period.start_date || '',
+      end_date: period.end_date || '',
       value: period.value
     });
     setIsEditing(true);
@@ -132,9 +135,10 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
     // Validation 3: Overlap
     const hasOverlap = periods.some(p => {
       if (p.id === editingId) return false;
-      const pStart = parseDate(p.start_date).getTime();
-      const pEnd = parseDate(p.end_date).getTime();
-      return startMs <= pEnd && pStart <= endMs;
+      const pStart = parseDate(p.start_date);
+      const pEnd = parseDate(p.end_date);
+      if (!pStart || !pEnd) return false;
+      return startMs <= pEnd.getTime() && pStart.getTime() <= endMs;
     });
 
     if (hasOverlap) {
@@ -159,7 +163,9 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
       }
 
       // Sort by start date
-      updatedPeriods.sort((a, b) => parseDate(a.start_date).getTime() - parseDate(b.start_date).getTime());
+      // Sem data vai para o fim da lista.
+      const ordem = (p) => parseDate(p.start_date)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      updatedPeriods.sort((a, b) => ordem(a) - ordem(b));
 
       await onSave(updatedPeriods);
       
@@ -206,8 +212,8 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
                     exit={{ opacity: 0, height: 0 }}
                     className="border-b border-white/5 hover:bg-white/5"
                   >
-                    <td className="px-4 py-3">{period.start_date}</td>
-                    <td className="px-4 py-3">{period.end_date}</td>
+                    <td className="px-4 py-3">{period.start_date || <span className="text-amber-300">a definir</span>}</td>
+                    <td className="px-4 py-3">{period.end_date || <span className="text-amber-300">a definir</span>}</td>
                     <td className="px-4 py-3">R$ {parseFloat(period.value).toFixed(2).replace('.', ',')}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end space-x-2">

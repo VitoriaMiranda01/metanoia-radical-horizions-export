@@ -71,9 +71,13 @@ const OrganizerConfigPage = () => {
   // carrega (ver o efeito que preenche o formulario), mas fica editavel:
   // quem vira a edicao e quem decide o numero dela.
   const [novaEdicao, setNovaEdicao] = useState('');
-  // Datas das reunioes da edicao nova: obrigatorias na virada (16/10/2026).
+  // Datas da edicao nova: todas opcionais na virada (03/11/2026) -- em branco
+  // = informar depois. As da edicao velha sao apagadas pelo servidor.
   const [novaReuniaoInscricao, setNovaReuniaoInscricao] = useState('');
   const [novaReuniaoLeitura, setNovaReuniaoLeitura] = useState('');
+  const [novoEventoInicio, setNovoEventoInicio] = useState('');
+  const [novoEventoFim, setNovoEventoFim] = useState('');
+  const [novoLimiteInscricao, setNovoLimiteInscricao] = useState('');
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
   const { toast } = useToast();
   
@@ -409,7 +413,17 @@ const OrganizerConfigPage = () => {
   const handleResetInscricoes = async () => {
     setIsResettingInscricoes(true);
     try {
-      const r = await resetarParaNovaEdicao(novaEdicao, novaReuniaoInscricao, novaReuniaoLeitura);
+      if (novoEventoInicio && novoEventoFim && novoEventoFim < novoEventoInicio) {
+        toast({ title: 'Confira as datas', description: 'O fim do evento não pode ser antes do início.', variant: 'destructive' });
+        return;
+      }
+      const r = await resetarParaNovaEdicao(novaEdicao, {
+        reuniaoInscricao: novaReuniaoInscricao,
+        reuniaoLeitura: novaReuniaoLeitura,
+        eventoInicio: novoEventoInicio,
+        eventoFim: novoEventoFim,
+        limiteInscricao: novoLimiteInscricao
+      });
       toast({
         title: `Agora é a ${r.nova_edicao}ª edição`,
         description: `${r.equipantes_liberados} equipante(s) liberado(s) para se inscrever de novo · `
@@ -419,6 +433,9 @@ const OrganizerConfigPage = () => {
         className: "bg-emerald-600 text-white border-none"
       });
       setShowResetConfirmDialog(false);
+      // As datas e os lotes mudaram no servidor: recarrega o formulario para
+      // ninguem salvar por cima as datas da edicao que acabou.
+      loadData();
     } catch (error) {
       toast({
         title: "Erro ao resetar",
@@ -1051,19 +1068,28 @@ const OrganizerConfigPage = () => {
               />
             </div>
 
-            {/* Obrigatorias a partir da edicao 38 (16/10/2026). */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="novaReuniaoInscricao" className="text-white">Reunião de Inscrição *</Label>
-                <Input id="novaReuniaoInscricao" type="date" value={novaReuniaoInscricao}
-                  onChange={(e) => setNovaReuniaoInscricao(e.target.value)}
-                  className="bg-white/10 border-white/20 text-white [color-scheme:dark]" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="novaReuniaoLeitura" className="text-white">Reunião de Leitura de Escala *</Label>
-                <Input id="novaReuniaoLeitura" type="date" value={novaReuniaoLeitura}
-                  onChange={(e) => setNovaReuniaoLeitura(e.target.value)}
-                  className="bg-white/10 border-white/20 text-white [color-scheme:dark]" />
+            {/* Todas opcionais (03/11/2026): em branco = informar depois em Configurações. */}
+            <div className="space-y-2">
+              <p className="text-white font-medium">Datas da nova edição</p>
+              <p className="text-gray-400 text-xs">
+                Todas são opcionais. Deixe em branco o que ainda não foi definido e preencha
+                depois aqui em Configurações.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  ['novoEventoInicio', 'Início do evento', novoEventoInicio, setNovoEventoInicio],
+                  ['novoEventoFim', 'Fim do evento', novoEventoFim, setNovoEventoFim],
+                  ['novoLimiteInscricao', 'Limite de inscrição/pagamento', novoLimiteInscricao, setNovoLimiteInscricao],
+                  ['novaReuniaoInscricao', 'Reunião de Inscrição', novaReuniaoInscricao, setNovaReuniaoInscricao],
+                  ['novaReuniaoLeitura', 'Reunião de Leitura de Escala', novaReuniaoLeitura, setNovaReuniaoLeitura]
+                ].map(([id, rotulo, valor, definir]) => (
+                  <div key={id} className="space-y-1.5">
+                    <Label htmlFor={id} className="text-white">{rotulo}</Label>
+                    <Input id={id} type="date" value={valor}
+                      onChange={(e) => definir(e.target.value)}
+                      className="bg-white/10 border-white/20 text-white [color-scheme:dark]" />
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -1077,7 +1103,8 @@ const OrganizerConfigPage = () => {
               <p className="text-red-300 font-medium">O que some, sem volta</p>
               <p>Todos os acampantes (dados pessoais inclusive) · a escala inteira ·
                  as 3 áreas de trabalho de cada equipante · os pagamentos e cobranças PIX
-                 da edição que acabou.</p>
+                 da edição que acabou · as datas da edição que acabou (evento, limite e
+                 reuniões) e as datas dos lotes de preço — o valor de cada lote fica.</p>
               <p className="text-red-200/80">Não some: os acampantes que desistiram (Acampantes que
                  desistiram) — ficam até completar 180 dias da inscrição.</p>
             </div>
@@ -1086,7 +1113,7 @@ const OrganizerConfigPage = () => {
             <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleResetInscricoes} disabled={isResettingInscricoes || !novaReuniaoInscricao || !novaReuniaoLeitura} className="bg-red-600 hover:bg-red-700 text-white border-none">
+            <AlertDialogAction onClick={handleResetInscricoes} disabled={isResettingInscricoes}className="bg-red-600 hover:bg-red-700 text-white border-none">
               {isResettingInscricoes ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Sim, Resetar Todos
             </AlertDialogAction>

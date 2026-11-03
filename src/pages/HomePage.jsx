@@ -100,7 +100,8 @@ const HomePage = () => {
             setFormattedLimitDate(null);
           }
           const eventDateRange = formatEventDateRange(data.data_evento_inicio, data.data_evento_fim);
-          setFormattedDate(eventDateRange || "Data não configurada");
+          // Depois da virada as datas ficam vazias ate a organizacao preencher.
+          setFormattedDate(eventDateRange || "Datas a definir");
         }
       } catch (error) {
         // Chegar aqui significa que nem depois das tentativas de reenvio a

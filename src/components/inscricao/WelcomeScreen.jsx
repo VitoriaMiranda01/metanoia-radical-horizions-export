@@ -34,7 +34,7 @@ const WelcomeScreen = ({
   }, []);
 
   const formatEventDate = () => {
-    return formatEventDateRange(config?.data_evento_inicio, config?.data_evento_fim) || "Data não configurada";
+    return formatEventDateRange(config?.data_evento_inicio, config?.data_evento_fim) || "Datas a definir";
   };
 
   const formatLimitDate = () => {

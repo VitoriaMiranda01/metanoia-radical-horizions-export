@@ -33,12 +33,16 @@ import JanelaDomingoCard from '@/components/organizer/JanelaDomingoCard';
 import ExcluirCadastroCard from '@/components/organizer/ExcluirCadastroCard';
 import DesistentesCard from '@/components/organizer/DesistentesCard';
 import LocaisReuniaoCard from '@/components/organizer/LocaisReuniaoCard';
+import { usePermissoes } from '@/hooks/usePermissoes';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
 
 const OrganizerConfigPage = () => {
   const { organizadorId, organizadorUser, user, isAuthenticated } = useAuth();
+  // Configuracoes e so da conta Desenvolvedores (03/11/2026); os outros
+  // organizadores so trocam a propria senha aqui.
+  const perm = usePermissoes();
   
   const [config, setConfig] = useState({
     edicao_numero: '',
@@ -430,7 +434,28 @@ const OrganizerConfigPage = () => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
-  if (loadingConfig) {
+  if (!perm.carregando && !perm.maximo) {
+    return (
+      <Layout>
+        <Helmet><title>Minha senha</title></Helmet>
+        <div className="space-y-6 pb-20 max-w-4xl mx-auto py-12 px-4">
+          <div className="flex items-center space-x-3">
+            <Settings className="w-8 h-8 text-white" />
+            <div>
+              <h1 className="text-3xl font-bold text-white">Minha conta</h1>
+              <p className="text-gray-400 text-sm mt-1">
+                As configurações do evento ficam com os Desenvolvedores.
+                {perm.permissoes.length === 0 && ' Sua conta ainda não tem nenhuma tela liberada: fale com os Desenvolvedores.'}
+              </p>
+            </div>
+          </div>
+          <SenhasOrganizadoresManager />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (loadingConfig || perm.carregando) {
     return (
       <Layout>
         <Helmet><title>Configurações do Organizador</title></Helmet>

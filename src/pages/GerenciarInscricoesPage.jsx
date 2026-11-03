@@ -35,6 +35,7 @@ import PendenciasEquipantes, { BotaoPendencias } from '@/components/gerenciar/Pe
 import { fichasComPendencias } from '@/utils/pendenciasEquipante';
 import { useAvisosInscricoes } from '@/hooks/useAvisosInscricoes';
 import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog';
+import { usePermissoes } from '@/hooks/usePermissoes';
 import RemoverAcampanteDialog from '@/components/gerenciar/RemoverAcampanteDialog';
 import { getAcampantes, countAcampantes, realocarGrupoTrailha, salvarObservacaoAcampante, updateAcampante } from '@/services/acampantesService';
 import { fetchEquipantesDaEdicao, fetchIdsEquipantesConfirmados, updateEquipante, podeInscreverManual } from '@/services/equipantesService';
@@ -125,7 +126,9 @@ const GerenciarInscricoesPage = () => {
   // Ao fechar as listas, a Presenca dos Acampantes relê os onibus.
   const [onibusFechadoEm, setOnibusFechadoEm] = useState(0);
   // Presenca dos acampantes (recepcao da igreja): botao + janela (26/10/2026).
-  const presenca = usePresencaAcampantes(onibusFechadoEm);
+  // Recepcao, Crachas e Onibus: so Desenvolvedores (03/11/2026).
+  const { maximo } = usePermissoes();
+  const presenca = usePresencaAcampantes(onibusFechadoEm, maximo);
 
   // Momento de joelhos: imprimir, PDF ou Word, com todos da lista da recepcao.
   const handleJoelhos = async (modo) => {
@@ -536,9 +539,9 @@ const GerenciarInscricoesPage = () => {
                       conflitosPorGrupo={vinc.conflitosPorGrupo}
                       resumoVinculos={vinc.carregado ? { sugestoes: vinc.sugestoes.length, conflitos: vinc.conflitos.length } : null}
                       onAbrirVinculos={() => setVinculosAberto(true)}
-                      onAbrirCrachas={() => setCrachasAberto(true)}
-                      onAbrirOnibus={() => setOnibusAberto(true)}
-                      onAbrirPresenca={() => setPresencaAberta(true)}
+                      onAbrirCrachas={maximo ? () => setCrachasAberto(true) : undefined}
+                      onAbrirOnibus={maximo ? () => setOnibusAberto(true) : undefined}
+                      onAbrirPresenca={maximo ? () => setPresencaAberta(true) : undefined}
                       onJoelhos={handleJoelhos}
                       resumoPresenca={presenca.resumo}
                       infiltradosSemCor={infiltrados.oficial ? infiltrados.semCor : 0}

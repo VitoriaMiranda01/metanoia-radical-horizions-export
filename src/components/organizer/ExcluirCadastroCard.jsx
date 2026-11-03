@@ -294,7 +294,7 @@ const ExcluirCadastroCard = () => {
                   ) : ficha.pago ? (
                     <p className="text-sm text-amber-200">Este cadastro já tem pagamento confirmado: desfaça o pagamento em Pagamentos antes de excluir.</p>
                   ) : !ficha.pode_excluir ? (
-                    <p className="text-sm text-amber-200">Só Desenvolvedores, Raquel e Dudu podem excluir cadastros.</p>
+                    <p className="text-sm text-amber-200">Só Desenvolvedores podem excluir cadastros.</p>
                   ) : (
                     <>
                       <div className="space-y-1.5">

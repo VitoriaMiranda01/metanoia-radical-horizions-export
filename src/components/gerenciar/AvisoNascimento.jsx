@@ -124,7 +124,7 @@ const AvisoNascimento = ({ aviso, onRecarregar, onOcultar, onOcultarFicha, onCor
         ? '1 acampante está sem data de nascimento (obrigatória)'
         : `${itens.length} acampantes estão sem data de nascimento (obrigatória)`}
       explicacao={aviso.perfil === 'desenvolvedores'
-        ? 'Este aviso está no perfil da Raquel para ela verificar. Se ela não conseguir, dá para corrigir por aqui também.'
+        ? 'Este aviso também aparece para os organizadores com a permissão "Gerenciar inscrições". Dá para corrigir por aqui.'
         : 'Sem a data não há idade — a equipe de saúde precisa dela, e é ela que diz quem é menor. Pergunte ao acampante e preencha aqui mesmo: ao salvar, a ficha sai deste quadro.'}
       onOcultar={onOcultar}
       ocultas={aviso.fichasOcultas?.length || 0}

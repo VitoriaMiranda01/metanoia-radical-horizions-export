@@ -247,7 +247,7 @@ const AvisoCadastro = ({ aviso, onRecarregar, onOcultar, onOcultarFicha, onCorri
         ? '1 acampante está com dado fora do padrão no cadastro'
         : `${itens.length} acampantes estão com dado fora do padrão no cadastro`}
       explicacao={aviso.perfil === 'desenvolvedores'
-        ? 'Este aviso está no perfil da Raquel para ela verificar. Se ela não conseguir, dá para corrigir por aqui também.'
+        ? 'Este aviso também aparece para os organizadores com a permissão "Gerenciar inscrições". Dá para corrigir por aqui.'
         : 'Cada ficha mostra o que está errado. Peça o dado certo e corrija aqui mesmo — ao salvar, a ficha sai deste quadro.'}
       onOcultar={onOcultar}
       ocultas={aviso.fichasOcultas?.length || 0}

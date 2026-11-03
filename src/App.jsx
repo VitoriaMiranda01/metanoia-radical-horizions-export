@@ -9,6 +9,7 @@ import IgrejaProtectedRoute from '@/components/route-guards/IgrejaProtectedRoute
 import ApoioProtectedRoute from '@/components/route-guards/ApoioProtectedRoute';
 import HomePage from '@/pages/HomePage';
 import Layout from '@/components/Layout';
+import { PERMISSOES_DA_ESCALA } from '@/services/permissoesService';
 
 // Telas dos organizadores em arquivos separados (18/10/2026): o celular de
 // quem so abre a Area do Equipante nao baixa a Geracao de Escalas, os
@@ -115,7 +116,7 @@ function App() {
             <Route 
               path="/gerenciar" 
               element={
-                <OrganizerProtectedRoute>
+                <OrganizerProtectedRoute permissao="gerenciar_inscricoes">
                   <GerenciarInscricoesPage />
                 </OrganizerProtectedRoute>
               } 
@@ -123,7 +124,7 @@ function App() {
             <Route 
               path="/aprovacoes" 
               element={
-                <OrganizerProtectedRoute>
+                <OrganizerProtectedRoute permissao="aprovacao_equipe">
                   <AprovacoesPage />
                 </OrganizerProtectedRoute>
               } 
@@ -149,7 +150,7 @@ function App() {
             <Route 
               path="/organizer/escalas" 
               element={
-                <OrganizerProtectedRoute>
+                <OrganizerProtectedRoute permissao={PERMISSOES_DA_ESCALA}>
                   <OrganizerScalesPage />
                 </OrganizerProtectedRoute>
               } 
@@ -158,7 +159,7 @@ function App() {
             <Route 
               path="/pagamentos-pendentes" 
               element={
-                <OrganizerProtectedRoute>
+                <OrganizerProtectedRoute permissao="pagamentos">
                   <PagamentosPendentesPage />
                 </OrganizerProtectedRoute>
               } 
@@ -167,7 +168,7 @@ function App() {
             <Route 
               path="/senhas-parceiros" 
               element={
-                <OrganizerProtectedRoute>
+                <OrganizerProtectedRoute permissao="maximo">
                   <SenhasParceirosPage />
                 </OrganizerProtectedRoute>
               } 

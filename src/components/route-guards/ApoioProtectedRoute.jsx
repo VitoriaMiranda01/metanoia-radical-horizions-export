@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissoes } from '@/hooks/usePermissoes';
 import { Loader2 } from 'lucide-react';
 
 // Tela de cada area de apoio. Conta antiga sem area = saude.
@@ -13,11 +14,13 @@ export const rotaDoApoio = (apoio) => ROTA_DA_AREA[apoio?.area] || '/saude';
  * login de apoio DA AREA -- quem e de outra area vai para a propria tela -- e
  * o organizador tambem, para conferir o que eles veem. O banco confere de
  * novo (saude_acampantes, portaria_lista...): esconder a rota e so conforto.
+ * Desde 03/11/2026, do lado da organizacao so a conta Desenvolvedores.
  */
 const ApoioProtectedRoute = ({ children, area = 'saude' }) => {
   const { apoioUser, organizadorUser, user, loading } = useAuth();
+  const perm = usePermissoes();
 
-  if (loading) {
+  if (loading || perm.carregando) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white flex-col gap-4">
         <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
@@ -36,6 +39,9 @@ const ApoioProtectedRoute = ({ children, area = 'saude' }) => {
   const apoio = apoioUser || (user?.role === 'apoio' ? user : null);
   if (apoio && (apoio.area || 'saude') !== area) {
     return <Navigate to={rotaDoApoio(apoio)} replace />;
+  }
+  if (!apoio && !perm.maximo) {
+    return <Navigate to="/gerenciar" replace />;
   }
 
   return children;

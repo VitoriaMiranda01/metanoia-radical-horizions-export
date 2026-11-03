@@ -32,6 +32,7 @@ import SoDomingoQuadro from '@/components/scales/SoDomingoQuadro';
 import AreasEspeciaisDialog from '@/components/scales/AreasEspeciaisDialog';
 import FotosTrilhaDialog from '@/components/scales/FotosTrilhaDialog';
 import { useAtualizacaoPeriodica } from '@/hooks/useAtualizacaoPeriodica';
+import { usePermissoes } from '@/hooks/usePermissoes';
 import PreEscalaDialog from '@/components/scales/PreEscalaDialog';
 import TrocarAreaDialog from '@/components/scales/TrocarAreaDialog';
 import ChamadaQuadro from '@/components/scales/ChamadaQuadro';
@@ -168,6 +169,9 @@ const OrganizerScalesPage = () => {
   // "Escala de trabalho" concluida nem consegue pagar -- mesmo ja tendo
   // area. Quem divulga a escala e a reuniao; o site so acompanha.
   const [escala, setEscala] = useState(null);
+  // Caixas do organizador (03/11/2026). escala.pode_gerir = Geracao de escala.
+  const perm = usePermissoes();
+  const podeLancar = perm.pode('lancamento_escala');
 
   // Chamada da reuniao de escala na tabela (16/10/2026): o icone ao lado de
   // cada nome so existe depois da provisoria. A chamada dos lideres chega a
@@ -1677,8 +1681,8 @@ const OrganizerScalesPage = () => {
     }
   };
 
-  // Mover / tirar alguem de uma area e so para Desenvolvedores, Raquel e
-  // Dudu (decisao do Patrick, 06/10/2026). O banco confere de novo.
+  // Mover / tirar alguem de uma area: caixa "Geracao de escala" (03/11/2026;
+  // antes so Desenvolvedores, Raquel e Dudu). O banco confere de novo.
   const podeGerir = !!escala?.pode_gerir;
 
   // Abre a troca de area ja com a pessoa (vindo do quadro de ausentes).
@@ -2088,14 +2092,14 @@ const OrganizerScalesPage = () => {
                   <Church className="mr-2 h-4 w-4" /> Recepção Igreja ({totalRecepcaoIgreja})
                   <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
                 </Button>
-                {escala?.pode_gerir && (
+                {perm.pode('inscricao_manual') && (
                   <Button onClick={() => setManualAberta(true)} variant="outline"
                     data-dica="Cadastrar na hora quem chegou sem inscrição. A pessoa cai na fila A escalar para ser alocada."
                     className="bg-emerald-600/15 text-emerald-300 border-emerald-600/40 hover:bg-emerald-600/30 hover:text-emerald-200">
                     <UserPlus className="mr-2 h-4 w-4" /> Inscrição manual
                   </Button>
                 )}
-                {(!autoAtivo || waitlist.length > 0 || faltaPastorInvisivel > 0) && (
+                {podeGerir && (!autoAtivo || waitlist.length > 0 || faltaPastorInvisivel > 0) && (
                 <Button onClick={() => setConfirmandoAuto(true)}
                   disabled={(waitlist.length === 0 && faltaPastorInvisivel === 0) || alocandoAuto}
                   variant="outline"
@@ -2111,7 +2115,7 @@ const OrganizerScalesPage = () => {
                   Alocar automático{waitlist.length > 0 ? ` (${waitlist.length})` : ''}
                 </Button>
                 )}
-                {autoAtivo && (
+                {podeGerir && autoAtivo && (
                   <Button onClick={() => setConfirmandoDesfazerAuto(true)}
                     disabled={desfazendoAuto}
                     variant="outline"
@@ -2131,7 +2135,7 @@ const OrganizerScalesPage = () => {
             <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3">
               <p className="lg:w-28 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-gray-500" data-dica="Depois de lançar: trocas, reunião de escala e mutirões.">Equipes</p>
               <div className="flex flex-wrap gap-2 flex-1">
-                {escala?.pode_gerir && escala.lancada_em && (
+                {perm.pode('troca_diaria') && escala?.lancada_em && (
                   <Button onClick={() => abrirTroca()} variant="outline"
                     data-dica="Mudar alguém da área X para a área Y. Entra na relação do novo líder na hora."
                     className="bg-cyan-600/15 text-cyan-300 border-cyan-600/40 hover:bg-cyan-600/30 hover:text-cyan-200">
@@ -2141,12 +2145,14 @@ const OrganizerScalesPage = () => {
                 )}
                 {/* Responsaveis pela reuniao: tambem ANTES da provisoria (17/10/2026) --
                     a organizacao ja deixa definido quem os lideres indicaram. */}
+                {perm.pode('responsavel_reuniao') && (
                 <Button onClick={() => setVerResponsaveis(true)} variant="outline"
                   data-dica="Quem conduz a reunião da escala no lugar do líder (ou junto com ele): faz a chamada e o grupo do WhatsApp. Pode ser definido antes de lançar a provisória."
                   className="bg-amber-600/15 text-amber-300 border-amber-600/40 hover:bg-amber-600/30 hover:text-amber-200">
                   <UserCog className="mr-2 h-4 w-4" /> Responsáveis pela reunião
                   <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
                 </Button>
+                )}
                 <Button data-dica="Listas dos mutirões (caminhão, cozinha, limpeza). Não mexe na escala." onClick={() => setVerAreasExtra(true)} variant="outline"
                   className="bg-blue-600/20 text-blue-300 border-blue-600/50 hover:bg-blue-600/40 hover:text-blue-200">
                   <Truck className="mr-2 h-4 w-4" /> Áreas Extras
@@ -2165,9 +2171,9 @@ const OrganizerScalesPage = () => {
               <div className="flex flex-wrap gap-2 flex-1">
                 {!escala?.lancada_em ? (
                   <Button onClick={() => setConfirmandoLancamento(true)}
-                    disabled={!escala || (escala.faltam > 0 && !liberaComFila) || !escala.escalados || !escala.pode_gerir}
-                    data-dica={escala && !escala.pode_gerir
-                      ? 'Só Desenvolvedores, Raquel e Dudu lançam a escala.'
+                    disabled={!escala || (escala.faltam > 0 && !liberaComFila) || !escala.escalados || !podeLancar}
+                    data-dica={escala && !podeLancar
+                      ? 'Sem permissão para lançar a escala (peça aos Desenvolvedores).'
                       : escala?.faltam > 0 && !liberaComFila
                         ? 'Distribua todos os equipantes antes de lançar a escala.'
                         : escala && !escala.escalados
@@ -2180,14 +2186,14 @@ const OrganizerScalesPage = () => {
                 ) : !escala.oficial_em ? (
                   <>
                     <Button data-dica="Esconder a escala provisória do site de novo: os equipantes deixam de ver a área e de poder pagar, e os líderes perdem a relação. Pede confirmação."
-                      onClick={() => setConfirmandoDesfazer(true)} variant="outline" disabled={!escala.pode_gerir}
+                      onClick={() => setConfirmandoDesfazer(true)} variant="outline" disabled={!podeLancar}
                       className="bg-white/5 text-gray-300 border-white/20 hover:bg-white/10 hover:text-white">
                       <Undo2 className="mr-2 h-4 w-4" /> Desfazer Escala Provisória
                     </Button>
                     <Button onClick={() => setConfirmandoOficial(true)}
-                      disabled={!escala.pode_gerir}
-                      data-dica={!escala.pode_gerir
-                        ? 'Só Desenvolvedores, Raquel e Dudu lançam a escala.'
+                      disabled={!podeLancar}
+                      data-dica={!podeLancar
+                        ? 'Sem permissão para lançar a escala (peça aos Desenvolvedores).'
                         : 'Lançar a escala oficial (final), depois de refazer a escala com a chamada. Pede confirmação e avisa quem ainda está pendente (aguardando aprovação, a escalar, ausente ou sem chamada), sem bloquear.'}
                       className="bg-green-600 hover:bg-green-700 text-white disabled:bg-white/5 disabled:text-white/40 disabled:border disabled:border-white/20">
                       <BadgeCheck className="mr-2 h-4 w-4" />
@@ -2196,7 +2202,7 @@ const OrganizerScalesPage = () => {
                   </>
                 ) : (
                   <Button data-dica="Voltar para a escala provisória. Não mexe em pagamento nenhum. Pede confirmação."
-                    onClick={() => setConfirmandoDesfazerOficial(true)} variant="outline" disabled={!escala.pode_gerir}
+                    onClick={() => setConfirmandoDesfazerOficial(true)} variant="outline" disabled={!podeLancar}
                     className="bg-red-600/15 text-red-300 border-red-500/50 hover:bg-red-600/30 hover:text-red-200">
                     <Undo2 className="mr-2 h-4 w-4" /> Desfazer escala oficial
                   </Button>

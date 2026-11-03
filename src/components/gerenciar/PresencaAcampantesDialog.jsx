@@ -28,12 +28,14 @@ import { chave, dataHora, horaCurta, onibusDaRecepcao, quemFez, semAcento } from
 // Dados da presenca para o botao e para a janela: uma leitura so, de 30 em
 // 30 s (pausa com a aba escondida). atualizar: muda quando algo da tela mexe
 // nos onibus (Listas dos onibus).
-export const usePresencaAcampantes = (atualizar = 0) => {
+// ativo: so a conta Desenvolvedores le (03/11/2026); os outros nem pedem.
+export const usePresencaAcampantes = (atualizar = 0, ativo = true) => {
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState('');
   const [atualizando, setAtualizando] = useState(false);
 
   const carregar = async () => {
+    if (!ativo) return;
     setAtualizando(true);
     try {
       const r = await fetchRecepcaoLista();
@@ -46,7 +48,7 @@ export const usePresencaAcampantes = (atualizar = 0) => {
     }
   };
 
-  useEffect(() => { carregar(); }, [atualizar]);
+  useEffect(() => { carregar(); }, [atualizar, ativo]);
   useAtualizacaoPeriodica(carregar, 30000);
 
   const resumo = useMemo(() => {

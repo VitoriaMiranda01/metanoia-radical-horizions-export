@@ -168,7 +168,7 @@ const AvisoContatoEmergencia = ({ aviso, onRecarregar, onOcultar, onOcultarFicha
         ? '1 acampante está com o contato de emergência errado'
         : `${itens.length} acampantes estão com o contato de emergência errado`}
       explicacao={aviso.perfil === 'desenvolvedores'
-        ? 'Este aviso está no perfil da Raquel para ela verificar. Se ela não conseguir, dá para corrigir por aqui também.'
+        ? 'Este aviso também aparece para os organizadores com a permissão "Gerenciar inscrições". Dá para corrigir por aqui.'
         : 'Número no lugar do nome, ou o próprio telefone do acampante como emergência. Peça o nome e o telefone de outra pessoa e corrija aqui mesmo — ao salvar, a ficha sai deste quadro.'}
       onOcultar={onOcultar}
       ocultas={aviso.fichasOcultas?.length || 0}

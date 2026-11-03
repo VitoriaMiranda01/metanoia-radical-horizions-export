@@ -114,7 +114,7 @@ const AvisoCamisas = ({ aviso, onRecarregar, onOcultar, onOcultarFicha, onCorrig
         ? '1 acampante está sem tamanho de camisa'
         : `${itens.length} acampantes estão sem tamanho de camisa`}
       explicacao={aviso.perfil === 'desenvolvedores'
-        ? 'Este aviso está no perfil da Raquel para ela verificar. Se ela não conseguir, dá para corrigir por aqui também.'
+        ? 'Este aviso também aparece para os organizadores com a permissão "Gerenciar inscrições". Dá para corrigir por aqui.'
         : 'Inscrição de antes da camisa virar obrigatória. Pergunte o tamanho e escolha aqui mesmo — ao salvar, a ficha sai deste quadro.'}
       onOcultar={onOcultar}
       ocultas={aviso.fichasOcultas?.length || 0}

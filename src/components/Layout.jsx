@@ -8,6 +8,9 @@ import { motion } from 'framer-motion';
 import { fetchContadoresDoMenu } from '@/services/menuContadoresService';
 import AvisoBackup from '@/components/organizer/AvisoBackup';
 import AvisoChamadaEncerrada from '@/components/organizer/AvisoChamadaEncerrada';
+import { usePermissoes } from '@/hooks/usePermissoes';
+import { temPermissao } from '@/components/route-guards/OrganizerProtectedRoute';
+import { PERMISSOES_DA_ESCALA } from '@/services/permissoesService';
 
 // Selo vermelho de "tem coisa te esperando aqui". Some sozinho quando o
 // numero e zero -- selo permanente vira paisagem e para de ser aviso.
@@ -29,6 +32,8 @@ const SeloContador = ({ quantidade }) => {
 const Layout = ({ children, largo = false }) => {
   const { user, logout } = useAuth();
   const { isOrganizer, isParceiro, isAprovador } = useOrganizerAuth();
+  // Cada organizador ve so o que o login Desenvolvedores liberou (03/11/2026).
+  const perm = usePermissoes();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -82,9 +87,9 @@ const Layout = ({ children, largo = false }) => {
   const navigationItems = [
     { path: '/acampante', label: 'Área do Acampante', icon: Tent, roles: ['acampante'] },
     { path: '/equipante', label: 'Área do Equipante', icon: Wrench, roles: ['equipante'] },
-    { path: '/gerenciar', label: 'Gerenciar Inscrições', icon: Users, roles: ['organizador'],
+    { path: '/gerenciar', label: 'Gerenciar Inscrições', icon: Users, roles: ['organizador'], permissao: 'gerenciar_inscricoes',
       dica: 'Lista de acampantes e equipantes inscritos: ver, editar e exportar.' },
-    { path: '/aprovacoes', label: 'Aprovações Equipe', icon: UserCheck, roles: ['organizador', 'organizador-aprovador'], contador: 'aprovacoes',
+    { path: '/aprovacoes', label: 'Aprovações Equipe', icon: UserCheck, roles: ['organizador', 'organizador-aprovador'], contador: 'aprovacoes', permissao: 'aprovacao_equipe',
       dica: 'Aprovar ou recusar as inscrições de equipantes e conferir as autorizações dos menores.' }
   ];
 
@@ -96,18 +101,23 @@ const Layout = ({ children, largo = false }) => {
   // "contador" e a chave do selo. Escalas nao tem de proposito: a fila "a
   // escalar" e o estado normal do trabalho, nao uma pendencia atrasada.
   const organizerItems = [
-    { path: '/organizer/escalas', label: 'Escalas', icon: Grid,
+    { path: '/organizer/escalas', label: 'Escalas', icon: Grid, permissao: PERMISSOES_DA_ESCALA,
       dica: 'Montar a escala: distribuir os equipantes aprovados pelas áreas e lançar para eles verem.' },
-    { path: '/pagamentos-pendentes', label: 'Pagamentos Pendentes', icon: Banknote, contador: 'pagamentos',
+    { path: '/pagamentos-pendentes', label: 'Pagamentos Pendentes', icon: Banknote, contador: 'pagamentos', permissao: 'pagamentos',
       dica: 'Confirmar pagamentos em dinheiro/isentos, liberar PIX travado e ver a relação de quem pagou.' },
-    { path: '/senhas-parceiros', label: 'Senhas dos Parceiros', icon: KeyRound, contador: 'senhas',
+    { path: '/senhas-parceiros', label: 'Senhas dos Parceiros', icon: KeyRound, contador: 'senhas', permissao: 'maximo',
       dica: 'Senhas das igrejas parceiras: primeiro acesso, pedidos de nova senha e logins bloqueados.' },
     { path: '/organizer/configuracoes', label: 'Configurações', icon: Settings,
-      dica: 'Datas do evento, abrir/fechar inscrições, preços, limites por igreja e senhas dos organizadores.' }
+      dica: perm.maximo
+        ? 'Datas do evento, abrir/fechar inscrições, preços, limites por igreja, organizadores e permissões.'
+        : 'Trocar a sua senha.' }
   ];
 
+  // Enquanto as permissoes nao chegam, os itens com caixa ficam escondidos.
+  const liberado = (item) => !item.permissao || (!perm.carregando && temPermissao(perm, item.permissao));
+
   const availableItems = user ? navigationItems.filter(item => 
-    item.roles.includes(user.role)
+    item.roles.includes(user.role) && (user.role === 'organizador-aprovador' || liberado(item))
   ) : [];
 
   // Quem esta na tela. Para a igreja parceira, quem entra e uma PESSOA -- o
@@ -196,7 +206,7 @@ const Layout = ({ children, largo = false }) => {
 
               {isOrganizer && (
                 <div className="flex items-center space-x-1 ml-2 pl-2 border-l border-white/10">
-                  {organizerItems.map((item) => {
+                  {organizerItems.filter(liberado).map((item) => {
                     const Icon = item.icon;
                     const isActive = location.pathname === item.path;
                      return (

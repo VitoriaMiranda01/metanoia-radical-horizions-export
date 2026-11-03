@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { KeyRound, ShieldCheck, RefreshCw, Copy, Check, MessageSquare, X, AlertTriangle, Eye, EyeOff, DoorOpen, HeartPulse, UserPlus, Trash2, ClipboardCheck } from 'lucide-react';
+import { KeyRound, ShieldCheck, RefreshCw, Copy, Check, MessageSquare, X, AlertTriangle, Eye, EyeOff, DoorOpen, HeartPulse, UserPlus, Trash2, ClipboardCheck, ListChecks } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,10 @@ import {
   liberarLogin
 } from '@/services/senhasParceirosService';
 import BloqueioLogin from '@/components/organizer/BloqueioLogin';
+import PermissoesOrganizadorDialog from '@/components/organizer/PermissoesOrganizadorDialog';
+import { PERMISSOES } from '@/services/permissoesService';
+
+const ROTULO_PERMISSAO = Object.fromEntries(PERMISSOES.map((p) => [p.chave, p.rotulo]));
 
 /**
  * Senhas dos organizadores, dentro de Configuracoes.
@@ -37,7 +41,8 @@ import BloqueioLogin from '@/components/organizer/BloqueioLogin';
  *    atual;
  *  - "Organizadores": so aparece para a conta de permissao maxima
  *    ("Desenvolvedores"), que gera senha nova para os outros e, desde
- *    03/11/2026, cadastra e exclui organizadores;
+ *    03/11/2026, cadastra e exclui organizadores e marca as permissoes de
+ *    cada um (PermissoesOrganizadorDialog);
  *  - "Contas de apoio" (09/10/2026): idem, para o login "Apoio" (a lider da
  *    saude). Senha nova e temporaria: ela cria a propria ao entrar. Desde
  *    24/10/2026 as contas (saude ou portaria) sao criadas e excluidas aqui.
@@ -112,6 +117,8 @@ const SenhasOrganizadoresManager = () => {
   const [criandoApoio, setCriandoApoio] = useState(false);
   const [novoOrgNome, setNovoOrgNome] = useState('');
   const [criandoOrg, setCriandoOrg] = useState(false);
+  // Organizador com a janela de permissoes aberta ({ nome, permissoes }).
+  const [editandoPermissoes, setEditandoPermissoes] = useState(null);
 
   // Interruptor do botao "Primeiro acesso" na tela de login do parceiro.
   const [primeiroAcesso, setPrimeiroAcesso] = useState(false);
@@ -275,6 +282,8 @@ const SenhasOrganizadoresManager = () => {
       }
       setNovoOrgNome('');
       setSenhaGerada({ nome: r.nome, senha: r.senha, mensagem: r.mensagem, tipo: 'organizador', criada: true });
+      // Conta nova nasce sem nenhuma tela: ja abre as caixas.
+      setEditandoPermissoes({ nome: r.nome, permissoes: [] });
       carregarLista();
     } catch (err) {
       console.error('SenhasOrganizadoresManager - criar organizador', err?.message || err);
@@ -517,7 +526,7 @@ const SenhasOrganizadoresManager = () => {
             </Button>
             <p className="text-xs text-gray-500 basis-full">
               Só letras: o primeiro nome, ou nome e sobrenome se já existir alguém com o mesmo nome.
-              Entra como organizador, com as mesmas permissões dos demais (inclusive aprovar inscrições).
+              A conta nasce sem nenhuma tela liberada: em seguida, marque as permissões dela.
             </p>
           </form>
 
@@ -556,6 +565,13 @@ const SenhasOrganizadoresManager = () => {
                       Último acesso: {formatarData(o.ultimo_acesso)}
                       {' · '}Senha alterada: {formatarData(o.senha_atualizada_em)}
                     </p>
+                    <p className={`text-xs mt-1 ${o.eh_o_maximo || (o.permissoes || []).length ? 'text-gray-400' : 'text-amber-300'}`}>
+                      {o.eh_o_maximo
+                        ? 'Acesso: tudo'
+                        : (o.permissoes || []).length
+                          ? `Acesso: ${o.permissoes.map((c) => ROTULO_PERMISSAO[c] || c).join(' · ')}`
+                          : 'Nenhuma tela liberada'}
+                    </p>
                     <BloqueioLogin
                       bloqueio={bloqueios[chaveBloqueio('organizador', o.nome)]}
                       liberando={liberando === `organizador:${o.nome}`}
@@ -579,14 +595,6 @@ const SenhasOrganizadoresManager = () => {
                           {ocupado === `organizador:${o.nome}` ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Excluir'}
                         </Button>
                       </div>
-                      {/* Permissoes especiais sao pelo NOME no banco (_gere_escala,
-                          pode_inscrever_manual, camisas_pendentes). */}
-                      {['raquel', 'eduardo'].includes(o.nome.toLowerCase()) && (
-                        <span className="text-xs text-amber-300 max-w-sm text-right">
-                          Atenção: esta conta gera a escala e faz inscrição manual. Depois de excluída,
-                          só Desenvolvedores (e {o.nome.toLowerCase() === 'raquel' ? 'Eduardo' : 'Raquel'}) continuam podendo.
-                        </span>
-                      )}
                     </div>
                   ) : confirmando === `organizador:${o.nome}` ? (
                     <div className="flex items-center gap-2">
@@ -603,6 +611,12 @@ const SenhasOrganizadoresManager = () => {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
+                      <Button data-dica="Marcar o que este organizador pode acessar." size="sm" variant="outline"
+                        onClick={() => setEditandoPermissoes({ nome: o.nome, permissoes: o.permissoes || [] })}
+                        className="h-8 border-amber-500/40 bg-transparent text-amber-200 hover:text-white hover:bg-amber-500/20">
+                        <ListChecks className="w-4 h-4 mr-1.5" />
+                        Permissões
+                      </Button>
                       <Button data-dica="Gerar uma senha nova para este organizador (a antiga para de funcionar)." size="sm" onClick={() => setConfirmando(`organizador:${o.nome}`)}
                         className="h-8 bg-blue-600 hover:bg-blue-700 text-white">
                         <KeyRound className="w-4 h-4 mr-1.5" />
@@ -619,6 +633,12 @@ const SenhasOrganizadoresManager = () => {
               ))}
             </div>
           )}
+
+          <PermissoesOrganizadorDialog
+            organizador={editandoPermissoes}
+            onClose={() => setEditandoPermissoes(null)}
+            onSalvo={() => carregarLista()}
+          />
 
           <div className="mt-5 flex items-start gap-2 text-xs text-gray-500">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400/70" />

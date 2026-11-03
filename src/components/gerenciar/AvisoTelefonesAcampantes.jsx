@@ -161,7 +161,7 @@ const AvisoTelefonesAcampantes = ({ aviso, onRecarregar, onOcultar, onOcultarFic
         ? '1 acampante está com telefone fora do padrão'
         : `${itens.length} acampantes estão com telefone fora do padrão`}
       explicacao={aviso.perfil === 'desenvolvedores'
-        ? 'Este aviso está no perfil da Raquel para ela verificar. Se ela não conseguir, dá para corrigir por aqui também.'
+        ? 'Este aviso também aparece para os organizadores com a permissão "Gerenciar inscrições". Dá para corrigir por aqui.'
         : 'Entre em contato com cada um e corrija aqui mesmo. Assim que salvar, a ficha sai deste quadro.'}
       onOcultar={onOcultar}
       ocultas={aviso.fichasOcultas?.length || 0}

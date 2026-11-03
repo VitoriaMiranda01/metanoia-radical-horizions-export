@@ -40,7 +40,7 @@ const CentralNotificacoes = ({ avisos, total, onMostrar, onMostrarFicha, somente
           type="button"
           aria-label={total > 0 ? `${total} notificações de inscrições` : 'Notificações de inscrições'}
           data-dica={somenteLeitura
-            ? 'Avisos de inscrições com problema — estão no perfil da Raquel.'
+            ? 'Avisos de inscrições com problema — para quem tem a permissão "Gerenciar inscrições".'
             : 'Notificações de inscrições com problema — inclusive as que você ocultou no quadro.'}
           className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-gray-200 hover:bg-white/10 hover:text-white"
         >
@@ -57,7 +57,7 @@ const CentralNotificacoes = ({ avisos, total, onMostrar, onMostrarFicha, somente
           <p className="font-semibold">Notificações de inscrições</p>
           <p className="text-xs text-gray-400">
             {somenteLeitura
-              ? 'Estes avisos estão no perfil da Raquel para ela verificar.'
+              ? 'Estes avisos aparecem para quem tem a permissão "Gerenciar inscrições".'
               : 'Fichas com algum problema para corrigir.'}
           </p>
         </div>

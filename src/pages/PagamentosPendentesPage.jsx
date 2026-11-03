@@ -5,7 +5,7 @@ import { Search, CheckCircle, AlertCircle, AlertTriangle, RefreshCw, Banknote, G
 import Layout from '@/components/Layout';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { AREA_SO_DOMINGO } from '@/components/common/TagSoDomingo';
-import { exportRelacaoPagamentos } from '@/utils/excelExport';
+import ExportarPagamentosDialog from '@/components/pagamentos/ExportarPagamentosDialog';
 import {
   fetchRelacaoDePagamentos,
   fetchPixTravados,
@@ -509,22 +509,12 @@ const PagamentosPendentesPage = () => {
     }
   };
 
-  const exportarRelacao = () => {
-    try {
-      const r = exportRelacaoPagamentos(comCobranca);
-      toast({
-        title: 'Planilha gerada',
-        description: `${r.pagaram} de ${r.total} já pagaram. A aba "Ainda não pagaram" traz o resto.`,
-        className: 'bg-emerald-600 text-white'
-      });
-    } catch (err) {
-      toast({
-        title: 'Não deu para exportar',
-        description: err.message,
-        variant: 'destructive'
-      });
-    }
-  };
+  const [exportando, setExportando] = useState(false);
+  const aoExportar = (n, formato) => toast({
+    title: `${formato === 'PDF' ? 'PDF' : 'Planilha'} gerado`,
+    description: `${n} ${n === 1 ? 'pessoa' : 'pessoas'} no arquivo.`,
+    className: 'bg-emerald-600 text-white'
+  });
 
   // A aba "Precisam de atencao" vem do PIX: junta a ficha da pessoa para as
   // colunas do botao "Colunas" (igreja, idade...). O que e do PIX (id,
@@ -917,8 +907,8 @@ const PagamentosPendentesPage = () => {
                       PAGOU / NÃO PAGOU numa coluna so. */}
                   <Button
                     variant="outline"
-                    onClick={exportarRelacao}
-                    data-dica="Baixa a planilha com todo mundo e se já pagou (para conferir no portão)."
+                    onClick={() => setExportando(true)}
+                    data-dica="Exportar em PDF ou Excel, escolhendo quem e quais informações."
                     disabled={loading || relacao.length === 0}
                     className="h-11 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/5 shrink-0"
                   >
@@ -1189,6 +1179,22 @@ const PagamentosPendentesPage = () => {
           onSalvar={salvarCobranca}
           onRemover={tirarDaCobranca}
           onFechar={() => setDialogo(null)}
+        />
+
+        <ExportarPagamentosDialog
+          aberto={exportando}
+          onFechar={() => setExportando(false)}
+          valorDe={valorDaColuna}
+          onExportado={aoExportar}
+          fontes={[
+            { chave: 'tela', rotulo: 'A lista da tela', itens: linhas },
+            { chave: 'todos', rotulo: 'Todos', itens: comCobranca },
+            { chave: 'nao', rotulo: 'Não pagaram', itens: naoPagaram },
+            { chave: 'cobranca', rotulo: 'Cobrança em andamento', itens: emCobranca },
+            { chave: 'agendado', rotulo: 'Pagamento agendado', itens: agendados },
+            { chave: 'pagos', rotulo: 'Pagos', itens: pagos },
+            { chave: 'isentos', rotulo: 'Isentos', itens: isentos },
+          ]}
         />
       </div>
     </Layout>

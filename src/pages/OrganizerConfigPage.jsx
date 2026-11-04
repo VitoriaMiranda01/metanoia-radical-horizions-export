@@ -1166,7 +1166,7 @@ const OrganizerConfigPage = () => {
                 Todas são opcionais. Deixe em branco o que ainda não foi definido e preencha
                 depois aqui em Configurações.
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   ['novoEventoInicio', 'Início do evento', novoEventoInicio, setNovoEventoInicio],
                   ['novoEventoFim', 'Fim do evento', novoEventoFim, setNovoEventoFim],
@@ -1174,11 +1174,11 @@ const OrganizerConfigPage = () => {
                   ['novaReuniaoInscricao', 'Reunião de Inscrição', novaReuniaoInscricao, setNovaReuniaoInscricao],
                   ['novaReuniaoLeitura', 'Reunião de Leitura de Escala', novaReuniaoLeitura, setNovaReuniaoLeitura]
                 ].map(([id, rotulo, valor, definir]) => (
-                  <div key={id} className="space-y-1.5">
+                  <div key={id} className="space-y-1.5 min-w-0">
                     <Label htmlFor={id} className="text-white">{rotulo}</Label>
                     <Input id={id} type="date" value={valor}
                       onChange={(e) => definir(e.target.value)}
-                      className="bg-white/10 border-white/20 text-white [color-scheme:dark]" />
+                      className="bg-white/10 border-white/20 text-white [color-scheme:dark] w-full min-w-0 max-w-full appearance-none" />
                   </div>
                 ))}
               </div>

@@ -361,6 +361,9 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     if (error?.message?.includes('CONTATO_MESMO_TELEFONE')) {
       return { success: false, error: 'O telefone de emergência precisa ser de outra pessoa — diferente do seu WhatsApp.' };
     }
+    if (error?.message?.includes('JA_FOI_ACAMPANTE')) {
+      return { success: false, error: 'Você já participou como acampante em uma edição anterior. Cada pessoa é acampante uma vez só — que tal se inscrever como equipante?' };
+    }
     if (error?.message?.includes('CAMISA_OBRIGATORIA')) {
       return { success: false, error: 'Escolha o tamanho da camisa para concluir a inscrição.' };
     }

@@ -128,6 +128,14 @@ export const buscarFichaAnteriorPublica = async (cpf, nome) =>
 export const acampanteTemFichaAnterior = async (cpf) =>
   chamar('acampante_tem_ficha_anterior', { p_cpf: cpf });
 
+/**
+ * Acampante so uma vez (04/11/2026, 20261104b): quem ficou presente na
+ * recepcao de uma edicao (da 37a em diante) nao se inscreve de novo como
+ * acampante. Devolve so { bloqueado }.
+ */
+export const acampanteJaParticipou = async (cpf) =>
+  chamar('acampante_ja_participou', { p_cpf: cpf });
+
 export const fichaAcampanteParaReinscricao = async (cpf, nome) =>
   chamar('ficha_acampante_para_reinscricao', { p_cpf: cpf, p_nome: nome });
 

@@ -42,7 +42,7 @@ import { fetchLimitesIgrejas, fetchOcupacaoIgrejasAcampantes } from '@/services/
 import { fetchLimiteAcampantesPorIgrejaPadrao } from '@/services/organizerConfigService';
 import { IGREJA_RADICAL_36, IGREJA_DIVERSOS } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
-import { liberacaoDeTesteValida, acampanteTemFichaAnterior, fichaAcampanteParaReinscricao } from '@/services/publicDataService';
+import { liberacaoDeTesteValida, acampanteTemFichaAnterior, fichaAcampanteParaReinscricao, acampanteJaParticipou } from '@/services/publicDataService';
 
 const AcampantePage = () => {
   const { user } = useAuth();
@@ -138,6 +138,17 @@ const AcampantePage = () => {
     carregarLimitesIgrejas();
   }, [igrejasDoBanco]);
 
+  // Falha na consulta nao trava ninguem aqui: quem barra de verdade e
+  // criar_inscricao (JA_FOI_ACAMPANTE).
+  const jaFoiAcampante = async (cpf) => {
+    try {
+      return !!(await acampanteJaParticipou(cpf))?.bloqueado;
+    } catch (err) {
+      console.error('acampanteJaParticipou', err?.message || err);
+      return false;
+    }
+  };
+
   const handleVerificationComplete = async (result) => {
     if (result.cpf) setFormData(prev => ({ ...prev, cpf: result.cpf }));
     if (result.nome) setFormData(prev => ({ ...prev, nome: result.nome }));
@@ -167,6 +178,10 @@ const AcampantePage = () => {
           cpf: result.dados.cpf
         }
       });
+    } else if (result.cpf && !result.semCpf && await jaFoiAcampante(result.cpf)) {
+      // Acampante so uma vez (04/11/2026): presente na recepcao de outra
+      // edicao nao se inscreve de novo. O servidor tambem recusa.
+      setCurrentStep('ja-participou');
     } else if (podeCadastrar && result.cpf && !result.semCpf) {
       // Desistiu antes (nesta ou noutra edicao, ate 180 dias da inscricao)?
       // O CPF so diz se existe; os dados pedem o nome completo.
@@ -444,6 +459,28 @@ const AcampantePage = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Acampante so uma vez (04/11/2026). */}
+        {currentStep === 'ja-participou' && (
+          <div className="max-w-xl mx-auto bg-blue-900/20 border border-blue-500/30 rounded-lg p-10 text-center">
+            <CheckCircle className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold text-white mb-2">Você já foi acampante</h3>
+            <p className="text-gray-300">
+              Encontramos a sua participação como acampante em uma edição anterior do Metanoia
+              Radical Serra. Cada pessoa participa como acampante uma vez só.
+            </p>
+            <p className="text-gray-300 mt-3">
+              Que tal servir na próxima edição? Você pode se inscrever como <strong>equipante</strong>.
+            </p>
+            <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
+              <Button onClick={() => navigate('/equipante')}>Quero ser equipante</Button>
+              <Button variant="outline" onClick={() => navigate('/')}>Voltar</Button>
+            </div>
+            <p className="text-xs text-gray-500 mt-6">
+              Se você acha que isso é um engano, procure a organização.
+            </p>
+          </div>
         )}
 
         {currentStep === 'fechadas' && (

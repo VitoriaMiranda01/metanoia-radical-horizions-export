@@ -1136,10 +1136,10 @@ const OrganizerConfigPage = () => {
       </AlertDialog>
 
       <AlertDialog open={showResetConfirmDialog} onOpenChange={setShowResetConfirmDialog}>
-        <AlertDialogContent className="bg-gray-900 border border-red-900 text-white">
+        <AlertDialogContent className="bg-gray-900 border border-red-900 text-white w-[calc(100%-1.5rem)] max-w-lg max-h-[90dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-500 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" /> Confirmar Reset de Inscrições
+              <AlertCircle className="w-5 h-5 shrink-0" /> Confirmar Reset de Inscrições
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400 text-base">
               Isso encerra a edição atual e começa a próxima.

@@ -4,12 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
 import { limparNomePessoa } from '@/utils/nomePessoa';
+import NotaPendencia from './NotaPendencia';
 
 const DadosComplementaresEquipante = ({
   formData,
   handleChange,
   handleSelectChange,
-  handleCheckboxChange
+  handleCheckboxChange,
+  // Pendencias da ficha anterior (reinscricao pelo CPF, 04/11/2026).
+  pendencias = null
 }) => {
   const PARENTESCO_OPTIONS = ['NÃO TENHO', 'CÔNJUGE', 'PAI', 'MÃE', 'FILHO', 'TIO / TIA', 'CUNHADO / CUNHADA', 'IRMÃO / IRMÃ', 'OUTRO FAMILIAR (DESCREVA)'];
   const RADICAL_ACAMPANTE_OPTIONS = ['Metanoia Radical MG', 'Metanoia Radical RJ (PIBSA)', 'Metanoia Radical Serra (Igreja Teresópolis)', 'Outros casos (favor descrever)'];
@@ -49,6 +52,7 @@ const DadosComplementaresEquipante = ({
               {PARENTESCO_OPTIONS.map(option => <SelectItem key={`acamp-${option}`} value={option}>{option}</SelectItem>)}
             </SelectContent>
           </Select>
+          <NotaPendencia pendencias={pendencias} campo="parentesco" />
         </div>
 
         {formData.parentesco && formData.parentesco !== 'NÃO TENHO' && (
@@ -70,6 +74,7 @@ const DadosComplementaresEquipante = ({
                 </label>
               ))}
             </div>
+            <NotaPendencia pendencias={pendencias} campo="qualRadicalAcampante" />
           </div>
 
           {formData.qualRadicalAcampante === 'Outros casos (favor descrever)' && (
@@ -103,6 +108,7 @@ const DadosComplementaresEquipante = ({
             <div className="space-y-2">
               <Label htmlFor="edicaoTrabalhou" className="text-white">Qual o número da última edição que trabalhou?</Label>
               <Input id="edicaoTrabalhou" name="edicaoTrabalhou" value={formData.edicaoTrabalhou} onChange={handleChange} type="number" required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" />
+              <NotaPendencia pendencias={pendencias} campo="edicaoTrabalhou" />
             </div>
           )}
         </div>

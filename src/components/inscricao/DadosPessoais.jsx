@@ -14,6 +14,7 @@ import { NACIONALIDADES, bandeiraDoPais } from '@/constants/nacionalidades';
 import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
 import { validateCPF } from '@/utils/validation';
 import { limparSemNumero, problemaEmail } from '@/utils/validacoesInscricao';
+import NotaPendencia from './NotaPendencia';
 
 const DadosPessoais = ({
   formData,
@@ -22,7 +23,9 @@ const DadosPessoais = ({
   handleSelectChange,
   handleCheckboxChange,
   isEquipante = false,
-  setFormData // Required for the hook
+  setFormData, // Required for the hook
+  // Pendencias da ficha anterior (reinscricao pelo CPF, 04/11/2026).
+  pendencias = null
 }) => {
 
   // O aviso do nome so aparece depois que a pessoa sai do campo.
@@ -148,7 +151,9 @@ const DadosPessoais = ({
           {/* Aviso do nome; sem aviso, o espaçador mantém o alinhamento vertical com o texto de ajuda do CPF */}
           {nomeSaiu && problemaNomePessoa(formData.nome)
             ? <p className="text-xs text-red-300 mt-auto">{problemaNomePessoa(formData.nome)}</p>
-            : <div className="h-4 pointer-events-none mt-auto" aria-hidden="true" />}
+            : pendencias?.some((p) => p.campo === 'nome')
+              ? <div className="mt-auto"><NotaPendencia pendencias={pendencias} campo="nome" /></div>
+              : <div className="h-4 pointer-events-none mt-auto" aria-hidden="true" />}
         </div>
 
         <div className="space-y-2">
@@ -169,11 +174,13 @@ const DadosPessoais = ({
               <SelectItem value="Feminino">Feminino</SelectItem>
             </SelectContent>
           </Select>
+          <NotaPendencia pendencias={pendencias} campo="sexo" />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="whatsapp" className="text-white">WhatsApp</Label>
           <TelefoneInput id="whatsapp" name="whatsapp" value={formData.whatsapp} onChange={handleChange} required estrangeiro={!!formData.semCpf} />
+          <NotaPendencia pendencias={pendencias} campo="whatsapp" />
         </div>
 
         {/* So para quem se inscreve sem CPF. A lista nao tem Brasil de
@@ -221,6 +228,7 @@ const DadosPessoais = ({
               ? 'Informe a data para calcularmos sua idade.'
               : `Idade: ${idadeCalculada} ${idadeCalculada === 1 ? 'ano' : 'anos'}`}
           </p>
+          <NotaPendencia pendencias={pendencias} campo="dataNascimento" />
         </div>
 
         {!isEquipante && (

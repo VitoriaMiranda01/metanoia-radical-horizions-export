@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,12 +27,14 @@ import InfoSaude from '@/components/inscricao/InfoSaude';
 import DadosComplementaresEquipante from '@/components/inscricao/DadosComplementaresEquipante';
 import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
 import AvisoPrivacidadeEquipante from '@/components/inscricao/AvisoPrivacidadeEquipante';
+import QuadroPendencias from '@/components/inscricao/QuadroPendencias';
 import { escolheuSaude, problemaEspecialidade } from '@/constants/especialidadesSaude';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao, buscarFichaAnterior, verificarCPF } from '@/services/inscricoesService';
 import { problemaTelefone } from '@/utils/telefone';
 import { problemaNomePessoa } from '@/utils/nomePessoa';
 import { conferirInscricao } from '@/utils/validacoesInscricao';
+import { pendenciasDoFormulario } from '@/utils/pendenciasDoFormulario';
 import { validateCPF } from '@/utils/validation';
 import { calcularIdade } from '@/utils/formatters';
 import { getEquipanteWorkflow, getConfirmacaoPortaria } from '@/services/equipantesService';
@@ -204,9 +206,9 @@ const EquipantePage = () => {
   const [currentStep, setCurrentStep] = useState('verificacao');
   const [inscricaoData, setInscricaoData] = useState(null);
 
-  // Reinscricao: quem ja tem ficha de uma edicao anterior digita o nome
-  // completo e o formulario vem preenchido, em vez de tudo de novo.
-  const [nomeConfirmacao, setNomeConfirmacao] = useState('');
+  // Reinscricao pelo CPF (04/11/2026): o formulario veio com a ficha de uma
+  // edicao anterior. Liga as notas de pendencia nos campos.
+  const [fichaAnterior, setFichaAnterior] = useState(false);
 
   // "Não tenho CPF": depois do nome vem uma tela pedindo a data de
   // nascimento. Sem ela bastaria saber o nome de alguém para abrir a
@@ -218,8 +220,6 @@ const EquipantePage = () => {
   const [nascimentoDigitado, setNascimentoDigitado] = useState('');
   const [conferindoNascimento, setConferindoNascimento] = useState(false);
   const [erroNascimento, setErroNascimento] = useState('');
-  const [buscandoFicha, setBuscandoFicha] = useState(false);
-  const [erroFicha, setErroFicha] = useState('');
 
   const [formData, setFormData] = useState({
     cpf: '', semCpf: false, nacionalidade: '', nome: '', dataNascimento: '', sexo: '',
@@ -321,11 +321,12 @@ const EquipantePage = () => {
     setNascimentoDigitado('');
     setVerificacao(null);
     setFormData(prev => ({ ...prev, cpf: '', nome: '', semCpf: false, soDomingo: false }));
+    setFichaAnterior(false);
     setDestinosDias(null);
     setCurrentStep('verificacao');
   };
 
-  const handleVerificationComplete = (result) => {
+  const handleVerificationComplete = async (result) => {
     if (result.semCpf) setFormData(prev => ({ ...prev, semCpf: true }));
     // Preenche o Nome/CPF já com o que foi digitado na tela de verificação
     // anterior, pra não pedir a mesma informação de novo — mesmo padrão já
@@ -386,12 +387,17 @@ const EquipantePage = () => {
           ...mapDbToFormData(loadedData)
         }));
 
-        // Existe ficha de uma edicao anterior. Em vez de mandar a pessoa
-        // preencher tudo de novo, oferecemos trazer os dados dela -- mas o
-        // servidor so entrega mediante CPF **e** nome completo, entao o nome
-        // e pedido no passo 'reinscricao'. Quem preferir segue com o
-        // formulario limpo por la mesmo.
-        seguirParaCadastro(podeCadastrar ? 'reinscricao' : 'fechadas', 'reinscricao');
+        // Ficha de uma edicao anterior (04/11/2026, Patrick): com o CPF a
+        // ficha ja vem inteira, sem pedir o nome completo. O formulario abre
+        // preenchido; as pendencias da ficha aparecem nos proprios campos.
+        if (result.cpf) {
+          const r = await buscarFichaAnterior(result.cpf, null);
+          if (r.ok) {
+            setFormData(prev => ({ ...prev, ...mapDbToFormData(r.ficha) }));
+            setFichaAnterior(true);
+          }
+        }
+        seguirParaCadastro(podeCadastrar ? 'formulario' : 'fechadas');
       } else {
         if (hasPaid) {
           setCurrentStep('sucesso');
@@ -413,7 +419,7 @@ const EquipantePage = () => {
   const entrarComCpfCorreto = async (cpf) => {
     try {
       const r = await verificarCPF(cpf, 'equipante');
-      handleVerificationComplete({ cpf, ...r });
+      await handleVerificationComplete({ cpf, ...r });
     } catch (err) {
       toast({ title: 'Não deu certo', description: err.message, variant: 'destructive' });
     }
@@ -438,40 +444,6 @@ const EquipantePage = () => {
       cpf,
       nascimento: salvo.nascimento || nascimentoConfirmado || null,
     });
-  };
-
-  // Traz a ficha da edicao passada. Se o nome nao bater, o servidor recusa
-  // com a mesma mensagem que daria para um CPF inexistente -- de proposito,
-  // para nao confirmar CPFs a quem esta chutando.
-  const trazerDadosAnteriores = async () => {
-    setErroFicha('');
-
-    const nome = nomeConfirmacao.trim();
-    if (nome.length < 5 || !nome.includes(' ')) {
-      setErroFicha('Escreva seu nome completo (nome e sobrenome).');
-      return;
-    }
-
-    setBuscandoFicha(true);
-    try {
-      const r = await buscarFichaAnterior(formData.cpf, nome);
-
-      if (!r.ok) {
-        setErroFicha(r.erro);
-        return;
-      }
-
-      setFormData(prev => ({ ...prev, ...mapDbToFormData(r.ficha) }));
-      toast({
-        title: 'Dados recuperados',
-        description: formData.soDomingo
-          ? 'Confira o que mudou e envie a inscrição para domingo.'
-          : 'Confira o que mudou e escolha suas áreas de trabalho desta edição.'
-      });
-      setCurrentStep('formulario');
-    } finally {
-      setBuscandoFicha(false);
-    }
   };
 
   // Confere a data contra o SERVIDOR antes de deixar entrar. Quem decide é
@@ -524,6 +496,19 @@ const EquipantePage = () => {
     }
   };
 
+  // Pendencias da ficha anterior, recalculadas a cada mudanca (a nota some
+  // quando a pessoa corrige). So para quem entrou com ficha anterior.
+  const pendencias = useMemo(
+    () => (fichaAnterior ? pendenciasDoFormulario(formData) : null),
+    [fichaAnterior, formData]
+  );
+  const irParaCampo = (id) => {
+    const el = document.getElementById(id) || document.getElementsByName(id)[0];
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    try { el.focus({ preventScroll: true }); } catch { /* sem foco, so rola */ }
+  };
+
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setFormData(prev => ({ ...prev, [e.target.name]: value }));
@@ -559,6 +544,18 @@ const EquipantePage = () => {
     if (!permiteOutra && formData.estaAfastado === 'SIM' && igrejaEhOutra(formData.igreja)) {
       toast({ title: 'Escolha a sua igreja', description: 'A opção "OUTRA" não existe mais nesta edição. Procure a sua igreja na lista.', variant: 'destructive' });
       document.getElementById('igreja')?.focus();
+      return;
+    }
+    // Reinscricao pelo CPF (04/11/2026): pendencia da ficha anterior que trava
+    // so passa corrigida. A nota vermelha ja esta no campo.
+    const travando = (pendencias || []).filter((p) => p.bloqueia);
+    if (travando.length) {
+      toast({
+        title: travando.length === 1 ? 'Falta corrigir 1 pendência' : `Faltam corrigir ${travando.length} pendências`,
+        description: 'Os campos marcados em vermelho precisam ser corrigidos para a sua ficha ficar pronta.',
+        variant: 'destructive'
+      });
+      irParaCampo(travando[0].campo);
       return;
     }
     const problemaCampo = conferirInscricao(formData, 'equipante');
@@ -841,50 +838,6 @@ const EquipantePage = () => {
           />
         )}
 
-        {currentStep === 'reinscricao' && (
-          <Card className="glass-effect border-white/10 bg-black/40 max-w-xl mx-auto">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <RefreshCw className="w-5 h-5 text-blue-400" />
-                Você já participou antes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-gray-300 text-sm">
-                Encontramos uma inscrição sua de uma edição anterior. Digite seu nome completo
-                e trazemos seus dados preenchidos — aí você só confere o que mudou e escolhe
-                as áreas de trabalho desta edição.
-              </p>
-
-              <div className="space-y-2">
-                <Label htmlFor="nomeConfirmacao" className="text-white">Nome completo</Label>
-                <Input
-                  id="nomeConfirmacao"
-                  value={nomeConfirmacao}
-                  onChange={(e) => { setNomeConfirmacao(e.target.value); setErroFicha(''); }}
-                  onKeyDown={(e) => { if (e.key === 'Enter') trazerDadosAnteriores(); }}
-                  placeholder="Como está na sua inscrição anterior"
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                />
-                {erroFicha && <p className="text-red-300 text-sm">{erroFicha}</p>}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button onClick={trazerDadosAnteriores} disabled={buscandoFicha} className="flex-1">
-                  {buscandoFicha ? 'Buscando...' : 'Trazer meus dados'}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentStep('formulario')}
-                  className="flex-1 border-white/20 text-gray-300 hover:text-white"
-                >
-                  Preencher do zero
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {currentStep === 'escolher-dias' && destinosDias && (
           <EscolherDiasEquipante onEscolher={escolherDias} onVoltar={sairDaInscricao} />
         )}
@@ -932,7 +885,9 @@ const EquipantePage = () => {
           <Card className="glass-effect border-white/10 bg-black/40">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2 flex-wrap">
-                {formData.soDomingo ? 'Novo Cadastro — somente domingo' : 'Novo Cadastro'}
+                {fichaAnterior
+                  ? (formData.soDomingo ? 'Confira sua inscrição — somente domingo' : 'Confira sua inscrição')
+                  : (formData.soDomingo ? 'Novo Cadastro — somente domingo' : 'Novo Cadastro')}
                 {formData.soDomingo && <TagSoDomingo />}
               </CardTitle>
               {destinosDias && (
@@ -945,10 +900,13 @@ const EquipantePage = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <DadosPessoais formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} isEquipante={true} setFormData={setFormData} />
+                {fichaAnterior && (
+                  <QuadroPendencias pendencias={pendencias} soDomingo={formData.soDomingo} onIr={irParaCampo} />
+                )}
+                <DadosPessoais formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} isEquipante={true} setFormData={setFormData} pendencias={pendencias} />
                 <InfoSaude formData={formData} handleChange={handleChange} isEquipante={true} />
-                <InfoEclesiasticas formData={formData} handleChange={handleChange} isEquipante={true} />
-                <DadosComplementaresEquipante formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} />
+                <InfoEclesiasticas formData={formData} handleChange={handleChange} isEquipante={true} pendencias={pendencias} />
+                <DadosComplementaresEquipante formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} pendencias={pendencias} />
                 {/* Quem vai so no domingo nao escolhe area nem area extra (20261025c). */}
                 {!formData.soDomingo && (
                   <AreasDeTrabalho formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />

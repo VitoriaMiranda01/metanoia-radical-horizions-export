@@ -203,9 +203,8 @@ const montarResultadoVerificacao = (resultado, cpfDigitado) => {
  * Devolve { ok: true, ficha } com os campos crus da tabela (a tela passa
  * isso pelo mesmo mapDbToFormData que ja existe), ou { ok: false, erro }.
  *
- * O nome completo e obrigatorio junto com o CPF -- ver o comentario em
- * publicDataService.buscarFichaAnteriorPublica sobre por que o CPF sozinho
- * nao basta.
+ * Desde 04/11/2026 o CPF sozinho basta (nome = null); ver
+ * publicDataService.buscarFichaAnteriorPublica.
  */
 export const buscarFichaAnterior = async (cpf, nome) => {
   try {

@@ -9,6 +9,7 @@ import CampoPastor from './CampoPastor';
 import { OUTRA_IGREJA, igrejaEhOutra, igrejaSeparaGrupoEEbd } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { limparNomeSimples } from '@/utils/validacoesInscricao';
+import NotaPendencia from './NotaPendencia';
 
 // SIM / NAO em botoes de radio, sem nada marcado ate a pessoa escolher.
 const PerguntaSimNao = ({ id, label, valor, onChange }) => (
@@ -36,7 +37,9 @@ const PerguntaSimNao = ({ id, label, valor, onChange }) => (
 const InfoEclesiasticas = ({
   formData,
   handleChange,
-  isEquipante = false
+  isEquipante = false,
+  // Pendencias da ficha anterior (reinscricao pelo CPF, 04/11/2026).
+  pendencias = null
 }) => {
   // As igrejas que o organizador acrescentou a partir dos nomes digitados em
   // OUTRA. Vem do banco; se a consulta falhar, a lista segue com as 145 do
@@ -81,6 +84,7 @@ const InfoEclesiasticas = ({
                 <SelectItem value="NÃO">NÃO - Não estou congregando no momento</SelectItem>
               </SelectContent>
             </Select>
+            <NotaPendencia pendencias={pendencias} campo="igreja" />
           </div>
 
           {/* 2. Campos Condicionais */}
@@ -131,12 +135,15 @@ const InfoEclesiasticas = ({
                     </div>
                   )}
 
-                  <CampoPastor
-                    igreja={formData.igreja}
-                    value={formData.pastor}
-                    onChange={(v) => handleChange({ target: { name: 'pastor', value: v } })}
-                    doQuadro
-                  />
+                  <div className="space-y-2">
+                    <CampoPastor
+                      igreja={formData.igreja}
+                      value={formData.pastor}
+                      onChange={(v) => handleChange({ target: { name: 'pastor', value: v } })}
+                      doQuadro
+                    />
+                    <NotaPendencia pendencias={pendencias} campo="pastor" />
+                  </div>
 
                   {/* Equipante specific Cargo options */}
                   <div className="space-y-2">
@@ -159,6 +166,7 @@ const InfoEclesiasticas = ({
                         <SelectItem value="OUTRO">OUTRO</SelectItem>
                       </SelectContent>
                     </Select>
+                    <NotaPendencia pendencias={pendencias} campo="cargoIgreja" />
                   </div>
 
                   {formData.cargoIgreja === 'OUTRO' && (

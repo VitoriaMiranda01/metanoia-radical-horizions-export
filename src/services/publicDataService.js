@@ -111,10 +111,9 @@ export const meuDescontoAutomatico = async ({ tipo, id, cpf = null, nome = null,
  * A ficha da edicao passada, para o formulario da nova edicao ja vir
  * preenchido em vez de a pessoa digitar tudo de novo.
  *
- * Exige CPF **e** nome completo, os dois. verificar_inscricao aqui em cima
- * responde a um CPF solto de proposito -- se ela devolvesse a ficha inteira,
- * bastaria varrer CPFs para colher nome, WhatsApp, igreja e condicao de
- * saude de todo mundo. O nome completo e a trava.
+ * Desde 04/11/2026 basta o CPF (nome = null): decisao do Patrick, risco
+ * aceito -- quem souber o CPF de alguem ve a ficha anterior dessa pessoa.
+ * Com nome informado, ele ainda precisa bater (20261104a).
  *
  * Nao devolve as 3 areas de trabalho: sao escolhidas de novo a cada edicao.
  */

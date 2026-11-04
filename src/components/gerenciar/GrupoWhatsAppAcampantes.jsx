@@ -64,9 +64,7 @@ const GrupoWhatsAppAcampantes = () => {
         variant="outline"
         onClick={abrir}
         data-dica="O link do grupo de WhatsApp que aparece para o acampante depois que o pagamento é confirmado."
-        className={info.link
-          ? 'border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/10'
-          : 'border-amber-500/50 text-amber-300 hover:bg-amber-500/10'}
+        className="bg-black border-2 border-green-500 text-green-400 font-semibold hover:bg-green-600 hover:text-black"
       >
         <MessageCircle className="w-4 h-4 mr-2" />
         {info.link ? 'Grupo do WhatsApp dos acampantes' : 'Cadastrar grupo do WhatsApp dos acampantes'}

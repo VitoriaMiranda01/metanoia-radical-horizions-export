@@ -525,10 +525,6 @@ const GerenciarInscricoesPage = () => {
                 </div>
               ) : (
                 <>
-                  {/* Link do grupo do WhatsApp dos acampantes (20261104d). */}
-                  <div className="mb-4 flex justify-end">
-                    <GrupoWhatsAppAcampantes />
-                  </div>
                   <div className="mb-8">
                     <AcampantesStatsCards 
                       acampantes={acampantesList}
@@ -537,6 +533,11 @@ const GerenciarInscricoesPage = () => {
                     />
                   </div>
 
+                  {/* Link do grupo do WhatsApp dos acampantes (20261104d),
+                      centralizado acima de "Grupos de Trilha". */}
+                  <div className="mb-4 flex justify-center">
+                    <GrupoWhatsAppAcampantes />
+                  </div>
                   <div className="mb-8">
                     <GruposTrailhaCards 
                       groupsData={allocatedGroups} 

@@ -59,7 +59,11 @@ export const contarAguardandoAprovacao = async () => {
     () => supabase
       .from('equipantes')
       .select('id', { count: 'exact', head: true })
-      .eq('status', 'pendente'),
+      .eq('status', 'pendente')
+      // Depois da virada de edição, quem ainda não se inscreveu nesta
+      // edição (inscrito = false) não espera aprovação (mesma regra da
+      // tela de Aprovação, 20261103c).
+      .eq('inscrito', true),
     { rotulo: 'inscrições aguardando aprovação' }
   );
 

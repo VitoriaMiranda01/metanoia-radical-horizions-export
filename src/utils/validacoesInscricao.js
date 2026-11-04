@@ -1,6 +1,7 @@
 import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
 import { calcularIdade } from '@/utils/formatters';
 import { igrejaSeparaGrupoEEbd } from '@/constants/igrejas';
+import { conferirResponsavelMenor } from '@/utils/responsavelMenor';
 
 /**
  * Validacoes dos campos de texto das inscricoes (Patrick, 06/10/2026): a
@@ -90,5 +91,6 @@ export const conferirInscricao = (f, tipo) => {
       return p('Confira o nome do líder do grupo', m, 'liderGrupoCuidado');
     }
   }
-  return null;
+  // Menor de 18 (20261104d): responsavel (e acompanhante do equipante).
+  return conferirResponsavelMenor(f, tipo);
 };

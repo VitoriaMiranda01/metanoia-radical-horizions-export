@@ -49,6 +49,12 @@ O banco levanta o código (`NOME_INVALIDO`, `CPF_INVALIDO`, `CEP_INVALIDO`...). 
 - `20261026f` **igreja 64** (Metodista Centenário): Grupo de Cuidado (SIM pede `lider_grupo_cuidado`, só letras) e EBD (`frequenta_ebd`) separados e obrigatórios para quem congrega na 64 (`GRUPO_CUIDADO_OBRIGATORIO`, `LIDER_GRUPO_OBRIGATORIO`, `EBD_OBRIGATORIA`); tela pelo código (`igrejaSeparaGrupoEEbd`); na reinscrição as duas voltam em branco de propósito
 - `20261025c` equipante **só no domingo**: as 3 áreas deixam de ser obrigatórias (`_dados_inscricao_validos`, `_pendencias_equipante`, tela e `pendenciasEquipante.js`) só para quem tem `so_domingo`; `criar_inscricao` confere a janela própria e grava as áreas vazias
 
+- `20261104d` **menor de 18** (idade de hoje): acampante informa nome + WhatsApp do **responsável**; equipante informa
+  responsável **e** quem vai **acompanhar** no projeto (pode ser a mesma pessoa). Nome e sobrenome, não pode ser o
+  próprio inscrito; WhatsApp celular, diferente do próprio. `_menor_responsavel_erro` (chamada no fim de
+  `_dados_inscricao_validos`), gatilho de telefones e `_validar_ficha` (formato + menor não pode ter o campo apagado).
+  Códigos `RESPONSAVEL_*` e `ACOMPANHANTE_*`. Tela: `ResponsavelMenor.jsx` + `utils/responsavelMenor.js`.
+
 ## Reinscrição
 
 Quem se inscreveu e não vai nesta edição corrige as pendências **na hora de se inscrever na edição seguinte**:

@@ -204,3 +204,17 @@ export const fetchTelefonesAcampantesPendentes = async () => {
   if (error) throw error;
   return data || null;
 };
+
+// Link do grupo de WhatsApp dos acampantes (04/11/2026, migration 20261104d).
+// Um link geral por edicao; so quem tem "Gerenciar inscricoes" grava.
+export const verGrupoAcampantes = async () => {
+  const { data, error } = await supabase.rpc('grupo_acampantes_ver');
+  if (error) return { ok: false, erro: error.message };
+  return data || { ok: false };
+};
+
+export const definirGrupoAcampantes = async (link) => {
+  const { data, error } = await supabase.rpc('grupo_acampantes_definir', { p_link: link || '' });
+  if (error) return { ok: false, erro: 'Não foi possível salvar agora. Tente de novo.' };
+  return data || { ok: false, erro: 'Não foi possível salvar agora.' };
+};

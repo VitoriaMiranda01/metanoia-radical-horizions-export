@@ -272,3 +272,12 @@ export const listarIgrejasExtras = async () => {
     return [];
   }
 };
+
+/**
+ * Grupo do WhatsApp dos acampantes (04/11/2026, 20261104d): o link so vem
+ * para inscricao de acampante PAGA, provada pelo CPF ou pelo txid de um PIX
+ * pago dela. Devolve { pago, link } (link nulo se a organizacao ainda nao
+ * cadastrou).
+ */
+export const linkGrupoAcampantes = async ({ cpf = null, txid = null } = {}) =>
+  chamar('grupo_acampantes_link', { p_cpf: cpf, p_txid: txid });

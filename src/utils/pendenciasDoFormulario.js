@@ -56,7 +56,7 @@ const informou = (v) => (v ? `Você informou "${v}". ` : '');
 
 const texto = (chave, detalhe, f) => {
   switch (chave) {
-    case 'nome': return `${informou(detalhe)}${problemaNomePessoa(f.nome) || 'Escreva o seu nome completo.'}`;
+    case 'nome': return `${informou(detalhe)}${problemaNomePessoa(f.nome) || 'Escreva o seu nome completo, igual ao seu documento.'}`;
     case 'cpf_invalido': return `${informou(detalhe)}Esse CPF não é válido.`;
     case 'nascimento': return 'Informe a sua data de nascimento.';
     case 'idade': return `A data de nascimento informada dá ${detalhe}. Confira se está certa.`;

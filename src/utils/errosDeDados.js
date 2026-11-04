@@ -11,7 +11,18 @@
  */
 
 const MENSAGENS = {
-  NOME_INVALIDO: 'Confira o nome: use só letras (sem números ou símbolos), com nome e sobrenome.',
+  NOME_INVALIDO: 'Confira o nome: escreva o nome completo igual ao seu documento, só com letras (sem números ou símbolos).',
+  // Menor de 18 (migration 20261104d).
+  RESPONSAVEL_NOME_OBRIGATORIO: 'Você é menor de 18 anos: informe o nome do seu responsável.',
+  RESPONSAVEL_NOME_INVALIDO: 'Confira o nome do responsável: nome e sobrenome, só com letras.',
+  RESPONSAVEL_MESMO_NOME: 'O responsável precisa ser outra pessoa — não pode ser o próprio inscrito.',
+  RESPONSAVEL_WHATSAPP_OBRIGATORIO: 'Você é menor de 18 anos: informe o WhatsApp do seu responsável.',
+  RESPONSAVEL_MESMO_TELEFONE: 'O WhatsApp do responsável precisa ser diferente do seu.',
+  ACOMPANHANTE_NOME_OBRIGATORIO: 'Você é menor de 18 anos: informe o nome de quem vai acompanhar você no projeto.',
+  ACOMPANHANTE_NOME_INVALIDO: 'Confira o nome de quem vai acompanhar você: nome e sobrenome, só com letras.',
+  ACOMPANHANTE_MESMO_NOME: 'Quem vai acompanhar você precisa ser outra pessoa — não pode ser o próprio inscrito.',
+  ACOMPANHANTE_WHATSAPP_OBRIGATORIO: 'Você é menor de 18 anos: informe o WhatsApp de quem vai acompanhar você no projeto.',
+  ACOMPANHANTE_MESMO_TELEFONE: 'O WhatsApp de quem vai acompanhar você precisa ser diferente do seu.',
   CPF_INVALIDO: 'CPF inválido: confira os números do CPF.',
   CPF_OBRIGATORIO: 'Informe o CPF (quem é estrangeiro informa a nacionalidade).',
   SEXO_INVALIDO: 'Escolha o sexo.',

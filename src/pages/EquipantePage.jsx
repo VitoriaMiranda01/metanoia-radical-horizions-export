@@ -28,6 +28,7 @@ import DadosComplementaresEquipante from '@/components/inscricao/DadosComplement
 import AreasDeTrabalho from '@/components/inscricao/AreasDeTrabalho';
 import AvisoPrivacidadeEquipante from '@/components/inscricao/AvisoPrivacidadeEquipante';
 import QuadroPendencias from '@/components/inscricao/QuadroPendencias';
+import ResponsavelMenor from '@/components/inscricao/ResponsavelMenor';
 import { escolheuSaude, problemaEspecialidade } from '@/constants/especialidadesSaude';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao, buscarFichaAnterior, verificarCPF } from '@/services/inscricoesService';
@@ -125,6 +126,10 @@ const mapDbToFormData = (dbData) => {
     // Emergência
     contatoEmergencia: dbData.contato_emergencia_nome || '',
     telefoneEmergencia: dbData.contato_emergencia_telefone || '',
+    // Menor (20261104d): o responsavel volta; o acompanhante e por edicao.
+    responsavelNome: dbData.responsavel_nome || '',
+    responsavelWhatsapp: dbData.responsavel_whatsapp || '',
+    acompanhanteNome: '', acompanhanteWhatsapp: '',
 
     // Áreas de trabalho
     areaTrabalhoOpcao1: dbData.area_trabalho_opcao1 || '',
@@ -240,6 +245,7 @@ const EquipantePage = () => {
     autorizacaoImagemEquipante: false,
     autorizacaoImagem: false,
     contatoEmergencia: '', telefoneEmergencia: '',
+    responsavelNome: '', responsavelWhatsapp: '', acompanhanteNome: '', acompanhanteWhatsapp: '',
     areaTrabalhoOpcao1: '', areaTrabalhoOpcao2: '', areaTrabalhoOpcao3: '',
     areasTrabalhoExtra: [],
     especialidadeSaude: '', especialidadeSaudeOutro: '', especialidadesSaudeAdicionais: [],
@@ -904,6 +910,7 @@ const EquipantePage = () => {
                   <QuadroPendencias pendencias={pendencias} soDomingo={formData.soDomingo} onIr={irParaCampo} />
                 )}
                 <DadosPessoais formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} isEquipante={true} setFormData={setFormData} pendencias={pendencias} />
+                <ResponsavelMenor formData={formData} handleChange={handleChange} tipo="equipante" />
                 <InfoSaude formData={formData} handleChange={handleChange} isEquipante={true} />
                 <InfoEclesiasticas formData={formData} handleChange={handleChange} isEquipante={true} pendencias={pendencias} />
                 <DadosComplementaresEquipante formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} pendencias={pendencias} />

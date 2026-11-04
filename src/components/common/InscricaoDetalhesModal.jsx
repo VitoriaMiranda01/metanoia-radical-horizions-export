@@ -543,6 +543,37 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
             </div>
           </div>
 
+          {/* Menor de 18 (20261104d): responsavel; no equipante, tambem quem acompanha. */}
+          {(inscricao.responsavel_nome || inscricao.acompanhante_nome) && (
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
+                Menor de 18 anos
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Responsável:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.responsavel_nome)}</p>
+                </div>
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">WhatsApp do responsável:</span>
+                  <p className="text-white font-medium">{displayValue(inscricao.responsavel_whatsapp)}</p>
+                </div>
+                {isEquipante && (
+                  <>
+                    <div className="bg-white/5 p-3 rounded-md">
+                      <span className="text-sm text-gray-400 block mb-1">Acompanha no projeto:</span>
+                      <p className="text-white font-medium">{displayValue(inscricao.acompanhante_nome)}</p>
+                    </div>
+                    <div className="bg-white/5 p-3 rounded-md">
+                      <span className="text-sm text-gray-400 block mb-1">WhatsApp de quem acompanha:</span>
+                      <p className="text-white font-medium">{displayValue(inscricao.acompanhante_whatsapp)}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Áreas de Trabalho (só equipante — não existe em acampantes) */}
           {isEquipante && (
             <div className="space-y-3">

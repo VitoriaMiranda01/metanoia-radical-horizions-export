@@ -132,7 +132,7 @@ const DadosPessoais = ({
         {/* Nome Completo - Segundo campo (Alinhado com CPF) */}
         <div className="space-y-2 relative flex flex-col h-full">
           <div className="flex items-center h-5 mb-1">
-            <Label htmlFor="nome" className="text-white">Nome Completo</Label>
+            <Label htmlFor="nome" className="text-white">Nome completo <span className="text-white/60 font-normal">(igual ao seu documento)</span></Label>
           </div>
           <div className="relative">
             <Input 
@@ -145,7 +145,7 @@ const DadosPessoais = ({
               required 
               autoComplete="name"
               className={`bg-white/10 border-white/20 text-white placeholder:text-white/50 ${nomeSaiu && problemaNomePessoa(formData.nome) ? 'border-red-500/70' : ''}`}
-              placeholder="Seu nome completo (só letras)" 
+              placeholder="Igual ao RG ou certidão (só letras)" 
             />
           </div>
           {/* Aviso do nome; sem aviso, o espaçador mantém o alinhamento vertical com o texto de ajuda do CPF */}

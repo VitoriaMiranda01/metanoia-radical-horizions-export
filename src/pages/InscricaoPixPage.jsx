@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
+import BotaoGrupoAcampantes from '@/components/inscricao/BotaoGrupoAcampantes';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -695,6 +696,10 @@ const InscricaoPixPage = () => {
                   <p className="text-gray-400 text-sm">Inscrição de</p>
                   <p className="text-white font-medium">{formData.nome}</p>
                 </div>
+
+                {tipo === 'acampante' && (
+                  <BotaoGrupoAcampantes cpf={formData.cpf} txid={pixData?.txid} />
+                )}
 
                 {mostrarVoltarAcompanhamento && (
                   <Button

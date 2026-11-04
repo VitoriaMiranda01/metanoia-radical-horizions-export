@@ -11,6 +11,7 @@ import InscricaoManualDialog from '@/components/gerenciar/InscricaoManualDialog'
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { formatCPF } from '@/utils/formatters';
+import { formatarTelefone } from '@/utils/telefone';
 import { cn } from '@/lib/utils';
 
 /**
@@ -187,6 +188,14 @@ const ConferenciaMenoresDialog = ({ onClose }) => {
             {item.whatsapp ? ` · ${item.whatsapp}` : ''}
             {item.cpf ? ` · ${formatCPF(item.cpf)}` : ' · sem CPF'}
           </p>
+          {/* Contatos do menor (20261104d). Ficha antiga pode nao ter. */}
+          {(item.responsavel_nome || item.acompanhante_nome) && (
+            <p className="text-xs text-gray-300 mt-0.5">
+              {item.responsavel_nome && <>Responsável: {item.responsavel_nome}{item.responsavel_whatsapp ? ` · ${formatarTelefone(item.responsavel_whatsapp) || item.responsavel_whatsapp}` : ''}</>}
+              {item.responsavel_nome && item.acompanhante_nome && <br />}
+              {item.acompanhante_nome && <>Acompanha no projeto: {item.acompanhante_nome}{item.acompanhante_whatsapp ? ` · ${formatarTelefone(item.acompanhante_whatsapp) || item.acompanhante_whatsapp}` : ''}</>}
+            </p>
+          )}
 
           <div className="flex items-center gap-2 flex-wrap mt-1.5">
             {semAutorizacao && (

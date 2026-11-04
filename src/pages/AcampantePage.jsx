@@ -27,6 +27,8 @@ import Endereco from '@/components/inscricao/Endereco';
 import InfoEclesiasticas from '@/components/inscricao/InfoEclesiasticas';
 import InfoSaude from '@/components/inscricao/InfoSaude';
 import ContatoEmergencia from '@/components/inscricao/ContatoEmergencia';
+import ResponsavelMenor from '@/components/inscricao/ResponsavelMenor';
+import BotaoGrupoAcampantes from '@/components/inscricao/BotaoGrupoAcampantes';
 import { problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE, mesmoNome, AVISO_MESMO_NOME } from '@/utils/contatoEmergencia';
 import { problemaNomePessoa } from '@/utils/nomePessoa';
 import { conferirInscricao } from '@/utils/validacoesInscricao';
@@ -92,6 +94,7 @@ const AcampantePage = () => {
     estaGravida: '',
     igreja: '', ePastor: '', ePastorOutro: '', pastor: '', estaAfastado: '',
     contatoEmergencia: '', telefoneEmergencia: '',
+    responsavelNome: '', responsavelWhatsapp: '',
     nomeQuemIndicou: '', telefoneQuemIndicou: '',
     conhecidoNoProjeto: '', nomeFamiliarConhecido: '',
     termoAceito: false, dataAceite: '',
@@ -503,6 +506,7 @@ const AcampantePage = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <AdminResponsavel formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} igrejasEsgotadas={igrejasEsgotadas} />
                   <DadosPessoais formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} isEquipante={false} setFormData={setFormData} />
+                  <ResponsavelMenor formData={formData} handleChange={handleChange} tipo="acampante" />
                   <Endereco formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} setFormData={setFormData} />
                   <InfoSaude formData={formData} handleChange={handleChange} isEquipante={false} />
                   <InfoEclesiasticas formData={formData} handleChange={handleChange} isEquipante={false} />
@@ -526,6 +530,9 @@ const AcampantePage = () => {
             </div>
             <h2 className="text-3xl font-bold text-white">Tudo Pronto!</h2>
             <p className="text-green-100 text-lg">Sua vaga está garantida.</p>
+            <div className="max-w-sm mx-auto">
+              <BotaoGrupoAcampantes cpf={formData.cpf} />
+            </div>
             <Button variant="outline" className="mt-4" onClick={() => navigate('/')}>Voltar para o Início</Button>
           </motion.div>
         )}

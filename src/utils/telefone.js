@@ -96,4 +96,6 @@ export const ROTULO_CAMPO_TELEFONE = {
   quem_indicou_telefone: 'telefone de quem indicou',
   telefone_residencial: 'telefone residencial',
   telefone: 'telefone',
+  responsavel_whatsapp: 'WhatsApp do responsável',
+  acompanhante_whatsapp: 'WhatsApp de quem vai acompanhar',
 };

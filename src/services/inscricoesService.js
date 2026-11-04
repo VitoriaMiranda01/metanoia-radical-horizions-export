@@ -5,6 +5,7 @@ import { ROTULO_CAMPO_TELEFONE } from '@/utils/telefone';
 import { OUTRA_IGREJA, igrejaSeparaGrupoEEbd } from '@/constants/igrejas';
 import { mapFormDataToDb as mapAcampanteToDb } from '@/utils/acampanteForm';
 import { toBoolean } from '@/utils/formatters';
+import { dadosResponsavelParaDb } from '@/utils/responsavelMenor';
 import {
   verificarInscricaoPublica,
   buscarFichaAnteriorPublica,
@@ -116,6 +117,8 @@ const mapEquipanteToDb = (formData) => ({
   autorizacao_imagem: toBoolean(formData.autorizacaoImagemEquipante) || toBoolean(formData.autorizacaoImagem),
   contato_emergencia_nome: formData.contatoEmergencia,
   contato_emergencia_telefone: formData.telefoneEmergencia,
+  // Menor de 18 (20261104d): responsavel + acompanhante. Adulto vai nulo.
+  ...dadosResponsavelParaDb(formData, 'equipante'),
   area_trabalho_opcao1: formData.areaTrabalhoOpcao1,
   area_trabalho_opcao2: formData.areaTrabalhoOpcao2,
   area_trabalho_opcao3: formData.areaTrabalhoOpcao3,

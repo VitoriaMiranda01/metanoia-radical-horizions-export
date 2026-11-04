@@ -18,6 +18,7 @@ import OnibusDialog from '@/components/gerenciar/OnibusDialog';
 import CrachasDialog from '@/components/gerenciar/CrachasDialog';
 import { imprimirMomentoDeJoelhos, exportarMomentoDeJoelhosPdf, exportarMomentoDeJoelhosDocx } from '@/utils/joelhos';
 import PresencaAcampantesDialog, { usePresencaAcampantes } from '@/components/gerenciar/PresencaAcampantesDialog';
+import GrupoWhatsAppAcampantes from '@/components/gerenciar/GrupoWhatsAppAcampantes';
 import { useVinculosAcampantes } from '@/hooks/useVinculosAcampantes';
 import { textoDosVinculos } from '@/utils/vinculosAcampantes';
 import AcampantesStatsCards from '@/components/gerenciar/AcampantesStatsCards';
@@ -524,6 +525,10 @@ const GerenciarInscricoesPage = () => {
                 </div>
               ) : (
                 <>
+                  {/* Link do grupo do WhatsApp dos acampantes (20261104d). */}
+                  <div className="mb-4 flex justify-end">
+                    <GrupoWhatsAppAcampantes />
+                  </div>
                   <div className="mb-8">
                     <AcampantesStatsCards 
                       acampantes={acampantesList}

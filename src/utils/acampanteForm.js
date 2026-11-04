@@ -1,4 +1,5 @@
 import { toBoolean } from '@/utils/formatters';
+import { dadosResponsavelParaDb } from '@/utils/responsavelMenor';
 
 // Mapeia os dados do formulário para o formato do banco de dados (Snake Case)
 export const mapFormDataToDb = (formData, user) => {
@@ -66,6 +67,9 @@ export const mapFormDataToDb = (formData, user) => {
     // Contato Emergência
     contato_emergencia_nome: formData.contatoEmergencia || null,
     contato_emergencia_telefone: formData.telefoneEmergencia || null,
+
+    // Menor de 18 (20261104d): responsavel. Adulto vai nulo.
+    ...dadosResponsavelParaDb(formData, 'acampante'),
 
     // Pagamento
     metodo_pagamento: formData.metodoPagamento || null,

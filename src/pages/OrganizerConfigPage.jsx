@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimiteAcampantesPorIgreja, updatePreCadastroSemCpf, resetarParaNovaEdicao } from '@/services/organizerConfigService';
+import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimiteAcampantesPorIgreja, updatePreCadastroSemCpf, resetarParaNovaEdicao, fetchDesfazerViradaStatus, desfazerVirada } from '@/services/organizerConfigService';
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
@@ -80,6 +80,11 @@ const OrganizerConfigPage = () => {
   const [novoEventoFim, setNovoEventoFim] = useState('');
   const [novoLimiteInscricao, setNovoLimiteInscricao] = useState('');
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
+  // Desfazer a virada (20261104c): so aparece para Desenvolvedores e so ate a
+  // primeira inscricao da edicao nova.
+  const [desfazerInfo, setDesfazerInfo] = useState({ disponivel: false });
+  const [showDesfazerDialog, setShowDesfazerDialog] = useState(false);
+  const [isDesfazendo, setIsDesfazendo] = useState(false);
   const { toast } = useToast();
   
   const [coupons, setCoupons] = useState([]);
@@ -124,6 +129,7 @@ const OrganizerConfigPage = () => {
     setLoadingConfig(true);
     try {
       const data = await fetchConfiguracoes();
+      fetchDesfazerViradaStatus().then(setDesfazerInfo).catch(() => setDesfazerInfo({ disponivel: false }));
 
       // Sugestao para o reset de edicao: a proxima. Continua editavel.
       if (data.edicao_numero) setNovaEdicao(String(Number(data.edicao_numero) + 1));
@@ -445,6 +451,31 @@ const OrganizerConfigPage = () => {
       });
     } finally {
       setIsResettingInscricoes(false);
+    }
+  };
+
+  const handleDesfazerVirada = async () => {
+    setIsDesfazendo(true);
+    try {
+      const r = await desfazerVirada();
+      toast({
+        title: `Virada desfeita: de volta à ${r.edicao}ª edição`,
+        description: `${r.equipantes} equipante(s), ${r.acampantes} acampante(s), `
+          + `${r.escalas} alocação(ões) de escala e ${r.pagamentos} pagamento(s) restaurados.`,
+        className: "bg-emerald-600 text-white border-none"
+      });
+      setShowDesfazerDialog(false);
+      loadData();
+      refetchStatus?.();
+    } catch (error) {
+      toast({
+        title: "Não foi possível desfazer",
+        description: error.message || "Erro desconhecido.",
+        variant: "destructive"
+      });
+      fetchDesfazerViradaStatus().then(setDesfazerInfo).catch(() => {});
+    } finally {
+      setIsDesfazendo(false);
     }
   };
 
@@ -1022,13 +1053,30 @@ const OrganizerConfigPage = () => {
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                     <h4 className="text-white font-medium mb-1">Resetar Inscrições para Nova Edição</h4>
-                    <p className="text-sm text-gray-400">Marca todos os equipantes atuais como "não inscritos" (forçando todos a passarem pelo fluxo de inscrição novamente) e apaga permanentemente todos os registros de acampantes (os acampantes que desistiram ficam guardados até completar 180 dias da inscrição). Esta ação não pode ser desfeita.</p>
+                    <p className="text-sm text-gray-400">Marca todos os equipantes atuais como "não inscritos" (forçando todos a passarem pelo fluxo de inscrição novamente) e apaga permanentemente todos os registros de acampantes (os acampantes que desistiram ficam guardados até completar 180 dias da inscrição). Só pode ser desfeita enquanto ninguém se inscrever na edição nova.</p>
                   </div>
                   <Button data-dica="Começar uma edição nova: apaga acampantes e escala e libera os equipantes para se inscreverem de novo. Pede confirmação." onClick={() => setShowResetConfirmDialog(true)} variant="destructive" className="bg-red-600 hover:bg-red-700 text-white font-bold whitespace-nowrap">
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Resetar Inscrições
                   </Button>
                 </div>
+                {desfazerInfo?.disponivel && (
+                  <div className="mt-4 bg-amber-500/10 border border-amber-500/30 rounded-lg p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                      <h4 className="text-white font-medium mb-1">Desfazer a virada para a {desfazerInfo.nova_edicao}ª edição</h4>
+                      <p className="text-sm text-gray-400">
+                        Volta tudo como estava na {desfazerInfo.edicao_anterior}ª edição antes da virada
+                        {desfazerInfo.feita_em ? ` (feita em ${new Date(desfazerInfo.feita_em).toLocaleString('pt-BR')})` : ''}:
+                        acampantes, escala, pagamentos, datas e lotes. Fica disponível só até a primeira
+                        inscrição (equipante ou acampante) na edição nova.
+                      </p>
+                    </div>
+                    <Button onClick={() => setShowDesfazerDialog(true)} className="bg-amber-600 hover:bg-amber-700 text-white font-bold whitespace-nowrap">
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Desfazer virada
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </Recolhivel>
@@ -1046,6 +1094,34 @@ const OrganizerConfigPage = () => {
           <AlertDialogFooter>
             <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteCoupon} className="bg-red-600 hover:bg-red-700 text-white border-none">Deletar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDesfazerDialog} onOpenChange={setShowDesfazerDialog}>
+        <AlertDialogContent className="bg-gray-900 border border-amber-800 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-amber-400 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" /> Desfazer a virada?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-300 text-base">
+              O site volta para a {desfazerInfo?.edicao_anterior}ª edição exatamente como estava antes
+              da virada: acampantes, escala, pagamentos e cobranças, portaria, recepção, datas, lotes,
+              cupons e as inscrições de cada equipante.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+            Tudo o que foi mudado em Configurações depois da virada (datas, lotes, cupons, abrir
+            inscrições) também volta ao que era antes dela.
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDesfazerVirada} disabled={isDesfazendo} className="bg-amber-600 hover:bg-amber-700 text-white border-none">
+              {isDesfazendo ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Sim, desfazer
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1106,7 +1182,7 @@ const OrganizerConfigPage = () => {
             </div>
 
             <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 space-y-1 text-red-200">
-              <p className="text-red-300 font-medium">O que some, sem volta</p>
+              <p className="text-red-300 font-medium">O que some (dá para desfazer só até a primeira inscrição da edição nova)</p>
               <p>Todos os acampantes (dados pessoais inclusive) · a escala inteira ·
                  as 3 áreas de trabalho de cada equipante · os pagamentos e cobranças PIX
                  da edição que acabou · as datas da edição que acabou (evento, limite e

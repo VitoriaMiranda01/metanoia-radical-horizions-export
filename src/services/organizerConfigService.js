@@ -366,6 +366,21 @@ export const resetarParaNovaEdicao = async (novaEdicao, datas = {}) => {
   return data;
 };
 
+// Desfazer a virada (20261104c): so a conta Desenvolvedores e so enquanto
+// ninguem se inscreveu na edicao nova (equipante ou acampante).
+export const fetchDesfazerViradaStatus = async () => {
+  const { data, error } = await supabase.rpc('virada_desfazer_status');
+  if (error) return { disponivel: false };
+  return data || { disponivel: false };
+};
+
+export const desfazerVirada = async () => {
+  const { data, error } = await supabase.rpc('desfazer_virada');
+  if (error) throw error;
+  if (!data?.ok) throw new Error(data?.erro || 'Não foi possível desfazer a virada.');
+  return data;
+};
+
 export const fetchPricingConfig = async () => {
   try {
     const config = await fetchConfigPublica();

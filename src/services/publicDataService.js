@@ -281,3 +281,13 @@ export const listarIgrejasExtras = async () => {
  */
 export const linkGrupoAcampantes = async ({ cpf = null, txid = null } = {}) =>
   chamar('grupo_acampantes_link', { p_cpf: cpf, p_txid: txid });
+
+// Clicou em "Entrar no grupo" (04/11/2026, 20261104f): conta como convite
+// enviado na tela de Pagamentos. Falha em silencio: nao atrapalha a entrada.
+export const registrarAberturaGrupoAcampantes = async ({ cpf = null, txid = null } = {}) => {
+  try {
+    await supabase.rpc('grupo_acampantes_abriu', { p_cpf: cpf, p_txid: txid });
+  } catch (err) {
+    console.error('grupo_acampantes_abriu', err?.message || err);
+  }
+};

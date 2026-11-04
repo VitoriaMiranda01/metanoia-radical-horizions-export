@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MessageCircle } from 'lucide-react';
-import { linkGrupoAcampantes } from '@/services/publicDataService';
+import { linkGrupoAcampantes, registrarAberturaGrupoAcampantes } from '@/services/publicDataService';
 
 /**
  * Botao "Entrar no grupo do WhatsApp" para o acampante PAGO (Patrick,
@@ -54,6 +54,7 @@ const BotaoGrupoAcampantes = ({ cpf, txid }) => {
       href={estado.link}
       target="_blank"
       rel="noreferrer"
+      onClick={() => registrarAberturaGrupoAcampantes({ cpf: cpf || null, txid: txid || null })}
       className="flex items-center justify-center gap-2 w-full h-12 rounded-md bg-[#25D366] hover:bg-[#1ebe5b] text-black font-semibold transition-colors"
     >
       <MessageCircle className="w-5 h-5" />

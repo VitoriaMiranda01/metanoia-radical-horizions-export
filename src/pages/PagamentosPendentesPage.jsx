@@ -38,6 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { formatarTelefone } from '@/utils/telefone';
 import { linkWhatsApp } from '@/services/liderService';
+import { verGrupoAcampantes } from '@/services/acampantesService';
 import CabecalhoFiltroOrdem from '@/components/common/CabecalhoFiltroOrdem';
 import { ordenarLista } from '@/utils/ordenacao';
 import { casaBuscaPagamento, CHAVES_SEMPRE_BUSCADAS } from '@/utils/buscaPagamentos';
@@ -164,7 +165,7 @@ const CelulaWhatsApp = ({ item, onCopiar, onAbrir }) => {
         <a
           href={link} target="_blank" rel="noopener noreferrer"
           onClick={onAbrir}
-          data-dica={onAbrir ? 'Abrir a conversa no WhatsApp (fica registrado que o convite do grupo foi enviado).' : 'Abrir a conversa no WhatsApp'}
+          data-dica={onAbrir ? 'Abrir a conversa no WhatsApp.' : 'Abrir a conversa no WhatsApp'}
           className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 hover:underline"
         >
           <MessageCircle className="w-4 h-4" />
@@ -185,9 +186,21 @@ const CelulaWhatsApp = ({ item, onCopiar, onAbrir }) => {
   );
 };
 
-// "Grupo do WhatsApp" (Raquel, 06/10/2026): quem ja recebeu o convite, o dia e
-// quem mandou -- para nao ter que rolar a lista procurando ate onde foi.
-const CelulaGrupo = ({ item, onMarcar, onDesmarcar, ocupado }) => {
+// "Grupo do WhatsApp": quem ja entrou pelo link da inscricao (04/11/2026, so o
+// clique conta) ou foi marcado a mao. "Reenviar link" abre a conversa com o link.
+const CelulaGrupo = ({ item, onMarcar, onDesmarcar, onReenviar, ocupado }) => {
+  const botaoReenviar = (rotulo) => (
+    item.whatsapp ? (
+      <Button
+        type="button" variant="ghost" size="sm" disabled={ocupado}
+        onClick={() => onReenviar(item)}
+        data-dica="Abrir o WhatsApp da pessoa com o link do grupo na mensagem."
+        className="h-7 px-2 text-xs text-emerald-300 hover:text-emerald-200 hover:bg-white/10"
+      >
+        <MessageCircle className="w-3.5 h-3.5 mr-1" />{rotulo}
+      </Button>
+    ) : null
+  );
   if (item.grupo?.em) {
     const quando = new Date(item.grupo.em).toLocaleString('pt-BR', {
       day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
@@ -207,6 +220,7 @@ const CelulaGrupo = ({ item, onMarcar, onDesmarcar, ocupado }) => {
         >
           <Undo2 className="w-3.5 h-3.5" />
         </Button>
+        {botaoReenviar('Reenviar link')}
       </div>
     );
   }
@@ -223,6 +237,7 @@ const CelulaGrupo = ({ item, onMarcar, onDesmarcar, ocupado }) => {
       >
         Marcar enviado
       </Button>
+      {botaoReenviar('Enviar link')}
     </div>
   );
 };
@@ -451,6 +466,20 @@ const PagamentosPendentesPage = () => {
     } catch (err) {
       toast({ title: 'Não deu para registrar o envio', description: err.message, variant: 'destructive' });
     }
+  };
+
+  // Abre o WhatsApp da pessoa com o link do grupo na mensagem. Nao muda a
+  // marca de enviado: so o clique da pessoa no link da inscricao conta.
+  const reenviarLink = async (item) => {
+    const r = await verGrupoAcampantes();
+    if (!r?.ok || !r.link) {
+      toast({ title: 'Sem link do grupo', description: 'Cadastre o link em Gerenciar Inscrições > Acampantes.', variant: 'destructive' });
+      return;
+    }
+    const primeiro = String(item.nome || '').trim().split(/\s+/)[0];
+    const texto = `Olá${primeiro ? `, ${primeiro}` : ''}! Segue o link do grupo do WhatsApp dos acampantes do Metanoia: ${r.link}`;
+    const url = linkWhatsApp(item.whatsapp, !!item.nacionalidade, texto);
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const desmarcarEnvio = async (item) => {
@@ -1028,7 +1057,7 @@ const PagamentosPendentesPage = () => {
                             <TableCell key={d.key} className="text-sm">
                               <CelulaWhatsApp
                                 item={item} onCopiar={copiarNumero}
-                                onAbrir={aba === 'pagos' && item.tipo === 'acampante' ? () => registrarEnvio(item) : undefined}
+                                
                               />
                             </TableCell>
                           ) : d.key === 'cpf' ? (
@@ -1137,7 +1166,7 @@ const PagamentosPendentesPage = () => {
                         {mostrarGrupo && (
                           <TableCell className="text-sm">
                             {item.tipo === 'acampante'
-                              ? <CelulaGrupo item={item} onMarcar={registrarEnvio} onDesmarcar={desmarcarEnvio} ocupado={gravandoGrupo} />
+                              ? <CelulaGrupo item={item} onMarcar={registrarEnvio} onDesmarcar={desmarcarEnvio} onReenviar={reenviarLink} ocupado={gravandoGrupo} />
                               : <span className="text-gray-600" data-dica="O grupo de WhatsApp é só dos acampantes.">—</span>}
                           </TableCell>
                         )}

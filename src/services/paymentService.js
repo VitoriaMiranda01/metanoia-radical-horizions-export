@@ -458,7 +458,8 @@ export const removerCobranca = async (tipo, id) => {
 
 /**
  * Debitos de edicoes anteriores (migration 20261025e, Patrick 25/10/2026): na
- * virada, quem estava com pagamento AGENDADO e nao pagou vira debito e nao se
+ * virada, quem estava com pagamento AGENDADO ou COBRANCA EM ANDAMENTO
+ * (equipante ou acampante, 20261104g) e nao pagou vira debito e nao se
  * inscreve na edicao seguinte ate quitar -- salvo autorizacao do organizador
  * (vale so para a edicao atual; o debito segue em aberto).
  * As funcoes devolvem { ok, erro }; erro vira Error com a frase do servidor.

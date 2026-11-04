@@ -11,7 +11,9 @@ import { linkWhatsApp } from '@/services/liderService';
 import { formatarTelefone } from '@/utils/telefone';
 
 /**
- * Debitos de edicoes anteriores (migration 20261025e, Patrick 25/10/2026).
+ * Debitos de edicoes anteriores (migration 20261025e, Patrick 25/10/2026;
+ * 20261104g: tambem "cobranca em andamento" e tambem acampante, que e
+ * apagado na virada -- o debito guarda nome, whatsapp e responsavel).
  * Quem estava com pagamento agendado e nao pagou ate a virada carrega a
  * cobranca: nao se inscreve na edicao seguinte ate quitar, salvo autorizacao
  * de um organizador (vale so para a edicao atual; o debito continua aberto).
@@ -159,17 +161,31 @@ const RetirarDialog = ({ debito, onFechar, onFeito }) => {
 
 const LinhaDebito = ({ d, ocupado, onQuitar, onRetirar, onAutorizar }) => {
   const aberto = d.situacao === 'aberto';
-  const link = linkWhatsApp(d.whatsapp, false,
-    `Olá, ${String(d.nome || '').split(' ')[0]}! Aqui é da organização do Metanoia. Ficou em aberto a taxa de alimentação da ${d.edicao}ª edição. Podemos combinar o pagamento?`);
+  const acampante = d.tipo === 'acampante';
+  // Acampante menor: quem paga e o responsavel.
+  const cobrarResponsavel = acampante && !!d.responsavel_whatsapp;
+  const nomeCobrado = cobrarResponsavel ? d.responsavel_nome : d.nome;
+  const link = linkWhatsApp(cobrarResponsavel ? d.responsavel_whatsapp : d.whatsapp, false,
+    `Olá, ${String(nomeCobrado || '').split(' ')[0]}! Aqui é da organização do Metanoia. Ficou em aberto ${acampante ? 'a inscrição' : 'a taxa de alimentação'}${cobrarResponsavel ? ` de ${String(d.nome || '').split(' ')[0]}` : ''} da ${d.edicao}ª edição. Podemos combinar o pagamento?`);
+  const combinado = d.cobranca_status === 'em_cobranca' ? 'cobrança em andamento' : `combinado para ${dataBR(d.agendado_para)}`;
   return (
     <div className={cn('rounded-lg border p-3', aberto ? 'border-red-500/30 bg-red-500/5' : 'border-white/10 bg-white/[0.03] opacity-80')}>
       <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-white break-words">{d.nome}</p>
-          <p className="text-xs text-gray-400 break-words">
-            {d.igreja || 'Sem igreja'} · {d.edicao}ª edição · combinado para {dataBR(d.agendado_para)} · {moeda(d.valor_previsto)}
-            {d.entrou_na_portaria ? ' · entrou pela portaria' : ''}
+          <p className="font-semibold text-white break-words">
+            {d.nome}
+            <span className={cn('ml-2 align-middle text-[10px] px-1.5 py-0.5 rounded border font-normal',
+              acampante ? 'border-amber-500/40 bg-amber-500/10 text-amber-200' : 'border-white/20 bg-white/5 text-gray-300')}>
+              {acampante ? 'Acampante' : 'Equipante'}
+            </span>
           </p>
+          <p className="text-xs text-gray-400 break-words">
+            {d.igreja || 'Sem igreja'} · {d.edicao}ª edição · {combinado} · {moeda(d.valor_previsto)}
+            {d.entrou_na_portaria ? (acampante ? ' · chegou na recepção' : ' · entrou pela portaria') : ''}
+          </p>
+          {cobrarResponsavel && (
+            <p className="text-xs text-gray-400 break-words">Responsável: {d.responsavel_nome || '—'} · {formatarTelefone(d.responsavel_whatsapp)}</p>
+          )}
           {d.observacao && <p className="text-xs text-gray-500 break-words">"{d.observacao}" ({d.agendado_por})</p>}
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             {d.situacao === 'quitado' && (
@@ -279,7 +295,7 @@ const DebitosAnteriores = () => {
             Débitos de edições anteriores ({emAberto.length} em aberto)
           </span>
           <span className="block text-sm text-gray-400">
-            Pagamento agendado que não foi pago até a virada. Quem deve não consegue se inscrever, a não ser que um organizador autorize.
+            Pagamento agendado ou cobrança em andamento (equipante ou acampante) que não foi pago até a virada. Quem deve não consegue se inscrever pelo mesmo CPF, a não ser que um organizador autorize.
           </span>
         </span>
         {aberto ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}

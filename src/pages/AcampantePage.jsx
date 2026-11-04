@@ -52,7 +52,7 @@ const AcampantePage = () => {
   const { parceiras: igrejasDoBanco, permiteDiversos } = useOpcoesDeIgreja();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { acampantesAbertos, loading: loadingStatus } = useInscricoesStatus();
+  const { acampantesAbertos, loteAcampanteHoje, loading: loadingStatus } = useInscricoesStatus();
 
   // SESSAO DE TESTE
   // ---------------
@@ -74,7 +74,9 @@ const AcampantePage = () => {
     return () => { vivo = false; };
   }, [chaveTeste]);
 
-  const podeCadastrar = acampantesAbertos || sessaoDeTeste;
+  // Sem lote de preco hoje nao ha como pagar: nem a chave de teste abre o
+  // cadastro (20261104e; o servidor recusa com SEM_LOTE_HOJE).
+  const podeCadastrar = (acampantesAbertos || sessaoDeTeste) && loteAcampanteHoje;
 
   const [currentStep, setCurrentStep] = useState('welcome');
   const [inscricaoData, setInscricaoData] = useState(null);
@@ -388,7 +390,7 @@ const AcampantePage = () => {
 
         {/* Bem visivel de proposito: ninguem pode confundir a sessao de teste
             com as inscricoes abertas de verdade. */}
-        {sessaoDeTeste && !acampantesAbertos && (
+        {sessaoDeTeste && podeCadastrar && !acampantesAbertos && (
           <div className="mb-6 bg-fuchsia-500/10 border border-fuchsia-500/40 p-4 rounded-lg flex items-start gap-3">
             <FlaskConical className="w-5 h-5 text-fuchsia-300 shrink-0 mt-0.5" />
             <p className="text-fuchsia-100 text-sm">

@@ -64,7 +64,7 @@ const OrganizerConfigPage = () => {
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [isSavingAll, setIsSavingAll] = useState(false);
   const [dbStatus, setDbStatus] = useState({ checked: false, success: true });
-  const { equipantesAbertos, acampantesAbertos, loading: loadingStatus, refetch: refetchStatus } = useInscricoesStatus();
+  const { equipantesLigados, acampantesLigados, loteEquipanteHoje, loteAcampanteHoje, loading: loadingStatus, refetch: refetchStatus } = useInscricoesStatus();
   const [statusControl, setStatusControl] = useState({ equipantes: true, acampantes: true });
   const [savingStatus, setSavingStatus] = useState(false);
   const [isResettingInscricoes, setIsResettingInscricoes] = useState(false);
@@ -105,14 +105,16 @@ const OrganizerConfigPage = () => {
     }
   }, [organizadorId, organizadorUser?.id, user?.id, isAuthenticated]);
 
+  // A chave mostra o que esta gravado (*Ligados), nao o que o publico ve:
+  // ligada sem lote hoje, o site fica fechado e aparece o aviso (20261104e).
   useEffect(() => {
     if (!loadingStatus) {
       setStatusControl({
-        equipantes: equipantesAbertos,
-        acampantes: acampantesAbertos
+        equipantes: equipantesLigados,
+        acampantes: acampantesLigados
       });
     }
-  }, [loadingStatus, equipantesAbertos, acampantesAbertos]);
+  }, [loadingStatus, equipantesLigados, acampantesLigados]);
 
   const checkDb = async () => {
     const result = await verifyDatabaseSchema();
@@ -199,6 +201,7 @@ const OrganizerConfigPage = () => {
         ...prev,
         [type === 'equipante' ? 'equipante_pricing_periods' : 'acampante_pricing_periods']: periods
       }));
+      refetchStatus(); // aviso "sem lote de preço para hoje" (20261104e)
     } catch (error) {
       console.error("Failed to save pricing periods directly", error);
       throw error;
@@ -301,10 +304,10 @@ const OrganizerConfigPage = () => {
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Falha ao atualizar status.",
+        description: error?.message || "Falha ao atualizar status.",
         variant: "destructive"
       });
-      setStatusControl({ equipantes: equipantesAbertos, acampantes: acampantesAbertos });
+      setStatusControl({ equipantes: equipantesLigados, acampantes: acampantesLigados });
     } finally {
       setSavingStatus(false);
     }
@@ -981,6 +984,9 @@ const OrganizerConfigPage = () => {
                     <div>
                       <p className="font-semibold text-white">Equipantes</p>
                       <p className="text-sm text-gray-400">{statusControl.equipantes ? 'Inscrições abertas' : 'Inscrições fechadas'}</p>
+                      {!loteEquipanteHoje && (
+                        <p className="text-xs text-amber-400 mt-1">Sem lote de preço para hoje: o site fica fechado até haver um lote cobrindo a data.</p>
+                      )}
                     </div>
                   </div>
                   <Switch data-dica="Abrir ou fechar o formulário de inscrição de equipantes no site." checked={statusControl.equipantes} onCheckedChange={c => handleToggleInscriptionStatus('equipantes', c)} disabled={savingStatus} />
@@ -991,6 +997,9 @@ const OrganizerConfigPage = () => {
                     <div>
                       <p className="font-semibold text-white">Acampantes</p>
                       <p className="text-sm text-gray-400">{statusControl.acampantes ? 'Inscrições abertas' : 'Inscrições fechadas'}</p>
+                      {!loteAcampanteHoje && (
+                        <p className="text-xs text-amber-400 mt-1">Sem lote de preço para hoje: o site fica fechado até haver um lote cobrindo a data.</p>
+                      )}
                     </div>
                   </div>
                   <Switch data-dica="Abrir ou fechar o formulário de inscrição de acampantes no site." checked={statusControl.acampantes} onCheckedChange={c => handleToggleInscriptionStatus('acampantes', c)} disabled={savingStatus} />

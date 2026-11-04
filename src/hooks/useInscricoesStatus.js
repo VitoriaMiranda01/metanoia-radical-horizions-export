@@ -1,11 +1,19 @@
 import { useState, useEffect } from 'react';
 import { fetchInscricoesStatus } from '@/services/inscricoesStatusService';
 
+const TUDO_ABERTO = {
+  equipantesAbertos: true,
+  acampantesAbertos: true,
+  equipantesLigados: true,
+  acampantesLigados: true,
+  loteEquipanteHoje: true,
+  loteAcampanteHoje: true
+};
+
 export const useInscricoesStatus = () => {
-  const [status, setStatus] = useState({
-    equipantesAbertos: true,
-    acampantesAbertos: true
-  });
+  // *Abertos = o que o publico enxerga: chave ligada E lote de preco hoje
+  // (20261104e). *Ligados = so a chave, para a tela de Configuracoes.
+  const [status, setStatus] = useState(TUDO_ABERTO);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -14,9 +22,17 @@ export const useInscricoesStatus = () => {
     try {
       const data = await fetchInscricoesStatus();
       if (data) {
+        const eqLigado = data.inscricoes_equipantes ?? true;
+        const acLigado = data.inscricoes_acampantes ?? true;
+        const eqLote = data.lote_equipante_hoje !== false;
+        const acLote = data.lote_acampante_hoje !== false;
         setStatus({
-          equipantesAbertos: data.inscricoes_equipantes ?? true,
-          acampantesAbertos: data.inscricoes_acampantes ?? true
+          equipantesAbertos: eqLigado && eqLote,
+          acampantesAbertos: acLigado && acLote,
+          equipantesLigados: eqLigado,
+          acampantesLigados: acLigado,
+          loteEquipanteHoje: eqLote,
+          loteAcampanteHoje: acLote
         });
         setError(null);
       }
@@ -33,10 +49,7 @@ export const useInscricoesStatus = () => {
 
       setError(err);
       // Fallback to open on error to prevent lockout
-      setStatus({
-        equipantesAbertos: true,
-        acampantesAbertos: true
-      });
+      setStatus(TUDO_ABERTO);
     } finally {
       // Only set loading to false if we are not retrying
       if (retryCount >= 2 || !error) {

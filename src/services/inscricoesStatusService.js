@@ -12,9 +12,13 @@ export const fetchInscricoesStatus = async () => {
       if (!navigator.onLine) return PADRAO;
       const config = await fetchConfigPublica();
       if (!config) return PADRAO;
+      // lote_*_hoje (20261104e): sem lote de preco hoje nao ha como pagar,
+      // entao o site trata como fechado. Ausente (banco antigo) = tem lote.
       return {
         inscricoes_equipantes: config.inscricoes_equipantes,
         inscricoes_acampantes: config.inscricoes_acampantes,
+        lote_equipante_hoje: config.lote_equipante_hoje !== false,
+        lote_acampante_hoje: config.lote_acampante_hoje !== false,
         updated_at: config.updated_at
       };
     } catch (error) {
@@ -52,7 +56,16 @@ export const updateInscricoesStatus = async (equipantes, acampantes) => {
         .select());
     }
 
-    if (error) throw error;
+    if (error) {
+      // Gatilho inscricoes_exigem_lote (20261104e): abrir sem lote hoje.
+      if (error.message?.includes('SEM_LOTE_HOJE_ACAMPANTE')) {
+        throw new Error('Não há lote de preço de acampante cobrindo a data de hoje. Cadastre o lote antes de abrir as inscrições.');
+      }
+      if (error.message?.includes('SEM_LOTE_HOJE_EQUIPANTE')) {
+        throw new Error('Não há lote de preço de equipante cobrindo a data de hoje. Cadastre o lote antes de abrir as inscrições.');
+      }
+      throw error;
+    }
     return data;
   } catch (error) {
     handleSupabaseError(error, 'updateInscricoesStatus');

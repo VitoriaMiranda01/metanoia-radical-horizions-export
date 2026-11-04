@@ -312,6 +312,9 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     if (error?.message?.includes('DEBITO_PENDENTE')) {
       return { success: false, error: 'Você tem um pagamento pendente de uma edição anterior. Procure a organização para regularizar e liberar a sua inscrição.' };
     }
+    if (error?.message?.includes('SEM_LOTE_HOJE')) {
+      return { success: false, error: 'As inscrições não estão abertas no momento: não há valor de inscrição definido para hoje. Fale com a organização.' };
+    }
     if (error?.message?.includes('INSCRICOES_DOMINGO_FECHADAS')) {
       return { success: false, error: 'As inscrições para quem vai só no domingo não estão abertas no momento.' };
     }

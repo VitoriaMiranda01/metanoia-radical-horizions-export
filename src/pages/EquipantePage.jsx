@@ -163,7 +163,7 @@ const EquipantePage = () => {
   // OUTRA so existe ate a virada de edicao.
   const { permiteOutra, exigeFichaCompleta } = useOpcoesDeIgreja();
   const navigate = useNavigate();
-  const { equipantesAbertos, loading: loadingStatus } = useInscricoesStatus();
+  const { equipantesAbertos, loteEquipanteHoje, loading: loadingStatus } = useInscricoesStatus();
 
   // SESSAO DE TESTE
   // ---------------
@@ -190,7 +190,9 @@ const EquipantePage = () => {
   }, [chaveTeste]);
 
   // O portao efetivo do cadastro novo, usado no lugar de equipantesAbertos.
-  const podeCadastrar = equipantesAbertos || sessaoDeTeste;
+  // Sem lote de preco hoje nao ha como pagar: nem a chave de teste abre o
+  // cadastro (20261104e; o servidor recusa com SEM_LOTE_HOJE).
+  const podeCadastrar = (equipantesAbertos || sessaoDeTeste) && loteEquipanteHoje;
 
   // Inscricao "só no domingo" (20261025c): janela propria, por padrao de
   // segunda a quarta da semana do evento. Aberta, quem ainda nao tem
@@ -202,7 +204,7 @@ const EquipantePage = () => {
     fetchJanelaDomingo().then((j) => { if (vivo) setJanelaDomingo(j || { aberta: false }); });
     return () => { vivo = false; };
   }, []);
-  const podeDomingo = !!janelaDomingo?.aberta || sessaoDeTeste;
+  const podeDomingo = (!!janelaDomingo?.aberta || sessaoDeTeste) && loteEquipanteHoje;
   // Para onde vai cada escolha: { todos, domingo } (passos da tela).
   const [destinosDias, setDestinosDias] = useState(null);
   const [debitoPendente, setDebitoPendente] = useState(null);
@@ -744,7 +746,7 @@ const EquipantePage = () => {
 
         {/* Fica bem visivel de proposito: ninguem pode confundir a sessao de
             teste com as inscricoes abertas de verdade. */}
-        {sessaoDeTeste && !equipantesAbertos && (
+        {sessaoDeTeste && podeCadastrar && !equipantesAbertos && (
           <div className="bg-fuchsia-500/10 border border-fuchsia-500/40 p-4 rounded-lg flex items-start gap-3">
             <FlaskConical className="w-5 h-5 text-fuchsia-300 shrink-0 mt-0.5" />
             <p className="text-fuchsia-100 text-sm">

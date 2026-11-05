@@ -19,7 +19,6 @@ export const DECLARACAO_MENOR_PEDIDO =
 
 const primeiroNome = (nome) => String(nome || '').trim().split(/\s+/)[0] || '';
 const semCodigo = (igreja) => String(igreja || '').replace(/^\s*\d+\s*-\s*/, '').trim();
-const ehPastor = (nome) => /^(pr\.?|pra\.?|pastor|pastora)\s/i.test(String(nome || '').trim());
 
 /** Link do WhatsApp (celular brasileiro) com a mensagem pronta. */
 export const linkWhatsApp = (telefone, texto) => {
@@ -49,9 +48,9 @@ export const mensagemParaResponsavel = (menor, ctx = {}) => {
   let apresentacao;
   if (quem.papel === 'parceiro') {
     const nome = String(quem.nome || '').trim();
-    apresentacao = nome
-      ? `Aqui é ${ehPastor(nome) ? nome : `o pastor ${nome}`}${igreja ? `, da igreja ${igreja}` : ''}.`
-      : `Aqui é o pastor${igreja ? ` da igreja ${igreja}` : ''}.`;
+    // Parceiro nem sempre e pastor, e o sistema nao guarda o sexo: texto neutro (Patrick, 05/11/2026).
+    const lideranca = `da liderança${igreja ? ` da igreja ${igreja}` : ' da igreja'}`;
+    apresentacao = nome ? `Aqui é ${nome}, ${lideranca}.` : `Aqui é ${lideranca}.`;
   } else {
     apresentacao = `Aqui é ${quem.nome ? `${quem.nome}, ` : ''}da organização do Metanoia Radical Serra.`;
   }

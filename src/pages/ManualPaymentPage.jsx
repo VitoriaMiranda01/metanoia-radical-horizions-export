@@ -268,9 +268,9 @@ const ManualPaymentPage = () => {
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
                       <div className="flex flex-col gap-1">
-                        <span>Envie uma mensagem para a Raquel através do link:</span>
-                        <a href="https://wa.me/5521976225702" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:text-emerald-300 underline inline-flex items-center gap-1 transition-colors font-medium">
-                          Falar com Raquel no WhatsApp <ExternalLink className="w-3 h-3" />
+                        <span>Envie uma mensagem para nossa equipe através do link:</span>
+                        <a href="https://wa.me/5521999000708" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:text-emerald-300 underline inline-flex items-center gap-1 transition-colors font-medium">
+                          Falar com a equipe no WhatsApp <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>
                     </li>

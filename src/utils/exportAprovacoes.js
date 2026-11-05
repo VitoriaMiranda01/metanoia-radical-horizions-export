@@ -72,10 +72,11 @@ const COLUNAS = [
   ['Situação', 12, (i) => SITUACAO[i.status] || i.status || '-'],
 ];
 
-const linhaDaPlanilha = (item) => Object.fromEntries(COLUNAS.map(([titulo, , valor]) => [titulo, valor(item)]));
+// Pastor parceiro nao recebe as opcoes de area (so a organizacao decide).
+const COLUNAS_DE_AREA = new Set(['1ª opção de área', '2ª opção de área', '3ª opção de área']);
+const colunasDe = (semAreas) => (semAreas ? COLUNAS.filter(([titulo]) => !COLUNAS_DE_AREA.has(titulo)) : COLUNAS);
 
-// Letra da ultima coluna (para o filtro do cabecalho).
-const ULTIMA_COLUNA = String.fromCharCode('A'.charCodeAt(0) + COLUNAS.length - 1);
+const linhaDaPlanilha = (colunas) => (item) => Object.fromEntries(colunas.map(([titulo, , valor]) => [titulo, valor(item)]));
 
 const nomeDoArquivo = (prefixo, igrejas, todas) => {
   const hoje = new Date().toISOString().split('T')[0];
@@ -96,17 +97,20 @@ const nomeDeAba = (texto, usados) => {
   return nome;
 };
 
-const planilhaDe = (linhas) => {
+const planilhaDe = (linhas, semAreas) => {
+  const colunas = colunasDe(semAreas);
   const dados = [...linhas]
     .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'))
-    .map(linhaDaPlanilha);
+    .map(linhaDaPlanilha(colunas));
   const ws = XLSX.utils.json_to_sheet(dados);
-  ws['!cols'] = COLUNAS.map(([, wch]) => ({ wch }));
-  ws['!autofilter'] = { ref: `A1:${ULTIMA_COLUNA}${dados.length + 1}` };
+  ws['!cols'] = colunas.map(([, wch]) => ({ wch }));
+  // Letra da ultima coluna (para o filtro do cabecalho).
+  const ultima = String.fromCharCode('A'.charCodeAt(0) + colunas.length - 1);
+  ws['!autofilter'] = { ref: `A1:${ultima}${dados.length + 1}` };
   return ws;
 };
 
-const gerarExcel = ({ igrejas, linhas, situacao, todas }) => {
+const gerarExcel = ({ igrejas, linhas, situacao, todas, semAreas }) => {
   const prefixo = ({
     pendente: 'Equipantes_pendentes',
     aprovado: 'Equipantes_aprovados',
@@ -117,12 +121,12 @@ const gerarExcel = ({ igrejas, linhas, situacao, todas }) => {
   const usados = new Set();
 
   if (igrejas.length === 1) {
-    XLSX.utils.book_append_sheet(wb, planilhaDe(linhas), nomeDeAba(SITUACAO[situacao] || 'Equipantes', usados));
+    XLSX.utils.book_append_sheet(wb, planilhaDe(linhas, semAreas), nomeDeAba(SITUACAO[situacao] || 'Equipantes', usados));
   } else {
-    XLSX.utils.book_append_sheet(wb, planilhaDe(linhas), nomeDeAba('Todas', usados));
+    XLSX.utils.book_append_sheet(wb, planilhaDe(linhas, semAreas), nomeDeAba('Todas', usados));
     igrejas.forEach((igreja) => {
       const dela = linhas.filter((item) => igrejaDaLinha(item) === igreja);
-      XLSX.utils.book_append_sheet(wb, planilhaDe(dela), nomeDeAba(igreja, usados));
+      XLSX.utils.book_append_sheet(wb, planilhaDe(dela, semAreas), nomeDeAba(igreja, usados));
     });
   }
 
@@ -138,7 +142,7 @@ export const FORMATOS = {
  * aberta (sem os filtros da tabela: o que vale aqui e a escolha da janela).
  * `todas`: a pessoa marcou "todas as igrejas". Devolve quantas linhas foram.
  */
-export const exportarAprovacoes = ({ dados, igrejas, todas = false, formato = 'excel', situacao }) => {
+export const exportarAprovacoes = ({ dados, igrejas, todas = false, formato = 'excel', situacao, semAreas = false }) => {
   const saida = FORMATOS[formato];
   if (!saida) throw new Error('Formato de saída não disponível.');
 
@@ -148,6 +152,6 @@ export const exportarAprovacoes = ({ dados, igrejas, todas = false, formato = 'e
 
   // Na ordem da lista, so as que tem gente.
   const ordem = igrejasComInscritos(linhas).map((i) => i.igreja);
-  saida.gerar({ igrejas: ordem, linhas, situacao, todas });
+  saida.gerar({ igrejas: ordem, linhas, situacao, todas, semAreas });
   return { linhas: linhas.length, igrejas: ordem.length };
 };

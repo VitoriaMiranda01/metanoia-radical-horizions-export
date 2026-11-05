@@ -574,8 +574,10 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
 
           {isEquipante && <MenorNaFicha inscricao={inscricao} />}
 
-          {/* Áreas de Trabalho (só equipante — não existe em acampantes) */}
-          {isEquipante && (
+          {/* Áreas de Trabalho (só equipante — não existe em acampantes).
+              Pastor parceiro não vê: ele ainda não conhece o projeto e a
+              área é decisão da organização. */}
+          {isEquipante && !isParceiro && (
             <div className="space-y-3">
               <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
                 Áreas de Trabalho
@@ -618,7 +620,8 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
             </div>
           )}
 
-          {/* Termos e Responsabilidade */}
+          {/* Termos e Responsabilidade (fora da ficha do pastor parceiro) */}
+          {!isParceiro && (
           <div className="space-y-3">
             <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
               Termos
@@ -639,7 +642,10 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
             </div>
           </div>
 
-          {/* Informações de Pagamento */}
+          )}
+
+          {/* Informações de Pagamento (fora da ficha do pastor parceiro) */}
+          {!isParceiro && (
           <div className="space-y-3">
             <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
               Informações de Pagamento
@@ -671,6 +677,8 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
               </div>
             </div>
           </div>
+
+          )}
 
           {/* Informações do Sistema */}
           <div className="space-y-3">

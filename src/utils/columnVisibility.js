@@ -14,6 +14,13 @@ export const formatarDataHora = (valor) => {
 // Colunas de data com hora.
 export const COLUNAS_DATA_HORA = ['inscrito_em', 'decidido_em'];
 
+// Colunas que o pastor parceiro nao ve na Aprovacao (areas pedidas e pagamento:
+// ele ainda nao conhece o projeto e isso e decisao da organizacao).
+export const COLUNAS_OCULTAS_PARCEIRO = [
+  'area_trabalho', 'area_trabalho_extra',
+  'status_pagamento', 'metodo_pagamento', 'data_pagamento'
+];
+
 export const COLUMN_DEFINITIONS = {
   equipantes: [
     // Identificação

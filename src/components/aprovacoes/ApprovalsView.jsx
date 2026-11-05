@@ -117,6 +117,15 @@ const ApprovalsView = ({
           if (Array.isArray(minhas) && minhas.length) codigos = minhas.map((i) => String(i.codigo));
         } catch { /* fica so a propria igreja */ }
         mappedEquipantes = mappedEquipantes.filter(e => e.igreja && codigos.some((c) => e.igreja.startsWith(`${c} - `)));
+        // Areas pedidas e pagamento nao chegam as telas do parceiro (ele ainda
+        // nao conhece o projeto; isso e decisao da organizacao).
+        mappedEquipantes = mappedEquipantes.map(e => ({
+          ...e,
+          area_trabalho_opcao1: null, area_trabalho_opcao2: null, area_trabalho_opcao3: null,
+          area_trabalho_extra: null, areaTrabalho: null, motivacao: null,
+          forma_pagamento: null, status_pagamento: null, data_pagamento: null,
+          metodo_pagamento: null, id_transacao_sicoob: null, txid_pix: null
+        }));
       }
 
       setInscricoes(mappedEquipantes);

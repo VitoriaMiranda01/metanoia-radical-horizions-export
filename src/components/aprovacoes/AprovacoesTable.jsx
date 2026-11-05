@@ -29,6 +29,7 @@ import {
   saveVisibleColumnsToStorage,
   COLUMN_DEFINITIONS,
   COLUNAS_DATA_HORA,
+  COLUNAS_OCULTAS_PARCEIRO,
   formatarDataHora,
   formatEnderecoCompleto,
   formatAreaTrabalho
@@ -161,7 +162,13 @@ const AprovacoesTable = ({
   const [aprovandoEmLote, setAprovandoEmLote] = useState(false);
   // Ordenacao pela seta do cabecalho (utils/ordenacao.js).
   const [ordem, setOrdem] = useState(null);
-  const [visibleColumns, setVisibleColumns] = useState([]);
+  const [colunasEscolhidas, setVisibleColumns] = useState([]);
+  // Parceiro nunca recebe as colunas de areas e pagamento, mesmo que estejam
+  // salvas no navegador dele.
+  const visibleColumns = useMemo(
+    () => (isParceiro ? colunasEscolhidas.filter((c) => !COLUNAS_OCULTAS_PARCEIRO.includes(c)) : colunasEscolhidas),
+    [isParceiro, colunasEscolhidas]
+  );
 
   const tableType = 'equipantes';
 
@@ -285,6 +292,7 @@ const AprovacoesTable = ({
                     type={tableType}
                     currentColumns={visibleColumns}
                     onApply={handleSaveColumns}
+                    ocultar={isParceiro ? COLUNAS_OCULTAS_PARCEIRO : []}
                   />
                 </div>
                 {/* Vem depois de "Colunas" (a direita dele). Organizador escolhe

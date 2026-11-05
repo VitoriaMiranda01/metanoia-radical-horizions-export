@@ -42,7 +42,7 @@ const ExportarAprovacoesDialog = ({ aberto, onFechar, dados, situacao = 'pendent
     if (selecao.length === 0) return;
     setGerando(true);
     try {
-      const r = exportarAprovacoes({ dados, igrejas: selecao, todas, formato, situacao });
+      const r = exportarAprovacoes({ dados, igrejas: selecao, todas, formato, situacao, semAreas: isParceiro });
       toast({
         title: 'Planilha gerada',
         description: `${r.linhas} ${r.linhas === 1 ? 'inscrição' : 'inscrições'} de ${r.igrejas} ${r.igrejas === 1 ? 'igreja' : 'igrejas'}.`,

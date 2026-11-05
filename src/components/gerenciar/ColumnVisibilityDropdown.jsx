@@ -19,9 +19,11 @@ const ColumnVisibilityDropdown = ({
   currentColumns, 
   onApply,
   // Texto da dica do botao (Pagamentos nao leva as colunas para a planilha).
-  dica = 'Escolher quais colunas aparecem na tabela (e vão para a planilha).'
+  dica = 'Escolher quais colunas aparecem na tabela (e vão para a planilha).',
+  // Chaves que nao entram na lista (ex.: o parceiro nao ve areas/pagamento).
+  ocultar = []
 }) => {
-  const definitions = COLUMN_DEFINITIONS[type] || [];
+  const definitions = (COLUMN_DEFINITIONS[type] || []).filter((d) => !ocultar.includes(d.key));
   const travadas = colunasTravadas(type);
   
   // Group definitions

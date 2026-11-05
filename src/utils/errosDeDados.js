@@ -18,7 +18,7 @@ const MENSAGENS = {
   RESPONSAVEL_MESMO_NOME: 'O responsável precisa ser outra pessoa — não pode ser o próprio inscrito.',
   RESPONSAVEL_WHATSAPP_OBRIGATORIO: 'Você é menor de 18 anos: informe o WhatsApp do seu responsável.',
   RESPONSAVEL_MESMO_TELEFONE: 'O WhatsApp do responsável precisa ser diferente do seu.',
-  ACOMPANHANTE_NOME_OBRIGATORIO: 'Você é menor de 18 anos: informe o nome de quem vai acompanhar você no projeto.',
+  ACOMPANHANTE_NOME_OBRIGATORIO: 'Você é menor de 16 anos: informe o nome de quem vai acompanhar você no projeto.',
   ACOMPANHANTE_NOME_INVALIDO: 'Confira o nome de quem vai acompanhar você: nome e sobrenome, só com letras.',
   ACOMPANHANTE_MESMO_NOME: 'Quem vai acompanhar você precisa ser outra pessoa — não pode ser o próprio inscrito.',
   ACOMPANHANTE_WHATSAPP_OBRIGATORIO: 'Você é menor de 18 anos: informe o WhatsApp de quem vai acompanhar você no projeto.',

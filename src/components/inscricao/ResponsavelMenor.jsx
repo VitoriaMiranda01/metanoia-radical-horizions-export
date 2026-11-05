@@ -5,7 +5,8 @@ import FormSection from './FormSection';
 import TelefoneInput from './TelefoneInput';
 import { cn } from '@/lib/utils';
 import {
-  definirInicioDoEvento, ehMenorDeIdade, limparNomeResponsavel, pessoasExigidas, problemaNomeDoMenor,
+  definirInicioDoEvento, ehMenorDeIdade, limparNomeResponsavel, pessoasExigidas, precisaAcompanhante,
+  problemaNomeDoMenor,
 } from '@/utils/responsavelMenor';
 import { mesmoTelefone } from '@/utils/contatoEmergencia';
 import { fetchConfigPublica } from '@/services/publicDataService';
@@ -15,7 +16,8 @@ import { fetchConfigPublica } from '@/services/publicDataService';
  *   acampante (20261104d): responsavel (nome + WhatsApp); a carta continua.
  *   equipante (20261105a): responsavel (nome + WhatsApp) + so o NOME
  *              COMPLETO do acompanhante, um equipante desta edicao. Menor e
- *              quem ainda nao tem 18 anos no primeiro dia do projeto.
+ *              quem ainda nao tem 18 anos no primeiro dia do projeto; o
+ *              acompanhante so abaixo de 16 (20261105c).
  * Regras em utils/responsavelMenor.js.
  */
 
@@ -56,14 +58,17 @@ const TEXTOS = {
 const ResponsavelMenor = ({ formData, handleChange, tipo }) => {
   useInicioDoEvento(tipo === 'equipante');
   if (!ehMenorDeIdade(formData.dataNascimento, tipo)) return null;
-  const pessoas = pessoasExigidas(tipo);
+  const pessoas = pessoasExigidas(tipo, formData.dataNascimento);
+  const comAcompanhante = precisaAcompanhante(formData.dataNascimento, tipo);
 
   return (
-    <FormSection title="Menor de 18 anos">
+    <FormSection title={comAcompanhante ? 'Menor de 16 anos' : 'Menor de 18 anos'}>
       <p className="text-sm text-amber-200 bg-amber-500/10 border border-amber-500/25 rounded-md p-3">
-        {tipo === 'equipante'
-          ? 'Como você ainda não terá 18 anos no primeiro dia do projeto, informe o seu responsável (pai, mãe ou responsável legal) e quem vai acompanhar você durante todo o evento. O pastor da sua igreja vai falar com o seu responsável antes de aprovar a sua inscrição.'
-          : 'Como você tem menos de 18 anos, informe o nome e o WhatsApp do seu responsável. A carta de autorização continua obrigatória.'}
+        {tipo !== 'equipante'
+          ? 'Como você tem menos de 18 anos, informe o nome e o WhatsApp do seu responsável. A carta de autorização continua obrigatória.'
+          : comAcompanhante
+            ? 'Como você ainda não terá 16 anos no primeiro dia do projeto, informe o seu responsável (pai, mãe ou responsável legal) e quem vai acompanhar você durante todo o evento. O pastor da sua igreja vai falar com o seu responsável antes de aprovar a sua inscrição.'
+            : 'Como você ainda não terá 18 anos no primeiro dia do projeto, informe o seu responsável (pai, mãe ou responsável legal). O pastor da sua igreja vai falar com ele para confirmar a autorização antes de aprovar a sua inscrição.'}
       </p>
       {pessoas.map((p) => {
         const t = TEXTOS[p.chave];

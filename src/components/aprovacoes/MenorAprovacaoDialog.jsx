@@ -8,7 +8,7 @@ import TagMenor from '@/components/common/TagMenor';
 import { buscarAcompanhante, definirAcompanhanteMenor } from '@/services/equipantesService';
 import { formatarTelefone } from '@/utils/telefone';
 import {
-  DECLARACAO_MENOR_PEDIDO, DECLARACAO_MENOR_TEXTO, DECLARACAO_MENOR_TITULO,
+  DECLARACAO_MENOR_PEDIDO, DECLARACAO_MENOR_TITULO, declaracaoDoMenor,
   SITUACAO_ACOMPANHANTE, linkWhatsApp, mensagemParaResponsavel,
 } from '@/utils/menorAprovacao';
 import { cn } from '@/lib/utils';
@@ -60,6 +60,7 @@ const MenorAprovacaoDialog = ({ aberto, menor, ctx, modo = 'aprovar', onConfirma
 
   if (!menor) return null;
 
+  const precisaAcomp = menor.precisa_acompanhante !== false;
   const acomp = menor.acompanhante || {};
   const situacao = SITUACAO_ACOMPANHANTE[acomp.situacao] || SITUACAO_ACOMPANHANTE.nao_encontrado;
   const pessoa = acomp.pessoa;
@@ -205,7 +206,12 @@ const MenorAprovacaoDialog = ({ aberto, menor, ctx, modo = 'aprovar', onConfirma
             )}
           </div>
 
-          {/* Acompanhante */}
+          {/* Acompanhante: so menor de 16 (20261105c) */}
+          {!precisaAcomp ? (
+            <p className="rounded-md border border-white/10 bg-white/5 p-3 text-xs text-gray-300">
+              Com 16 ou 17 anos não precisa de acompanhante no projeto: basta a autorização do responsável.
+            </p>
+          ) : (
           <div className="space-y-2">
             <p className="text-sm font-semibold text-gray-200">Acompanhante durante o projeto</p>
             <div className={cn('rounded-md border p-3 text-sm', CORES[situacao.cor])}>
@@ -266,13 +272,14 @@ const MenorAprovacaoDialog = ({ aberto, menor, ctx, modo = 'aprovar', onConfirma
               )}
             </div>
           </div>
+          )}
 
           {/* Declaracao */}
           <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-amber-100">
             <p className="flex items-center gap-2 font-semibold text-amber-200">
               <AlertTriangle className="h-4 w-4 shrink-0" /> {DECLARACAO_MENOR_TITULO}
             </p>
-            <p className="mt-2">{DECLARACAO_MENOR_TEXTO}</p>
+            <p className="mt-2">{declaracaoDoMenor(menor)}</p>
             <p className="mt-2 font-medium">{DECLARACAO_MENOR_PEDIDO}</p>
             <label className="mt-3 flex cursor-pointer items-start gap-2 text-white">
               <input

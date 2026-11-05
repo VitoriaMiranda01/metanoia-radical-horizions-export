@@ -54,6 +54,9 @@ O banco levanta o código (`NOME_INVALIDO`, `CPF_INVALIDO`, `CEP_INVALIDO`...). 
   próprio inscrito; WhatsApp celular, diferente do próprio. `_menor_responsavel_erro` (chamada no fim de
   `_dados_inscricao_validos`), gatilho de telefones e `_validar_ficha` (formato + menor não pode ter o campo apagado).
   Códigos `RESPONSAVEL_*` e `ACOMPANHANTE_*`. Tela: `ResponsavelMenor.jsx` + `utils/responsavelMenor.js`.
+- `20261105c` **acompanhante só para equipante menor de 16** (idade completa no 1º dia do projeto,
+  `_equipante_precisa_acompanhante`; tela `precisaAcompanhante`). Com 16 ou 17: só o responsável. Declaração do pastor
+  sem a parte do acompanhante (versão `20261105c`; menor de 16 segue `20261105a`).
 
 ## Reinscrição
 

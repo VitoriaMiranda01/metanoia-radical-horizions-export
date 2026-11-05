@@ -10,10 +10,18 @@ import { formatEventDateRange } from '@/utils/eventDateFormat';
  */
 
 export const DECLARACAO_MENOR_TITULO = 'Atenção!';
-export const DECLARACAO_MENOR_TEXTO =
+const DECLARACAO_BASE =
   'Ao confirmar, o pastor responsável declara estar ciente da participação do menor de idade no '
   + 'Projeto Metanoia Radical e confirma que os pais ou responsáveis legais autorizaram sua '
-  + 'participação, bem como que o menor estará acompanhado por um responsável durante todo o projeto.';
+  + 'participação';
+// Menor de 16 (versao 20261105a): com o acompanhante.
+export const DECLARACAO_MENOR_TEXTO =
+  `${DECLARACAO_BASE}, bem como que o menor estará acompanhado por um responsável durante todo o projeto.`;
+// 16 e 17 anos (versao 20261105c): so a autorizacao.
+export const DECLARACAO_MENOR_TEXTO_SEM_ACOMPANHANTE = `${DECLARACAO_BASE}.`;
+/** Texto da declaracao para o menor (precisa_acompanhante vem do servidor). */
+export const declaracaoDoMenor = (menor) =>
+  (menor?.precisa_acompanhante === false ? DECLARACAO_MENOR_TEXTO_SEM_ACOMPANHANTE : DECLARACAO_MENOR_TEXTO);
 export const DECLARACAO_MENOR_PEDIDO =
   'Por favor, confirme somente se todas essas condições estiverem atendidas.';
 
@@ -41,7 +49,8 @@ export const mensagemParaResponsavel = (menor, ctx = {}) => {
   const nomeMenor = String(menor?.nome || '').trim();
   const pNome = primeiroNome(nomeMenor);
   const resp = primeiroNome(menor?.responsavel_nome);
-  const acomp = menor?.acompanhante?.pessoa?.nome || menor?.acompanhante_nome || '';
+  const acomp = menor?.precisa_acompanhante === false
+    ? '' : (menor?.acompanhante?.pessoa?.nome || menor?.acompanhante_nome || '');
 
   const quem = ctx.quem || {};
   const igreja = semCodigo(quem.papel === 'parceiro' ? (menor?.igreja || quem.igreja) : quem.igreja);
@@ -63,7 +72,10 @@ export const mensagemParaResponsavel = (menor, ctx = {}) => {
     apresentacao,
     `${filho.charAt(0).toUpperCase()}${filho.slice(1)}, ${nomeMenor}, se inscreveu para servir como equipante na ${edicao} do Metanoia Radical Serra${datas ? `, nos dias ${datas}` : ''}. Como ${ele} é menor de idade, precisamos que você, como responsável, esteja ciente e autorize a participação ${dele}.`,
   ];
-  if (acomp) {
+  if (menor?.precisa_acompanhante === false) {
+    // 16 e 17 anos (20261105c): so a autorizacao, sem acompanhante.
+    partes.push(`Você autoriza a participação de ${pNome}? Se estiver tudo certo, é só responder esta mensagem com *"Autorizo"*.`);
+  } else if (acomp) {
     partes.push(`Na inscrição, ${pNome} informou que quem vai acompanhá-l${o} durante todo o projeto é *${acomp}*, que também vai servir nesta edição. Lembrando que ${ele} precisa estar acompanhad${o} durante todo o evento.`);
     partes.push(`Você autoriza a participação de ${pNome} e confirma ${acomp} como acompanhante ${dele}? Se estiver tudo certo, é só responder esta mensagem com *"Autorizo"*.`);
   } else {

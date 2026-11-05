@@ -27,7 +27,7 @@ import { AREAS_INSCRICAO, AREA_DISPONIVEL_QUALQUER } from '@/constants/workAreas
 import { FRASES_AREAS_EXTRA } from '@/constants/areasExtra';
 import { AREA_SAUDE, ESPECIALIDADE_OUTRO, problemaEspecialidade } from '@/constants/especialidadesSaude';
 import CampoEspecialidadeSaude from '@/components/inscricao/CampoEspecialidadeSaude';
-import { ehMenorDeIdade } from '@/utils/responsavelMenor';
+import { ehMenorDeIdade, precisaAcompanhante } from '@/utils/responsavelMenor';
 
 /**
  * Edicao dos dados cadastrais de uma inscricao (acampante ou equipante),
@@ -317,15 +317,17 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
     // Responsavel / acompanhante do menor: mesmas regras do formulario. O
     // banco confere de novo (validar_ficha) e nao deixa apagar de menor.
     const menor = ehMenorDeIdade(form.data_nascimento, isEquipante ? 'equipante' : 'acampante');
+    // Acompanhante obrigatorio so para menor de 16 (20261105c).
+    const exigeAcomp = isEquipante && precisaAcompanhante(form.data_nascimento, 'equipante');
     const pessoasDoMenor = [
-      ['responsavel_nome', 'responsável'],
-      ...(isEquipante ? [['acompanhante_nome', 'acompanhante']] : []),
+      ['responsavel_nome', 'responsável', menor],
+      ...(isEquipante ? [['acompanhante_nome', 'acompanhante', exigeAcomp]] : []),
     ];
-    for (const [campo, rotulo] of pessoasDoMenor) {
+    for (const [campo, rotulo, exige] of pessoasDoMenor) {
       if (!(campo in alterados) && !('nome' in alterados)) continue;
       const v = form[campo];
       if (!temValor(v)) {
-        if (menor && campo in alterados) {
+        if (exige && campo in alterados) {
           toast({ title: `Informe o nome do ${rotulo}`, description: 'A pessoa é menor de idade: este dado é obrigatório.', variant: 'destructive' });
           return;
         }
@@ -516,8 +518,8 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
               <CampoTexto label="Nome do responsável" valor={form.responsavel_nome}
                 onChange={(v) => set('responsavel_nome')(limparNomePessoa(v))} placeholder="Nome e sobrenome" />
               <CampoTelefone label="WhatsApp do responsável" campo="responsavel_whatsapp" form={form} onChange={set('responsavel_whatsapp')} />
-              {isEquipante && (
-                <CampoTexto label="Quem vai acompanhar no projeto (nome completo)" valor={form.acompanhante_nome}
+              {isEquipante && (precisaAcompanhante(form.data_nascimento, 'equipante') || temValor(inscricao.acompanhante_nome)) && (
+                <CampoTexto label="Quem vai acompanhar no projeto (nome completo, só menor de 16)" valor={form.acompanhante_nome}
                   onChange={(v) => set('acompanhante_nome')(limparNomePessoa(v))} placeholder="Equipante desta edição" />
               )}
               {isEquipante && inscricao.menor_liberado_em && (

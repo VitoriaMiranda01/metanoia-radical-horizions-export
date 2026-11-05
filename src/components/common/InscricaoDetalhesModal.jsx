@@ -560,7 +560,8 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
                   <span className="text-sm text-gray-400 block mb-1">WhatsApp do responsável:</span>
                   <p className="text-white font-medium">{displayValue(inscricao.responsavel_whatsapp)}</p>
                 </div>
-                {isEquipante && (
+                {/* Acompanhante so para menor de 16 (20261105c): sem nome, nao aparece. */}
+                {isEquipante && inscricao.acompanhante_nome && (
                   <>
                     <div className="bg-white/5 p-3 rounded-md md:col-span-2">
                       <span className="text-sm text-gray-400 block mb-1">Acompanhante informado pelo menor:</span>

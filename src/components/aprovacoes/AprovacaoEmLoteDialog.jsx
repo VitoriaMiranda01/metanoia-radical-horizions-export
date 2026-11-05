@@ -8,7 +8,9 @@ import { useToast } from '@/components/ui/use-toast';
 import { aprovarEmLote, desfazerLoteAprovacao, listarLotesAprovacao } from '@/services/aprovacaoLoteService';
 import { igrejaDaLinha, igrejasComInscritos } from '@/utils/exportAprovacoes';
 import SeletorIgrejas from './SeletorIgrejas';
-import { DECLARACAO_MENOR_PEDIDO, DECLARACAO_MENOR_TEXTO, DECLARACAO_MENOR_TITULO } from '@/utils/menorAprovacao';
+import {
+  DECLARACAO_MENOR_PEDIDO, DECLARACAO_MENOR_TEXTO, DECLARACAO_MENOR_TEXTO_SEM_ACOMPANHANTE, DECLARACAO_MENOR_TITULO,
+} from '@/utils/menorAprovacao';
 
 const quando = (iso) =>
   iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
@@ -198,7 +200,20 @@ const AprovacaoEmLoteDialog = ({ aberto, onFechar, dados, onConcluido }) => {
                   </p>
                   <div className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-100">
                     <p className="font-semibold text-amber-200">{DECLARACAO_MENOR_TITULO}</p>
-                    <p className="mt-1">{DECLARACAO_MENOR_TEXTO}</p>
+                    {/* 20261105c: acompanhante so para menor de 16. */}
+                    {(() => {
+                      const com = menoresDoLote.some((m) => m.menorInfo?.precisa_acompanhante !== false);
+                      const sem = menoresDoLote.some((m) => m.menorInfo?.precisa_acompanhante === false);
+                      if (com && sem) {
+                        return (
+                          <>
+                            <p className="mt-1"><strong>Menores de 16 anos:</strong> {DECLARACAO_MENOR_TEXTO}</p>
+                            <p className="mt-1"><strong>16 e 17 anos:</strong> {DECLARACAO_MENOR_TEXTO_SEM_ACOMPANHANTE}</p>
+                          </>
+                        );
+                      }
+                      return <p className="mt-1">{sem ? DECLARACAO_MENOR_TEXTO_SEM_ACOMPANHANTE : DECLARACAO_MENOR_TEXTO}</p>;
+                    })()}
                     <p className="mt-1 font-medium">{DECLARACAO_MENOR_PEDIDO}</p>
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-2 text-xs">

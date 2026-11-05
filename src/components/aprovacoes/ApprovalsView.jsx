@@ -54,11 +54,12 @@ const ApprovalsView = ({
 
   const carregarMenores = async () => {
     const r = await fetchMenoresDaAprovacao();
-    if (!r.success) return;
+    if (!r.success) return null;
     setMenores({
       itens: r.itens,
       ctx: { quem: r.quem, edicao: r.edicao, eventoInicio: r.eventoInicio, eventoFim: r.eventoFim },
     });
+    return r.itens;
   };
 
   const { porId: menorPorId, acompanhanteDe } = useMemo(() => indexarMenores(menores.itens), [menores.itens]);
@@ -163,6 +164,15 @@ const ApprovalsView = ({
 
       return data || {};
     } catch (error) {
+      // A lista dos menores nao tinha carregado: o servidor pediu a
+      // declaracao. Recarrega e abre a janela do menor em vez do erro.
+      if (error?.precisaDeclaracaoMenor) {
+        const itens = await carregarMenores();
+        if (itens?.some((m) => m.id === id)) {
+          setMenorEmAprovacao({ id, modo: 'aprovar' });
+          return null;
+        }
+      }
       console.error("Erro ao atualizar status:", error);
       toast({
         title: "Erro na atualização",

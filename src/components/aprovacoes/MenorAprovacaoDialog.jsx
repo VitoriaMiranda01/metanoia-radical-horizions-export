@@ -20,6 +20,10 @@ const CORES = {
 };
 
 const semCodigo = (igreja) => String(igreja || '').replace(/^\s*\d+\s*-\s*/, '').trim();
+// Busca so com nome e sobrenome (20261105b): o parceiro nao lista as outras igrejas.
+const PALAVRAS_FRACAS = new Set(['de', 'da', 'do', 'dos', 'das', 'e']);
+const temNomeESobrenome = (t) =>
+  String(t || '').trim().split(/\s+/).filter((w) => w.length >= 2 && !PALAVRAS_FRACAS.has(w.toLowerCase())).length >= 2;
 const rotuloStatus = (s) => (s === 'aprovado' ? 'aprovado' : s === 'rejeitado' ? 'rejeitado' : 'pendente');
 
 /**
@@ -73,7 +77,7 @@ const MenorAprovacaoDialog = ({ aberto, menor, ctx, modo = 'aprovar', onConfirma
 
   const procurar = async (e) => {
     e?.preventDefault();
-    if (termo.trim().length < 3) return;
+    if (!temNomeESobrenome(termo)) return;
     setBuscando(true);
     const r = await buscarAcompanhante(menor.id, termo.trim());
     setBuscando(false);
@@ -247,10 +251,10 @@ const MenorAprovacaoDialog = ({ aberto, menor, ctx, modo = 'aprovar', onConfirma
                   <div className="flex gap-2">
                     <Input
                       autoFocus value={termo} onChange={(e) => setTermo(e.target.value)}
-                      placeholder="Nome do acompanhante (equipante inscrito)"
+                      placeholder="Nome e sobrenome do acompanhante"
                       className="h-8 bg-black/40 border-white/20 text-sm text-white"
                     />
-                    <Button type="submit" size="sm" disabled={buscando || termo.trim().length < 3}
+                    <Button type="submit" size="sm" disabled={buscando || !temNomeESobrenome(termo)}
                       className="h-8 bg-white/15 text-white hover:bg-white/25">
                       {buscando ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Procurar'}
                     </Button>

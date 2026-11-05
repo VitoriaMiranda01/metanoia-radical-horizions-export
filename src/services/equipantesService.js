@@ -418,7 +418,12 @@ export const updateEquipanteStatus = async (id, newStatus, declaracaoMenor = fal
     p_declaracao_menor: !!declaracaoMenor
   });
   if (error) return { error };
-  if (!data?.ok) return { error: new Error(data?.erro || 'Não foi possível registrar a decisão.') };
+  if (!data?.ok) {
+    const erro = new Error(data?.erro || 'Não foi possível registrar a decisão.');
+    // Menor sem a declaracao (20261105a): a tela abre a janela do menor.
+    erro.precisaDeclaracaoMenor = !!data?.precisa_declaracao_menor;
+    return { error: erro };
+  }
   return { data };
 };
 

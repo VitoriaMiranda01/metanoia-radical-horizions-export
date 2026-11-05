@@ -28,6 +28,7 @@ import { FRASES_AREAS_EXTRA } from '@/constants/areasExtra';
 import { AREA_SAUDE, ESPECIALIDADE_OUTRO, problemaEspecialidade } from '@/constants/especialidadesSaude';
 import CampoEspecialidadeSaude from '@/components/inscricao/CampoEspecialidadeSaude';
 import { ehMenorDeIdade, precisaAcompanhante } from '@/utils/responsavelMenor';
+import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 /**
  * Edicao dos dados cadastrais de uma inscricao (acampante ou equipante),
@@ -183,6 +184,7 @@ const ESTADOS_CIVIS = ['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)',
 // vinc + onRealocar: a mesma parte de vinculos do card do grupo de trilha
 // (lista, sugestao da inscricao, "+ Vinculo", mover o outro).
 const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, onRealocar }) => {
+  const refModal = useModalAcessivel(onClose);
   const { toast } = useToast();
   const isEquipante = inscricao?.tipo === 'equipante';
   const [salvando, setSalvando] = useState(false);
@@ -396,12 +398,16 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
       onClick={onClose}
     >
       <div
+        ref={refModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="editar-inscricao-titulo"
         className="bg-black border border-white/10 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-6 border-b border-white/10 bg-zinc-900">
           <div>
-            <h3 className="text-xl md:text-2xl font-bold text-white">Editar Inscrição</h3>
+            <h3 id="editar-inscricao-titulo" className="text-xl md:text-2xl font-bold text-white">Editar Inscrição</h3>
             <p className="text-sm text-gray-400 mt-1">
               {isEquipante ? 'Equipante' : 'Acampante'} · {inscricao.nome}
             </p>

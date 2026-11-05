@@ -18,6 +18,7 @@ import { problemaTelefone } from '@/utils/telefone';
 import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
 import { validateCPF } from '@/utils/validation';
 import { formatCPF } from '@/utils/formatters';
+import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 /**
  * Inscricao manual de equipante (Raquel, Eduardo e Desenvolvedores), para
@@ -70,6 +71,7 @@ const Campo = ({ label, children, className = '' }) => (
 );
 
 const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
+  const refModal = useModalAcessivel();
   const { toast } = useToast();
   const [form, setForm] = useState({ ...VAZIO, nome: nomeInicial });
   const { parceiras, extras, permiteOutra } = useOpcoesDeIgreja();
@@ -219,12 +221,16 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
       onClick={() => !salvando && onClose()}
     >
       <div
+        ref={refModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="inscricao-manual-titulo"
         className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-xl border border-white/10 bg-neutral-950 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 p-5 border-b border-white/10 bg-zinc-900 sticky top-0 z-10">
           <div>
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <h3 id="inscricao-manual-titulo" className="text-xl font-bold text-white flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-emerald-400" /> Inscrição manual de equipante
             </h3>
             <p className="text-sm text-gray-400 mt-1">

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
 import EditarInscricaoModal from '@/components/gerenciar/EditarInscricaoModal';
 import { fetchFicha, salvarFicha } from '@/services/fichaService';
+import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 /**
  * Ficha de inscricao aberta de fora de Gerenciar Inscricoes (Pagamentos,
@@ -13,6 +14,11 @@ import { fetchFicha, salvarFicha } from '@/services/fichaService';
  * atualizada e avisa a tela de tras (onSalvo) para ela buscar de novo.
  */
 const FichaInscricaoDialog = ({ tipo, id, onClose, onSalvo }) => {
+  // Sem onFechar aqui: este wrapper fica montado enquanto EditarInscricaoModal
+  // ou InscricaoDetalhesModal (cada um com seu proprio useModalAcessivel)
+  // estao abertos por cima dele -- um Esc global aqui fecharia os dois de
+  // uma vez. O ref so importa durante o carregamento/erro, antes deles.
+  const refCarregando = useModalAcessivel();
   const [ficha, setFicha] = useState(null);
   const [erro, setErro] = useState('');
   const [editando, setEditando] = useState(false);
@@ -40,7 +46,14 @@ const FichaInscricaoDialog = ({ tipo, id, onClose, onSalvo }) => {
   if (!ficha) {
     return (
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose}>
-        <div className="bg-zinc-900 border border-white/10 rounded-lg p-6 flex items-center gap-3 text-gray-300" onClick={(e) => e.stopPropagation()}>
+        <div
+          ref={refCarregando}
+          role="alertdialog"
+          aria-modal="true"
+          aria-label={erro ? 'Erro ao abrir a ficha' : 'Abrindo a ficha'}
+          className="bg-zinc-900 border border-white/10 rounded-lg p-6 flex items-center gap-3 text-gray-300"
+          onClick={(e) => e.stopPropagation()}
+        >
           {erro ? (
             <>
               <span className="text-red-300">{erro}</span>

@@ -7,6 +7,7 @@ import AreasReveladas from './AreasReveladas';
 import GrupoEquipante from './GrupoEquipante';
 import { listaDeResponsaveis } from '@/utils/formatters';
 import { TEXTO_PRESENCA_APOS_REUNIAO } from '@/constants/textosPresenca';
+import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 /**
  * "Ver qual área fui escalado": a revelacao animada da area, que substitui o
@@ -52,6 +53,7 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, r
   // O servidor ja respondeu com a area (e gravou que a pessoa viu).
   const viu = etapa === 'suspense' || etapa === 'revelado';
   const fechar = () => onClose?.(viu);
+  const refModal = useModalAcessivel(fechar);
 
   useEffect(() => {
     let vivo = true;
@@ -91,7 +93,12 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, r
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
     >
-      <div className="relative w-full max-w-md min-h-[360px] max-h-[92vh] rounded-2xl border border-white/10 bg-gradient-to-b from-neutral-900 to-black shadow-2xl overflow-hidden flex flex-col">
+      <div
+        ref={refModal}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Sua área na escala"
+        className="relative w-full max-w-md min-h-[360px] max-h-[92vh] rounded-2xl border border-white/10 bg-gradient-to-b from-neutral-900 to-black shadow-2xl overflow-hidden flex flex-col">
         <button type="button" onClick={fechar} aria-label="Fechar"
           className="absolute right-3 top-3 z-10 text-gray-400 hover:text-white">
           <X className="w-5 h-5" />

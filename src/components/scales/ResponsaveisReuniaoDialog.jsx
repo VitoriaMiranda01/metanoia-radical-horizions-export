@@ -8,6 +8,7 @@ import {
 } from '@/services/scalesService';
 import { formatCPF } from '@/utils/formatters';
 import { cn } from '@/lib/utils';
+import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 /**
  * Responsaveis pela reuniao da escala (15/10/2026, Patrick).
@@ -41,6 +42,7 @@ const Bolinha = ({ cor }) => (cor
   : null);
 
 const ResponsaveisReuniaoDialog = ({ onClose, pessoas = [] }) => {
+  const refModal = useModalAcessivel();
   const { toast } = useToast();
   const [equipes, setEquipes] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -102,11 +104,16 @@ const ResponsaveisReuniaoDialog = ({ onClose, pessoas = [] }) => {
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      <div className="bg-black border border-white/10 rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+      <div
+        ref={refModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="responsaveis-reuniao-titulo"
+        className="bg-black border border-white/10 rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-start gap-4 p-5 border-b border-white/10 bg-zinc-900">
           <div>
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <h3 id="responsaveis-reuniao-titulo" className="text-xl font-bold text-white flex items-center gap-2">
               <UserCog className="h-5 w-5 text-amber-300" /> Responsáveis pela reunião da escala
             </h3>
             <p className="text-sm text-gray-400 mt-1">
@@ -329,6 +336,7 @@ const BuscaPessoa = ({ pessoas, jaSao = [], ocupado, onEscolher, autoFocus = tru
 
 // Em bloco: 1) escolhe a pessoa; 2) marca as equipes; 3) confirma.
 const EmBlocoDialog = ({ equipes, pessoas, onClose, onPronto }) => {
+  const refModal = useModalAcessivel();
   const { toast } = useToast();
   const [pessoa, setPessoa] = useState(null);
   const [marcadas, setMarcadas] = useState({});
@@ -365,11 +373,16 @@ const EmBlocoDialog = ({ equipes, pessoas, onClose, onPronto }) => {
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[60]" onClick={(e) => { e.stopPropagation(); onClose(); }}>
-      <div className="bg-zinc-950 border border-amber-500/30 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+      <div
+        ref={refModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="responsavel-em-bloco-titulo"
+        className="bg-zinc-950 border border-amber-500/30 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-start gap-4 p-5 border-b border-white/10">
           <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <h3 id="responsavel-em-bloco-titulo" className="text-lg font-bold text-white flex items-center gap-2">
               <Users className="h-5 w-5 text-amber-300" /> Responsável de outra área (em bloco)
             </h3>
             <p className="text-sm text-gray-400 mt-1">

@@ -12,6 +12,7 @@ import { exportDisponibilidadesExtra } from '@/utils/excelExport';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import { formatCPF } from '@/utils/formatters';
 import { cn } from '@/lib/utils';
+import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 /**
  * Áreas de Trabalho Extra — quem se ofereceu para os três mutirões da
@@ -37,6 +38,7 @@ const CHIP_INSCRICAO = {
 };
 
 const AreasExtraDialog = ({ onClose }) => {
+  const refModal = useModalAcessivel();
   const { toast } = useToast();
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -257,12 +259,16 @@ const AreasExtraDialog = ({ onClose }) => {
       onClick={onClose}
     >
       <div
+        ref={refModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="areas-extra-titulo"
         className="bg-black border border-white/10 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start gap-4 p-5 border-b border-white/10 bg-zinc-900">
           <div>
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <h3 id="areas-extra-titulo" className="text-xl font-bold text-white flex items-center gap-2">
               <Truck className="h-5 w-5 text-blue-400" />
               Áreas de Trabalho Extra
             </h3>

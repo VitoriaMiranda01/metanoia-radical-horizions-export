@@ -11,6 +11,7 @@ import { nomeDaIgreja } from '@/constants/igrejas';
 import { casaBusca } from '@/utils/busca';
 import { trocarAreaEscala, definirAtuacao, definirCor } from '@/services/scalesService';
 import { cn } from '@/lib/utils';
+import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 /**
  * "Trocar de área" (pedido do Patrick, 05/10/2026). Abre depois que a escala
@@ -35,6 +36,7 @@ import { cn } from '@/lib/utils';
  * cor (a chamada nao se perde).
  */
 const TrocarAreaDialog = ({ allocations, atuacoesPorArea = {}, inicial = null, onClose, onTrocado }) => {
+  const refModal = useModalAcessivel();
   const { toast } = useToast();
   const [busca, setBusca] = useState('');
   const [escolhido, setEscolhido] = useState(inicial);
@@ -171,10 +173,15 @@ const TrocarAreaDialog = ({ allocations, atuacoesPorArea = {}, inicial = null, o
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-start sm:items-center justify-center p-4 overflow-y-auto"
       onClick={onClose}>
-      <div className="w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-xl shadow-2xl"
+      <div
+        ref={refModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="trocar-area-titulo"
+        className="w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+          <h2 id="trocar-area-titulo" className="text-lg font-semibold text-white flex items-center gap-2">
             <Repeat className="w-5 h-5 text-cyan-400" /> Trocar de área
           </h2>
           <button type="button" onClick={onClose} aria-label="Fechar" className="text-gray-400 hover:text-white">

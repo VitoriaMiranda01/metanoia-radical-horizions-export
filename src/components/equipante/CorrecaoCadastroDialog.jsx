@@ -22,6 +22,7 @@ import { calcularIdade, formatCPF } from '@/utils/formatters';
 import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
 import { problemaNomeSimples } from '@/utils/validacoesInscricao';
 import { validateCPF } from '@/utils/validation';
+import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 /**
  * Janela de "Complete o seu cadastro" do acompanhamento (ideia do Patrick,
@@ -60,6 +61,9 @@ const Secao = ({ Icone, texto, children }) => (
 );
 
 const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar = false, onSair, onCorrigido }) => {
+  // Só fecha com Esc quando existe como sair (mesma regra do botão "Sair"
+  // logo abaixo: sem onSair, o cadastro é obrigatorio e nao da pra pular).
+  const refModal = useModalAcessivel(onSair);
   const { toast } = useToast();
   const tem = (tipo) => pendencias.some((p) => p.tipo === tipo);
   const pNome = pendencias.find((p) => p.tipo === 'nome');
@@ -211,14 +215,16 @@ const CorrecaoCadastroDialog = ({ equipanteId, dono, pendencias, antesDeRevelar 
       <motion.div
         initial={{ scale: 0.95, y: 10 }}
         animate={{ scale: 1, y: 0 }}
+        ref={refModal}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="correcao-cadastro-titulo"
         className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-xl border border-amber-500/40 bg-neutral-950 shadow-2xl"
       >
         <div className="flex items-start gap-3 p-5 border-b border-white/10 bg-amber-500/10 sticky top-0 z-10 backdrop-blur">
           <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
           <div>
-            <h3 className="text-xl font-bold text-white">Complete o seu cadastro</h3>
+            <h3 id="correcao-cadastro-titulo" className="text-xl font-bold text-white">Complete o seu cadastro</h3>
             <p className="text-sm text-amber-100/90 mt-1">
               {pendencias.length > 0 && pendencias.every((p) => p.tipo === 'especialidade_saude')
                 ? 'Para continuar, conte para a equipe de Saúde qual é a sua especialidade.'

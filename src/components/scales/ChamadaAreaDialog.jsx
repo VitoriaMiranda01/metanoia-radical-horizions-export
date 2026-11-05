@@ -11,6 +11,7 @@ import {
 } from '@/services/scalesService';
 import { registrarChamadaLocal } from '@/services/chamadaStore';
 import SeloOutraCidade from './SeloOutraCidade';
+import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 /**
  * Chamada de uma area, pela organizacao (16/10/2026, Patrick).
@@ -34,6 +35,7 @@ const FILTROS = [
 ];
 
 const ChamadaAreaDialog = ({ area, onClose, onMudou }) => {
+  const refModal = useModalAcessivel();
   const { toast } = useToast();
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState('');
@@ -110,11 +112,16 @@ const ChamadaAreaDialog = ({ area, onClose, onMudou }) => {
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-2 sm:p-4 z-50" onClick={fechar}>
-      <div className="bg-black border border-white/10 rounded-lg shadow-2xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col"
+      <div
+        ref={refModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="chamada-area-titulo"
+        className="bg-black border border-white/10 rounded-lg shadow-2xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-start gap-4 p-4 sm:p-5 border-b border-white/10 bg-zinc-900">
           <div className="min-w-0">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <h3 id="chamada-area-titulo" className="text-xl font-bold text-white flex items-center gap-2">
               <ClipboardList className="h-5 w-5 text-cyan-400 shrink-0" /> Chamada · {area}
             </h3>
             <p className="text-sm text-gray-400 mt-1">

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Sparkles, X, Loader2, UserCheck } from 'lucide-react';
 import { AREAS_ESPECIAIS } from '@/constants/workAreas';
+import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 // Numero por extenso so pra esta frase -- nao vale a pena um util
 // compartilhado para 6 palavras. Se um setimo papel especial entrar e
@@ -50,6 +51,10 @@ const AreasEspeciaisDialog = ({
   onClose, total = 0, children, onAplicarCpfs, aplicandoPorCpf = false,
   titulo = 'Áreas Especiais', Icone = Sparkles, descricao, resumo, dicaAplicar
 }) => {
+  // Sem onFechar aqui: a janela ja trata Esc com uma regra especial logo
+  // abaixo (nao fecha se tiver outro dialog do Radix aberto por cima).
+  const refModal = useModalAcessivel();
+
   useEffect(() => {
     // Com outra janela aberta por cima (ex.: "Alocar em lote"), o Esc fecha
     // so ela, nao este modulo junto.
@@ -75,11 +80,15 @@ const AreasEspeciaisDialog = ({
       {/* Ocupa quase a tela toda (13/10/2026, Patrick achou pequena): as
           tabelas das areas tem 6 colunas e espremiam os nomes. */}
       <div
+        ref={refModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="areas-especiais-titulo"
         className="bg-black border border-white/10 rounded-lg shadow-2xl w-full max-w-[min(96vw,1700px)] h-[96vh] sm:h-[94vh] overflow-hidden flex flex-col"
       >
         <div className="flex justify-between items-start gap-4 p-5 border-b border-white/10 bg-zinc-900">
           <div>
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <h3 id="areas-especiais-titulo" className="text-xl font-bold text-white flex items-center gap-2">
               <Icone className="h-5 w-5 text-purple-400" />
               {titulo}
             </h3>

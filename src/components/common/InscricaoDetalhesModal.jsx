@@ -13,6 +13,7 @@ import { getEquipanteStageLabel } from '@/utils/equipanteWorkflow';
 import { ehPastorTexto } from '@/utils/pastor';
 import { respostasGrupoEEbd } from '@/utils/grupoCuidadoEbd';
 import MenorNaFicha from '@/components/common/MenorNaFicha';
+import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 const getStatusBadge = (status) => {
   const variants = {
@@ -138,6 +139,7 @@ const formatBoolean = (value) => {
 // onEditar (opcional): mostra o botao "Editar" no topo (ex.: Pagamentos abre
 // a ficha e edita na mesma janela -- FichaInscricaoDialog.jsx).
 const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
+  const refModal = useModalAcessivel(onClose);
   const isEquipante = inscricao?.tipo === 'equipante';
   const { isOrganizador, isParceiro } = useAuth();
   const podeTornarParceiro = isEquipante && isOrganizador && !isParceiro && ehPastorTexto(inscricao) !== 'Não';
@@ -157,12 +159,16 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
       onClick={onClose}
     >
       <div
+        ref={refModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detalhes-inscricao-titulo"
         className="bg-black border border-white/10 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-white/10 bg-zinc-900">
-          <h3 className="text-xl md:text-2xl font-bold text-white">Detalhes da Inscrição</h3>
+          <h3 id="detalhes-inscricao-titulo" className="text-xl md:text-2xl font-bold text-white">Detalhes da Inscrição</h3>
           <div className="flex items-center gap-2">
             {onEditar && (
               <Button

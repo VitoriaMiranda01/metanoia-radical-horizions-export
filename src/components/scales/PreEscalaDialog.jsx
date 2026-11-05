@@ -7,6 +7,7 @@ import { exportPreEscala } from '@/utils/excelExport';
 import { fetchEquipantesParaPreEscala } from '@/services/equipantesService';
 import { AREAS_INSCRICAO, AREAS_ESPECIAIS } from '@/constants/workAreas';
 import { cn } from '@/lib/utils';
+import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 const SEM_OPCAO = 'Sem 1ª opção registrada';
 
@@ -48,6 +49,7 @@ const PreEscalaDialog = ({ onClose }) => {
   const [abertas, setAbertas] = useState(() => new Set());
   const [escolhendoExport, setEscolhendoExport] = useState(false);
   const { toast } = useToast();
+  const refModal = useModalAcessivel();
 
   useEffect(() => {
     (async () => {
@@ -128,12 +130,16 @@ const PreEscalaDialog = ({ onClose }) => {
       onClick={onClose}
     >
       <div
+        ref={refModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pre-escala-titulo"
         className="bg-black border border-white/10 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start gap-4 p-5 border-b border-white/10 bg-zinc-900">
           <div>
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <h3 id="pre-escala-titulo" className="text-xl font-bold text-white flex items-center gap-2">
               <ClipboardCheck className="h-5 w-5 text-teal-400" />
               Pré-escala
             </h3>

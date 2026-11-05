@@ -11,6 +11,24 @@ import {
   dadosDaEdicaoParaArte
 } from '@/services/fotosTrilhaService';
 import { CORES_ARTE, FUNDOS_ARTE, desenharArteGrupo, desenharArteInfiltrados, desenharSlideGrupo } from '@/utils/arteTrilha';
+import { useModalAcessivel } from '@/hooks/useModalAcessivel';
+
+// Move o foco pra dentro de um sub-dialog simples (confirmar/avisar) quando
+// ele abre -- sem o trap de Tab completo do useModalAcessivel, porque aqui
+// dentro de FotosTrilhaDialog varios desses sub-dialogs sao condicionais e
+// hooks nao podem ser chamados um numero variavel de vezes. O Esc deles ja
+// é tratado pelo handler do dialog principal (que ignora o Esc quando tem
+// um [role="dialog"] por cima -- é por isso que cada um já carrega
+// data-state="open").
+const useFocoAoAbrir = (refAlvo, aberto) => {
+  useEffect(() => {
+    if (!aberto) return;
+    const primeiro = refAlvo.current?.querySelector(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    (primeiro || refAlvo.current)?.focus();
+  }, [aberto, refAlvo]);
+};
 
 /**
  * FOTOS DA TRILHA (24/10/2026, Patrick): banco de fotos da equipe de trilha e
@@ -79,6 +97,7 @@ const QW = 240;
 const QH = 300;
 
 const RecorteFoto = ({ arquivo, pessoa, nomeInicial, onCancelar, onSalvo }) => {
+  const refModal = useModalAcessivel(onCancelar);
   const { toast } = useToast();
   const [img, setImg] = useState(null);
   const [zoom, setZoom] = useState(1);
@@ -154,11 +173,18 @@ const RecorteFoto = ({ arquivo, pessoa, nomeInicial, onCancelar, onSalvo }) => {
   };
 
   return (
-    <div role="dialog" data-state="open" className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-3">
+    <div
+      ref={refModal}
+      role="dialog"
+      data-state="open"
+      aria-modal="true"
+      aria-labelledby="ajustar-foto-titulo"
+      className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-3"
+    >
       <div className="bg-zinc-900 border border-white/10 rounded-lg w-full max-w-md p-5 space-y-4">
         <div className="flex justify-between items-start gap-3">
           <div>
-            <h4 className="text-lg font-bold text-white">Ajustar foto</h4>
+            <h4 id="ajustar-foto-titulo" className="text-lg font-bold text-white">Ajustar foto</h4>
             <p className="text-sm text-gray-400">{pessoa.nome}</p>
           </div>
           <Button variant="ghost" size="sm" onClick={onCancelar} className="text-gray-400 hover:text-white"><X className="h-5 w-5" /></Button>
@@ -253,6 +279,13 @@ const CartaoPessoa = ({ pessoa, foto, link, papel, onEnviar, onNome, onRemover }
 
 // ------------------------------------------------------------------ janela
 const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) => {
+  // Esc já tem regra própria logo abaixo (não fecha com outro dialog aberto
+  // por cima), então aqui o hook só cuida de foco/trap, sem onFechar.
+  const refModal = useModalAcessivel();
+  const refRemover = useRef(null);
+  const refAviso = useRef(null);
+  const refArtes = useRef(null);
+  const refAdicionar = useRef(null);
   const { toast } = useToast();
   const [aba, setAba] = useState('escalados');
   const [filtro, setFiltro] = useState('todos'); // todos | sem
@@ -275,6 +308,10 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
   const [removendo, setRemovendo] = useState(null);
   const arquivoRef = useRef(null);
   const pessoaDoArquivo = useRef(null);
+  useFocoAoAbrir(refRemover, !!removendo);
+  useFocoAoAbrir(refAviso, !!aviso);
+  useFocoAoAbrir(refArtes, !!artes);
+  useFocoAoAbrir(refAdicionar, adicionar);
 
   const recarregar = useCallback(async () => {
     try {
@@ -525,10 +562,16 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
       <input ref={arquivoRef} type="file" accept="image/jpeg,image/png,image/webp,image/*" className="hidden" onChange={aoEscolherArquivo} />
-      <div className="bg-black border border-white/10 rounded-lg shadow-2xl w-full max-w-[min(96vw,1700px)] h-[96vh] sm:h-[94vh] overflow-hidden flex flex-col">
+      <div
+        ref={refModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="fotos-trilha-titulo"
+        className="bg-black border border-white/10 rounded-lg shadow-2xl w-full max-w-[min(96vw,1700px)] h-[96vh] sm:h-[94vh] overflow-hidden flex flex-col"
+      >
         <div className="flex justify-between items-start gap-4 p-5 border-b border-white/10 bg-zinc-900">
           <div>
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <h3 id="fotos-trilha-titulo" className="text-xl font-bold text-white flex items-center gap-2">
               <Camera className="h-5 w-5 text-pink-400" /> Fotos Eq. Trilha
             </h3>
             <p className="text-sm text-gray-400 mt-1">
@@ -628,9 +671,16 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
       )}
 
       {removendo && (
-        <div role="dialog" data-state="open" className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-3">
+        <div
+          ref={refRemover}
+          role="alertdialog"
+          data-state="open"
+          aria-modal="true"
+          aria-labelledby="remover-foto-titulo"
+          className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-3"
+        >
           <div className="bg-zinc-900 border border-white/10 rounded-lg w-full max-w-sm p-5 space-y-4">
-            <h4 className="text-lg font-bold text-white">Remover a foto?</h4>
+            <h4 id="remover-foto-titulo" className="text-lg font-bold text-white">Remover a foto?</h4>
             <p className="text-sm text-gray-300">{removendo.nome} fica sem foto no banco. Para voltar, é preciso enviar de novo.</p>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setRemovendo(null)} className="border-white/20 bg-transparent text-gray-300 hover:bg-white/10">Cancelar</Button>
@@ -641,9 +691,16 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
       )}
 
       {aviso && (
-        <div role="dialog" data-state="open" className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-3">
+        <div
+          ref={refAviso}
+          role="alertdialog"
+          data-state="open"
+          aria-modal="true"
+          aria-labelledby="aviso-gerar-titulo"
+          className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-3"
+        >
           <div className="bg-zinc-900 border border-amber-500/40 rounded-lg w-full max-w-lg p-5 space-y-4 max-h-[90vh] flex flex-col">
-            <h4 className="text-lg font-bold text-white flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-400" /> Antes de gerar</h4>
+            <h4 id="aviso-gerar-titulo" className="text-lg font-bold text-white flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-400" /> Antes de gerar</h4>
             <div className="overflow-y-auto space-y-3 text-sm">
               {aviso.semFoto.length > 0 && (
                 <div>
@@ -672,10 +729,17 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
       )}
 
       {artes && (
-        <div role="dialog" data-state="open" className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-3">
+        <div
+          ref={refArtes}
+          role="dialog"
+          data-state="open"
+          aria-modal="true"
+          aria-labelledby="artes-geradas-titulo"
+          className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-3"
+        >
           <div className="bg-zinc-900 border border-white/10 rounded-lg w-full max-w-6xl p-5 space-y-4 max-h-[94vh] flex flex-col">
             <div className="flex justify-between items-center gap-3">
-              <h4 className="text-lg font-bold text-white">
+              <h4 id="artes-geradas-titulo" className="text-lg font-bold text-white">
                 {artes[0].cor === 'INFILTRADOS' ? 'Arte dos infiltrados'
                   : artes.length === 1 ? `Arte do grupo ${artes[0].cor.toLowerCase()}` : `Artes geradas (${artes.length})`}
               </h4>
@@ -700,11 +764,18 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
       )}
 
       {adicionar && (
-        <div role="dialog" data-state="open" className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-3">
+        <div
+          ref={refAdicionar}
+          role="dialog"
+          data-state="open"
+          aria-modal="true"
+          aria-labelledby="adicionar-foto-titulo"
+          className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-3"
+        >
           <div className="bg-zinc-900 border border-white/10 rounded-lg w-full max-w-lg p-5 space-y-3 max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-start">
               <div>
-                <h4 className="text-lg font-bold text-white">Adicionar foto de alguém</h4>
+                <h4 id="adicionar-foto-titulo" className="text-lg font-bold text-white">Adicionar foto de alguém</h4>
                 <p className="text-xs text-gray-400">Qualquer ficha de equipante, mesmo quem não está escalado. Busque pelo nome ou pelo CPF completo.</p>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setAdicionar(false)} className="text-gray-400 hover:text-white"><X className="h-5 w-5" /></Button>

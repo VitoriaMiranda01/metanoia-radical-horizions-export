@@ -440,7 +440,7 @@ const LoginPage = () => {
                         onChange={(e) => setNovaSenha(e.target.value)}
                         required
                         autoFocus
-                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 pr-10 focus:border-green-500 transition-colors"
+                        className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 pr-10 focus:border-green-500 transition-colors"
                         placeholder="Mínimo 8, com letras e números"
                       />
                       <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3 hover:bg-transparent" onClick={() => setShowPassword(!showPassword)}>
@@ -457,12 +457,12 @@ const LoginPage = () => {
                       value={confirmaSenha}
                       onChange={(e) => setConfirmaSenha(e.target.value)}
                       required
-                      className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-green-500 transition-colors"
+                      className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-green-500 transition-colors"
                       placeholder="Digite de novo"
                     />
                   </div>
 
-                  <ul className="text-xs text-gray-500 space-y-1 pl-1">
+                  <ul className="text-xs text-gray-400 space-y-1 pl-1">
                     <li>• pelo menos 8 caracteres</li>
                     <li>• pelo menos uma letra e um número</li>
                     <li>• não pode conter {ehParceiro ? 'o código da igreja' : ehApoio ? 'o seu nome' : 'o seu nome de usuário'}</li>
@@ -472,7 +472,7 @@ const LoginPage = () => {
                     {loading ? 'Salvando...' : 'SALVAR E ENTRAR'}
                   </Button>
 
-                  <button type="button" onClick={voltarParaLogin} className="w-full text-sm text-gray-500 hover:text-gray-300 transition-colors">
+                  <button type="button" onClick={voltarParaLogin} className="w-full text-sm text-gray-400 hover:text-gray-300 transition-colors">
                     Voltar
                   </button>
                 </form>
@@ -511,7 +511,7 @@ const LoginPage = () => {
                       onChange={(e) => setPaNome(e.target.value)}
                       required
                       autoFocus
-                      className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-green-500 transition-colors"
+                      className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-green-500 transition-colors"
                       placeholder="Nome e sobrenome"
                     />
                   </div>
@@ -529,7 +529,7 @@ const LoginPage = () => {
                     />
                   </div>
 
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-400">
                     Fica registrado quem se apresentou por cada igreja. Depois que a senha
                     própria é criada, esse acesso não pode ser refeito — nesse caso use
                     "Esqueci minha senha".
@@ -539,7 +539,7 @@ const LoginPage = () => {
                     {loading ? 'Verificando...' : 'CONTINUAR'}
                   </Button>
 
-                  <button type="button" onClick={voltarParaLogin} className="w-full text-sm text-gray-500 hover:text-gray-300 transition-colors">
+                  <button type="button" onClick={voltarParaLogin} className="w-full text-sm text-gray-400 hover:text-gray-300 transition-colors">
                     Voltar
                   </button>
                 </form>
@@ -613,7 +613,7 @@ const LoginPage = () => {
                     onChange={handleChange}
                     onBlur={handleCodigoBlur}
                     required
-                    className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-red-500 transition-colors"
+                    className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-red-500 transition-colors"
                     placeholder={selectedType === 'organizador' ? 'Organizador' : ehApoio ? 'Primeiro nome' : 'Código'}
                   />
 
@@ -644,7 +644,7 @@ const LoginPage = () => {
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-gray-200">Senha</Label>
                   <div className="relative">
-                    <Input id="password" name="password" type={showPassword ? "text" : "password"} value={formData.password} onChange={handleChange} required className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 pr-10 focus:border-red-500 transition-colors" placeholder="Sua senha" />
+                    <Input id="password" name="password" type={showPassword ? "text" : "password"} value={formData.password} onChange={handleChange} required className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 pr-10 focus:border-red-500 transition-colors" placeholder="Sua senha" />
                     <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3 hover:bg-transparent" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
                     </Button>
@@ -682,7 +682,7 @@ const LoginPage = () => {
           )}
 
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="text-center mt-6">
-            <p className="text-sm text-gray-500 flex items-center justify-center gap-2">Feito com <Heart className="w-4 h-4 text-red-600 fill-red-600" /> para o Reino de Deus</p>
+            <p className="text-sm text-gray-400 flex items-center justify-center gap-2">Feito com <Heart className="w-4 h-4 text-red-600 fill-red-600" /> para o Reino de Deus</p>
           </motion.div>
         </motion.div>
       </div>

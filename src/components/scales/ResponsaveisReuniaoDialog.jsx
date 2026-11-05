@@ -114,7 +114,7 @@ const ResponsaveisReuniaoDialog = ({ onClose, pessoas = [] }) => {
               grupo, pelo acompanhamento da inscrição. Pode ter mais de um por equipe, e pode ser gente de outra área.
             </p>
             {!carregando && (
-              <p className="text-xs text-gray-500 mt-1">{equipes.length} equipes · {comResponsavel} com responsável</p>
+              <p className="text-xs text-gray-400 mt-1">{equipes.length} equipes · {comResponsavel} com responsável</p>
             )}
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-400 hover:text-white shrink-0">
@@ -124,7 +124,7 @@ const ResponsaveisReuniaoDialog = ({ onClose, pessoas = [] }) => {
 
         <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar área, cor, líder ou responsável..."
               className="h-9 pl-8 bg-black/40 border-white/20 text-white" />
           </div>
@@ -158,7 +158,7 @@ const ResponsaveisReuniaoDialog = ({ onClose, pessoas = [] }) => {
                           <Bolinha cor={e.cor} /> {e.cor}
                         </span>
                       )}
-                      <span className="text-xs text-gray-500 font-normal">{(e.membros || []).length} pessoas</span>
+                      <span className="text-xs text-gray-400 font-normal">{(e.membros || []).length} pessoas</span>
                     </p>
                     <p className="text-xs text-gray-400 truncate">
                       <Crown className="inline h-3 w-3 mr-1 text-amber-300/70" />
@@ -177,7 +177,7 @@ const ResponsaveisReuniaoDialog = ({ onClose, pessoas = [] }) => {
                                 de outra área{d.areas?.length ? ` · ${d.areas.join(', ')}` : ''}
                               </span>
                             )}
-                            {d.definido_por && <span className="text-gray-500">por {d.definido_por}</span>}
+                            {d.definido_por && <span className="text-gray-400">por {d.definido_por}</span>}
                             <button type="button" disabled={salvando === chave} onClick={() => tirar(e, d)}
                               aria-label={`Tirar ${d.nome}`} data-dica={`Tirar ${d.nome} desta reunião.`}
                               className="ml-auto sm:ml-0 rounded p-0.5 text-red-400 hover:text-red-300 hover:bg-red-500/10">
@@ -263,7 +263,7 @@ const EscolherMembro = ({ equipe, ocupado, onEscolher, onDeFora }) => {
             </button>
           );
         })}
-        {membros.length === 0 && <p className="text-xs text-gray-500 text-center py-3">Ninguém encontrado.</p>}
+        {membros.length === 0 && <p className="text-xs text-gray-400 text-center py-3">Ninguém encontrado.</p>}
       </div>
     </div>
   );
@@ -287,7 +287,7 @@ const BuscaPessoa = ({ pessoas, jaSao = [], ocupado, onEscolher, autoFocus = tru
   return (
     <div className="space-y-2">
       <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
         <Input autoFocus={autoFocus} value={busca} onChange={(e) => setBusca(e.target.value)}
           placeholder="Nome, CPF ou igreja (pelo menos 2 letras)"
           className="h-9 pl-8 bg-black/40 border-white/20 text-white" />
@@ -308,7 +308,7 @@ const BuscaPessoa = ({ pessoas, jaSao = [], ocupado, onEscolher, autoFocus = tru
                 {p.igreja || 'Igreja não informada'}{p.cpf ? ` · CPF ${formatCPF(p.cpf)}` : ' · sem CPF'}
               </span>
               <span className="mt-1 flex flex-wrap gap-1">
-                {(p.areas || []).length === 0 && <span className="text-[11px] text-gray-500">ainda sem área</span>}
+                {(p.areas || []).length === 0 && <span className="text-[11px] text-gray-400">ainda sem área</span>}
                 {(p.areas || []).map((a) => (
                   <span key={`${a.area}-${a.cor || ''}`} className="inline-flex items-center gap-1 rounded border border-green-500/30 bg-green-500/10 px-1.5 py-0.5 text-[11px] text-green-200">
                     <Bolinha cor={a.cor} />
@@ -320,7 +320,7 @@ const BuscaPessoa = ({ pessoas, jaSao = [], ocupado, onEscolher, autoFocus = tru
           );
         })}
         {(termo.length >= 2 || digitos.length >= 3) && achados.length === 0 && (
-          <p className="text-xs text-gray-500 text-center py-3">Ninguém aprovado com esse nome, CPF ou igreja.</p>
+          <p className="text-xs text-gray-400 text-center py-3">Ninguém aprovado com esse nome, CPF ou igreja.</p>
         )}
       </div>
     </div>
@@ -402,7 +402,7 @@ const EmBlocoDialog = ({ equipes, pessoas, onClose, onPronto }) => {
                   className="text-xs text-sky-300 hover:text-sky-200 underline shrink-0">trocar pessoa</button>
               </div>
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                 <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar equipe (área ou cor)"
                   className="h-9 pl-8 bg-black/40 border-white/20 text-white" />
               </div>
@@ -421,7 +421,7 @@ const EmBlocoDialog = ({ equipes, pessoas, onClose, onPronto }) => {
                     <span className="flex-1 min-w-0">
                       <span className="text-sm text-white font-medium flex items-center gap-1.5">
                         {e.area} {e.cor && <><Bolinha cor={e.cor} /><span className="text-xs text-gray-300 font-normal">{e.cor}</span></>}
-                        <span className="text-xs text-gray-500 font-normal">· {(e.membros || []).length} pessoas</span>
+                        <span className="text-xs text-gray-400 font-normal">· {(e.membros || []).length} pessoas</span>
                       </span>
                       <span className="block text-xs text-gray-400 truncate">
                         Líder: {e.lideres?.length ? e.lideres.join(', ') : 'sem líder'}

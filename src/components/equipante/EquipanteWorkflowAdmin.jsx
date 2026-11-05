@@ -87,7 +87,7 @@ const EquipanteWorkflowAdmin = () => {
               <TableRow key={w.id} className="border-white/5 hover:bg-white/5">
                 <TableCell className="font-medium text-white md:sticky md:left-0 md:bg-slate-900 md:z-10 md:shadow-[2px_0_5px_rgba(0,0,0,0.2)]">
                   {w.nome}
-                  <div className="text-xs text-gray-500">{w.cpf}</div>
+                  <div className="text-xs text-gray-400">{w.cpf}</div>
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className={isMinor ? 'border-orange-500 text-orange-400' : 'border-blue-500 text-blue-400'}>
@@ -102,7 +102,7 @@ const EquipanteWorkflowAdmin = () => {
                       <Badge className="workflow-badge-pendente">Pendente</Badge>
                     )
                   ) : (
-                    <span className="text-gray-500 text-sm">N/A</span>
+                    <span className="text-gray-400 text-sm">N/A</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -137,7 +137,7 @@ const EquipanteWorkflowAdmin = () => {
             )})}
             {workflows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-gray-500 py-8">Nenhum workflow encontrado</TableCell>
+                <TableCell colSpan={6} className="text-center text-gray-400 py-8">Nenhum workflow encontrado</TableCell>
               </TableRow>
             )}
           </TableBody>

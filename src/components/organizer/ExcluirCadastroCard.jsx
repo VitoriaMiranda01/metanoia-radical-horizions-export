@@ -50,7 +50,7 @@ const ROTULOS = {
 
 const Linha = ({ rotulo, children }) => (
   <div className="flex gap-2 text-sm py-0.5">
-    <span className="text-gray-500 w-44 shrink-0">{rotulo}</span>
+    <span className="text-gray-400 w-44 shrink-0">{rotulo}</span>
     <span className="text-gray-100 min-w-0 break-words">{children ?? <span className="text-gray-600">—</span>}</span>
   </div>
 );
@@ -151,14 +151,14 @@ const ExcluirCadastroCard = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
           <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nome ou CPF (pelo menos 3 letras ou números)"
             className="pl-9 h-10 bg-white/5 border-white/10 text-white" />
           {buscando && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />}
         </div>
 
         {busca.trim().length >= 3 && !buscando && itens.length === 0 && (
-          <p className="text-sm text-gray-500">Nenhum cadastro encontrado.</p>
+          <p className="text-sm text-gray-400">Nenhum cadastro encontrado.</p>
         )}
 
         {itens.length > 0 && (
@@ -176,7 +176,7 @@ const ExcluirCadastroCard = () => {
                         p.tipo === 'acampante' ? 'border-green-500/30 text-green-300' : 'border-red-500/30 text-red-300')}>{p.tipo}</span>
                       {p.manual_por && <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-200 border border-purple-500/30">Inscrição manual · {p.manual_por}</span>}
                       {p.pago && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">pagou</span>}
-                      {p.tipo === 'equipante' && p.inscrito === false && <span className="text-[10px] text-gray-500">edição anterior</span>}
+                      {p.tipo === 'equipante' && p.inscrito === false && <span className="text-[10px] text-gray-400">edição anterior</span>}
                     </span>
                     <span className="block text-xs text-gray-400">
                       {p.cpf ? `CPF ${formatCPF(p.cpf)}` : 'sem CPF'} · {nomeDaIgreja(p) || 'igreja não informada'}
@@ -247,7 +247,7 @@ const ExcluirCadastroCard = () => {
                   )}
 
                   <Bloco titulo={`Cadastros parecidos (${ficha.parecidos.length})`}>
-                    {ficha.parecidos.length === 0 ? <p className="text-sm text-gray-500">Nenhum outro cadastro com o mesmo nome ou CPF.</p>
+                    {ficha.parecidos.length === 0 ? <p className="text-sm text-gray-400">Nenhum outro cadastro com o mesmo nome ou CPF.</p>
                       : ficha.parecidos.map((p) => (
                         <button key={p.id} type="button" onClick={() => abrir(p.tipo, p.id)}
                           className="w-full text-left rounded px-2 py-1.5 hover:bg-white/10 text-sm">

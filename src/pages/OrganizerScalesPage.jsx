@@ -975,7 +975,7 @@ const OrganizerScalesPage = () => {
     const igreja = NOMES_RECEPCAO_IGREJA.filter(a => !fora.has(a));
     return (<>
       <SelectGroup>
-        <SelectLabel className="text-[10px] uppercase tracking-wider text-gray-500">Áreas</SelectLabel>
+        <SelectLabel className="text-[10px] uppercase tracking-wider text-gray-400">Áreas</SelectLabel>
         {comuns.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
       </SelectGroup>
       {especiais.length > 0 && (
@@ -1074,7 +1074,7 @@ const OrganizerScalesPage = () => {
                 </span>
               )}
             </p>
-            <p className="text-[11px] text-gray-500 truncate">{pessoa.igreja || '—'}</p>
+            <p className="text-[11px] text-gray-400 truncate">{pessoa.igreja || '—'}</p>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {pessoa.areas.map(x => (
@@ -1092,7 +1092,7 @@ const OrganizerScalesPage = () => {
         </div>
         {/* O que a pessoa pediu na inscricao; a opcao em que ela de fato esta fica verde. */}
         <div className="flex items-center gap-1.5 flex-wrap text-[11px]" data-testid="opcoes-da-inscricao">
-          <span className="uppercase tracking-wider text-gray-500 shrink-0">Pediu na inscrição</span>
+          <span className="uppercase tracking-wider text-gray-400 shrink-0">Pediu na inscrição</span>
           {[0, 1, 2].map(i => {
             // Inscricao manual sem area: vale "Disponivel para qualquer area" nas tres.
             const op = (pessoa.opcoes?.[i] || '').trim() || (pessoa.manualPor ? AREA_DISPONIVEL_QUALQUER : '');
@@ -1110,7 +1110,7 @@ const OrganizerScalesPage = () => {
             para outra area ou tirar da area, sem sair da busca. */}
         {podeGerir && pessoa.areas.map(x => (
           <div key={x.escalaId} className="flex items-center gap-2 flex-wrap border-t border-white/10 pt-2">
-            <span className="text-[11px] uppercase tracking-wider text-gray-500 shrink-0">
+            <span className="text-[11px] uppercase tracking-wider text-gray-400 shrink-0">
               Mover de <strong className="text-gray-300">{x.area}</strong> para
             </span>
             <Select value={manualAreaChoice[x.escalaId] || ''} onValueChange={(v) => { setManualAreaChoice(prev => ({ ...prev, [x.escalaId]: v })); setAtuacaoEscolhida(prev => { const n = { ...prev }; delete n[x.escalaId]; return n; }); setCorEscolhida(prev => { const n = { ...prev }; delete n[x.escalaId]; return n; }); }}>
@@ -1140,7 +1140,7 @@ const OrganizerScalesPage = () => {
         ))}
         {podeGerir && !estaEmNaoSera && (
           <div className="flex items-center gap-2 flex-wrap border-t border-white/10 pt-2">
-            <span className="text-[11px] uppercase tracking-wider text-gray-500 shrink-0">Escalar também em</span>
+            <span className="text-[11px] uppercase tracking-wider text-gray-400 shrink-0">Escalar também em</span>
             <Select value={tambemArea[pessoa.id] || ''} onValueChange={(v) => { setTambemArea(prev => ({ ...prev, [pessoa.id]: v })); setAtuacaoEscolhida(prev => { const n = { ...prev }; delete n[pessoa.id]; return n; }); setCorEscolhida(prev => { const n = { ...prev }; delete n[pessoa.id]; return n; }); }}>
               <SelectTrigger className="h-8 w-[210px] bg-black/40 border-white/20 text-white text-xs">
                 <SelectValue placeholder="Escolher a outra área..." />
@@ -1157,7 +1157,7 @@ const OrganizerScalesPage = () => {
               className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs">
               {tambemSalvando[pessoa.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Plus className="h-3.5 w-3.5 mr-1" />Escalar também</>}
             </Button>
-            {jaEspecial && <span className="text-[11px] text-gray-500">Já está numa área especial: cada pessoa só pode ter uma (para trocar, use o “Mover”).</span>}
+            {jaEspecial && <span className="text-[11px] text-gray-400">Já está numa área especial: cada pessoa só pode ter uma (para trocar, use o “Mover”).</span>}
           </div>
         )}
       </div>
@@ -2056,7 +2056,7 @@ const OrganizerScalesPage = () => {
                       .map(a => (
                         <li key={a.id}>
                           {a.nome}
-                          <span className="text-gray-500">{a.whatsapp ? ` · ${a.whatsapp}` : ''} · {a.allocatedArea}</span>
+                          <span className="text-gray-400">{a.whatsapp ? ` · ${a.whatsapp}` : ''} · {a.allocatedArea}</span>
                         </li>
                       ))}
                   </ul>
@@ -2068,7 +2068,7 @@ const OrganizerScalesPage = () => {
               e acompanha a altura do lado esquerdo (sem vao embaixo). */}
           <div className="w-full xl:w-auto xl:max-w-[720px] xl:shrink-0 rounded-xl border border-white/10 bg-white/[0.03] p-3 sm:p-4 flex flex-col justify-center gap-3">
             <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3">
-              <p className="lg:w-28 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-gray-500" data-dica="Montar a escala: consultar, cadastrar e alocar.">Montar a escala</p>
+              <p className="lg:w-28 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-gray-400" data-dica="Montar a escala: consultar, cadastrar e alocar.">Montar a escala</p>
               <div className="flex flex-wrap gap-2 flex-1">
                 <Button data-dica="Só consulta: quantos inscritos escolheram cada área, antes de montar a escala." onClick={() => setVerPreEscala(true)} variant="outline"
                   className="bg-teal-600/20 text-teal-300 border-teal-600/50 hover:bg-teal-600/40 hover:text-teal-200">
@@ -2133,7 +2133,7 @@ const OrganizerScalesPage = () => {
             </div>
             <div className="border-t border-white/5" />
             <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3">
-              <p className="lg:w-28 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-gray-500" data-dica="Depois de lançar: trocas, reunião de escala e mutirões.">Equipes</p>
+              <p className="lg:w-28 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-gray-400" data-dica="Depois de lançar: trocas, reunião de escala e mutirões.">Equipes</p>
               <div className="flex flex-wrap gap-2 flex-1">
                 {perm.pode('troca_diaria') && escala?.lancada_em && (
                   <Button onClick={() => abrirTroca()} variant="outline"
@@ -2159,7 +2159,7 @@ const OrganizerScalesPage = () => {
                   <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
                 </Button>
                 {!escala?.lancada_em && (
-                  <p className="self-center text-xs text-gray-500">
+                  <p className="self-center text-xs text-gray-400">
                     Trocar de área aparece após lançar a provisória.
                   </p>
                 )}
@@ -2167,7 +2167,7 @@ const OrganizerScalesPage = () => {
             </div>
             <div className="border-t border-white/5" />
             <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3">
-              <p className="lg:w-28 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-gray-500" data-dica="Lançar ou desfazer a escala e baixar a planilha.">Publicar</p>
+              <p className="lg:w-28 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-gray-400" data-dica="Lançar ou desfazer a escala e baixar a planilha.">Publicar</p>
               <div className="flex flex-wrap gap-2 flex-1">
                 {!escala?.lancada_em ? (
                   <Button onClick={() => setConfirmandoLancamento(true)}
@@ -2293,7 +2293,7 @@ const OrganizerScalesPage = () => {
                   {ordemFila.desc ? 'Z→A' : 'A→Z'}
                 </Button>
                 <div className="relative flex-1 min-w-[12rem] xl:w-72 xl:flex-none">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                   <CampoBusca
                     value={buscaFila}
                     onChange={setBuscaFila}
@@ -2353,7 +2353,7 @@ const OrganizerScalesPage = () => {
           <Card className="bg-black/40 border-white/10">
             <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="flex items-center gap-2 flex-1">
-                <Search className="h-4 w-4 text-gray-500 shrink-0" />
+                <Search className="h-4 w-4 text-gray-400 shrink-0" />
                 <h3 className="font-semibold text-white text-sm">Onde alguém está escalado</h3>
               </div>
               <CampoBusca
@@ -2368,13 +2368,13 @@ const OrganizerScalesPage = () => {
               <div className="px-4 pb-4 space-y-2 max-h-80 overflow-y-auto">
                 {escaladosPorParecido && <p className="text-[11px] text-amber-200/80 flex items-center gap-1.5"><AlertTriangle className="h-3 w-3 shrink-0" />Nenhum nome igual a “{buscaEscalados.trim()}” — mostrando nomes parecidos (erro de digitação?).</p>}
                 {escaladosEncontrados.length === 0 && (
-                  <p className="text-sm text-gray-500 text-center py-2">
+                  <p className="text-sm text-gray-400 text-center py-2">
                     Ninguém escalado corresponde a “{buscaEscalados}”.
                   </p>
                 )}
                 {escaladosEncontrados.slice(0, 40).map(renderEscaladoComAcao)}
                 {escaladosEncontrados.length > 40 && (
-                  <p className="text-xs text-gray-500 text-center">
+                  <p className="text-xs text-gray-400 text-center">
                     Mostrando 40 de {escaladosEncontrados.length}. Refine a busca.
                   </p>
                 )}
@@ -2834,15 +2834,15 @@ const OrganizerScalesPage = () => {
                   </SelectContent>
                 </Select>
                 <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                   <CampoBusca
                     value={buscaNasAreas} onChange={setBuscaNasAreas}
                     placeholder="Filtrar os nomes nas tabelas abaixo..."
-                    className="h-10 pl-8 pr-8 bg-black/40 border-white/20 text-white placeholder:text-gray-500"
+                    className="h-10 pl-8 pr-8 bg-black/40 border-white/20 text-white placeholder:text-gray-400"
                   />
                   {buscaNasAreas && (
                     <button type="button" onClick={() => setBuscaNasAreas('')} aria-label="Limpar a busca"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
                       <X className="h-4 w-4" />
                     </button>
                   )}
@@ -2860,7 +2860,7 @@ const OrganizerScalesPage = () => {
               )}
               <div className="flex flex-col gap-6">
                 {visiveis.length === 0 && (
-                  <p className="text-center py-10 text-gray-500">Ninguém escalado bate com a busca.</p>
+                  <p className="text-center py-10 text-gray-400">Ninguém escalado bate com a busca.</p>
                 )}
                 {visiveis.map(area => renderCartaoArea(area, true))}
               </div>

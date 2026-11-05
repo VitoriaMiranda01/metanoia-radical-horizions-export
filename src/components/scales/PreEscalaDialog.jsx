@@ -166,7 +166,7 @@ const PreEscalaDialog = ({ onClose }) => {
 
           {!loading && !erro && grupos.length > 0 && (
             <>
-              <p className="text-xs text-gray-500 mb-3">
+              <p className="text-xs text-gray-400 mb-3">
                 Clique numa área pra ver a lista de quem marcou ela como 1ª opção.
               </p>
               <div className="space-y-0.5">
@@ -204,7 +204,7 @@ const PreEscalaDialog = ({ onClose }) => {
                           {pessoas.length}
                         </span>
                         <svg
-                          className={cn('w-3.5 h-3.5 shrink-0 text-gray-500 transition-transform', aberta && 'rotate-90 text-indigo-300')}
+                          className={cn('w-3.5 h-3.5 shrink-0 text-gray-400 transition-transform', aberta && 'rotate-90 text-indigo-300')}
                           viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                         >
                           <path d="M9 18l6-6-6-6" />
@@ -237,7 +237,7 @@ const PreEscalaDialog = ({ onClose }) => {
                               className="flex items-center justify-between gap-3 px-3 py-1.5 border-b border-white/5 last:border-0 text-xs"
                             >
                               <span className="text-gray-200 truncate">{p.nome}</span>
-                              <span className="text-gray-500 truncate ml-auto text-right">{p.igreja || 'sem igreja'}</span>
+                              <span className="text-gray-400 truncate ml-auto text-right">{p.igreja || 'sem igreja'}</span>
                               <span className={cn('shrink-0 px-2 py-0.5 rounded-full font-medium', STATUS_CLASSE[p.status] || 'bg-white/10 text-gray-400')}>
                                 {p.status}
                               </span>

@@ -77,7 +77,7 @@ const Linha = ({ item, edicaoAtual, onFeito }) => {
           </Button>
         </div>
       </div>
-      {motivoSemRestaurar && <p className="text-[11px] text-gray-500">{motivoSemRestaurar}</p>}
+      {motivoSemRestaurar && <p className="text-[11px] text-gray-400">{motivoSemRestaurar}</p>}
       {abrirApagar && (
         <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 space-y-2">
           <p className="text-sm text-red-200">Retira todos os dados desta pessoa do sistema. Não tem volta.</p>
@@ -137,7 +137,7 @@ const DesistentesCard = () => {
       <CardContent className="space-y-3">
         {itens.length > 5 && (
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nome ou CPF"
               className="pl-9 h-10 bg-white/5 border-white/10 text-white" />
           </div>
@@ -145,7 +145,7 @@ const DesistentesCard = () => {
         {carregando ? (
           <p className="text-gray-400 flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Carregando...</p>
         ) : filtrados.length === 0 ? (
-          <p className="text-sm text-gray-500">{itens.length === 0 ? 'Nenhum acampante desistiu.' : 'Ninguém com esse nome ou CPF.'}</p>
+          <p className="text-sm text-gray-400">{itens.length === 0 ? 'Nenhum acampante desistiu.' : 'Ninguém com esse nome ou CPF.'}</p>
         ) : (
           <ul className="space-y-2 max-h-[32rem] overflow-y-auto">
             {filtrados.map((i) => <Linha key={i.id} item={i} edicaoAtual={edicaoAtual} onFeito={carregar} />)}

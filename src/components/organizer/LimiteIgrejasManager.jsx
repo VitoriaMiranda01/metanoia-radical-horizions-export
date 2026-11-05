@@ -198,7 +198,7 @@ const LimiteIgrejasManager = ({ limiteGeral, onSaveLimiteGeral }) => {
             Salvar
           </Button>
         </div>
-        <p className="text-xs text-gray-500">Deixe em branco para não aplicar limite às igrejas sem exceção configurada abaixo.</p>
+        <p className="text-xs text-gray-400">Deixe em branco para não aplicar limite às igrejas sem exceção configurada abaixo.</p>
       </div>
 
       <div className="space-y-3 pt-4 border-t border-white/10">

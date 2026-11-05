@@ -201,7 +201,7 @@ const AreasExtraDialog = ({ onClose }) => {
               </span>
             )}
             {item.decidido_por && (
-              <span className="text-[11px] text-gray-500">
+              <span className="text-[11px] text-gray-400">
                 {aprovado ? 'Aprovado' : 'Recusado'} por {item.decidido_por}
                 {item.decidido_por_tipo === 'lider' ? ' (líder)' : ''}
               </span>
@@ -271,7 +271,7 @@ const AreasExtraDialog = ({ onClose }) => {
               interfere no lançamento.
             </p>
             {!loading && itens.length > 0 && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-400 mt-1">
                 {totalPessoas} {totalPessoas === 1 ? 'pessoa se ofereceu' : 'pessoas se ofereceram'}
                 {' · '}{itens.length} {itens.length === 1 ? 'disponibilidade' : 'disponibilidades'}
                 {semResposta > 0 && ` · ${semResposta} sem resposta`}
@@ -285,7 +285,7 @@ const AreasExtraDialog = ({ onClose }) => {
 
         <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
@@ -345,11 +345,11 @@ const AreasExtraDialog = ({ onClose }) => {
                     {aberta ? <ChevronDown className="h-4 w-4 mt-1 text-gray-400 shrink-0" /> : <ChevronRight className="h-4 w-4 mt-1 text-gray-400 shrink-0" />}
                     <span className="min-w-0">
                       <span className="block text-white font-semibold">{area.rotulo}</span>
-                      <span className="block text-xs text-gray-500">{area.detalhe}</span>
+                      <span className="block text-xs text-gray-400">{area.detalhe}</span>
                       <span className="block text-xs mt-0.5 text-amber-300/90">
                         {lideresArea.length > 0
                           ? <><Crown className="inline h-3 w-3 mr-1" />{lideresArea.length === 1 ? 'Líder' : 'Líderes'}: {lideresArea.map((l) => l.nome).join(', ')}</>
-                          : <span className="text-gray-500">sem líder</span>}
+                          : <span className="text-gray-400">sem líder</span>}
                       </span>
                     </span>
                   </span>
@@ -390,7 +390,7 @@ const AreasExtraDialog = ({ onClose }) => {
                       />
                     )}
                     {doGrupo.length === 0 ? (
-                      <p className="text-sm text-gray-500 py-2">
+                      <p className="text-sm text-gray-400 py-2">
                         {totalArea === 0
                           ? 'Ninguém se ofereceu para este mutirão.'
                           : 'Ninguém neste mutirão bate com a busca.'}
@@ -444,7 +444,7 @@ const EscolherLider = ({ candidatos, jaLideres = [], ocupado, onEscolher }) => {
       className="w-full flex items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-white/10 disabled:opacity-50">
       <span className="flex-1 min-w-0">
         <span className="block text-sm text-gray-100 truncate">{p.nome}</span>
-        <span className="block text-xs text-gray-500 truncate">{p.igreja || ''}{fora ? ' · não se ofereceu' : ''}</span>
+        <span className="block text-xs text-gray-400 truncate">{p.igreja || ''}{fora ? ' · não se ofereceu' : ''}</span>
       </span>
       <Crown className="h-3.5 w-3.5 text-amber-300/70 shrink-0" />
     </button>
@@ -458,7 +458,7 @@ const EscolherLider = ({ candidatos, jaLideres = [], ocupado, onEscolher }) => {
         {locais.map((p) => linha(p, false))}
         {deFora.map((p) => linha(p, true))}
         {locais.length === 0 && deFora.length === 0 && (
-          <p className="text-xs text-gray-500 text-center py-3">{termo.length < 3 ? 'Ninguém nesta lista. Digite 3 letras para buscar entre todos.' : 'Ninguém encontrado.'}</p>
+          <p className="text-xs text-gray-400 text-center py-3">{termo.length < 3 ? 'Ninguém nesta lista. Digite 3 letras para buscar entre todos.' : 'Ninguém encontrado.'}</p>
         )}
       </div>
     </div>

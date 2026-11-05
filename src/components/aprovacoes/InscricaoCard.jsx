@@ -39,28 +39,28 @@ const InscricaoCard = ({
       <div className="flex flex-col gap-2 text-sm text-gray-400">
         {inscricao.email && (
           <div className="flex justify-between items-center gap-2">
-            <span className="font-medium text-gray-500 shrink-0">Email:</span>
+            <span className="font-medium text-gray-400 shrink-0">Email:</span>
             <span className="text-gray-300 truncate text-right">{inscricao.email}</span>
           </div>
         )}
         <div className="flex justify-between items-center gap-2">
-          <span className="font-medium text-gray-500 shrink-0">Telefone:</span>
+          <span className="font-medium text-gray-400 shrink-0">Telefone:</span>
           <span className="text-gray-300 text-right">{inscricao.telefone || inscricao.whatsapp || 'Não informado'}</span>
         </div>
         <div className="flex justify-between items-center gap-2">
-          <span className="font-medium text-gray-500 shrink-0">Igreja:</span>
+          <span className="font-medium text-gray-400 shrink-0">Igreja:</span>
           <span className="text-gray-300 text-right truncate">{nomeDaIgreja(inscricao) || 'Não informada'}</span>
         </div>
         {/* Igreja 64 (20261026f): as respostas a vista, para analisar antes de aprovar. */}
         {respondeuGrupoEEbd(inscricao) && respostasGrupoEEbd(inscricao).map(({ rotulo, curto, valor }) => (
           <div key={rotulo} className="flex justify-between items-start gap-2">
-            <span className="font-medium text-gray-500 shrink-0">{curto}</span>
+            <span className="font-medium text-gray-400 shrink-0">{curto}</span>
             <span className="text-gray-300 text-right break-words">{valor}</span>
           </div>
         ))}
         {(inscricao.inscrito_em || inscricao.created_at) && (
           <div className="flex justify-between items-center gap-2">
-            <span className="font-medium text-gray-500 shrink-0">Inscrito em:</span>
+            <span className="font-medium text-gray-400 shrink-0">Inscrito em:</span>
             <span className="text-gray-300 text-right">{formatarDataHora(inscricao.inscrito_em || inscricao.created_at)}</span>
           </div>
         )}

@@ -410,12 +410,12 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                   <div className="flex flex-col gap-2 text-sm text-gray-300">
                     {item.email && (
                       <div className="flex justify-between items-center gap-2">
-                        <span className="font-medium text-gray-500 shrink-0">Email:</span>
+                        <span className="font-medium text-gray-400 shrink-0">Email:</span>
                         <span className="text-gray-200 truncate text-right">{item.email}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-center gap-2">
-                      <span className="font-medium text-gray-500 shrink-0">Telefone:</span>
+                      <span className="font-medium text-gray-400 shrink-0">Telefone:</span>
                       <span className="text-gray-200 text-right">{item.telefone || item.whatsapp || 'Não informado'}</span>
                     </div>
                   </div>

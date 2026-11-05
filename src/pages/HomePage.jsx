@@ -37,7 +37,7 @@ const FaqItem = ({
 }) => <motion.div initial={false} className={`border rounded-xl overflow-hidden transition-all duration-300 ${isOpen ? 'border-red-500/50 bg-white/5' : 'border-white/10 bg-black'}`}>
     <button onClick={onClick} className="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none">
       <span className={`font-medium text-lg ${isOpen ? 'text-red-400' : 'text-gray-200'}`}>{question}</span>
-      {isOpen ? <ChevronUp className="text-red-400" /> : <ChevronDown className="text-gray-500" />}
+      {isOpen ? <ChevronUp className="text-red-400" /> : <ChevronDown className="text-gray-400" />}
     </button>
     <AnimatePresence>
       {isOpen && <motion.div initial={{
@@ -218,7 +218,7 @@ const HomePage = () => {
                     <Button onClick={() => navigate('/acampante')} className="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-bold py-6 text-lg rounded-xl shadow-lg shadow-red-900/30 transition-all transform group-hover:scale-[1.02]">
                       Inscrever-se como Acampante
                     </Button>
-                    <p className="text-xs text-center text-gray-500 mt-2">*Vagas limitadas</p>
+                    <p className="text-xs text-center text-gray-400 mt-2">*Vagas limitadas</p>
                   </div>
                 </div>
               </motion.div>
@@ -246,7 +246,7 @@ const HomePage = () => {
                 </h2>
                 <p className="text-lg text-gray-300 leading-relaxed border-l-4 border-green-600 pl-6">
                   "Pois nem mesmo o Filho do homem veio para ser servido, mas para servir e dar a sua vida em resgate por muitos." <br />
-                  <span className="text-sm text-gray-500 mt-2 block">- Marcos 10:45</span>
+                  <span className="text-sm text-gray-400 mt-2 block">- Marcos 10:45</span>
                 </p>
                 <p className="text-gray-400">
                   Se você já participou de alguma edição do Metanoia Radical Serra como acampante e sente o chamado para servir nos bastidores, junte-se à nossa equipe!
@@ -333,7 +333,7 @@ const HomePage = () => {
         <footer className="bg-neutral-950 border-t border-white/10 py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="text-center md:text-left">
-              <p className="text-gray-500 text-sm">© 2026 Metanoia Radical Serra. Todos os direitos reservados.</p>
+              <p className="text-gray-400 text-sm">© 2026 Metanoia Radical Serra. Todos os direitos reservados.</p>
             </div>
 
             <div className="flex flex-col items-center md:items-end">

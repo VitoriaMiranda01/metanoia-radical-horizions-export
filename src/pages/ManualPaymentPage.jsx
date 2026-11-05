@@ -211,7 +211,7 @@ const ManualPaymentPage = () => {
                     placeholder="Digite seu cupom" 
                     value={couponInput} 
                     onChange={e => setCouponInput(e.target.value.toUpperCase())} 
-                    className="bg-black/50 border-white/10 text-white placeholder:text-gray-500 uppercase" 
+                    className="bg-black/50 border-white/10 text-white placeholder:text-gray-400 uppercase" 
                     disabled={appliedCoupon !== null || isFinalizingZero || loadingValue} 
                   />
                   {appliedCoupon ? (

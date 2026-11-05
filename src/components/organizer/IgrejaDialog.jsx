@@ -83,7 +83,7 @@ const IgrejaDialog = ({ aberto, igreja, proximoCodigo, codigosEmUso, onSalvar, o
   };
 
   const enter = (e) => { if (e.key === 'Enter') salvar(); };
-  const campo = 'bg-white/5 border-white/10 text-white placeholder:text-gray-500';
+  const campo = 'bg-white/5 border-white/10 text-white placeholder:text-gray-400';
 
   return (
     <Dialog open={aberto} onOpenChange={(v) => !v && !salvando && onFechar()}>
@@ -142,7 +142,7 @@ const IgrejaDialog = ({ aberto, igreja, proximoCodigo, codigosEmUso, onSalvar, o
             )}
             <div className="space-y-1.5">
               <Label htmlFor="ig-pastor" className="text-gray-300">
-                Nome do pastor{editando && <span className="text-gray-500 font-normal"> (opcional)</span>}
+                Nome do pastor{editando && <span className="text-gray-400 font-normal"> (opcional)</span>}
               </Label>
               <Input
                 id="ig-pastor" value={pastor} disabled={salvando} autoFocus={editando && fixa}
@@ -155,7 +155,7 @@ const IgrejaDialog = ({ aberto, igreja, proximoCodigo, codigosEmUso, onSalvar, o
           </div>
 
           {editando && !fixa && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-400">
               Trocar o código ou o nome atualiza as fichas, o limite de inscrições e a conta do parceiro.
               Se o código mudar, o parceiro passa a entrar com o código novo.
             </p>

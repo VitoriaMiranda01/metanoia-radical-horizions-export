@@ -863,7 +863,7 @@ const EquipantePage = () => {
                 </Button>
               </div>
 
-              <p className="text-[11px] text-gray-500">
+              <p className="text-[11px] text-gray-400">
                 Sem CPF, é a data de nascimento que prova que a inscrição é sua.
               </p>
             </CardContent>

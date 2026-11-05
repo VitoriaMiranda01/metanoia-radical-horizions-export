@@ -82,7 +82,7 @@ const ItemNascimento = ({ item, onSalvo, onAbrirFicha, onOcultar }) => {
             <Button
               size="sm" variant="ghost" onClick={onOcultar}
               data-dica="Ocultar só esta ficha. Ela continua no sino de notificações, de onde dá para trazer de volta."
-              className="h-8 px-2 text-gray-500 hover:text-white hover:bg-white/10"
+              className="h-8 px-2 text-gray-400 hover:text-white hover:bg-white/10"
             >
               <EyeOff className="w-3.5 h-3.5 mr-1" /> Ocultar
             </Button>

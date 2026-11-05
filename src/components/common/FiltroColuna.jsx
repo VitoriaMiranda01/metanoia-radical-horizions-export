@@ -127,7 +127,7 @@ export const CabecalhoFiltro = ({ coluna, f, alinharDireita = false }) => {
           <button type="button" aria-label={`Filtrar a coluna ${coluna.rotulo}`}
             data-dica={`Ordenar ou filtrar por ${coluna.rotulo}`}
             className={cn('rounded p-0.5 hover:bg-white/10 normal-case',
-              filtrada ? 'text-sky-300' : 'text-gray-500 hover:text-gray-200')}>
+              filtrada ? 'text-sky-300' : 'text-gray-400 hover:text-gray-200')}>
             <Filter className="w-3 h-3" fill={filtrada ? 'currentColor' : 'none'} />
           </button>
         </PopoverTrigger>
@@ -160,7 +160,7 @@ export const CabecalhoFiltro = ({ coluna, f, alinharDireita = false }) => {
             ) : visiveis.map((v) => (
               <label key={v} className="flex items-center gap-2 rounded px-2 py-1 text-xs text-gray-100 hover:bg-white/10 cursor-pointer">
                 <input type="checkbox" checked={marcados.has(v)} onChange={() => alternar(v)} className="accent-sky-500 shrink-0" />
-                <span className={cn('truncate', v === VAZIO && 'italic text-gray-500')}>{v}</span>
+                <span className={cn('truncate', v === VAZIO && 'italic text-gray-400')}>{v}</span>
               </label>
             ))}
           </div>

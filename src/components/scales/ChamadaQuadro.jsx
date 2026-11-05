@@ -207,13 +207,13 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
                 {' / '}
                 <span className="text-red-400">{a.ausentes}</span>
                 {' / '}
-                <span className={a.total - a.presentes - a.ausentes > 0 ? 'text-amber-300' : 'text-gray-500'}>{a.total - a.presentes - a.ausentes}</span>
+                <span className={a.total - a.presentes - a.ausentes > 0 ? 'text-amber-300' : 'text-gray-400'}>{a.total - a.presentes - a.ausentes}</span>
                 {' / '}
-                <span className="text-gray-500">{a.total}</span>
+                <span className="text-gray-400">{a.total}</span>
               </span>
             </button>
           ))}
-          <p className="text-[10px] text-gray-500 sm:col-span-2 lg:col-span-3 mt-1">presentes / ausentes / <span className="text-amber-300">sem chamada</span> / total · clique numa área para marcar a presença e trocar atuação e cor</p>
+          <p className="text-[10px] text-gray-400 sm:col-span-2 lg:col-span-3 mt-1">presentes / ausentes / <span className="text-amber-300">sem chamada</span> / total · clique numa área para marcar a presença e trocar atuação e cor</p>
         </div>
       )}
 
@@ -227,7 +227,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
       {!minimizado && <div className="p-4 space-y-5">
         {((situacao !== 'ausentes' && todosAusentes.length > 0) || todosSeparados.length > 0) && (
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar ausentes e separados por nome, área, igreja ou telefone..."
               className="h-9 pl-8 bg-black/40 border-white/20 text-white" />
           </div>
@@ -242,7 +242,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
           </div>
           {todosAusentes.length > 0 && <RemetenteMensagem mensagens={mensagens} />}
           {ausentes.length === 0 ? (
-            <p className="text-xs text-gray-500">{todosAusentes.length === 0 ? 'Nenhum ausente para decidir agora.' : 'Ninguém com esse filtro.'}</p>
+            <p className="text-xs text-gray-400">{todosAusentes.length === 0 ? 'Nenhum ausente para decidir agora.' : 'Ninguém com esse filtro.'}</p>
           ) : (
             <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-1">
               {ausentesPorArea.map(([nomeArea, lista]) => (
@@ -250,7 +250,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
               <button type="button" onClick={() => setAreaAberta(nomeArea)}
                 data-dica={`Abrir a chamada de ${nomeArea}: marcar presença e trocar atuação e cor.`}
                 className="sticky top-0 z-10 w-full text-left text-xs font-medium text-cyan-300 bg-zinc-950/95 py-1 hover:text-white">
-                {nomeArea} <span className="text-gray-500 font-normal">({lista.length})</span>
+                {nomeArea} <span className="text-gray-400 font-normal">({lista.length})</span>
               </button>
               <ul className="space-y-1.5">
               {lista.map((p) => (
@@ -291,10 +291,10 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
           <div>
             <p className="text-sm text-white font-medium flex items-center gap-2 mb-2">
               <UserMinus className="h-4 w-4 text-amber-400" /> Separados ({termo ? `${separados.length} de ${todosSeparados.length}` : separados.length})
-              <span className="text-xs font-normal text-gray-500">— estão em “Não será escalado”</span>
+              <span className="text-xs font-normal text-gray-400">— estão em “Não será escalado”</span>
             </p>
             <ul className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-              {separados.length === 0 && <li className="text-xs text-gray-500">Ninguém com esse filtro.</li>}
+              {separados.length === 0 && <li className="text-xs text-gray-400">Ninguém com esse filtro.</li>}
               {separados.map((p) => (
                 <li key={p.escala_id} className="flex items-center gap-3 bg-amber-500/5 border border-amber-500/20 rounded-md px-3 py-2">
                   <div className="flex-1 min-w-0">
@@ -328,7 +328,7 @@ const ChamadaQuadro = ({ resumo, recarregarTela, recarregarTudo, onTrocar }) => 
               <ul className="mt-2 space-y-0.5 text-xs text-gray-300">
                 {mantidos.map((p) => (
                   <li key={p.escala_id}>
-                    {p.nome} <span className="text-gray-500">· {p.area}{p.mantido_por ? ` · mantido por ${p.mantido_por}` : ''}</span>
+                    {p.nome} <span className="text-gray-400">· {p.area}{p.mantido_por ? ` · mantido por ${p.mantido_por}` : ''}</span>
                   </li>
                 ))}
               </ul>

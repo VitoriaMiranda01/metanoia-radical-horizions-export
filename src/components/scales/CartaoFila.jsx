@@ -56,12 +56,12 @@ const CartaoFila = ({
             </span>
           )}
         </p>
-        <p className="text-[11px] text-gray-500 truncate mb-1.5" title={nomeDaIgreja(eq) || ''}>{nomeDaIgreja(eq) || '—'}</p>
+        <p className="text-[11px] text-gray-400 truncate mb-1.5" title={nomeDaIgreja(eq) || ''}>{nomeDaIgreja(eq) || '—'}</p>
 
         {/* As 3 areas que a PESSOA marcou na inscricao. E sugestao: a escolha
             final e do organizador -- por isso o menu ao lado tem todas. */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] uppercase tracking-wider text-gray-500 shrink-0">
+          <span className="text-[10px] uppercase tracking-wider text-gray-400 shrink-0">
             Pediu (sugestão)
           </span>
           {[eq.area_trabalho_opcao1, eq.area_trabalho_opcao2, eq.area_trabalho_opcao3].map((area, i) => (

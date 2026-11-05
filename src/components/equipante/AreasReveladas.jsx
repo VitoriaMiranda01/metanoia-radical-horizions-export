@@ -103,7 +103,7 @@ const AreasReveladas = ({ areas = [], extras = [], animado = true, mostrarLocal 
           {...(animado ? { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { delay: atrasoEmbaixo } } : {})}
           className="w-full border-t border-white/10 pt-4 space-y-2"
         >
-          <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500 text-center">Também com você</p>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-gray-400 text-center">Também com você</p>
           {secundarias.map((a, i) => (
             <div key={`s-${a.area}-${i}`} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-center">
               <p className="text-white font-semibold uppercase tracking-wide">{a.area}</p>

@@ -30,7 +30,7 @@ export const BotaoPendencias = ({ total, onClick }) => (
   >
     <BellRing className="h-4 w-4" />
     {total > 0 && (
-      <span className="absolute -top-2 -right-2 min-w-[1.4rem] h-5 px-1 rounded-full bg-orange-600 text-white text-[10px] font-bold leading-5 text-center tabular-nums shadow">
+      <span className="absolute -top-2 -right-2 min-w-[1.4rem] h-5 px-1 rounded-full bg-orange-700 text-white text-[10px] font-bold leading-5 text-center tabular-nums shadow">
         {total > 999 ? '999+' : total}
       </span>
     )}
@@ -141,16 +141,16 @@ const PendenciasEquipantes = ({ aberto, onFechar, lista, onEditar, onVer }) => {
 
         <div className="px-4 sm:px-6 py-3 space-y-2.5 border-b border-white/10">
           <div className="relative">
-            <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome, CPF, WhatsApp ou igreja..."
-              className="pl-9 h-10 bg-white/5 border-white/10 text-white placeholder:text-gray-500" />
+              className="pl-9 h-10 bg-white/5 border-white/10 text-white placeholder:text-gray-400" />
           </div>
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-gray-500 mr-1">Gravidade:</span>
+            <span className="text-gray-400 mr-1">Gravidade:</span>
             {[['todas', 'Todas'], ['obrigatoria', 'Obrigatórias'], ['conferir', 'Só para conferir']].map(([v, r]) => (
               <Chip key={v} ativo={gravidade === v} onClick={() => setGravidade(v)}>{r}</Chip>
             ))}
-            <span className="text-gray-500 ml-3 mr-1">Situação:</span>
+            <span className="text-gray-400 ml-3 mr-1">Situação:</span>
             {[['todas', 'Todas'], ['aprovado', 'Aprovados'], ['pendente', 'Pendentes'], ['rejeitado', 'Rejeitados']].map(([v, r]) => (
               <Chip key={v} ativo={situacao === v} onClick={() => setSituacao(v)}>{r}</Chip>
             ))}
@@ -183,7 +183,7 @@ const PendenciasEquipantes = ({ aberto, onFechar, lista, onEditar, onVer }) => {
               <CheckCircle2 className="w-8 h-8 text-green-400" />Nenhuma ficha com pendência.
             </div>
           ) : visiveis.length === 0 ? (
-            <p className="py-16 text-center text-gray-500 text-sm">Nenhuma ficha com esses filtros.</p>
+            <p className="py-16 text-center text-gray-400 text-sm">Nenhuma ficha com esses filtros.</p>
           ) : (
             <>
               {/* Computador */}
@@ -202,7 +202,7 @@ const PendenciasEquipantes = ({ aberto, onFechar, lista, onEditar, onVer }) => {
                     <tr key={ficha.id} className="border-b border-white/5 align-top hover:bg-white/[0.03]">
                       <td className="px-4 py-2.5">
                         <p className="text-white font-medium">{ficha.nome || '(sem nome)'}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-400">
                           {ficha.whatsapp ? formatarTelefone(ficha.whatsapp) : 'sem WhatsApp'}
                           {SITUACAO[ficha.status] ? ` · ${SITUACAO[ficha.status]}` : ''}
                           {ficha.inscricao_manual_por ? ` · manual (${ficha.inscricao_manual_por})` : ''}
@@ -226,8 +226,8 @@ const PendenciasEquipantes = ({ aberto, onFechar, lista, onEditar, onVer }) => {
                     <div className="flex items-start gap-2">
                       <div className="min-w-0 flex-1">
                         <p className="text-white font-medium">{ficha.nome || '(sem nome)'}</p>
-                        <p className="text-xs text-gray-500 truncate">{nomeDaIgreja(ficha) || 'sem igreja'}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-400 truncate">{nomeDaIgreja(ficha) || 'sem igreja'}</p>
+                        <p className="text-xs text-gray-400">
                           {ficha.whatsapp ? formatarTelefone(ficha.whatsapp) : 'sem WhatsApp'}
                           {SITUACAO[ficha.status] ? ` · ${SITUACAO[ficha.status]}` : ''}
                         </p>

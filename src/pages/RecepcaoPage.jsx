@@ -58,7 +58,7 @@ const linkTermo = () => supabase.storage.from(PDF_TERMO_BUCKET).getPublicUrl(PDF
 
 const Telefone = ({ numero, rotulo }) => {
   const d = digitosTelefone(numero);
-  if (!d) return <span className="text-gray-500">{rotulo ? `${rotulo}: ` : ''}sem telefone</span>;
+  if (!d) return <span className="text-gray-400">{rotulo ? `${rotulo}: ` : ''}sem telefone</span>;
   return (
     <a href={`tel:${d}`} className="inline-flex items-center gap-1 text-sky-300 hover:text-sky-200 underline-offset-2 hover:underline">
       <Phone className="w-3.5 h-3.5" />{rotulo ? `${rotulo}: ` : ''}{formatarTelefone(numero) || numero}
@@ -85,7 +85,7 @@ const Numero = ({ rotulo, valor, detalhe, cor = 'text-white', ativo, onClick }) 
     }`}>
     <p className="text-xs text-gray-400">{rotulo}</p>
     <p className={`text-2xl font-bold ${cor}`}>{valor}</p>
-    {detalhe && <p className="text-[11px] text-gray-500 mt-0.5">{detalhe}</p>}
+    {detalhe && <p className="text-[11px] text-gray-400 mt-0.5">{detalhe}</p>}
   </button>
 );
 
@@ -323,7 +323,7 @@ const CartaoPessoa = ({ p, numeroOnibus, travada, onChegou, onAtualizado }) => {
             <span className="inline-flex items-center gap-1 text-gray-300"><Bus className="w-4 h-4" />{numeroOnibus ? `Ônibus ${numeroOnibus}` : 'Sem ônibus'}</span>
             <Telefone numero={p.whatsapp} />
           </div>
-          {p.igreja && <p className="text-xs text-gray-500 mt-1 break-words">{p.igreja}</p>}
+          {p.igreja && <p className="text-xs text-gray-400 mt-1 break-words">{p.igreja}</p>}
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             {chegou && (
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full border border-emerald-400 bg-emerald-500/30 text-white">
@@ -332,7 +332,7 @@ const CartaoPessoa = ({ p, numeroOnibus, travada, onChegou, onAtualizado }) => {
             )}
           </div>
           {chegou && (
-            <p className="text-[11px] text-gray-500 mt-1">
+            <p className="text-[11px] text-gray-400 mt-1">
               Marcado por {maiusculas(quemFez(p.chegou_por))} · ciente do termo{p.responsavel_ciente ? ' · autorização dos responsáveis entregue' : ''}
             </p>
           )}
@@ -371,7 +371,7 @@ const CartaoPessoa = ({ p, numeroOnibus, travada, onChegou, onAtualizado }) => {
           <Textarea value={texto} onChange={(e) => setTexto(e.target.value.slice(0, 500))} rows={3}
             placeholder="Ex.: chegou com o pai, vai sair mais cedo..." className="bg-white/5 border-white/20 text-white" />
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-gray-500 mr-auto">{texto.length}/500 · deixe vazio para apagar</span>
+            <span className="text-[11px] text-gray-400 mr-auto">{texto.length}/500 · deixe vazio para apagar</span>
             <Button size="sm" variant="outline" disabled={salvando} onClick={() => setEditando(false)}
               className="h-8 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">Cancelar</Button>
             <Button size="sm" disabled={salvando} onClick={salvarObs} className="h-8 bg-blue-600 hover:bg-blue-700 text-white">
@@ -382,7 +382,7 @@ const CartaoPessoa = ({ p, numeroOnibus, travada, onChegou, onAtualizado }) => {
       ) : p.observacao && (
         <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
           <p className="text-sm text-amber-100 whitespace-pre-wrap break-words">{p.observacao}</p>
-          <p className="text-[11px] text-gray-500 mt-1">{maiusculas(quemFez(p.observacao_por))}{p.observacao_em ? ` · ${dataHora(p.observacao_em)}` : ''}</p>
+          <p className="text-[11px] text-gray-400 mt-1">{maiusculas(quemFez(p.observacao_por))}{p.observacao_em ? ` · ${dataHora(p.observacao_em)}` : ''}</p>
         </div>
       )}
     </div>
@@ -416,7 +416,7 @@ const AbaOnibus = ({ divisao, semOnibus }) => {
               <span className={`text-sm tabular-nums ${presentes === o.pessoas.length && o.pessoas.length ? 'text-emerald-300' : 'text-gray-300'}`}>
                 {presentes} de {o.pessoas.length} presentes
               </span>
-              {o.composicao.length > 0 && <span className="text-xs text-gray-500 basis-full sm:basis-auto sm:ml-auto">{textoComposicao(o.composicao)}</span>}
+              {o.composicao.length > 0 && <span className="text-xs text-gray-400 basis-full sm:basis-auto sm:ml-auto">{textoComposicao(o.composicao)}</span>}
             </button>
             {expandido && (
               <ul className="border-t border-white/10 divide-y divide-white/5">
@@ -645,12 +645,12 @@ const RecepcaoPage = () => {
         <>
           <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-3">
             <div className="relative">
-              <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Pesquisar o nome do acampante"
                 className="pl-9 pr-9 bg-white/5 border-white/20 text-white h-11 text-base" />
               {busca && (
                 <button type="button" onClick={() => setBusca('')} aria-label="Limpar pesquisa"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"><X className="w-4 h-4" /></button>
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
               )}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -682,7 +682,7 @@ const RecepcaoPage = () => {
           </div>
 
           {filtrados.length === 0 ? (
-            <p className="py-10 text-center text-gray-500">Ninguém encontrado com esses filtros.</p>
+            <p className="py-10 text-center text-gray-400">Ninguém encontrado com esses filtros.</p>
           ) : (
             <div className="space-y-2">
               {filtrados.slice(0, limite).map((p) => (
@@ -748,7 +748,7 @@ const RecepcaoPage = () => {
                 <p className="font-bold leading-tight flex items-center gap-2">
                   <ClipboardCheck className="w-4 h-4 text-emerald-400" /> Recepção · Acampantes
                 </p>
-                <p className="text-xs text-gray-500 truncate">Metanoia Radical Serra · {maiusculas(nomeDaConta) || 'Apoio'}</p>
+                <p className="text-xs text-gray-400 truncate">Metanoia Radical Serra · {maiusculas(nomeDaConta) || 'Apoio'}</p>
               </div>
               <div className="ml-auto">
                 <Button variant="ghost" size="sm" onClick={sair} className="text-gray-300 hover:text-white hover:bg-white/10">

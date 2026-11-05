@@ -31,7 +31,7 @@ const Cabecalho = ({ acampante, vinc, onRealocar, onNovo }) => (
   <div className="flex flex-wrap items-center gap-2">
     <span className="text-sm text-white font-medium truncate mr-auto">
       {acampante.nome}
-      {acampante.infiltrado && <span className="ml-1.5 text-[10px] font-normal text-gray-500">infiltrado</span>}
+      {acampante.infiltrado && <span className="ml-1.5 text-[10px] font-normal text-gray-400">infiltrado</span>}
     </span>
     {onNovo && (
       <button type="button" onClick={onNovo} className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-white"
@@ -181,20 +181,20 @@ const VinculosAcampantesDialog = ({ isOpen, onClose, vinc, onRealocar }) => {
               )}
             >
               {x.chave === 'conflitos' && contagem.conflitos > 0 && <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />}
-              {x.rotulo} <span className="text-gray-500 tabular-nums">{contagem[x.chave]}</span>
+              {x.rotulo} <span className="text-gray-400 tabular-nums">{contagem[x.chave]}</span>
             </button>
           ))}
         </div>
 
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input
               value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar pelo nome..."
-              className="h-9 pl-8 pr-8 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+              className="h-9 pl-8 pr-8 bg-white/5 border-white/10 text-white placeholder:text-gray-400"
             />
             {busca && (
-              <button type="button" onClick={() => setBusca('')} aria-label="Limpar a busca" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+              <button type="button" onClick={() => setBusca('')} aria-label="Limpar a busca" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
                 <X className="h-4 w-4" />
               </button>
             )}
@@ -210,8 +210,8 @@ const VinculosAcampantesDialog = ({ isOpen, onClose, vinc, onRealocar }) => {
         {novoAberto && <NovoVinculoAvulso vinc={vinc} onFechar={() => setNovoAberto(false)} />}
 
         <div className="flex-1 min-h-0 max-h-[60vh] overflow-y-auto pr-1 space-y-2">
-          {!vinc.carregado && <p className="text-center py-10 text-gray-500">{vinc.erro ? `Não foi possível carregar: ${vinc.erro}` : 'Carregando...'}</p>}
-          {vinc.carregado && itens.length === 0 && <p className="text-center py-10 text-gray-500">{busca ? 'Ninguém bate com a busca.' : vazio}</p>}
+          {!vinc.carregado && <p className="text-center py-10 text-gray-400">{vinc.erro ? `Não foi possível carregar: ${vinc.erro}` : 'Carregando...'}</p>}
+          {vinc.carregado && itens.length === 0 && <p className="text-center py-10 text-gray-400">{busca ? 'Ninguém bate com a busca.' : vazio}</p>}
           {vinc.carregado && itens.map(renderItem)}
         </div>
       </DialogContent>

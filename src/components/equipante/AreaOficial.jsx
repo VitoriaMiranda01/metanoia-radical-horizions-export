@@ -43,7 +43,7 @@ const AreaOficial = ({ equipanteId, dono, onVisto, onPendencias }) => {
       {estado.erro && <p className="text-center text-sm text-gray-300">{estado.erro}</p>}
       {estado.areas && (
         <>
-          <p className="text-center text-xs uppercase tracking-[0.2em] text-gray-500 mb-4">
+          <p className="text-center text-xs uppercase tracking-[0.2em] text-gray-400 mb-4">
             {estado.areas.length > 1 ? 'Suas áreas na escala oficial' : 'Sua área na escala oficial'}
           </p>
           <AreasReveladas areas={estado.areas} extras={estado.extras} animado={false} />

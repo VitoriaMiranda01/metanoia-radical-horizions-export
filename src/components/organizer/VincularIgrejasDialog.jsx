@@ -100,14 +100,14 @@ const VincularIgrejasDialog = ({ conta, contas, vinculos, onFechar, onSalvo }) =
           <>
             <div className="px-5 py-3 border-b border-white/10 space-y-2">
               <div className="relative">
-                <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <Input autoFocus value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar igreja por nome ou código"
-                  className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500" />
+                  className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-400" />
               </div>
               <p className="text-xs text-gray-400">{marcadas.length} {marcadas.length === 1 ? 'igreja marcada' : 'igrejas marcadas'}</p>
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-white/5">
-              {lista.length === 0 && <p className="p-6 text-center text-sm text-gray-500">Nenhuma igreja com esse texto.</p>}
+              {lista.length === 0 && <p className="p-6 text-center text-sm text-gray-400">Nenhuma igreja com esse texto.</p>}
               {lista.map((c) => {
                 const motivo = trava[c.codigo];
                 const marcada = marcadas.includes(c.codigo);

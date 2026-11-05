@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 const OPCOES = [
   { valor: true, codigo: 'p', rotulo: 'Presença confirmada', Icone: CheckCircle2, cor: 'text-green-400' },
   { valor: false, codigo: 'a', rotulo: 'Ausente na leitura de escala', Icone: XCircle, cor: 'text-red-400' },
-  { valor: null, codigo: '', rotulo: 'Chamada não registrada', Icone: CircleDashed, cor: 'text-gray-500' }
+  { valor: null, codigo: '', rotulo: 'Chamada não registrada', Icone: CircleDashed, cor: 'text-gray-400' }
 ];
 
 const IconeChamada = ({ escalaId, nome }) => {
@@ -65,7 +65,7 @@ const IconeChamada = ({ escalaId, nome }) => {
             <o.Icone className={cn('h-4 w-4 shrink-0', o.cor)} /> {o.rotulo}
           </button>
         ))}
-        {codigo && por && <p className="px-2 pt-1.5 text-[11px] text-gray-500">Marcado por {por}</p>}
+        {codigo && por && <p className="px-2 pt-1.5 text-[11px] text-gray-400">Marcado por {por}</p>}
       </PopoverContent>
     </Popover>
   );

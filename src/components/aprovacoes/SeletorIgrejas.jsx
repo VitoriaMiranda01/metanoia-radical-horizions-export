@@ -144,7 +144,7 @@ const SeletorIgrejas = ({
         </div>
       )}
       {!unica && selecionadas.length > 0 && (
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-400">
           {opcoes.filter((o) => marcadas.has(o.igreja)).reduce((t, o) => t + o.quantidade, 0)} {rotuloQuantidade} no total.
         </p>
       )}

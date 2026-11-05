@@ -58,7 +58,7 @@ const SoDomingoQuadro = ({ pessoas }) => {
         <div className="p-3 sm:p-4 space-y-3">
           {pessoas.length > 8 && (
             <div className="relative max-w-sm">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nome, igreja ou telefone"
                 className="h-9 pl-8 bg-black/40 border-white/20 text-white" />
             </div>
@@ -88,7 +88,7 @@ const SoDomingoQuadro = ({ pessoas }) => {
                 ))}
               </tbody>
             </table>
-            {mostradas.length === 0 && <p className="text-sm text-gray-500 text-center py-4">Nada encontrado.</p>}
+            {mostradas.length === 0 && <p className="text-sm text-gray-400 text-center py-4">Nada encontrado.</p>}
           </div>
         </div>
       )}

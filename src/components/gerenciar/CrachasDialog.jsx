@@ -269,13 +269,13 @@ const RelacaoSaude = ({ pessoas, onFechar }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {!linhas.length && <tr><td colSpan={6} className="text-center py-10 text-gray-500">Ninguém com crachá tem informação de saúde.</td></tr>}
+                  {!linhas.length && <tr><td colSpan={6} className="text-center py-10 text-gray-400">Ninguém com crachá tem informação de saúde.</td></tr>}
                   {linhas.map((l, i) => (
                     <tr key={`${l.nome}-${i}`} className="border-t border-white/5 align-top">
                       <td className="px-3 py-1.5 text-gray-100">
                         {l.nome}
                         {l.tipo === 'Equipe' && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full border border-white/20 text-gray-300">equipe</span>}
-                        <p className="text-xs text-gray-500 font-normal">
+                        <p className="text-xs text-gray-400 font-normal">
                           {['problema', 'medicamento', 'alimento'].filter((k) => l.marcas[k]).map((k) => l.detalhes[k]).join(' · ')}
                         </p>
                       </td>
@@ -303,7 +303,7 @@ const RelacaoSaude = ({ pessoas, onFechar }) => {
             {baixando === 'pdf' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileDown className="w-4 h-4 mr-2" />}Baixar PDF
           </Button>
         </div>
-        <p className="text-[11px] text-gray-500">
+        <p className="text-[11px] text-gray-400">
           A ficha do equipante não pergunta medicamento: para a equipe da trilha só saem saúde e alimento.
         </p>
       </DialogContent>
@@ -480,9 +480,9 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, onAlterado }) => {
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500" />
+              <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
               <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar pelo nome"
-                className="pl-8 h-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500" />
+                className="pl-8 h-9 bg-white/5 border-white/10 text-white placeholder:text-gray-400" />
             </div>
             <select value={grupoFiltro} onChange={(e) => setGrupoFiltro(e.target.value)} aria-label="Filtrar por cor"
               className="h-9 rounded-md border border-white/10 bg-zinc-900 px-2 text-sm text-white">
@@ -540,7 +540,7 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, onAlterado }) => {
               </thead>
               <tbody>
                 {!carregando && !visiveis.length && (
-                  <tr><td colSpan={6} className="text-center py-10 text-gray-500">Ninguém nesta lista.</td></tr>
+                  <tr><td colSpan={6} className="text-center py-10 text-gray-400">Ninguém nesta lista.</td></tr>
                 )}
                 {visiveis.map((p) => {
                   const c = dadosDoCracha(p);
@@ -555,7 +555,7 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, onAlterado }) => {
                       <td className="px-3 py-1.5"><GrupoTrilhaTag grupo={c.grupo} className="text-[10px] px-2" /></td>
                       <td className="px-3 py-1.5 tabular-nums whitespace-nowrap">
                         {c.numero ? <span className="text-white font-semibold">{c.numero}</span> : <span className="text-red-300">—</span>}
-                        <span className="text-gray-500 text-xs ml-1">{ehEquipeDaTrilha(p) ? '' : (camisaNormalizada(p.camisa) || 'sem camisa')}</span>
+                        <span className="text-gray-400 text-xs ml-1">{ehEquipeDaTrilha(p) ? '' : (camisaNormalizada(p.camisa) || 'sem camisa')}</span>
                       </td>
                       <td className="px-3 py-1.5"><SeloSituacao p={p} /></td>
                       <td className="px-3 py-1.5">
@@ -584,7 +584,7 @@ const CrachasDialog = ({ isOpen, onClose, vinc, onRealocar, onAlterado }) => {
               </tbody>
             </table>
           </div>
-          <p className="text-[11px] text-gray-500">
+          <p className="text-[11px] text-gray-400">
             O PDF já sai no tamanho do modelo. Ao imprimir (ou mandar imprimir), use escala 100% / “Tamanho real” — nunca “Ajustar à página” — para o crachá caber no saquinho.
           </p>
         </DialogContent>

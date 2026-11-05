@@ -151,7 +151,7 @@ const AcessoCadastro = ({ cpfDigitado, onEntrarComCpf, onNao }) => {
         {enviando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
         Enviar para a organização
       </Button>
-      <p className="text-[11px] text-gray-500">
+      <p className="text-[11px] text-gray-400">
         A organização confirma que é você, coloca o seu CPF no cadastro e aí você entra com ele normalmente.
       </p>
     </div>
@@ -215,7 +215,7 @@ const AcessoCadastro = ({ cpfDigitado, onEntrarComCpf, onNao }) => {
               />
               {erro && etapa === 'busca' && !(resultado?.situacao === 'achou_sem_cpf' && dentroDaJanela) && <p className="text-red-300 text-sm">{erro}</p>}
               {!dentroDaJanela && janela && !jaAchouComCpf && resultado?.situacao !== 'fora_do_horario' && (
-                <p className="text-[11px] text-gray-500">
+                <p className="text-[11px] text-gray-400">
                   A busca pelo nome só funciona no dia da Reunião de Leitura de Escala{diaLeitura ? ` (${diaLeitura})` : ''}, das 15h às 19h.
                 </p>
               )}

@@ -893,14 +893,14 @@ const OrganizerConfigPage = () => {
                       <div className="flex items-center justify-between pt-2">
                         <div className="space-y-0.5">
                           <Label htmlFor="so_pastor" className="text-gray-300">Só para pastores</Label>
-                          <p className="text-xs text-gray-500">Vale só para quem está registrado como pastor (cargo PASTOR(A) / AUXILIAR ou na lista de Pastores Parceiros)</p>
+                          <p className="text-xs text-gray-400">Vale só para quem está registrado como pastor (cargo PASTOR(A) / AUXILIAR ou na lista de Pastores Parceiros)</p>
                         </div>
                         <Switch id="so_pastor" checked={newCoupon.so_pastor} onCheckedChange={checked => setNewCoupon({ ...newCoupon, so_pastor: checked })} disabled={isCreatingCoupon} />
                       </div>
                       <div className="flex items-center justify-between pt-2">
                         <div className="space-y-0.5">
                           <Label htmlFor="ativo" className="text-gray-300">Cupom Ativo</Label>
-                          <p className="text-xs text-gray-500">Habilita o uso imediato</p>
+                          <p className="text-xs text-gray-400">Habilita o uso imediato</p>
                         </div>
                         <Switch id="ativo" checked={newCoupon.ativo} onCheckedChange={checked => setNewCoupon({ ...newCoupon, ativo: checked })} disabled={isCreatingCoupon} />
                       </div>

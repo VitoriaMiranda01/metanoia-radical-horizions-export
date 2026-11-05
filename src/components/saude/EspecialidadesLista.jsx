@@ -113,19 +113,19 @@ const EspecialidadesLista = ({ onMudou }) => {
     <section className="rounded-xl border border-white/10 bg-black/50 p-4 space-y-3">
       <div>
         <p className="text-sm font-semibold text-white">Especialidades da lista</p>
-        <p className="text-xs text-gray-500">As opções que as pessoas escolhem na inscrição e aqui na tela. “Outro” é fixo e sempre fica no fim.</p>
+        <p className="text-xs text-gray-400">As opções que as pessoas escolhem na inscrição e aqui na tela. “Outro” é fixo e sempre fica no fim.</p>
       </div>
 
       <form onSubmit={adicionar} className="flex gap-2">
         <Input value={novo} onChange={(e) => setNovo(e.target.value)} maxLength={80} placeholder="Nova especialidade (ex.: Nutricionista)"
-          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500" />
+          className="bg-white/5 border-white/10 text-white placeholder:text-gray-400" />
         <Button type="submit" disabled={!novo.trim() || !!ocupado} className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white">
           {ocupado === '+' ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" />Adicionar</>}
         </Button>
       </form>
 
       {carregando ? (
-        <p className="text-xs text-gray-500"><Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1" />Carregando...</p>
+        <p className="text-xs text-gray-400"><Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1" />Carregando...</p>
       ) : (
         <div className="divide-y divide-white/5">
           {lista.map((esp) => (
@@ -147,7 +147,7 @@ const EspecialidadesLista = ({ onMudou }) => {
                 <>
                   <p className="flex-1 min-w-0 text-sm text-white">
                     {esp.nome}
-                    <span className="text-xs text-gray-500"> · {esp.pessoas} {esp.pessoas === 1 ? 'pessoa' : 'pessoas'}</span>
+                    <span className="text-xs text-gray-400"> · {esp.pessoas} {esp.pessoas === 1 ? 'pessoa' : 'pessoas'}</span>
                     {!esp.ativo && <span className="text-xs text-amber-300/90"> · fora da lista</span>}
                   </p>
                   <div className="flex gap-1.5 shrink-0">
@@ -182,7 +182,7 @@ const EspecialidadesLista = ({ onMudou }) => {
               <li key={`${p.nome}-${i}`} className="px-3 py-1.5 flex items-center gap-2">
                 <span className="flex-1 min-w-0 truncate">{p.nome}</span>
                 {p.na_saude && <span className="text-[11px] text-emerald-300">na Saúde</span>}
-                <span className="text-[11px] text-gray-500">{p.principal ? 'principal' : 'adicional'}</span>
+                <span className="text-[11px] text-gray-400">{p.principal ? 'principal' : 'adicional'}</span>
               </li>
             ))}
           </ul>

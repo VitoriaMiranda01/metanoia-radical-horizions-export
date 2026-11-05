@@ -105,17 +105,17 @@ const LgpdApagamentosCard = () => {
 
         {(situacao?.edicoes || []).length > 0 && (
           <div className="space-y-1.5">
-            <p className="text-xs uppercase tracking-wider text-gray-500">Prazos por edição</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">Prazos por edição</p>
             {situacao.edicoes.map((e) => (
               <div key={e.numero} className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-300 border-b border-white/5 pb-1.5">
                 <span className="w-16 text-white">{e.numero}ª</span>
                 <span>evento até {fmtData(e.evento_fim)}</span>
                 <span>dados da edição saem em <span className="text-white">{fmtData(e.apaga_dados_em)}</span></span>
                 <span>cadastro sai em <span className="text-white">{fmtData(e.apaga_cadastro_em)}</span></span>
-                <span className="text-gray-500">{e.pessoas} pessoa(s) com esta como última edição</span>
+                <span className="text-gray-400">{e.pessoas} pessoa(s) com esta como última edição</span>
               </div>
             ))}
-            <p className="text-[11px] text-gray-500">
+            <p className="text-[11px] text-gray-400">
               A data vem do “Data Fim” do evento em Configurações → Geral. Quem se inscreve numa edição nova passa a
               contar a partir dela.
             </p>
@@ -124,7 +124,7 @@ const LgpdApagamentosCard = () => {
 
         {(situacao?.proximos || []).length > 0 && (
           <div className="space-y-1">
-            <p className="text-xs uppercase tracking-wider text-gray-500">Próximos apagamentos</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">Próximos apagamentos</p>
             {situacao.proximos.slice(0, 6).map((p) => (
               <p key={`${p.data}-${p.tipo}`} className="text-xs text-gray-300">
                 <span className="text-white">{fmtData(p.data)}</span> · {ROTULO_TIPO_LGPD[p.tipo] || p.tipo} de {p.quantidade} pessoa(s)
@@ -153,7 +153,7 @@ const LgpdApagamentosCard = () => {
                     <span className="w-32 text-gray-400">{fmtHora(r.em)}</span>
                     <span className="w-40 text-white">{ROTULO_TIPO_LGPD[r.tipo] || r.tipo}</span>
                     <span className="font-mono text-gray-400 break-all">{r.codigo || '—'}</span>
-                    {r.edicao && <span className="text-gray-500">{r.edicao}ª edição</span>}
+                    {r.edicao && <span className="text-gray-400">{r.edicao}ª edição</span>}
                   </div>
                 ))}
               </div>

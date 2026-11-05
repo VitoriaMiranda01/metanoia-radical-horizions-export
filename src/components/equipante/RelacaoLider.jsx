@@ -822,7 +822,7 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
 
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome, igreja ou telefone"
               inputMode="search" className="h-10 pl-8 bg-black/40 border-white/20 text-white" />
           </div>
@@ -932,8 +932,8 @@ const Equipe = ({ presencaAberta, equipe, ocupado, onPresenca, onConvite, onNoGr
             </li>
           ))
           : mostrados.map(linha)}
-        {membros.length === 0 && <li className="text-sm text-gray-500">Ninguém nesta equipe ainda.</li>}
-        {membros.length > 0 && mostrados.length === 0 && fotografosMostrados.length === 0 && <li className="text-sm text-gray-500">Ninguém com esse filtro.</li>}
+        {membros.length === 0 && <li className="text-sm text-gray-400">Ninguém nesta equipe ainda.</li>}
+        {membros.length > 0 && mostrados.length === 0 && fotografosMostrados.length === 0 && <li className="text-sm text-gray-400">Ninguém com esse filtro.</li>}
       </ul>
 
       {/* Fotografos da cor (27/10/2026): so o grupo de WhatsApp desta cor. */}
@@ -1117,7 +1117,7 @@ const Membro = memo(({ presencaAberta, m, grupoLink, area, etiquetaArea, remeten
                 <MessageCircle className="w-4 h-4" />
               </a>
             )}
-            {!atuacoes && m.atuacao && <span className="text-xs text-gray-500">· {m.atuacao}</span>}
+            {!atuacoes && m.atuacao && <span className="text-xs text-gray-400">· {m.atuacao}</span>}
             {!podeCor && !etiquetaArea && m.cor && <Cor cor={m.cor} />}
           </p>
 
@@ -1305,7 +1305,7 @@ const Fotografo = memo(({ f, grupoLink, remetente, ocupadoConvite, ocupadoNoGrup
             <MessageCircle className="w-4 h-4" />
           </a>
         )}
-        {f.atuacao && <span className="text-xs text-gray-500">· {f.atuacao}</span>}
+        {f.atuacao && <span className="text-xs text-gray-400">· {f.atuacao}</span>}
       </p>
 
       {podeConvidar && (
@@ -1381,7 +1381,7 @@ const DelegarDialog = ({ equipe, onClose, onEscolher, ocupado }) => {
               {tituloEquipe(equipe)} · a pessoa escolhida faz a chamada e o grupo do WhatsApp. Você continua com acesso.
             </p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Fechar" className="text-gray-500 hover:text-white">
+          <button type="button" onClick={onClose} aria-label="Fechar" className="text-gray-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -1400,7 +1400,7 @@ const DelegarDialog = ({ equipe, onClose, onEscolher, ocupado }) => {
 
         <div className="p-3 border-b border-white/10">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input autoFocus value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar na equipe"
               className="h-10 pl-8 bg-black/40 border-white/20 text-white" />
           </div>
@@ -1416,14 +1416,14 @@ const DelegarDialog = ({ equipe, onClose, onEscolher, ocupado }) => {
                     atual ? 'bg-amber-500/15 text-amber-100' : 'hover:bg-white/10 text-gray-100')}>
                   <span className="flex-1 min-w-0">
                     <span className="block truncate">{m.nome}</span>
-                    <span className="block text-xs text-gray-500 truncate">{m.atuacao}{m.eh_lider ? ' · líder' : ''}</span>
+                    <span className="block text-xs text-gray-400 truncate">{m.atuacao}{m.eh_lider ? ' · líder' : ''}</span>
                   </span>
-                  {atual ? <Check className="w-4 h-4" /> : ocupado ? null : <Plus className="w-4 h-4 text-gray-500" />}
+                  {atual ? <Check className="w-4 h-4" /> : ocupado ? null : <Plus className="w-4 h-4 text-gray-400" />}
                 </button>
               </li>
             );
           })}
-          {candidatos.length === 0 && <li className="text-sm text-gray-500 text-center py-6">Ninguém encontrado.</li>}
+          {candidatos.length === 0 && <li className="text-sm text-gray-400 text-center py-6">Ninguém encontrado.</li>}
         </ul>
       </div>
     </div>
@@ -1467,7 +1467,7 @@ const IncluirNaEquipe = ({ area, ocupado, onBuscar, onIncluir }) => {
           <li key={p.equipante_id} className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-white/5">
             <span className="flex-1 min-w-0">
               <span className="block text-sm text-gray-100 truncate">{p.nome}</span>
-              <span className="block text-xs text-gray-500 truncate">
+              <span className="block text-xs text-gray-400 truncate">
                 {nomeDaIgreja(p) || ''}{p.areas ? ` · já em: ${p.areas}` : ' · ainda sem área'}
               </span>
             </span>
@@ -1545,7 +1545,7 @@ const EquipeExtra = ({ extra, equipanteId, dono, onMudou }) => {
           (aprovadas pela organização ou incluídas pelos líderes).
         </p>
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
           <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar na lista"
             inputMode="search" className="h-10 pl-8 bg-black/40 border-white/20 text-white" />
         </div>
@@ -1589,8 +1589,8 @@ const EquipeExtra = ({ extra, equipanteId, dono, onMudou }) => {
             </li>
           );
         })}
-        {membros.length === 0 && <li className="text-sm text-gray-500">Ninguém aprovado ainda.</li>}
-        {membros.length > 0 && mostrados.length === 0 && <li className="text-sm text-gray-500">Ninguém com essa busca.</li>}
+        {membros.length === 0 && <li className="text-sm text-gray-400">Ninguém aprovado ainda.</li>}
+        {membros.length > 0 && mostrados.length === 0 && <li className="text-sm text-gray-400">Ninguém com essa busca.</li>}
       </ul>
 
       <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4 space-y-3">
@@ -1608,7 +1608,7 @@ const EquipeExtra = ({ extra, equipanteId, dono, onMudou }) => {
             <li key={p.equipante_id} className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-white/5">
               <span className="flex-1 min-w-0">
                 <span className="block text-sm text-gray-100 truncate">{p.nome}</span>
-                <span className="block text-xs text-gray-500 truncate">{nomeDaIgreja(p) || ''}</span>
+                <span className="block text-xs text-gray-400 truncate">{nomeDaIgreja(p) || ''}</span>
               </span>
               <Button size="sm" disabled={!!ocupado[`i-${p.equipante_id}`]}
                 onClick={async () => {
@@ -1736,7 +1736,7 @@ const GrupoWhatsApp = ({ equipe, prontos, membros = [], envios, ocupado, onSalva
               Trocar link
             </Button>
             <Button size="sm" variant="ghost" onClick={() => onSalvar('')} disabled={ocupado}
-              className="text-gray-500 hover:text-red-300 hover:bg-white/10">
+              className="text-gray-400 hover:text-red-300 hover:bg-white/10">
               Apagar link
             </Button>
           </div>

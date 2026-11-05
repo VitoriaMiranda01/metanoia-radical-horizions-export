@@ -272,7 +272,7 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
                   placeholder="DD/MM/AAAA"
                   value={formData.start_date}
                   onChange={e => setFormData({ ...formData, start_date: formatDateInput(e.target.value) })}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-400"
                   disabled={isSaving}
                 />
               </div>
@@ -282,7 +282,7 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
                   placeholder="DD/MM/AAAA"
                   value={formData.end_date}
                   onChange={e => setFormData({ ...formData, end_date: formatDateInput(e.target.value) })}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-400"
                   disabled={isSaving}
                 />
               </div>
@@ -292,7 +292,7 @@ const PricingPeriodsManager = ({ type, periods = [], onSave }) => {
                   placeholder="0,00"
                   value={formData.value}
                   onChange={e => setFormData({ ...formData, value: formatCurrencyInput(e.target.value) })}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-400"
                   disabled={isSaving}
                 />
               </div>

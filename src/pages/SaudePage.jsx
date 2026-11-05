@@ -72,7 +72,7 @@ const Cartao = ({ icone: Icone, rotulo, valor, detalhe, cor, ativo, onClick }) =
       {rotulo}
     </div>
     <p className="text-2xl sm:text-3xl font-bold text-white mt-1 tabular-nums">{valor}</p>
-    {detalhe && <p className="text-xs text-gray-500 mt-0.5">{detalhe}</p>}
+    {detalhe && <p className="text-xs text-gray-400 mt-0.5">{detalhe}</p>}
   </button>
 );
 
@@ -84,7 +84,7 @@ const Texto = ({ valor, marcado }) =>
 // Ficha sem data de nascimento: sem idade. A organizacao ja foi avisada
 // (aviso em Gerenciar Inscricoes) -- a dica explica isso para a lider.
 const ZapAcampante = ({ telefone }) => {
-  if (!telefone) return <p className="text-xs text-gray-500">Sem WhatsApp</p>;
+  if (!telefone) return <p className="text-xs text-gray-400">Sem WhatsApp</p>;
   const zap = linkWhatsApp(telefone);
   if (!zap) return <p className="text-xs text-gray-400">{telefone}</p>;
   return (
@@ -269,12 +269,12 @@ const SaudePage = () => {
           <section className="rounded-xl border border-white/10 bg-black/50 p-4 space-y-3">
             <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
               <div className="relative flex-1">
-                <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <Input
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
                   placeholder="Buscar nome, igreja, doença, remédio, alimento..."
-                  className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+                  className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-400"
                 />
               </div>
               <div className="hidden md:flex flex-wrap gap-1.5">
@@ -288,19 +288,19 @@ const SaudePage = () => {
 
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-gray-500 mr-1">Sexo:</span>
+                <span className="text-gray-400 mr-1">Sexo:</span>
                 <Chip ativo={sexo === 'todos'} onClick={() => setSexo('todos')}>Todos</Chip>
                 <Chip ativo={sexo === 'Masculino'} onClick={() => setSexo('Masculino')}>Masculino</Chip>
                 <Chip ativo={sexo === 'Feminino'} onClick={() => setSexo('Feminino')}>Feminino</Chip>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-gray-500 mr-1">Idade:</span>
+                <span className="text-gray-400 mr-1">Idade:</span>
                 <Chip ativo={idade === 'todas'} onClick={() => setIdade('todas')}>Todas</Chip>
                 <Chip ativo={idade === 'menores'} onClick={() => setIdade('menores')}>Menores de 18</Chip>
                 <Chip ativo={idade === '60'} onClick={() => setIdade('60')}>60 anos ou mais</Chip>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-gray-500 mr-1">Grupo de trilha:</span>
+                <span className="text-gray-400 mr-1">Grupo de trilha:</span>
                 <Chip ativo={grupo === 'todos'} onClick={() => setGrupo('todos')}>Todos</Chip>
                 {GROUPS.map((g) => (
                   <button key={g} type="button" onClick={() => setGrupo(grupo === g ? 'todos' : g)}
@@ -319,7 +319,7 @@ const SaudePage = () => {
                 <p className="text-sm font-semibold flex items-center gap-2 mb-1">
                   <Icone className={`w-4 h-4 ${cor}`} />{titulo}
                 </p>
-                <p className="text-xs text-gray-500 mb-3">Clique para ver quem tem o mesmo.</p>
+                <p className="text-xs text-gray-400 mb-3">Clique para ver quem tem o mesmo.</p>
                 {grupos[tipo].length === 0 ? (
                   <p className="text-xs text-gray-600">Ninguém informou.</p>
                 ) : (
@@ -383,14 +383,14 @@ const SaudePage = () => {
             </div>
 
             {visiveis.length === 0 ? (
-              <p className="py-12 text-center text-gray-500 text-sm">Ninguém com esses filtros.</p>
+              <p className="py-12 text-center text-gray-400 text-sm">Ninguém com esses filtros.</p>
             ) : (
               <>
                 {/* Computador */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-white/10">
+                      <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-white/10">
                         <th className="px-3 py-2 w-8">
                           <Checkbox checked={todosMarcados} onCheckedChange={(v) => marcarTodos(v === true)} aria-label="Marcar todos" />
                         </th>
@@ -421,12 +421,12 @@ const SaudePage = () => {
                             </td>
                             <td className="px-3 py-2.5">
                               <p className="font-medium text-white">{p.nome}</p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-gray-400">
                                 {p.idade != null ? `${p.idade} anos` : <SemNascimento />}
                                 {p.sexo ? ` · ${p.sexo}` : ''}
                                 {p.esta_gravida && <span className="ml-1 text-pink-300">· gestante</span>}
                               </p>
-                              <p className="text-xs text-gray-500 truncate max-w-[240px]" title={p.igreja || ''}>{p.igreja || '—'}</p>
+                              <p className="text-xs text-gray-400 truncate max-w-[240px]" title={p.igreja || ''}>{p.igreja || '—'}</p>
                               <ZapAcampante telefone={p.whatsapp} />
                             </td>
                             <td className="px-3 py-2.5"><GrupoTrilhaTag grupo={p.grupo_trailha} /></td>
@@ -469,7 +469,7 @@ const SaudePage = () => {
                           <Checkbox className="mt-1" checked={selecionados.has(p.id)} onCheckedChange={(v) => marcar(p.id, v === true)} aria-label={`Marcar ${p.nome}`} />
                           <div className="min-w-0 flex-1">
                             <p className="font-medium text-white">{p.nome}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-400">
                               {p.idade != null ? `${p.idade} anos` : <SemNascimento />}{p.sexo ? ` · ${p.sexo}` : ''}
                               {p.esta_gravida && <span className="text-pink-300"> · gestante</span>}
                             </p>
@@ -482,10 +482,10 @@ const SaudePage = () => {
                           ['Medicamentos', p.medicamentos, p.usa_medicamento],
                           ['Restrição alimentar', p.restricoes_alimentares, p.tem_restricao_alimentar],
                         ].filter(([, v, m]) => v || m).map(([rotulo, v, m]) => (
-                          <p key={rotulo} className="text-sm"><span className="text-gray-500">{rotulo}: </span><Texto valor={v} marcado={m} /></p>
+                          <p key={rotulo} className="text-sm"><span className="text-gray-400">{rotulo}: </span><Texto valor={v} marcado={m} /></p>
                         ))}
                         <p className="text-sm">
-                          <span className="text-gray-500">Emergência: </span>
+                          <span className="text-gray-400">Emergência: </span>
                           <span className="text-gray-200">{p.contato_emergencia_nome || '—'}</span>
                           {zap && (
                             <a href={zap} target="_blank" rel="noreferrer" className="ml-1 text-emerald-300">
@@ -570,7 +570,7 @@ const SaudePage = () => {
               <p className="font-bold leading-tight flex items-center gap-2">
                 <HeartPulse className="w-4 h-4 text-rose-400" /> Saúde dos acampantes
               </p>
-              <p className="text-xs text-gray-500 truncate">Metanoia Radical Serra · {nomeDaConta || 'Apoio'}</p>
+              <p className="text-xs text-gray-400 truncate">Metanoia Radical Serra · {nomeDaConta || 'Apoio'}</p>
             </div>
             <div className="ml-auto flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={sair} className="text-gray-300 hover:text-white hover:bg-white/10">

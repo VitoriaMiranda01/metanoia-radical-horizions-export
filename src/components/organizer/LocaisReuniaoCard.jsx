@@ -95,9 +95,9 @@ const LocaisReuniaoCard = () => {
           <>
             <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
               <div className="relative flex-1">
-                <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar área ou local"
-                  className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500" />
+                  className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-400" />
               </div>
               <p className="text-xs text-gray-400 shrink-0">{comLocal} com local · {alteradas.length} {alteradas.length === 1 ? 'alteração' : 'alterações'} não salvas</p>
             </div>
@@ -107,14 +107,14 @@ const LocaisReuniaoCard = () => {
             </datalist>
 
             <div className="rounded-lg border border-white/10 divide-y divide-white/5 max-h-[60dvh] overflow-y-auto">
-              <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.8fr)] gap-2 px-3 py-2 text-[11px] uppercase tracking-wider text-gray-500 sticky top-0 bg-neutral-900 z-10">
+              <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.8fr)] gap-2 px-3 py-2 text-[11px] uppercase tracking-wider text-gray-400 sticky top-0 bg-neutral-900 z-10">
                 <span>Área</span><span>Lugar</span><span>Sala / detalhe</span>
               </div>
               {areas.map((area) => (
                 <div key={area} className={cn('grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.8fr)] gap-2 px-3 py-2 items-center', mudou(area) && 'bg-amber-500/5')}>
                   <span className="text-sm text-white font-medium flex items-center gap-1.5">
                     {area}
-                    {!WORK_AREAS.includes(area) && <span className="text-[10px] text-gray-500">(fora da escala)</span>}
+                    {!WORK_AREAS.includes(area) && <span className="text-[10px] text-gray-400">(fora da escala)</span>}
                   </span>
                   <Input list="sugestoes-lugar-reuniao" value={valor(area).lugar} maxLength={120}
                     onChange={(e) => mudar(area, 'lugar', e.target.value)} placeholder="Sem local"
@@ -126,7 +126,7 @@ const LocaisReuniaoCard = () => {
                     className="h-9 bg-white/5 border-white/10 text-white placeholder:text-gray-600" />
                 </div>
               ))}
-              {areas.length === 0 && <p className="p-4 text-center text-sm text-gray-500">Nenhuma área com esse texto.</p>}
+              {areas.length === 0 && <p className="p-4 text-center text-sm text-gray-400">Nenhuma área com esse texto.</p>}
             </div>
 
             <div className="flex justify-end gap-2">

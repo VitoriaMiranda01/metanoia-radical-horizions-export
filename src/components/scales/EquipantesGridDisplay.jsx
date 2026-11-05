@@ -62,7 +62,7 @@ const EquipantesGridDisplay = ({
 
   if (!equipantes || equipantes.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-gray-500 bg-white/5 rounded-md border border-white/5 border-dashed">
+      <div className="flex flex-col items-center justify-center p-8 text-gray-400 bg-white/5 rounded-md border border-white/5 border-dashed">
         <User className="h-8 w-8 mb-2 opacity-50" />
         <p className="text-sm">Nenhum equipante alocado.</p>
       </div>
@@ -221,7 +221,7 @@ const EquipantesGridDisplay = ({
           <TableBody>
             {linhas.length === 0 && (
               <TableRow className="border-white/10 hover:bg-transparent">
-                <TableCell colSpan={8} className="text-center text-sm text-gray-500 py-6">
+                <TableCell colSpan={8} className="text-center text-sm text-gray-400 py-6">
                   Ninguém com essa cor nesta área.
                 </TableCell>
               </TableRow>
@@ -271,7 +271,7 @@ const EquipantesGridDisplay = ({
                         </span>
                       )}
                     </span>
-                    <span className="text-xs text-gray-500 sm:hidden">{formatCPF(eq.cpf)}</span>
+                    <span className="text-xs text-gray-400 sm:hidden">{formatCPF(eq.cpf)}</span>
                   </div>
                 </TableCell>
                 <TableCell className="text-gray-400 hidden sm:table-cell font-mono text-xs whitespace-nowrap">
@@ -313,7 +313,7 @@ const EquipantesGridDisplay = ({
                 )}
                 {colunaCor && atuacaoSemCor(eq.atuacao) && (
                   <TableCell>
-                    <span className="text-xs text-gray-500" data-dica={`${eq.atuacao} não usa cor de grupo.`}>Não usa cor</span>
+                    <span className="text-xs text-gray-400" data-dica={`${eq.atuacao} não usa cor de grupo.`}>Não usa cor</span>
                   </TableCell>
                 )}
                 {colunaCor && !atuacaoSemCor(eq.atuacao) && (
@@ -415,7 +415,7 @@ const EquipantesGridDisplay = ({
                           title={realocarAreaChoice[eq.escalaId]
                             ? `Escalar TAMBEM em ${realocarAreaChoice[eq.escalaId]}, sem tirar de ${areaName}`
                             : 'Escolha a area ao lado para escalar esta pessoa tambem nela'}
-                          className="h-8 w-8 p-0 shrink-0 text-gray-500 hover:text-green-400 hover:bg-green-500/10 disabled:opacity-40"
+                          className="h-8 w-8 p-0 shrink-0 text-gray-400 hover:text-green-400 hover:bg-green-500/10 disabled:opacity-40"
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -426,7 +426,7 @@ const EquipantesGridDisplay = ({
                           onClick={() => onRemover(eq.escalaId, eq.nome, areaName, areasPorEquipante[eq.id] || 1)}
                           disabled={realocando[eq.escalaId]}
                           title={`Tirar ${formatNomeExibicao(eq.nome)} de ${areaName}`}
-                          className="h-8 w-8 p-0 shrink-0 text-gray-500 hover:text-red-400 hover:bg-red-500/10"
+                          className="h-8 w-8 p-0 shrink-0 text-gray-400 hover:text-red-400 hover:bg-red-500/10"
                         >
                           <X className="h-4 w-4" />
                         </Button>

@@ -180,21 +180,21 @@ const BuscaPessoa = ({ vinc, excluir, busca, setBusca, placeholder, onEscolher }
   return (
     <>
       <div className="relative">
-        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500 pointer-events-none" />
+        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
         <Input
           autoFocus value={busca} onChange={(e) => setBusca(e.target.value)} placeholder={placeholder}
-          className="h-8 pl-7 text-xs bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+          className="h-8 pl-7 text-xs bg-white/5 border-white/10 text-white placeholder:text-gray-400"
         />
       </div>
       {busca.trim() && (
         <div className="max-h-48 overflow-y-auto space-y-1">
-          {resultados.length === 0 && <p className="text-xs text-gray-500 px-1">Ninguém encontrado.</p>}
+          {resultados.length === 0 && <p className="text-xs text-gray-400 px-1">Ninguém encontrado.</p>}
           {resultados.map((a) => (
             <button
               key={a.id} type="button" onClick={() => onEscolher(a)}
               className="w-full flex items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-xs text-gray-200 hover:bg-white/10"
             >
-              <span className="truncate">{a.nome}{a.infiltrado && <span className="ml-1.5 text-[10px] text-gray-500">infiltrado</span>}</span>
+              <span className="truncate">{a.nome}{a.infiltrado && <span className="ml-1.5 text-[10px] text-gray-400">infiltrado</span>}</span>
               <GrupoTrilhaTag grupo={a.grupo_trailha} className="text-[10px] px-2" />
             </button>
           ))}
@@ -262,14 +262,14 @@ export const NovoVinculo = ({ acampante, vinc, buscaInicial = '', onFechar }) =>
     <div className="rounded-md border border-white/15 bg-black/40 p-2.5 space-y-2">
       {pessoas.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[11px] uppercase tracking-wide text-gray-500">Ligar {primeiroNome(acampante.nome)} a</p>
+          <p className="text-[11px] uppercase tracking-wide text-gray-400">Ligar {primeiroNome(acampante.nome)} a</p>
           {pessoas.map(({ pessoa, tipo }) => (
             <div key={pessoa.id} className="flex flex-wrap items-center gap-1.5 rounded bg-white/5 px-2 py-1.5 text-xs">
               <span className="text-gray-200 truncate max-w-[12rem]">{pessoa.nome}</span>
               <GrupoTrilhaTag grupo={pessoa.grupo_trailha} className="text-[10px] px-2" />
               <span className="text-gray-400 ml-auto">é</span>
               <SelectTipo valor={tipo} onChange={(t) => mudarTipo(pessoa.id, t)} className="w-[150px]" />
-              <button type="button" onClick={() => tirar(pessoa.id)} aria-label={`Tirar ${pessoa.nome}`} className="text-gray-500 hover:text-red-300 p-0.5">
+              <button type="button" onClick={() => tirar(pessoa.id)} aria-label={`Tirar ${pessoa.nome}`} className="text-gray-400 hover:text-red-300 p-0.5">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -288,7 +288,7 @@ export const NovoVinculo = ({ acampante, vinc, buscaInicial = '', onFechar }) =>
           <span>
             Ligar também entre si (mesma família ou turma)
             {entreSi && paresEntreSi.length > 0 && (
-              <span className="block text-gray-500">
+              <span className="block text-gray-400">
                 {paresEntreSi.map(({ p, q, tipo }) => `${primeiroNome(q.pessoa.nome)} é ${rotuloDoTipo(tipo).toLowerCase()} de ${primeiroNome(p.pessoa.nome)}`).join(' · ')}
               </span>
             )}
@@ -300,7 +300,7 @@ export const NovoVinculo = ({ acampante, vinc, buscaInicial = '', onFechar }) =>
         <Input
           value={observacao} onChange={(e) => setObservacao(e.target.value)}
           placeholder="Observação (opcional)"
-          className="h-8 text-xs bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+          className="h-8 text-xs bg-white/5 border-white/10 text-white placeholder:text-gray-400"
         />
       )}
 
@@ -372,7 +372,7 @@ export const SugestaoVinculo = ({ sugestao, vinc, onProcurar }) => {
 
   if (sugestao.ignorada) {
     return (
-      <div className="flex items-center gap-2 text-xs text-gray-500">
+      <div className="flex items-center gap-2 text-xs text-gray-400">
         <span className="truncate">Na inscrição: vai com "{sugestao.texto}" ({rotuloDoTipo(sugestao.tipo).toLowerCase()}) · sugestão ignorada</span>
         <button type="button" onClick={() => ignorar(false)} disabled={!!salvando} className="inline-flex items-center gap-1 text-gray-300 hover:text-white shrink-0">
           <Undo2 className="w-3 h-3" /> Desfazer
@@ -393,7 +393,7 @@ export const SugestaoVinculo = ({ sugestao, vinc, onProcurar }) => {
             <label key={c.id} className={cn('flex items-center gap-2 rounded px-2 py-1 cursor-pointer', escolhido === c.id ? 'bg-white/10' : 'hover:bg-white/5')}>
               <input type="radio" name={`sug-${a.id}`} checked={escolhido === c.id} onChange={() => setEscolhido(c.id)} className="accent-sky-500" />
               <span className="truncate text-gray-200 flex-1">{c.nome}</span>
-              <span className={cn('text-[10px]', exato ? 'text-emerald-400' : 'text-gray-500')}>{exato ? 'nome igual' : 'parecido'}</span>
+              <span className={cn('text-[10px]', exato ? 'text-emerald-400' : 'text-gray-400')}>{exato ? 'nome igual' : 'parecido'}</span>
               <GrupoTrilhaTag grupo={c.grupo_trailha} className="text-[10px] px-2" />
             </label>
           ))}
@@ -464,7 +464,7 @@ export const LinhaVinculo = ({ acampante, item, vinc, onRealocar }) => {
             </>
           ) : (
             <button type="button" onClick={() => setConfirmarExcluir(true)} aria-label="Excluir vínculo"
-              data-dica="Excluir este vínculo (vale para os dois)." className="text-gray-500 hover:text-red-300 p-0.5">
+              data-dica="Excluir este vínculo (vale para os dois)." className="text-gray-400 hover:text-red-300 p-0.5">
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           )}
@@ -494,7 +494,7 @@ const VinculosDoAcampante = ({ acampante, vinc, onRealocar }) => {
   return (
     <div className="space-y-1.5">
       {lista.length > 0 && (
-        <p className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-gray-500"><Link2 className="w-3 h-3" />Não deveria ficar com</p>
+        <p className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-gray-400"><Link2 className="w-3 h-3" />Não deveria ficar com</p>
       )}
       {lista.map((item) => (
         <LinhaVinculo key={item.id} acampante={acampante} item={item} vinc={vinc} onRealocar={onRealocar} />

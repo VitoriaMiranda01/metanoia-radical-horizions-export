@@ -140,12 +140,12 @@ const AcampanteUmaVezCard = () => {
 
         {liberados.length > 0 && (
           <div className="space-y-1.5">
-            <p className="text-xs uppercase tracking-wider text-gray-500">Liberações feitas</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">Liberações feitas</p>
             {liberados.map((l) => (
               <div key={l.id} className="flex flex-wrap items-start justify-between gap-2 border-b border-white/5 pb-2 text-xs">
                 <div className="space-y-0.5 min-w-0">
                   <p className="text-white break-words">{l.motivo}</p>
-                  <p className="text-gray-500">
+                  <p className="text-gray-400">
                     Acampante da {l.edicao}ª · liberado por {l.liberado_por} em {fmtHora(l.liberado_em)}
                   </p>
                 </div>

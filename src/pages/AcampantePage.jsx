@@ -513,7 +513,7 @@ const AcampantePage = () => {
               <Button onClick={() => navigate('/equipante')}>Quero ser equipante</Button>
               <Button variant="outline" onClick={() => navigate('/')}>Voltar</Button>
             </div>
-            <p className="text-xs text-gray-500 mt-6">
+            <p className="text-xs text-gray-400 mt-6">
               Se você acha que isso é um engano, procure a organização.
             </p>
           </div>

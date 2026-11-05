@@ -131,7 +131,7 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
           <DialogTitle>Confirmar pagamento</DialogTitle>
           <DialogDescription className="text-gray-400">
             {pedido?.item?.nome}
-            <span className="text-gray-500"> · {pedido?.item?.tipo === 'equipante' ? 'Equipante' : 'Acampante'}</span>
+            <span className="text-gray-400"> · {pedido?.item?.tipo === 'equipante' ? 'Equipante' : 'Acampante'}</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -233,10 +233,10 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
                   ))}
               </div>
               {ativos.length === 0 && (
-                <p className="text-xs text-gray-500">Nenhum cupom ativo nesta edição.</p>
+                <p className="text-xs text-gray-400">Nenhum cupom ativo nesta edição.</p>
               )}
               {ativos.some((c) => c.valido === false) && (
-                <p className="text-xs text-gray-500">Cupom em cinza: não vale para esta pessoa.</p>
+                <p className="text-xs text-gray-400">Cupom em cinza: não vale para esta pessoa.</p>
               )}
               {cupomEscolhido && lote !== null && (
                 <p className="text-xs text-gray-400">
@@ -248,13 +248,13 @@ const ConfirmarPagamentoDialog = ({ pedido, onConfirmar, onFechar }) => {
 
           <div className="space-y-1">
             <label htmlFor="pg-obs" className="text-sm text-gray-300">
-              Observação <span className="text-gray-500">(opcional)</span>
+              Observação <span className="text-gray-400">(opcional)</span>
             </label>
             <textarea
               id="pg-obs" rows={2} maxLength={300} value={observacao}
               onChange={(e) => setObservacao(e.target.value)}
               placeholder="Ex.: PIX feito pela mãe, pagou na mesa da entrada..."
-              className="w-full rounded-md bg-white/5 border border-white/10 text-white text-sm px-3 py-2 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full rounded-md bg-white/5 border border-white/10 text-white text-sm px-3 py-2 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
           </div>
         </div>

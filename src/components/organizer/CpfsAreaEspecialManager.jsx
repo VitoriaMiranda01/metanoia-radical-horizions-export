@@ -458,7 +458,7 @@ const CpfsAreaEspecialManager = ({
             onFocus={() => setAberto(true)}
             placeholder={carregandoEquipantes ? 'Carregando equipantes...' : 'Digite o nome da pessoa...'}
             disabled={isSaving || carregandoEquipantes}
-            className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500 sm:max-w-[420px]"
+            className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-400 sm:max-w-[420px]"
           />
         </div>
 

@@ -187,12 +187,12 @@ const RecorteFoto = ({ arquivo, pessoa, nomeInicial, onCancelar, onSalvo }) => {
           <input type="range" min={1} max={4} step={0.01} value={zoom} disabled={!img}
             onChange={(e) => mudarZoom(Number(e.target.value))} className="flex-1 accent-emerald-500" />
         </div>
-        <p className="text-xs text-gray-500">Arraste a foto para enquadrar o rosto. É assim que ela sai no cartão da arte.</p>
+        <p className="text-xs text-gray-400">Arraste a foto para enquadrar o rosto. É assim que ela sai no cartão da arte.</p>
         <div className="space-y-1">
           <label className="text-xs text-gray-400">Nome na arte</label>
           <Input value={nomeArte} onChange={(e) => setNomeArte(e.target.value)} maxLength={40}
             placeholder={nomeCurto(pessoa.nome)} className="bg-black/40 border-white/15 text-white" />
-          <p className="text-[11px] text-gray-500">Ex.: “Pr. João Branco”. Vazio = {nomeCurto(pessoa.nome)}.</p>
+          <p className="text-[11px] text-gray-400">Ex.: “Pr. João Branco”. Vazio = {nomeCurto(pessoa.nome)}.</p>
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onCancelar} className="border-white/20 bg-transparent text-gray-300 hover:bg-white/10">Cancelar</Button>
@@ -216,7 +216,7 @@ const CartaoPessoa = ({ pessoa, foto, link, papel, onEnviar, onNome, onRemover }
       <div className="relative w-full aspect-[4/5] rounded bg-zinc-800 overflow-hidden flex items-center justify-center">
         {foto && link
           ? <img src={link} alt={pessoa.nome} className="w-full h-full object-cover" />
-          : foto ? <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+          : foto ? <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
             : <div className="text-center text-amber-300/80 text-xs px-2"><ImageOff className="h-6 w-6 mx-auto mb-1" />Sem foto</div>}
         {papel && <span className="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 rounded bg-black/70 text-gray-200">{papel}</span>}
       </div>
@@ -232,7 +232,7 @@ const CartaoPessoa = ({ pessoa, foto, link, papel, onEnviar, onNome, onRemover }
         <p className="text-sm font-semibold text-white leading-tight truncate" title="Nome na arte">{nomeNaArte}</p>
       )}
       {/* sempre a altura de 2 linhas: nome curto não deixa o cartão mais baixo */}
-      <p className="text-[11px] text-gray-500 leading-tight line-clamp-2 min-h-[2.5em]" title={pessoa.nome}>{pessoa.nome}</p>
+      <p className="text-[11px] text-gray-400 leading-tight line-clamp-2 min-h-[2.5em]" title={pessoa.nome}>{pessoa.nome}</p>
       <div className="flex gap-1 mt-auto">
         <Button size="sm" variant="outline" onClick={onEnviar}
           className="h-7 flex-1 px-1 text-xs border-white/15 bg-transparent text-gray-200 hover:bg-white/10">
@@ -486,7 +486,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
             {cor ? `GRUPO ${cor}` : 'SEM COR'}
           </span>
           <span className={`text-xs ${ok === daCor.length ? 'text-emerald-400' : 'text-amber-300'}`}>{ok} de {daCor.length} com foto</span>
-          {!cor && <span className="text-xs text-gray-500">— não entram na arte até ter cor na escala.</span>}
+          {!cor && <span className="text-xs text-gray-400">— não entram na arte até ter cor na escala.</span>}
           {cor && (
             <Button size="sm" onClick={() => pedirArtes(cor)} disabled={!!gerando || carregando}
               data-dica={`Gerar (ou refazer) só a arte do grupo ${cor.toLowerCase()}.`}
@@ -503,7 +503,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
             return (
               // Guias numa linha; Inimigo, Infiltrados e Espírito Santo lado a lado
               <div key={area} className={area === 'guia' ? 'basis-full' : ''}>
-                <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1.5">{titulo}</p>
+                <p className="text-[11px] uppercase tracking-wider text-gray-400 mb-1.5">{titulo}</p>
                 <div className="flex flex-wrap gap-2">{doPapel.map((p) => cartao(p))}</div>
               </div>
             );
@@ -535,7 +535,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
               Banco de fotos da equipe de trilha e a arte de cada grupo (Guias, Inimigo, Infiltrados e Espírito Santo), montada pela escala.
               As fotos ficam guardadas para as próximas edições e só os organizadores veem.
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-400 mt-1">
               {carregando ? 'Carregando…' : `${comFoto} de ${escalados.length} escalados nos papéis da arte com foto · ${fotos.length} fotos no banco.`}
             </p>
           </div>
@@ -558,7 +558,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
             </div>
           )}
           <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
             <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nome"
               className="pl-8 h-9 w-56 bg-black/40 border-white/15 text-white" />
           </div>
@@ -570,7 +570,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
           )}
           <div className="flex-1" />
           <div className="flex items-center gap-1.5" data-dica="Fundo da arte: escuro ou branco (modelo da arte antiga do roxo).">
-            <span className="text-xs text-gray-500">Fundo</span>
+            <span className="text-xs text-gray-400">Fundo</span>
             <div className="flex rounded-md border border-white/15 overflow-hidden">
               {FUNDOS_ARTE.map(({ valor, rotulo }) => (
                 <button key={valor} type="button" onClick={() => setFundo(valor)}
@@ -600,19 +600,19 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
 
         <div className="flex-1 overflow-y-auto p-4">
           {carregando ? (
-            <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-gray-500" /></div>
+            <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
           ) : aba === 'escalados' ? (
             escalados.length === 0 ? (
-              <p className="text-center text-gray-500 py-16">Ninguém escalado em Guia, Inimigo, Infiltrados ou Espírito Santo ainda.</p>
+              <p className="text-center text-gray-400 py-16">Ninguém escalado em Guia, Inimigo, Infiltrados ou Espírito Santo ainda.</p>
             ) : (
               <div className="flex flex-col gap-4">
                 {[...CORES_ARTE, ''].map(blocoDaCor)}
-                {escalados.filter(passaFiltro).length === 0 && <p className="text-center text-gray-500 py-10">Nada com esse filtro.</p>}
+                {escalados.filter(passaFiltro).length === 0 && <p className="text-center text-gray-400 py-10">Nada com esse filtro.</p>}
               </div>
             )
           ) : (
             doBanco.length === 0
-              ? <p className="text-center text-gray-500 py-16">{fotos.length === 0 ? 'Nenhuma foto no banco ainda.' : 'Nada com essa busca.'}</p>
+              ? <p className="text-center text-gray-400 py-16">{fotos.length === 0 ? 'Nenhuma foto no banco ainda.' : 'Nada com essa busca.'}</p>
               : <div className="flex flex-wrap gap-2">{doBanco.map((p) => cartao(p, papelNaEscala(p.id)))}</div>
           )}
         </div>
@@ -649,7 +649,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
                 <div>
                   <p className="text-amber-200 font-medium">{aviso.semFoto.length} {aviso.semFoto.length === 1 ? 'pessoa escalada está' : 'pessoas escaladas estão'} sem foto e {aviso.semFoto.length === 1 ? 'ficará' : 'ficarão'} FORA da arte:</p>
                   <ul className="mt-1 text-gray-300 space-y-0.5">
-                    {aviso.semFoto.map((p) => <li key={p.id}>• {p.nome} <span className="text-gray-500">— {p.papel.titulo} {p.cor.toLowerCase()}</span></li>)}
+                    {aviso.semFoto.map((p) => <li key={p.id}>• {p.nome} <span className="text-gray-400">— {p.papel.titulo} {p.cor.toLowerCase()}</span></li>)}
                   </ul>
                 </div>
               )}
@@ -657,7 +657,7 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
                 <div>
                   <p className="text-amber-200 font-medium">{aviso.semCor.length} sem cor na escala (não {aviso.semCor.length === 1 ? 'entra' : 'entram'} em nenhum grupo):</p>
                   <ul className="mt-1 text-gray-300 space-y-0.5">
-                    {aviso.semCor.map((p) => <li key={p.id}>• {p.nome} <span className="text-gray-500">— {p.papel.titulo}</span></li>)}
+                    {aviso.semCor.map((p) => <li key={p.id}>• {p.nome} <span className="text-gray-400">— {p.papel.titulo}</span></li>)}
                   </ul>
                 </div>
               )}
@@ -712,15 +712,15 @@ const FotosTrilhaDialog = ({ allocations = [], atuacoesPorArea = {}, onClose }) 
             <Input value={buscaFicha} onChange={(e) => setBuscaFicha(e.target.value)} autoFocus placeholder="Nome ou CPF (mín. 3 letras)"
               className="bg-black/40 border-white/15 text-white" />
             <div className="overflow-y-auto divide-y divide-white/5">
-              {buscandoFicha && <div className="py-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-gray-500" /></div>}
-              {!buscandoFicha && buscaFicha.trim().length >= 3 && fichas.length === 0 && <p className="py-4 text-center text-sm text-gray-500">Ninguém encontrado.</p>}
+              {buscandoFicha && <div className="py-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-gray-400" /></div>}
+              {!buscandoFicha && buscaFicha.trim().length >= 3 && fichas.length === 0 && <p className="py-4 text-center text-sm text-gray-400">Ninguém encontrado.</p>}
               {fichas.map((f) => (
                 <button key={f.equipante_id} type="button"
                   onClick={() => { setAdicionar(false); escolherArquivo({ id: f.equipante_id, nome: f.nome }); }}
                   className="w-full text-left py-2 px-1 hover:bg-white/5 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white truncate">{f.nome}</p>
-                    <p className="text-xs text-gray-500 truncate">{[f.cpf_final, f.igreja, f.edicao ? `${f.edicao}ª edição` : null].filter(Boolean).join(' · ')}</p>
+                    <p className="text-xs text-gray-400 truncate">{[f.cpf_final, f.igreja, f.edicao ? `${f.edicao}ª edição` : null].filter(Boolean).join(' · ')}</p>
                   </div>
                   {f.tem_foto ? <span className="text-xs text-emerald-400">já tem foto</span> : <Upload className="h-4 w-4 text-gray-400" />}
                 </button>

@@ -87,7 +87,7 @@ const QuitarDialog = ({ debito, onFechar, onFeito }) => {
           <div className="space-y-1">
             <label htmlFor="debito-obs" className="text-sm text-gray-300">Observação (opcional)</label>
             <Textarea id="debito-obs" rows={2} maxLength={200} value={obs} onChange={(e) => setObs(e.target.value)}
-              className="bg-white/5 border-white/10 text-white placeholder:text-gray-500" />
+              className="bg-white/5 border-white/10 text-white placeholder:text-gray-400" />
           </div>
           {erro && <p className="text-sm text-red-400">{erro}</p>}
           <div className="flex justify-end gap-2 pt-1">
@@ -144,7 +144,7 @@ const RetirarDialog = ({ debito, onFechar, onFeito }) => {
           <Textarea id="debito-motivo" rows={2} maxLength={200} value={motivo}
             onChange={(e) => { setMotivo(e.target.value); setErro(''); }}
             placeholder="Não foi ao evento"
-            className="bg-white/5 border-white/10 text-white placeholder:text-gray-500" />
+            className="bg-white/5 border-white/10 text-white placeholder:text-gray-400" />
         </div>
         {erro && <p className="text-sm text-red-400">{erro}</p>}
         <div className="flex justify-end gap-2 pt-1">
@@ -186,7 +186,7 @@ const LinhaDebito = ({ d, ocupado, onQuitar, onRetirar, onAutorizar }) => {
           {cobrarResponsavel && (
             <p className="text-xs text-gray-400 break-words">Responsável: {d.responsavel_nome || '—'} · {formatarTelefone(d.responsavel_whatsapp)}</p>
           )}
-          {d.observacao && <p className="text-xs text-gray-500 break-words">"{d.observacao}" ({d.agendado_por})</p>}
+          {d.observacao && <p className="text-xs text-gray-400 break-words">"{d.observacao}" ({d.agendado_por})</p>}
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             {d.situacao === 'quitado' && (
               <span className="text-[11px] px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 text-emerald-200">

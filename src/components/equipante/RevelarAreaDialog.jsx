@@ -93,7 +93,7 @@ const RevelarAreaDialog = ({ equipanteId, dono, podePagar, provisoria = false, r
     >
       <div className="relative w-full max-w-md min-h-[360px] max-h-[92vh] rounded-2xl border border-white/10 bg-gradient-to-b from-neutral-900 to-black shadow-2xl overflow-hidden flex flex-col">
         <button type="button" onClick={fechar} aria-label="Fechar"
-          className="absolute right-3 top-3 z-10 text-gray-500 hover:text-white">
+          className="absolute right-3 top-3 z-10 text-gray-400 hover:text-white">
           <X className="w-5 h-5" />
         </button>
 

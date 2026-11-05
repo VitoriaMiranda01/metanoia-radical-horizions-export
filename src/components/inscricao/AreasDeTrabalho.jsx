@@ -86,7 +86,7 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange, semExtras
                 />
                 <span className={cn(
                   "text-sm leading-tight",
-                  disabled ? "text-gray-500" : "text-gray-200"
+                  disabled ? "text-gray-400" : "text-gray-200"
                 )}>
                   {textoExibido} {disabled && "(Selecionado em outra opção)"}
                 </span>

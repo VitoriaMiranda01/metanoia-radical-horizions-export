@@ -66,7 +66,7 @@ const PastorDialog = ({ aberto, pastor, igrejas, onSalvar, onFechar }) => {
   };
 
   const enter = (e) => { if (e.key === 'Enter') salvar(); };
-  const campo = 'bg-white/5 border-white/10 text-white placeholder:text-gray-500';
+  const campo = 'bg-white/5 border-white/10 text-white placeholder:text-gray-400';
 
   return (
     <Dialog open={aberto} onOpenChange={(v) => !v && !salvando && onFechar()}>
@@ -89,7 +89,7 @@ const PastorDialog = ({ aberto, pastor, igrejas, onSalvar, onFechar }) => {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="pr-cpf" className="text-gray-300">CPF <span className="text-gray-500 font-normal">(opcional)</span></Label>
+              <Label htmlFor="pr-cpf" className="text-gray-300">CPF <span className="text-gray-400 font-normal">(opcional)</span></Label>
               <Input
                 id="pr-cpf" inputMode="numeric" value={cpf} disabled={salvando}
                 onChange={(e) => { setCpf(mascararCPF(e.target.value)); setErro(''); }}
@@ -97,7 +97,7 @@ const PastorDialog = ({ aberto, pastor, igrejas, onSalvar, onFechar }) => {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="pr-tel" className="text-gray-300">Telefone <span className="text-gray-500 font-normal">(opcional)</span></Label>
+              <Label htmlFor="pr-tel" className="text-gray-300">Telefone <span className="text-gray-400 font-normal">(opcional)</span></Label>
               <Input
                 id="pr-tel" inputMode="tel" value={telefone} disabled={salvando}
                 onChange={(e) => { setTelefone(mascararTelefone(e.target.value)); setErro(''); }}
@@ -237,11 +237,11 @@ const PastoresParceirosManager = () => {
     <div className="space-y-3">
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
           <Input
             value={busca} onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por nome, igreja, CPF ou telefone..."
-            className="h-9 pl-8 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+            className="h-9 pl-8 bg-white/5 border-white/10 text-white placeholder:text-gray-400"
           />
         </div>
         <Button
@@ -254,7 +254,7 @@ const PastoresParceirosManager = () => {
       </div>
 
       {!loading && !erro && (
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-400">
           {pastores.length} {pastores.length === 1 ? 'pastor' : 'pastores'} · {igrejasComPastor} {igrejasComPastor === 1 ? 'igreja' : 'igrejas'}
           {aVincular > 0 && <span className="text-amber-300"> · {aVincular} a vincular</span>}
           {aConferir > 0 && <span className="text-sky-300"> · {aConferir} a conferir</span>}
@@ -298,7 +298,7 @@ const PastoresParceirosManager = () => {
                       <span className="inline-flex flex-col">
                         {p.igreja_codigo ? (
                           <span className="text-gray-200">
-                            <span className="text-gray-500 tabular-nums">{p.igreja_codigo}</span> {p.igreja_nome}
+                            <span className="text-gray-400 tabular-nums">{p.igreja_codigo}</span> {p.igreja_nome}
                           </span>
                         ) : (
                           <span className="text-[11px] w-fit px-1.5 py-0.5 rounded-full border border-amber-500/40 text-amber-300">a vincular</span>
@@ -308,7 +308,7 @@ const PastoresParceirosManager = () => {
                             logo apos o clique. Os "a vincular" nao tem botao:
                             primeiro vincular a igreja. */}
                         {p.igreja_digitada && !p.conferido_em && (
-                          <span className="text-xs text-gray-500 mt-0.5 flex items-center gap-2 flex-wrap">
+                          <span className="text-xs text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
                             <span><span className="text-gray-600">Na planilha:</span> “{p.igreja_digitada}”</span>
                             {p.igreja_id && (
                               <button type="button" onClick={() => conferir(p, true)} disabled={conferindo === p.id}
@@ -359,7 +359,7 @@ const PastoresParceirosManager = () => {
                           <Button
                             type="button" variant="ghost" size="sm" onClick={() => setRemovendo(p.id)}
                             data-dica="Tirar este pastor da lista (fica guardado no histórico)." aria-label={`Remover ${p.nome}`}
-                            className="h-7 w-7 p-0 text-gray-500 hover:text-red-300 hover:bg-red-500/10"
+                            className="h-7 w-7 p-0 text-gray-400 hover:text-red-300 hover:bg-red-500/10"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>

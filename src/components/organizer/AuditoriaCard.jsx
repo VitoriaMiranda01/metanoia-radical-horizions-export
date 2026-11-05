@@ -41,7 +41,7 @@ const Mudancas = ({ item }) => {
           <li key={c} className="break-words">
             <span className="text-gray-400">{rotuloCampo(c)}:</span>{' '}
             <span className="text-red-300/80 line-through">{formatarValor(m[c][0])}</span>
-            <span className="text-gray-500"> → </span>
+            <span className="text-gray-400"> → </span>
             <span className="text-green-300">{formatarValor(m[c][1])}</span>
           </li>
         ))}
@@ -79,7 +79,7 @@ const Linha = ({ item }) => {
   return (
     <li className="border-b border-white/5 pb-2">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-        <span className="text-xs text-gray-500 w-24 shrink-0">{fmtHora(item.em)}</span>
+        <span className="text-xs text-gray-400 w-24 shrink-0">{fmtHora(item.em)}</span>
         <span className="font-medium text-white">{item.organizador}</span>
         <span className={cn('px-2 py-0.5 rounded-full border text-xs', COR_OPERACAO[item.operacao])}>
           {item.operacao}
@@ -88,7 +88,7 @@ const Linha = ({ item }) => {
         {item.registro && <span className="text-gray-100 break-words">· {item.registro}</span>}
         {item.qtd > 1 && <span className="text-xs text-amber-300">(em massa)</span>}
       </div>
-      {origem && <p className="text-[11px] text-gray-500 mt-0.5 md:ml-[6.5rem]">via {origem}</p>}
+      {origem && <p className="text-[11px] text-gray-400 mt-0.5 md:ml-[6.5rem]">via {origem}</p>}
       <div className="md:ml-[6.5rem]">
         <Mudancas item={item} />
       </div>
@@ -177,7 +177,7 @@ const AuditoriaCard = () => {
             </SelectContent>
           </Select>
           <div className="relative">
-            <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <Input
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
@@ -211,7 +211,7 @@ const AuditoriaCard = () => {
             <ul className="space-y-2 max-h-[32rem] overflow-y-auto pr-1">
               {itens.map((it) => <Linha key={it.id} item={it} />)}
             </ul>
-            <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="flex items-center justify-between text-xs text-gray-400">
               <span>{dados?.total ?? 0} registros guardados</span>
               {dados?.tem_mais && (
                 <Button

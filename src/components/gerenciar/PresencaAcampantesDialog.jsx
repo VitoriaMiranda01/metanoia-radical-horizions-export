@@ -116,7 +116,7 @@ const Numero = ({ rotulo, valor, detalhe, cor = 'text-white', ativo, onClick }) 
       ativo ? 'border-emerald-400/70 bg-emerald-500/10' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}>
     <p className="text-xs text-gray-400">{rotulo}</p>
     <p className={`text-2xl font-bold ${cor}`}>{valor}</p>
-    {detalhe && <p className="text-[11px] text-gray-500 mt-0.5">{detalhe}</p>}
+    {detalhe && <p className="text-[11px] text-gray-400 mt-0.5">{detalhe}</p>}
   </button>
 );
 
@@ -254,18 +254,18 @@ const PresencaAcampantesDialog = ({ isOpen, onClose, presenca }) => {
                 </button>
               );
             })}
-            <span className="self-center text-xs text-gray-500">{divisao.fechada ? 'Divisão fechada' : 'Divisão provisória (Listas dos ônibus)'}</span>
+            <span className="self-center text-xs text-gray-400">{divisao.fechada ? 'Divisão fechada' : 'Divisão provisória (Listas dos ônibus)'}</span>
           </div>
 
           <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative flex-1 min-w-[220px]">
-                <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Pesquisar o nome do acampante"
                   className="pl-9 pr-9 bg-white/5 border-white/20 text-white" />
                 {busca && (
                   <button type="button" onClick={() => setBusca('')} aria-label="Limpar pesquisa"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"><X className="w-4 h-4" /></button>
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
                 )}
               </div>
               <Button type="button" onClick={imprimir} disabled={!filtrados.length}
@@ -299,7 +299,7 @@ const PresencaAcampantesDialog = ({ isOpen, onClose, presenca }) => {
                 </thead>
                 <tbody>
                   {filtrados.length === 0 && (
-                    <tr><td colSpan={6} className="px-3 py-8 text-center text-gray-500">Ninguém com esses filtros.</td></tr>
+                    <tr><td colSpan={6} className="px-3 py-8 text-center text-gray-400">Ninguém com esses filtros.</td></tr>
                   )}
                   {filtrados.map((p) => (
                     <tr key={chave(p)} className="border-t border-white/5 align-top">

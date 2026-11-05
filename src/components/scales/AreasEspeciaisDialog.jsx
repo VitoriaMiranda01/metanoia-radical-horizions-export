@@ -89,7 +89,7 @@ const AreasEspeciaisDialog = ({
                 estar também numa área comum (o “Alocar” acrescenta, não tira da área comum).
               </>}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-400 mt-1">
               {resumo ?? (total === 0
                 ? `Ninguém escalado nestes ${porExtenso(AREAS_ESPECIAIS.length)} papéis ainda.`
                 : `${total} ${total === 1 ? 'pessoa escalada' : 'pessoas escaladas'} nos ${porExtenso(AREAS_ESPECIAIS.length)}.`)}

@@ -225,7 +225,7 @@ const OutrasIgrejasManager = () => {
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
             <h3 className="text-lg font-medium text-white">Nomes digitados pelos equipantes</h3>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-400">
               Quem escolheu “OUTRA” no formulário e escreveu o nome da própria igreja.
               As mais repetidas aparecem primeiro.
             </p>
@@ -308,7 +308,7 @@ const OutrasIgrejasManager = () => {
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
             <h3 className="text-lg font-medium text-white">Igrejas criadas aqui</h3>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-400">
               Entram no próximo código ({proximoCodigo || '...'}), aparecem nos formulários e já têm conta de parceiro
               (acesso trancado até você liberar em Senhas dos Parceiros).
             </p>
@@ -333,7 +333,7 @@ const OutrasIgrejasManager = () => {
                 <Check className="w-4 h-4 text-emerald-400 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-medium truncate">{n.codigo} - {n.nome}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-400">
                     {plural(n.equipantes, 'equipante', 'equipantes')} · {plural(n.acampantes, 'acampante', 'acampantes')}
                     {n.criada_por ? ` · criada por ${n.criada_por}` : ''}
                   </p>
@@ -352,7 +352,7 @@ const OutrasIgrejasManager = () => {
                 <div key={x.id} className="flex items-center gap-3 p-3 rounded-md border border-white/10 bg-white/5">
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-medium truncate">{x.nome}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-400">
                       {x.quantas > 0 ? plural(x.quantas, 'inscrição com este nome', 'inscrições com este nome') : 'ainda sem inscrições'}
                       {x.criada_por ? ` · adicionada por ${x.criada_por}` : ''}
                     </p>
@@ -559,7 +559,7 @@ const OutrasIgrejasManager = () => {
                 Já existe uma igreja com este nome. Use “Vincular” para não duplicar.
               </p>
             )}
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-400">
               A igreja ganha conta de parceiro (código {proximoCodigo || '...'}) com o acesso trancado: libere em Senhas dos Parceiros
               quando for passar o acesso.
             </p>

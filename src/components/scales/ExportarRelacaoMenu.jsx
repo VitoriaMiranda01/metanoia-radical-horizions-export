@@ -184,7 +184,7 @@ const ListaFiltro = ({ rotulo, nomeUm, itens, marcados, setMarcados, trilha = []
       {aberta && (
         <div className="border-t border-white/10 p-2 space-y-2">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder={`Buscar ${nomeUm}`}
               className="h-9 pl-8 bg-black/40 border-white/20 text-white" />
           </div>
@@ -214,7 +214,7 @@ const ListaFiltro = ({ rotulo, nomeUm, itens, marcados, setMarcados, trilha = []
             {demais.map((g) => (
               <ItemGrupo key={g.titulo} g={g} marcado={marcados.has(g.titulo)} onAlternar={() => alternar(g.titulo)} />
             ))}
-            {mostrados.length === 0 && <p className="text-sm text-gray-500 text-center py-4">Nada encontrado.</p>}
+            {mostrados.length === 0 && <p className="text-sm text-gray-400 text-center py-4">Nada encontrado.</p>}
           </div>
         </div>
       )}
@@ -261,13 +261,13 @@ const FiltrosExportacao = ({ modo, formato, linhas, onClose, onGerar }) => {
             </h3>
             <p className="text-sm text-gray-400">Filtre quem entra e escolha as colunas. Sem filtro, sai todo mundo.</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Fechar" className="text-gray-500 hover:text-white">
+          <button type="button" onClick={onClose} aria-label="Fechar" className="text-gray-400 hover:text-white">
             <X className="h-5 w-5" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input autoFocus value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Filtrar por nome"
               className="h-9 pl-8 bg-black/40 border-white/20 text-white" />
           </div>

@@ -81,7 +81,7 @@ const ExportarAprovacoesDialog = ({ aberto, onFechar, dados, situacao = 'pendent
                     </div>
                   ))}
               </div>
-              <p className="text-xs text-gray-500">O número é quantas inscrições {plural} a sua igreja tem.</p>
+              <p className="text-xs text-gray-400">O número é quantas inscrições {plural} a sua igreja tem.</p>
             </div>
           ) : (
             <div className="min-w-0 space-y-2">
@@ -92,7 +92,7 @@ const ExportarAprovacoesDialog = ({ aberto, onFechar, dados, situacao = 'pendent
                 onChange={setEscolhidas}
                 rotuloQuantidade={`inscrições ${plural}`}
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-400">
                 Digite para buscar e marque quantas quiser. O número ao lado de cada igreja é quantas inscrições {plural} ela tem.
                 Com mais de uma igreja, o arquivo vem com uma aba para cada uma.
               </p>

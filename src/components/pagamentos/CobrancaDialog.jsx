@@ -111,9 +111,9 @@ const CobrancaDialog = ({ item, statusInicial, onSalvar, onRemover, onFechar }) 
             id="cobranca-obs" rows={2} maxLength={MAX_OBS} value={obs}
             onChange={(e) => setObs(e.target.value)}
             placeholder="Vai pagar metade dia 10"
-            className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+            className="bg-white/5 border-white/10 text-white placeholder:text-gray-400"
           />
-          <p className="text-[11px] text-gray-500 text-right">{obs.length}/{MAX_OBS}</p>
+          <p className="text-[11px] text-gray-400 text-right">{obs.length}/{MAX_OBS}</p>
         </div>
 
         {erro && <p className="text-sm text-red-400">{erro}</p>}

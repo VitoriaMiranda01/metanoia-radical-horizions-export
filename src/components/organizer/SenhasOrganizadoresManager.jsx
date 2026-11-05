@@ -433,7 +433,7 @@ const SenhasOrganizadoresManager = () => {
               className="bg-blue-600 hover:bg-blue-700 text-white">
               {salvando ? 'Salvando...' : 'Salvar nova senha'}
             </Button>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-400">
               Mínimo 8 caracteres, com letra e número. Não pode conter o seu nome de usuário.
             </span>
           </div>
@@ -461,7 +461,7 @@ const SenhasOrganizadoresManager = () => {
               <p className="text-white font-medium">
                 {primeiroAcesso ? 'Aberto — o botão está no ar' : 'Fechado — o botão não aparece'}
               </p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-400 mt-1">
                 Cada igreja só consegue fazer isso uma vez, e fica registrado quem fez.
                 Feche assim que os parceiros terminarem de se cadastrar.
               </p>
@@ -491,7 +491,7 @@ const SenhasOrganizadoresManager = () => {
               className="border-white/20 bg-transparent text-gray-200 hover:bg-white/10">
               {reabrindo ? 'Zerando...' : 'Zerar essa igreja'}
             </Button>
-            <p className="text-xs text-gray-500 basis-full">
+            <p className="text-xs text-gray-400 basis-full">
               Apaga o registro do primeiro acesso, devolve a senha de fábrica e tranca a conta
               de novo. A senha que a igreja tinha deixa de funcionar.
             </p>
@@ -524,7 +524,7 @@ const SenhasOrganizadoresManager = () => {
               disabled={criandoOrg || !novoOrgNome.trim()} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               {criandoOrg ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-4 h-4 mr-1.5" />Cadastrar organizador</>}
             </Button>
-            <p className="text-xs text-gray-500 basis-full">
+            <p className="text-xs text-gray-400 basis-full">
               Só letras: o primeiro nome, ou nome e sobrenome se já existir alguém com o mesmo nome.
               A conta nasce sem nenhuma tela liberada: em seguida, marque as permissões dela.
             </p>
@@ -561,7 +561,7 @@ const SenhasOrganizadoresManager = () => {
                         </Badge>
                       )}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-gray-400 mt-0.5">
                       Último acesso: {formatarData(o.ultimo_acesso)}
                       {' · '}Senha alterada: {formatarData(o.senha_atualizada_em)}
                     </p>
@@ -580,7 +580,7 @@ const SenhasOrganizadoresManager = () => {
                   </div>
 
                   {o.eh_o_maximo ? (
-                    <span className="text-xs text-gray-500">use "Trocar minha senha" acima</span>
+                    <span className="text-xs text-gray-400">use "Trocar minha senha" acima</span>
                   ) : confirmando === `excluir:organizador:${o.nome}` ? (
                     <div className="flex flex-col items-end gap-1.5">
                       <div className="flex items-center gap-2">
@@ -640,7 +640,7 @@ const SenhasOrganizadoresManager = () => {
             onSalvo={() => carregarLista()}
           />
 
-          <div className="mt-5 flex items-start gap-2 text-xs text-gray-500">
+          <div className="mt-5 flex items-start gap-2 text-xs text-gray-400">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400/70" />
             <span>
               "Proteção antiga" é a senha que a pessoa nunca trocou desde o começo do sistema. Ela sobe para
@@ -685,7 +685,7 @@ const SenhasOrganizadoresManager = () => {
               disabled={criandoApoio || !novoApoioNome.trim()} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               {criandoApoio ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-4 h-4 mr-1.5" />Criar conta</>}
             </Button>
-            <p className="text-xs text-gray-500 basis-full">
+            <p className="text-xs text-gray-400 basis-full">
               Só letras: o primeiro nome, ou nome e sobrenome se já existir alguém com o mesmo nome.
             </p>
           </form>
@@ -698,7 +698,7 @@ const SenhasOrganizadoresManager = () => {
               Carregando...
             </div>
           ) : contasApoio.length === 0 ? (
-            <p className="text-sm text-gray-500">Nenhuma conta de apoio.</p>
+            <p className="text-sm text-gray-400">Nenhuma conta de apoio.</p>
           ) : (
             <div className="space-y-2">
               {contasApoio.map((c) => {
@@ -732,7 +732,7 @@ const SenhasOrganizadoresManager = () => {
                           </Badge>
                         )}
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-xs text-gray-400 mt-0.5">
                         Último acesso: {formatarData(c.ultimo_acesso)}
                         {' · '}Senha alterada: {formatarData(c.senha_atualizada_em)}
                         {c.criado_por && <>{' · '}Criada por {c.criado_por}</>}

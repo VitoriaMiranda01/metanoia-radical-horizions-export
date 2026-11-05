@@ -53,7 +53,7 @@ const LandingNav = () => {
             
             <Button
               onClick={() => navigate('/equipante')}
-              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-full px-6 transition-all transform hover:scale-105 shadow-lg shadow-orange-900/20"
+              className="bg-orange-700 hover:bg-orange-800 text-white font-semibold rounded-full px-6 transition-all transform hover:scale-105 shadow-lg shadow-orange-900/20"
             >
               Equipantes
             </Button>
@@ -98,7 +98,7 @@ const LandingNav = () => {
               </a>
               <Button
                 onClick={() => navigate('/equipante')}
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                className="w-full bg-orange-700 hover:bg-orange-800 text-white"
               >
                 Área do Equipante
               </Button>

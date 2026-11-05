@@ -198,16 +198,16 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
                 className={cn('h-9 px-3 rounded-md border text-xs whitespace-nowrap',
                   modo === k ? 'border-white/30 bg-white/15 text-white' : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10')}
               >
-                {rotulo} <span className="text-gray-500 tabular-nums">{n}</span>
+                {rotulo} <span className="text-gray-400 tabular-nums">{n}</span>
               </button>
             ))}
           </div>
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nome, igreja ou CPF..."
-              className="h-9 pl-8 pr-8 bg-white/5 border-white/10 text-white placeholder:text-gray-500" />
+              className="h-9 pl-8 pr-8 bg-white/5 border-white/10 text-white placeholder:text-gray-400" />
             {busca && (
-              <button type="button" onClick={() => setBusca('')} aria-label="Limpar a busca" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+              <button type="button" onClick={() => setBusca('')} aria-label="Limpar a busca" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
                 <X className="h-4 w-4" />
               </button>
             )}
@@ -272,14 +272,14 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
                   <DropdownMenuItem key={rotulo} disabled={!qtdPorOpcao[k]} onSelect={() => selecionar(k)}
                     className="flex justify-between gap-4 cursor-pointer focus:bg-white/10 focus:text-white">
                     <span>{rotulo}</span>
-                    <span className="text-gray-500 tabular-nums">{qtdPorOpcao[k]}</span>
+                    <span className="text-gray-400 tabular-nums">{qtdPorOpcao[k]}</span>
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem onSelect={() => selecionar('todos')}
                   className="flex justify-between gap-4 cursor-pointer focus:bg-white/10 focus:text-white">
                   <span>Selecionar todos{modo === 'todos' ? ' (toda a fila)' : ''}{busca.trim() ? ' da busca' : ''}</span>
-                  <span className="text-gray-500 tabular-nums">{lista.length}</span>
+                  <span className="text-gray-400 tabular-nums">{lista.length}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -305,7 +305,7 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
             </p>
           )}
           {!lista.length && !extras.length && (
-            <p className="text-center py-8 text-gray-500">
+            <p className="text-center py-8 text-gray-400">
               {busca ? 'Ninguém da fila bate com a busca.' : modo === 'escolheram' ? `Ninguém na fila escolheu ${area}. Veja “Toda a fila”.` : 'A fila “A escalar” está vazia.'}
             </p>
           )}
@@ -322,10 +322,10 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
                   marcado ? 'border-blue-500/50 bg-blue-500/10' : 'border-white/5 bg-white/5 hover:bg-white/10',
                   acima && 'opacity-60')}
               >
-                {marcado ? <CheckSquare className="w-4 h-4 text-blue-400 shrink-0" /> : <Square className="w-4 h-4 text-gray-500 shrink-0" />}
+                {marcado ? <CheckSquare className="w-4 h-4 text-blue-400 shrink-0" /> : <Square className="w-4 h-4 text-gray-400 shrink-0" />}
                 <span className="flex-1 min-w-0">
                   <span className="flex items-center gap-1.5 text-sm text-white min-w-0"><span className="truncate">{p.nome}</span><SeloPastor pessoa={p} /></span>
-                  <span className="block text-[11px] text-gray-500 truncate">{nomeDaIgreja(p) || '—'}</span>
+                  <span className="block text-[11px] text-gray-400 truncate">{nomeDaIgreja(p) || '—'}</span>
                 </span>
                 {op >= 0 && <span className="text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/30 text-emerald-300 shrink-0">{OPCAO[op]}</span>}
                 <span className={cn('text-[10px] shrink-0', ehMulher(p) ? 'text-pink-300' : 'text-blue-300')}>{ehMulher(p) ? 'F' : 'M'}</span>
@@ -351,10 +351,10 @@ const AlocarEmLoteDialog = ({ area, limitObj, ocupados, mulheres, homens, fila =
                       marcado ? 'border-blue-500/50 bg-blue-500/10' : 'border-sky-500/15 bg-sky-500/5 hover:bg-sky-500/10',
                       (acima || bloqueio) && 'opacity-60', bloqueio && 'cursor-not-allowed')}
                   >
-                    {marcado ? <CheckSquare className="w-4 h-4 text-blue-400 shrink-0" /> : <Square className="w-4 h-4 text-gray-500 shrink-0" />}
+                    {marcado ? <CheckSquare className="w-4 h-4 text-blue-400 shrink-0" /> : <Square className="w-4 h-4 text-gray-400 shrink-0" />}
                     <span className="flex-1 min-w-0">
                       <span className="flex items-center gap-1.5 text-sm text-white min-w-0"><span className="truncate">{p.nome}</span><SeloPastor pessoa={p} /></span>
-                      <span className="block text-[11px] text-gray-500 truncate">{nomeDaIgreja(p) || '—'}</span>
+                      <span className="block text-[11px] text-gray-400 truncate">{nomeDaIgreja(p) || '—'}</span>
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full border border-sky-500/30 text-sky-200 shrink-0 max-w-[45%] truncate">
                       já em {p.areas.join(', ')}

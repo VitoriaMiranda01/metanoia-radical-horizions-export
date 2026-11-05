@@ -132,7 +132,7 @@ const AcampanteItem = ({ acampante, onRealocar, onSalvarObservacao, vinc }) => {
                 disabled={isSavingObs}
                 rows={1}
                 placeholder="Observações..."
-                className="min-h-[32px] h-8 resize-none overflow-hidden bg-white/5 border-white/10 text-white placeholder:text-gray-500 text-xs flex-1 min-w-[9rem] py-1.5 leading-tight"
+                className="min-h-[32px] h-8 resize-none overflow-hidden bg-white/5 border-white/10 text-white placeholder:text-gray-400 text-xs flex-1 min-w-[9rem] py-1.5 leading-tight"
               />
               <Button
                 type="button"
@@ -233,19 +233,19 @@ const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onReal
 
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input
               ref={buscaRef}
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar nome, CPF, telefone, igreja..."
-              className="h-9 pl-8 pr-8 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+              className="h-9 pl-8 pr-8 bg-white/5 border-white/10 text-white placeholder:text-gray-400"
             />
             {busca && (
               <button
                 type="button" onClick={() => { setBusca(''); buscaRef.current?.focus(); }}
                 aria-label="Limpar a busca"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -262,7 +262,7 @@ const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onReal
                     : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
                 )}
               >
-                {x.rotulo} <span className="text-gray-500 tabular-nums">{contagem[x.chave]}</span>
+                {x.rotulo} <span className="text-gray-400 tabular-nums">{contagem[x.chave]}</span>
               </button>
             ))}
             {totalConflitos > 0 && (
@@ -282,7 +282,7 @@ const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onReal
           </div>
         </div>
         {(busca || sexo !== 'todos' || soConflitos) && (
-          <p className="-mt-1 text-xs text-gray-500">{filtrados.length} de {groupData.length} no filtro</p>
+          <p className="-mt-1 text-xs text-gray-400">{filtrados.length} de {groupData.length} no filtro</p>
         )}
 
         <div className="flex-1 min-h-0 max-h-[60vh] overflow-y-auto pr-1">
@@ -292,7 +292,7 @@ const GruposTrailhaModal = ({ isOpen, onClose, groupName, groupData = [], onReal
                 <AcampanteItem key={acampante.id || idx} acampante={acampante} onRealocar={onRealocar} onSalvarObservacao={onSalvarObservacao} vinc={vinc} />
               ))
             ) : (
-              <div className="text-center py-10 text-gray-500">
+              <div className="text-center py-10 text-gray-400">
                 {groupData.length === 0 ? 'Nenhum acampante alocado neste grupo ainda.' : 'Ninguém neste grupo bate com o filtro.'}
               </div>
             )}

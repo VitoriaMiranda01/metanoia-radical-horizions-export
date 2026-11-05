@@ -252,7 +252,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
             className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-200 text-xs hover:bg-emerald-500/20">
             <MessageCircle className="w-3.5 h-3.5" />Mensagem
           </a>
-        ) : <span className="text-xs text-gray-500">Sem WhatsApp</span>}
+        ) : <span className="text-xs text-gray-400">Sem WhatsApp</span>}
         {zapGrupo && (
           <a href={zapGrupo} target="_blank" rel="noreferrer" title="Enviar o link do grupo da equipe para esta pessoa"
             className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-sky-500/40 bg-sky-500/10 text-sky-200 text-xs hover:bg-sky-500/20">
@@ -307,7 +307,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
       <section className="rounded-xl border border-white/10 bg-black/50 p-4 space-y-3">
         <div>
           <p className="text-sm font-semibold text-white">Cobertura por grupo</p>
-          <p className="text-xs text-gray-500">Patologias dos acampantes de cada cor e a equipe alocada nela. Clique no cartão de uma cor para escolher quem da equipe vai nela.</p>
+          <p className="text-xs text-gray-400">Patologias dos acampantes de cada cor e a equipe alocada nela. Clique no cartão de uma cor para escolher quem da equipe vai nela.</p>
         </div>
         <div className="grid gap-2 lg:grid-cols-2">
           {cobertura.map((c) => (
@@ -324,13 +324,13 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
               {c.total === 0 ? <p className="text-xs text-gray-600">Nenhuma informação de saúde.</p> : (
                 <p className="text-xs text-gray-300 leading-relaxed line-clamp-3 sm:line-clamp-none">
                   {c.problemas.length > 0 && <>{c.problemas.map((g) => `${g.rotulo} (${g.ids.size})`).join(', ')}. </>}
-                  <span className="text-gray-500">{c.comMedicamento} com medicamento · {c.comRestricao} com restrição alimentar</span>
+                  <span className="text-gray-400">{c.comMedicamento} com medicamento · {c.comRestricao} com restrição alimentar</span>
                 </p>
               )}
               <div className="border-t border-white/10 pt-2">
                 {c.equipe.length === 0
                   ? <p className="text-xs text-amber-300/90">Ninguém da equipe alocado neste grupo.</p>
-                  : <p className="text-xs text-gray-200"><span className="text-gray-500">Equipe: </span>
+                  : <p className="text-xs text-gray-200"><span className="text-gray-400">Equipe: </span>
                     {c.equipe.map((p) => `${primeiroNome(p.nome)}${rotuloEspecialidades(p) ? ` (${rotuloEspecialidades(p)})` : ''}`).join(', ')}</p>}
               </div>
             </div>
@@ -341,9 +341,9 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
       {/* Busca e filtros */}
       <section className="rounded-xl border border-white/10 bg-black/50 p-4 space-y-3">
         <div className="relative">
-          <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nome, igreja, especialidade, telefone..."
-            className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500" />
+            className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-400" />
         </div>
         <div className="flex flex-wrap gap-1.5 text-xs">
           {[['todas', `Todos · ${equipe.length}`], ...contagem.map(([esp, n]) => [esp, `${esp} · ${n}`]),
@@ -373,14 +373,14 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
         </div>
 
         {visiveis.length === 0 ? (
-          <p className="py-12 text-center text-gray-500 text-sm">Ninguém com esses filtros.</p>
+          <p className="py-12 text-center text-gray-400 text-sm">Ninguém com esses filtros.</p>
         ) : (
           <>
             {/* Computador */}
             <div className="hidden md:block overflow-auto max-h-[calc(100dvh-12rem)]">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-neutral-900">
-                  <tr className="text-left text-xs text-gray-500 border-b border-white/10">
+                  <tr className="text-left text-xs text-gray-400 border-b border-white/10">
                     <th className="px-3 py-2 min-w-[240px]"><Ordenar coluna="nome" ordem={ordem} setOrdem={setOrdem}>Nome</Ordenar></th>
                     <th className="px-3 py-2"><Ordenar coluna="idade" ordem={ordem} setOrdem={setOrdem}>Idade</Ordenar></th>
                     <th className="px-3 py-2"><Ordenar coluna="especialidade" ordem={ordem} setOrdem={setOrdem}>Especialidade</Ordenar></th>
@@ -397,10 +397,10 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
                       <tr key={p.escala_id} className="border-b border-white/5 align-top hover:bg-white/[0.03]">
                         <td className="px-3 py-2.5">
                           {nome(p)}
-                          <p className="text-xs text-gray-500">{p.whatsapp ? formatarTelefone(p.whatsapp) : 'Sem WhatsApp'}{p.eh_lider ? ' · Líder' : ''}</p>
+                          <p className="text-xs text-gray-400">{p.whatsapp ? formatarTelefone(p.whatsapp) : 'Sem WhatsApp'}{p.eh_lider ? ' · Líder' : ''}</p>
                           {edicao(p)}
                         </td>
-                        <td className="px-3 py-2.5 text-gray-200 tabular-nums whitespace-nowrap">{p.idade != null ? `${p.idade} anos` : '—'}<p className="text-xs text-gray-500">{p.sexo || ''}</p></td>
+                        <td className="px-3 py-2.5 text-gray-200 tabular-nums whitespace-nowrap">{p.idade != null ? `${p.idade} anos` : '—'}<p className="text-xs text-gray-400">{p.sexo || ''}</p></td>
                         <td className="px-3 py-2.5">
                           <div className="flex flex-wrap items-center gap-1">
                             {p.especialidade === ESPECIALIDADE_OUTRO
@@ -429,7 +429,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
 
             {/* Celular */}
             <div className="md:hidden">
-              <div className="flex gap-2 px-4 py-2 text-[11px] text-gray-500 border-b border-white/5 overflow-x-auto">
+              <div className="flex gap-2 px-4 py-2 text-[11px] text-gray-400 border-b border-white/5 overflow-x-auto">
                 Ordenar:
                 {[['nome', 'Nome'], ['idade', 'Idade'], ['especialidade', 'Especialidade']].map(([c, r]) => (
                   <Ordenar key={c} coluna={c} ordem={ordem} setOrdem={setOrdem}>{r}</Ordenar>
@@ -439,13 +439,13 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
                 {visiveis.map((p) => (
                   <div key={p.escala_id} className="p-4 space-y-2">
                     {nome(p)}
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-400">
                       {p.idade != null ? `${p.idade} anos` : 'sem idade'}{p.sexo ? ` · ${p.sexo}` : ''}{p.eh_lider ? ' · Líder' : ''}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">{nomeDaIgreja(p) || '—'}</p>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">Grupo: {seletorGrupo(p)}</div>
+                    <p className="text-xs text-gray-400 truncate">{nomeDaIgreja(p) || '—'}</p>
+                    <div className="flex items-center gap-2 text-xs text-gray-400">Grupo: {seletorGrupo(p)}</div>
                     {p.contato_emergencia_nome && (
-                      <p className="text-xs"><span className="text-gray-500">Emergência: </span><span className="text-gray-300">{p.contato_emergencia_nome}{p.contato_emergencia_telefone ? ` · ${formatarTelefone(p.contato_emergencia_telefone)}` : ''}</span></p>
+                      <p className="text-xs"><span className="text-gray-400">Emergência: </span><span className="text-gray-300">{p.contato_emergencia_nome}{p.contato_emergencia_telefone ? ` · ${formatarTelefone(p.contato_emergencia_telefone)}` : ''}</span></p>
                     )}
                     {acoes(p)}
                     {edicao(p)}
@@ -478,9 +478,9 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
                 </DialogHeader>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
-                    <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <Input value={buscaPainel} onChange={(e) => setBuscaPainel(e.target.value)} placeholder="Buscar nome ou especialidade..."
-                      className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-500" />
+                      className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-gray-400" />
                   </div>
                   <select value={espPainel} onChange={(e) => setEspPainel(e.target.value)} aria-label="Filtrar por especialidade"
                     className="h-10 rounded-md border border-white/15 bg-neutral-900 px-2 text-sm text-gray-200">
@@ -492,7 +492,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
                   <strong className="text-white tabular-nums">{c.equipe.length}</strong> {c.equipe.length === 1 ? 'pessoa' : 'pessoas'} neste grupo. Quem está em outra cor muda para esta ao marcar.
                 </p>
                 <div className="flex-1 min-h-0 overflow-y-auto rounded-lg border border-white/10 divide-y divide-white/5">
-                  {lista.length === 0 && <p className="py-8 text-center text-sm text-gray-500">Ninguém com esse filtro.</p>}
+                  {lista.length === 0 && <p className="py-8 text-center text-sm text-gray-400">Ninguém com esse filtro.</p>}
                   {lista.map((p) => {
                     const aqui = p.grupo_saude === painel;
                     return (
@@ -508,7 +508,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
                             <span>{p.nome}</span>
                             <TagEspecialidade especialidade={p.especialidade} outro={p.especialidade_outro} adicionais={p.especialidades_adicionais} semEspecialidade />
                           </p>
-                          <p className="text-xs text-gray-500">{p.idade != null ? `${p.idade} anos` : 'sem idade'}{p.sexo ? ` · ${p.sexo}` : ''}</p>
+                          <p className="text-xs text-gray-400">{p.idade != null ? `${p.idade} anos` : 'sem idade'}{p.sexo ? ` · ${p.sexo}` : ''}</p>
                         </div>
                         {p.grupo_saude && !aqui && <GrupoTrilhaTag grupo={p.grupo_saude} className="text-[10px] px-2" />}
                       </label>
@@ -529,7 +529,7 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
         <section className="rounded-xl border border-white/10 bg-black/50 p-4 space-y-3">
           <div>
             <p className="text-sm font-semibold text-white">Especialidades escritas em “Outro”</p>
-            <p className="text-xs text-gray-500">De todos os equipantes. “Tornar fixa” põe a resposta na lista de opções e passa quem a escreveu para ela.</p>
+            <p className="text-xs text-gray-400">De todos os equipantes. “Tornar fixa” põe a resposta na lista de opções e passa quem a escreveu para ela.</p>
           </div>
           {outros.length === 0 ? (
             <p className="text-xs text-gray-600">Ninguém escreveu nada em “Outro” ainda.</p>
@@ -538,8 +538,8 @@ const EquipeSaude = ({ ehOrganizador = false, onTotal, acampantes = [] }) => {
               {outros.map((o) => (
                 <div key={o.texto} className="py-2 flex flex-col sm:flex-row sm:items-center gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white">{o.texto} <span className="text-xs text-gray-500">· {o.quantos} {o.quantos === 1 ? 'pessoa' : 'pessoas'}</span></p>
-                    <p className="text-xs text-gray-500 truncate" title={(o.nomes || []).join(', ')}>{(o.nomes || []).join(', ')}</p>
+                    <p className="text-sm text-white">{o.texto} <span className="text-xs text-gray-400">· {o.quantos} {o.quantos === 1 ? 'pessoa' : 'pessoas'}</span></p>
+                    <p className="text-xs text-gray-400 truncate" title={(o.nomes || []).join(', ')}>{(o.nomes || []).join(', ')}</p>
                   </div>
                   <Button size="sm" variant="outline" disabled={!!fixando} onClick={() => fixar(o.texto)}
                     className="h-8 shrink-0 border-emerald-500/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20">

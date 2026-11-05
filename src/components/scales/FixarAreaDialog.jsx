@@ -102,7 +102,7 @@ const FixarAreaDialog = ({ equipante, area, fixasAtuais = [], onClose, onSalvo }
 
         <div className="space-y-2">
           {lista.length === 0 && (
-            <p className="text-xs text-gray-500 italic">Nenhuma área marcada — salvar tira o alfinete.</p>
+            <p className="text-xs text-gray-400 italic">Nenhuma área marcada — salvar tira o alfinete.</p>
           )}
           {lista.map(a => (
             <div key={a} className="flex items-center justify-between gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2">
@@ -127,7 +127,7 @@ const FixarAreaDialog = ({ equipante, area, fixasAtuais = [], onClose, onSalvo }
         </div>
 
         <div className="pt-1">
-          <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1.5">Fixo também em outra área</p>
+          <p className="text-[11px] uppercase tracking-wider text-gray-400 mb-1.5">Fixo também em outra área</p>
           <div className="flex gap-2">
             <Select value={outra} onValueChange={setOutra}>
               <SelectTrigger className="h-9 flex-1 bg-black/40 border-white/20 text-white text-sm">
@@ -142,7 +142,7 @@ const FixarAreaDialog = ({ equipante, area, fixasAtuais = [], onClose, onSalvo }
               Adicionar
             </Button>
           </div>
-          <p className="text-[11px] text-gray-500 mt-1.5">
+          <p className="text-[11px] text-gray-400 mt-1.5">
             Se a pessoa ainda não está na área nova, ela já é escalada lá ao salvar.
           </p>
         </div>

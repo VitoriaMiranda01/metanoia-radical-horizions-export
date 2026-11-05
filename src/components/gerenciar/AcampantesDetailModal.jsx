@@ -137,7 +137,7 @@ const AcampantesDetailModal = ({ isOpen, onClose, title, acampantes = [], onVerF
                   );
                 })
               ) : (
-                <div className="text-center py-10 text-gray-500">
+                <div className="text-center py-10 text-gray-400">
                   Nenhum acampante encontrado nesta categoria.
                 </div>
               )}

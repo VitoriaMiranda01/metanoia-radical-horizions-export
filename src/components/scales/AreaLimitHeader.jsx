@@ -240,7 +240,7 @@ const AreaLimitHeader = ({
               // isso explicito (em vez de um espaco vazio do lado do
               // "Alterar"), pro organizador nao estranhar achando que
               // sumiu informacao.
-              <span className="italic text-gray-500">Sem limite por gênero</span>
+              <span className="italic text-gray-400">Sem limite por gênero</span>
             )}
             <div className="flex items-center gap-1 shrink-0">
               {onAlocarEmLote && <Button

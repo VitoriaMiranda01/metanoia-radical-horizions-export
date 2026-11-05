@@ -70,7 +70,7 @@ const QuadroAviso = ({ id, cor = 'amber', Icone, titulo, explicacao, onOcultar, 
         <p className="text-[11px] text-gray-400 text-center">Role para ver as outras {total - VISIVEIS} ↓</p>
       )}
       {ocultas > 0 && (
-        <p className="text-[11px] text-gray-500 text-center">
+        <p className="text-[11px] text-gray-400 text-center">
           {ocultas === 1
             ? '1 ficha oculta — continua no sino de notificações.'
             : `${ocultas} fichas ocultas — continuam no sino de notificações.`}

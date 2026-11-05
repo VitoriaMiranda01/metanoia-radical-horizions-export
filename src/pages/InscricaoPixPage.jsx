@@ -528,7 +528,7 @@ const InscricaoPixPage = () => {
                           placeholder="Digite seu cupom" 
                           value={couponInput} 
                           onChange={e => setCouponInput(e.target.value.toUpperCase())} 
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 uppercase focus:border-emerald-500 focus:ring-emerald-500" 
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-400 uppercase focus:border-emerald-500 focus:ring-emerald-500" 
                           disabled={appliedCoupon !== null || loading || isFinalizingZero} 
                         />
                         {appliedCoupon ? (
@@ -594,7 +594,7 @@ const InscricaoPixPage = () => {
                       value={formData.nome} 
                       onChange={handleInputChange} 
                       disabled={loading || isFinalizingZero} 
-                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-500 focus:ring-emerald-500" 
+                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:border-emerald-500 focus:ring-emerald-500" 
                     />
                   </div>
 
@@ -608,7 +608,7 @@ const InscricaoPixPage = () => {
                       onChange={handleInputChange} 
                       maxLength={14} 
                       disabled={loading || isFinalizingZero} 
-                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-500 focus:ring-emerald-500" 
+                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:border-emerald-500 focus:ring-emerald-500" 
                     />
                   </div>
 

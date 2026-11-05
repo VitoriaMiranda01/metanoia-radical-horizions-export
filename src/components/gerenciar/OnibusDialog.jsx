@@ -306,7 +306,7 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
         )}
 
         <div className="flex-1 min-h-0 max-h-[50vh] overflow-y-auto pr-1 space-y-2">
-          {!pagos.length && <p className="text-center py-10 text-gray-500">{salvo ? 'Ninguém na lista da recepção ainda.' : 'Carregando…'}</p>}
+          {!pagos.length && <p className="text-center py-10 text-gray-400">{salvo ? 'Ninguém na lista da recepção ainda.' : 'Carregando…'}</p>}
           {onibus.map((o) => {
             const expandido = aberto === o.numero;
             return (
@@ -348,7 +348,7 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
                       <tbody>
                         {o.pessoas.map((p, i) => (
                           <tr key={chaveDe(p)} className="border-t border-white/5">
-                            <td className="px-3 py-1 text-right text-gray-500 tabular-nums">{i + 1}</td>
+                            <td className="px-3 py-1 text-right text-gray-400 tabular-nums">{i + 1}</td>
                             <td className="px-3 py-1 text-gray-200">{p.nome}</td>
                             <td className="px-3 py-1"><GrupoTrilhaTag grupo={p.grupo_trailha} className="text-[10px] px-2" /></td>
                             <td className="px-3 py-1 text-gray-400 whitespace-nowrap">{documentoDe(p)}</td>
@@ -364,7 +364,7 @@ const OnibusDialog = ({ isOpen, onClose, acampantes = [] }) => {
             );
           })}
         </div>
-        <p className="text-[11px] text-gray-500">Calculada em {geradaEm}. A folha impressa leva a data e hora em que foi gerada.</p>
+        <p className="text-[11px] text-gray-400">Calculada em {geradaEm}. A folha impressa leva a data e hora em que foi gerada.</p>
       </DialogContent>
     </Dialog>
   );

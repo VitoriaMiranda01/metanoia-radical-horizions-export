@@ -38,7 +38,7 @@ const ResumoPagamentos = ({ pagos, cupomFiltrado, onFiltrarCupom }) => {
         <div className="flex items-center gap-2 mb-2">
           <Ticket className="w-4 h-4 text-pink-400" />
           <span className="text-sm font-medium text-white">Cupons usados</span>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-gray-400">
             {comCupom > 0 ? `${plural(comCupom, 'pagamento', 'pagamentos')} com cupom · clique para ver quem usou` : 'nenhum pagamento com cupom registrado'}
           </span>
         </div>

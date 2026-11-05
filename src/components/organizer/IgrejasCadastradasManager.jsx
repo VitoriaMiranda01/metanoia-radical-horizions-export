@@ -139,12 +139,12 @@ const IgrejasCadastradasManager = () => {
     <div className="space-y-3">
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
           <Input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por código, nome, pastor ou responsável..."
-            className="h-9 pl-8 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
+            className="h-9 pl-8 bg-white/5 border-white/10 text-white placeholder:text-gray-400"
           />
         </div>
         <Button
@@ -165,7 +165,7 @@ const IgrejasCadastradasManager = () => {
       </div>
 
       {!loading && !erro && (
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-400">
           {linhas.length} igrejas · {linhas.length - adicionadas} parceiras e {adicionadas} adicionadas pela
           organização · {comInscritos} com inscritos
           {termo ? ` · ${filtradas.length} na busca` : ''}
@@ -215,7 +215,7 @@ const IgrejasCadastradasManager = () => {
                   <td className="px-3 py-1.5 text-right tabular-nums text-gray-200">
                     {l.equipantesInscritos}
                     {l.equipantesInscritos > 0 && (
-                      <span className="text-gray-500"> ({l.equipantesAprovados})</span>
+                      <span className="text-gray-400"> ({l.equipantesAprovados})</span>
                     )}
                   </td>
                   <td className="px-3 py-1.5 text-right tabular-nums text-gray-200">{l.acampantes}</td>
@@ -244,7 +244,7 @@ const IgrejasCadastradasManager = () => {
         </div>
       )}
       <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
-        <p className="text-[11px] text-gray-500">Equip. = equipantes inscritos (entre parênteses, os aprovados).</p>
+        <p className="text-[11px] text-gray-400">Equip. = equipantes inscritos (entre parênteses, os aprovados).</p>
         <Button
           type="button" size="sm" onClick={() => setJanela({ igreja: null })}
           disabled={loading || !!erro || !cadastro.proximoCodigo}

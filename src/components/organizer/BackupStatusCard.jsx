@@ -30,7 +30,7 @@ const ROTULO_STATUS = {
 };
 
 const Copia = ({ ok, nome }) => (
-  <span className={cn('inline-flex items-center gap-1', ok ? 'text-green-400' : 'text-gray-500')}>
+  <span className={cn('inline-flex items-center gap-1', ok ? 'text-green-400' : 'text-gray-400')}>
     {ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
     {nome}
   </span>
@@ -94,7 +94,7 @@ const BackupStatusCard = () => {
 
         {recentes.length > 0 && (
           <div className="space-y-1.5">
-            <p className="text-xs uppercase tracking-wider text-gray-500">Últimas execuções</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">Últimas execuções</p>
             {recentes.map((e) => {
               const st = ROTULO_STATUS[e.status] || ROTULO_STATUS.erro;
               return (
@@ -102,7 +102,7 @@ const BackupStatusCard = () => {
                   <span className="w-20 text-white">{dataDoBackup(e.data_ref)}</span>
                   <span className={cn('px-2 py-0.5 rounded-full border', st.classe)}>{st.texto}</span>
                   {e.tipo === 'edicao' && <span className="text-purple-300">fim de edição</span>}
-                  <span className="text-gray-500">{fmtTamanho(e.bytes_gzip)}</span>
+                  <span className="text-gray-400">{fmtTamanho(e.bytes_gzip)}</span>
                   <Copia ok={e.supabase_ok} nome="Supabase" />
                   <Copia ok={e.github_ok} nome="GitHub" />
                   {e.erro && <span className="basis-full text-red-300/80">{e.erro}</span>}

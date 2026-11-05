@@ -172,7 +172,7 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir, men
       </AlertDialog>
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
           <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome, igreja ou telefone..."
             className="h-9 pl-8 bg-black/40 border-white/20 text-white" />
         </div>
@@ -190,7 +190,7 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir, men
       )}
       {erro && <p className="text-red-300 text-sm text-center py-8">{erro}</p>}
       {pessoas && mostrados === 0 && (
-        <p className="text-gray-500 text-xs text-center py-6">
+        <p className="text-gray-400 text-xs text-center py-6">
           {pessoas.length === 0 ? SITUACOES[situacao].vazio : 'Ninguém com esse filtro.'}
         </p>
       )}
@@ -202,7 +202,7 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir, men
               <button type="button" onClick={() => onAbrirArea?.(nomeArea)}
                 data-dica={`Abrir a chamada de ${nomeArea}: marcar presença e trocar atuação e cor.`}
                 className="sticky top-0 z-10 w-full text-left text-xs font-medium text-cyan-300 bg-zinc-950/95 py-1 hover:text-white">
-                {nomeArea} <span className="text-gray-500 font-normal">({lista.length})</span>
+                {nomeArea} <span className="text-gray-400 font-normal">({lista.length})</span>
               </button>
               <ul className="space-y-1">
                 {lista.map((p) => {
@@ -270,7 +270,7 @@ const ChamadaSituacaoLista = ({ situacao, atualizar, onAbrirArea, onDecidir, men
         </div>
       )}
       {pessoas && (
-        <p className="text-[10px] text-gray-500">
+        <p className="text-[10px] text-gray-400">
           {mostrados === pessoas.length ? `${pessoas.length} na lista` : `${mostrados} de ${pessoas.length} na lista`}
           {' · '}clique no nome da área para abrir a chamada dela
           {situacao !== 'ausentes' && ' · clicar de novo no botão marcado tira a marcação'}

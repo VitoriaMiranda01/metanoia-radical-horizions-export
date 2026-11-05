@@ -72,7 +72,7 @@ const diasAte = (iso) => {
 
 // Data combinada com a cor do prazo: vermelho venceu, amarelo hoje.
 const DataCombinada = ({ iso }) => {
-  if (!iso) return <span className="text-gray-500">—</span>;
+  if (!iso) return <span className="text-gray-400">—</span>;
   const dias = diasAte(iso);
   const [texto, classe] = dias < 0
     ? [`venceu há ${-dias} ${dias === -1 ? 'dia' : 'dias'}`, 'bg-red-500/15 text-red-300 border-red-500/30']
@@ -178,7 +178,7 @@ const CelulaWhatsApp = ({ item, onCopiar, onAbrir }) => {
         type="button" variant="ghost" size="sm"
         onClick={() => onCopiar(texto)}
         data-dica="Copiar o número" aria-label="Copiar o número"
-        className="h-7 w-7 p-0 text-gray-500 hover:text-white hover:bg-white/10"
+        className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-white/10"
       >
         <Copy className="w-3.5 h-3.5" />
       </Button>
@@ -216,7 +216,7 @@ const CelulaGrupo = ({ item, onMarcar, onDesmarcar, onReenviar, ocupado }) => {
           onClick={() => onDesmarcar(item)}
           data-dica="Tirar a marca de enviado (marcou sem querer, ou vai mandar de novo)."
           aria-label="Desfazer envio"
-          className="h-7 w-7 p-0 text-gray-500 hover:text-white hover:bg-white/10"
+          className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-white/10"
         >
           <Undo2 className="w-3.5 h-3.5" />
         </Button>
@@ -650,7 +650,7 @@ const PagamentosPendentesPage = () => {
     const idInscricao = aba === 'travados' ? item.inscricao_id : item.id;
 
     if (!idInscricao) {
-      return <span className="text-sm text-gray-500">Inscrição não localizada</span>;
+      return <span className="text-sm text-gray-400">Inscrição não localizada</span>;
     }
 
     if (emConfirmacao) {
@@ -919,7 +919,7 @@ const PagamentosPendentesPage = () => {
                       placeholder="Buscar por nome, CPF, igreja, WhatsApp..."
                       value={filterText}
                       onChange={(e) => setFilterText(e.target.value)}
-                      className="pl-9 h-11 bg-white/5 border-white/10 text-white w-full placeholder:text-gray-500 focus-visible:ring-blue-500"
+                      className="pl-9 h-11 bg-white/5 border-white/10 text-white w-full placeholder:text-gray-400 focus-visible:ring-blue-500"
                     />
                   </div>
                   {/* Colunas extras (igreja, idade, area, cupom...), cada uma com o
@@ -1030,7 +1030,7 @@ const PagamentosPendentesPage = () => {
                                 onClick={() => setFichaAberta({ tipo: item.tipo, id: aba === 'travados' ? item.inscricao_id : item.id })}
                                 data-dica="Abrir a ficha de inscrição."
                                 aria-label={`Abrir a ficha de ${item.nome}`}
-                                className="mt-px shrink-0 rounded p-0.5 text-gray-500 hover:text-blue-300 hover:bg-white/10"
+                                className="mt-px shrink-0 rounded p-0.5 text-gray-400 hover:text-blue-300 hover:bg-white/10"
                               >
                                 <FileText className="w-4 h-4" />
                               </button>
@@ -1079,26 +1079,26 @@ const PagamentosPendentesPage = () => {
                               <span className={item.status === 'divergente' || item.status === 'fora_da_escala' ? 'text-amber-400 font-medium' : 'text-gray-300'}>
                                 {item.motivo}
                               </span>
-                              <span className="text-gray-500 text-xs mt-0.5">
+                              <span className="text-gray-400 text-xs mt-0.5">
                                 Cobrado: {formatarValor(item.valor)}
                               </span>
                             </div>
                           ) : aba === 'cobranca' ? (
                             <span className="text-gray-400 whitespace-nowrap">
                               {valorDaColuna(item, 'desde')}
-                              <span className="text-gray-500"> · {item.cobranca?.marcado_por}</span>
+                              <span className="text-gray-400"> · {item.cobranca?.marcado_por}</span>
                             </span>
                           ) : aba === 'agendado' ? (
                             <div className="flex flex-col items-start">
                               <DataCombinada iso={item.cobranca?.agendado_para} />
                               {item.cobranca?.marcado_por && (
-                                <span className="text-gray-500 text-xs mt-0.5 whitespace-nowrap">{item.cobranca.marcado_por}</span>
+                                <span className="text-gray-400 text-xs mt-0.5 whitespace-nowrap">{item.cobranca.marcado_por}</span>
                               )}
                             </div>
                           ) : aba === 'pagos' || aba === 'isentos' ? (
                             <div className="flex flex-col whitespace-nowrap">
                               <span className="text-gray-300">{valorDaColuna(item, 'pagamento')}</span>
-                              <span className="text-gray-500 text-xs mt-0.5">{dataHoraBR(item.data_pagamento) || '—'}</span>
+                              <span className="text-gray-400 text-xs mt-0.5">{dataHoraBR(item.data_pagamento) || '—'}</span>
                               {podeDesfazer(item) && (
                                 desfazendo === item.id ? (
                                   <span className="mt-1 inline-flex flex-wrap items-center gap-1 text-xs whitespace-normal max-w-[16rem]">
@@ -1109,7 +1109,7 @@ const PagamentosPendentesPage = () => {
                                       type="text" value={motivoDesfazer} maxLength={500} autoFocus
                                       onChange={(e) => setMotivoDesfazer(e.target.value)}
                                       placeholder={ehPix(item) ? 'Motivo (obrigatório)' : 'Motivo (opcional)'}
-                                      className="w-full mb-0.5 px-2 py-1 rounded bg-black/40 border border-white/15 text-gray-200 placeholder:text-gray-500 focus:outline-none focus:border-amber-400"
+                                      className="w-full mb-0.5 px-2 py-1 rounded bg-black/40 border border-white/15 text-gray-200 placeholder:text-gray-400 focus:outline-none focus:border-amber-400"
                                     />
                                     <span className="text-amber-300 mr-0.5">Voltar para não pago?</span>
                                     <button
@@ -1131,7 +1131,7 @@ const PagamentosPendentesPage = () => {
                                     data-dica={ehPix(item)
                                       ? 'Desistiu ou transferiu o valor? A pessoa volta para Não pagaram; o PIX fica registrado como desfeito, com o motivo.'
                                       : 'Confirmou por engano? A pessoa volta para Não pagaram (valor, cupom e quem confirmou são apagados).'}
-                                    className="mt-1 inline-flex items-center gap-1 w-fit text-xs text-gray-500 hover:text-red-300"
+                                    className="mt-1 inline-flex items-center gap-1 w-fit text-xs text-gray-400 hover:text-red-300"
                                   >
                                     <Undo2 className="w-3 h-3" /> Desfazer pagamento
                                   </button>

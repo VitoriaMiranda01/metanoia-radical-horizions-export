@@ -125,7 +125,7 @@ const ChamadaAreaDialog = ({ area, onClose, onMudou }) => {
                 <span className="text-green-400">{contas.presentes} presentes</span> ·{' '}
                 <span className="text-red-400">{contas.ausentes} ausentes</span> ·{' '}
                 <span className="text-gray-400">{contas.sem} sem chamada</span> ·{' '}
-                <span className="text-gray-500">{membros.length} no total</span>
+                <span className="text-gray-400">{membros.length} no total</span>
               </p>
             )}
           </div>
@@ -136,7 +136,7 @@ const ChamadaAreaDialog = ({ area, onClose, onMudou }) => {
 
         <div className="p-3 sm:p-4 border-b border-white/10 space-y-2">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome, igreja ou telefone..."
               className="h-9 pl-8 bg-black/40 border-white/20 text-white" />
           </div>
@@ -193,7 +193,7 @@ const ChamadaAreaDialog = ({ area, onClose, onMudou }) => {
                     {m.whatsapp ? ` · ${formatarTelefone(m.whatsapp)}` : ''}
                   </p>
                   {m.marcado_por && (
-                    <p className="text-[11px] text-gray-500 mt-0.5">
+                    <p className="text-[11px] text-gray-400 mt-0.5">
                       {m.presente ? 'Presente' : 'Ausente'} · marcado por {m.marcado_por}
                     </p>
                   )}
@@ -239,7 +239,7 @@ const ChamadaAreaDialog = ({ area, onClose, onMudou }) => {
         </div>
 
         <div className="p-3 border-t border-white/10 bg-zinc-900 flex items-center justify-between gap-3">
-          <p className="text-xs text-gray-500">Clicar de novo no botão marcado tira a marcação.</p>
+          <p className="text-xs text-gray-400">Clicar de novo no botão marcado tira a marcação.</p>
           <Button onClick={fechar} variant="outline" className="border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white">
             Fechar
           </Button>

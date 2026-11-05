@@ -186,21 +186,21 @@ const TrocarAreaDialog = ({ allocations, atuacoesPorArea = {}, inicial = null, o
           {!escolhido ? (
             <>
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                 <Input autoFocus value={busca} onChange={(e) => setBusca(e.target.value)}
                   placeholder="Buscar por nome, igreja ou CPF..."
                   className="pl-8 bg-black/40 border-white/20 text-white" />
               </div>
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {busca.trim() && encontrados.length === 0 && (
-                  <p className="text-sm text-gray-500 text-center py-4">Ninguém escalado corresponde a “{busca}”.</p>
+                  <p className="text-sm text-gray-400 text-center py-4">Ninguém escalado corresponde a “{busca}”.</p>
                 )}
                 {encontrados.map((a) => (
                   <button key={a.escalaId} type="button" onClick={() => { setEscolhido(a); setDestino(sugestao(a)); setCor(''); setAtuacao(''); }}
                     className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 rounded-md p-3 flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">{a.nome}</p>
-                      <p className="text-[11px] text-gray-500 truncate">{nomeDaIgreja(a) || '—'}</p>
+                      <p className="text-[11px] text-gray-400 truncate">{nomeDaIgreja(a) || '—'}</p>
                     </div>
                     <span className="text-[11px] px-2 py-1 rounded border border-green-500/30 bg-green-500/10 text-green-200 shrink-0">
                       {a.allocatedArea}{a.atuacao ? ` · ${a.atuacao}` : ''}
@@ -213,11 +213,11 @@ const TrocarAreaDialog = ({ allocations, atuacoesPorArea = {}, inicial = null, o
             <div className="space-y-4">
               <div className="bg-white/5 border border-white/10 rounded-md p-3">
                 <p className="text-white font-medium">{escolhido.nome}</p>
-                <p className="text-xs text-gray-500">{nomeDaIgreja(escolhido) || '—'}</p>
+                <p className="text-xs text-gray-400">{nomeDaIgreja(escolhido) || '—'}</p>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex-1">
-                  <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">De</p>
+                  <p className="text-[11px] uppercase tracking-wider text-gray-400 mb-1">De</p>
                   {/* Pessoa em mais de uma area (19/10/2026): escolhe qual
                       participacao vai trocar. */}
                   {participacoes.length > 1 ? (
@@ -244,9 +244,9 @@ const TrocarAreaDialog = ({ allocations, atuacoesPorArea = {}, inicial = null, o
                     </p>
                   )}
                 </div>
-                <ArrowRight className="hidden sm:block w-5 h-5 text-gray-500 mt-5" />
+                <ArrowRight className="hidden sm:block w-5 h-5 text-gray-400 mt-5" />
                 <div className="flex-1">
-                  <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">Para</p>
+                  <p className="text-[11px] uppercase tracking-wider text-gray-400 mb-1">Para</p>
                   <Select value={destino} onValueChange={mudarDestino}>
                     <SelectTrigger className="h-10 bg-black/40 border-white/20 text-white">
                       <SelectValue placeholder="Escolher a nova área" />
@@ -266,7 +266,7 @@ const TrocarAreaDialog = ({ allocations, atuacoesPorArea = {}, inicial = null, o
               </div>
               {atuacoesDestino.length > 1 && (
                 <div className="space-y-1.5">
-                  <p className="text-[11px] uppercase tracking-wider text-gray-500">Atuação</p>
+                  <p className="text-[11px] uppercase tracking-wider text-gray-400">Atuação</p>
                   <Select value={atuacaoFinal} onValueChange={setAtuacao}>
                     <SelectTrigger className="h-10 bg-black/40 border-white/20 text-white">
                       <SelectValue />
@@ -282,11 +282,11 @@ const TrocarAreaDialog = ({ allocations, atuacoesPorArea = {}, inicial = null, o
                 </div>
               )}
               {destino && areaTemCor(destino) && atuacaoSemCor && (
-                <p className="text-xs text-gray-500">A atuação “{atuacaoFinal}” não usa cor de grupo.</p>
+                <p className="text-xs text-gray-400">A atuação “{atuacaoFinal}” não usa cor de grupo.</p>
               )}
               {destinoTemCor && (
                 <div className="space-y-1.5">
-                  <p className="text-[11px] uppercase tracking-wider text-gray-500">
+                  <p className="text-[11px] uppercase tracking-wider text-gray-400">
                     Cor do grupo <span className="normal-case tracking-normal text-gray-600">· o número é quantos já estão em cada cor</span>
                   </p>
                   <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Cor do grupo">
@@ -312,11 +312,11 @@ const TrocarAreaDialog = ({ allocations, atuacoesPorArea = {}, inicial = null, o
                       {ehInfiltrados ? ' — e o infiltrado não aparece nos grupos de trilha nem nos ônibus.' : '.'}
                     </p>
                   ) : ehInfiltrados && (
-                    <p className="text-xs text-gray-500">O infiltrado entra nesse grupo de trilha e no ônibus dele, como acampante.</p>
+                    <p className="text-xs text-gray-400">O infiltrado entra nesse grupo de trilha e no ônibus dele, como acampante.</p>
                   )}
                 </div>
               )}
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-400">
                 {mesmaArea
                   ? `A pessoa continua em ${destino} (a presença marcada pelo líder não se perde); muda só a atuação e/ou a cor.`
                   : <>

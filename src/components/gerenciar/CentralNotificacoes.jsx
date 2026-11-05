@@ -77,10 +77,10 @@ const CentralNotificacoes = ({ avisos, total, onMostrar, onMostrarFicha, somente
                     <p className="text-sm text-white">{a.titulo}</p>
                     {!somenteLeitura && (
                       <>
-                        <p className={cn('text-[11px] mt-0.5', a.oculto ? 'text-gray-500' : 'text-green-400')}>
+                        <p className={cn('text-[11px] mt-0.5', a.oculto ? 'text-gray-400' : 'text-green-400')}>
                           {a.oculto ? 'Quadro oculto — fora da tela' : `${a.visiveis.length} no quadro`}
                           {!a.oculto && a.fichasOcultas.length > 0 && (
-                            <span className="text-gray-500"> · {a.fichasOcultas.length} {a.fichasOcultas.length === 1 ? 'oculta' : 'ocultas'}</span>
+                            <span className="text-gray-400"> · {a.fichasOcultas.length} {a.fichasOcultas.length === 1 ? 'oculta' : 'ocultas'}</span>
                           )}
                         </p>
                         <Button size="sm" variant="outline" onClick={() => irPara(a)}
@@ -91,7 +91,7 @@ const CentralNotificacoes = ({ avisos, total, onMostrar, onMostrarFicha, somente
                         {/* As fichas ocultadas uma a uma, cada uma com o seu "Mostrar". */}
                         {a.fichasOcultas.length > 0 && (
                           <div className="mt-2 rounded-md border border-white/10 bg-black/30">
-                            <p className="px-2 pt-1.5 text-[10px] uppercase tracking-wider text-gray-500">Fichas ocultas</p>
+                            <p className="px-2 pt-1.5 text-[10px] uppercase tracking-wider text-gray-400">Fichas ocultas</p>
                             <ul className="max-h-36 overflow-y-auto">
                               {a.fichasOcultas.map((f) => (
                                 <li key={f.id} className="flex items-center gap-2 px-2 py-1">

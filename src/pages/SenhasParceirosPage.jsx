@@ -407,12 +407,12 @@ const SenhasParceirosPage = () => {
               </Tabs>
 
               <div className="relative w-full md:max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
                   placeholder="Buscar por nome ou código da igreja"
-                  className="pl-9 bg-white/5 border-white/20 text-white placeholder:text-gray-500"
+                  className="pl-9 bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -463,7 +463,7 @@ const SenhasParceirosPage = () => {
                                 acesso. E a unica forma de conferir depois se
                                 a pessoa certa pegou a conta certa. */}
                             {conta.responsavel_nome && (
-                              <span className="block text-xs text-gray-500 mt-0.5">
+                              <span className="block text-xs text-gray-400 mt-0.5">
                                 primeiro acesso por <span className="text-gray-300">{conta.responsavel_nome}</span>
                                 {conta.primeiro_acesso_em ? ` em ${formatarData(conta.primeiro_acesso_em)}` : ''}
                               </span>

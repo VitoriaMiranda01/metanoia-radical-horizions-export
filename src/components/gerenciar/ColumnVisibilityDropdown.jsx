@@ -86,7 +86,7 @@ const ColumnVisibilityDropdown = ({
            <div className="p-3 space-y-4">
              {Object.entries(groupedDefinitions).map(([group, items]) => (
                <div key={group} className="space-y-2">
-                 <h4 className="text-[10px] uppercase font-bold text-gray-500 tracking-wider pl-1 border-b border-white/5 pb-1 mb-2">
+                 <h4 className="text-[10px] uppercase font-bold text-gray-400 tracking-wider pl-1 border-b border-white/5 pb-1 mb-2">
                    {group}
                  </h4>
                  <div className="space-y-0.5">
@@ -116,7 +116,7 @@ const ColumnVisibilityDropdown = ({
                            )}
                          >
                            {col.label}
-                           {isLocked && <Lock className="w-3 h-3 text-gray-500" aria-label="Coluna obrigatória" />}
+                           {isLocked && <Lock className="w-3 h-3 text-gray-400" aria-label="Coluna obrigatória" />}
                          </Label>
                        </div>
                      );

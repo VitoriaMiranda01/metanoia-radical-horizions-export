@@ -108,7 +108,7 @@ const Numero = ({ rotulo, valor, detalhe, cor = 'text-white' }) => (
   <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
     <p className="text-xs text-gray-400">{rotulo}</p>
     <p className={`text-2xl font-bold ${cor}`}>{valor}</p>
-    {detalhe && <p className="text-[11px] text-gray-500 mt-0.5">{detalhe}</p>}
+    {detalhe && <p className="text-[11px] text-gray-400 mt-0.5">{detalhe}</p>}
   </div>
 );
 
@@ -211,7 +211,7 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
             <p className="text-sm text-gray-300 mb-2">Valor recebido (R$)</p>
             <Input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)}
               placeholder="0,00" className="bg-white/5 border-white/20 text-white text-lg" />
-            <p className="text-xs text-gray-500 mt-1.5">
+            <p className="text-xs text-gray-400 mt-1.5">
               {previsto?.valor != null
                 ? <>Valor do último lote: {moeda(previsto.valor)}
                     {Number(previsto.desconto) > 0 && <> (com desconto de {previsto.motivo === 'pastor' ? 'pastor' : 'infiltrado'})</>}.
@@ -224,7 +224,7 @@ const PagarAgoraDialog = ({ pessoa, onFechar, onFeito, onErro }) => {
             <Checkbox checked={liberar} onCheckedChange={(v) => setLiberar(v === true)} className="mt-0.5" />
             <span className="text-sm text-gray-200">
               Liberar a entrada agora
-              <span className="block text-xs text-gray-500">Entregue a pulseira. A pessoa vai para "Entrada liberada".</span>
+              <span className="block text-xs text-gray-400">Entregue a pulseira. A pessoa vai para "Entrada liberada".</span>
             </span>
           </label>
         </div>
@@ -417,7 +417,7 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
             </p>
           )}
           <p className="text-sm text-gray-400 break-words">{p.igreja || 'Sem igreja informada'}</p>
-          {p.areas?.length > 0 && <p className="text-xs text-gray-500 break-words">{p.areas.join(' · ')}</p>}
+          {p.areas?.length > 0 && <p className="text-xs text-gray-400 break-words">{p.areas.join(' · ')}</p>}
           {p.so_domingo && <p className="text-xs text-orange-200/80 break-words">{AREA_SO_DOMINGO} · taxa de 50%</p>}
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             {entrou && (
@@ -447,9 +447,9 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
               Carta recebida · {semPrefixo(p.carta_por)}{p.carta_em ? `, ${dataHora(p.carta_em)}` : ''}
             </p>
           )}
-          {p.cadastrado_em && <p className="text-[11px] text-gray-500 mt-1">Cadastrou em {dataHora(p.cadastrado_em)}</p>}
+          {p.cadastrado_em && <p className="text-[11px] text-gray-400 mt-1">Cadastrou em {dataHora(p.cadastrado_em)}</p>}
           {(entrou || pagoNaPortaria(p)) && (
-            <p className="text-[11px] text-gray-500 mt-1">
+            <p className="text-[11px] text-gray-400 mt-1">
               {pagoNaPortaria(p) && <>Pagou na portaria ({semPrefixo(p.confirmado_por)}, {dataHora(p.data_pagamento)})</>}
               {pagoNaPortaria(p) && entrou && ' · '}
               {entrou && <>Entrada liberada por {semPrefixo(p.entrada_por)}</>}
@@ -547,7 +547,7 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
             placeholder="Ex.: Combinou pagar por PIX no dia 15"
             className="bg-white/5 border-white/20 text-white" />
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-gray-500 mr-auto">{obsAgenda.length}/200</span>
+            <span className="text-[11px] text-gray-400 mr-auto">{obsAgenda.length}/200</span>
             <Button size="sm" variant="outline" disabled={ocupado} onClick={() => setAgendando(false)}
               className="h-8 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
               Cancelar
@@ -571,7 +571,7 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
             placeholder="Observação sobre a carta (opcional)"
             className="bg-white/5 border-white/20 text-white" />
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-gray-500 mr-auto">{textoCarta.length}/500 · pode salvar sem escrever</span>
+            <span className="text-[11px] text-gray-400 mr-auto">{textoCarta.length}/500 · pode salvar sem escrever</span>
             <Button size="sm" variant="outline" disabled={ocupado} onClick={() => setRecebendoCarta(false)}
               className="h-8 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
               Cancelar
@@ -589,7 +589,7 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
             placeholder="Escreva qualquer informação para a organização"
             className="bg-white/5 border-white/20 text-white" />
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-gray-500 mr-auto">{texto.length}/500 · deixe vazio para apagar</span>
+            <span className="text-[11px] text-gray-400 mr-auto">{texto.length}/500 · deixe vazio para apagar</span>
             <Button size="sm" variant="outline" disabled={salvando} onClick={() => setEditando(false)}
               className="h-8 border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10">
               Cancelar
@@ -602,7 +602,7 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
       ) : p.observacao && (
         <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
           <p className="text-sm text-amber-100 whitespace-pre-wrap break-words">{p.observacao}</p>
-          <p className="text-[11px] text-gray-500 mt-1">
+          <p className="text-[11px] text-gray-400 mt-1">
             {p.observacao_por}{p.observacao_em ? ` · ${dataHora(p.observacao_em)}` : ''}
           </p>
         </div>
@@ -807,12 +807,12 @@ const PortariaPage = () => {
 
       <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-3">
         <div className="relative">
-          <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Pesquisar nome, igreja ou área"
             className="pl-9 pr-9 bg-white/5 border-white/20 text-white h-11 text-base" />
           {busca && (
             <button type="button" onClick={() => setBusca('')} aria-label="Limpar pesquisa"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -851,7 +851,7 @@ const PortariaPage = () => {
       </div>
 
       {filtrados.length === 0 ? (
-        <p className="py-10 text-center text-gray-500">Ninguém encontrado com esses filtros.</p>
+        <p className="py-10 text-center text-gray-400">Ninguém encontrado com esses filtros.</p>
       ) : (
         <div className="space-y-2">
           {filtrados.slice(0, limite).map((p) => (
@@ -900,7 +900,7 @@ const PortariaPage = () => {
                 <p className="font-bold leading-tight flex items-center gap-2">
                   <DoorOpen className="w-4 h-4 text-emerald-400" /> Portaria · Equipantes
                 </p>
-                <p className="text-xs text-gray-500 truncate">Metanoia Radical Serra · {maiusculas(nomeDaConta) || 'Apoio'}</p>
+                <p className="text-xs text-gray-400 truncate">Metanoia Radical Serra · {maiusculas(nomeDaConta) || 'Apoio'}</p>
               </div>
               <div className="ml-auto">
                 <Button variant="ghost" size="sm" onClick={sair} className="text-gray-300 hover:text-white hover:bg-white/10">

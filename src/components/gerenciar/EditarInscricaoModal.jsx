@@ -23,6 +23,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { GROUPS } from '@/utils/gruposTrailha';
 import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
 import VinculosDoAcampante from '@/components/gerenciar/VinculosAcampante';
+import { AREAS_INSCRICAO, AREA_DISPONIVEL_QUALQUER } from '@/constants/workAreas';
+import { FRASES_AREAS_EXTRA } from '@/constants/areasExtra';
+import { AREA_SAUDE, ESPECIALIDADE_OUTRO, problemaEspecialidade } from '@/constants/especialidadesSaude';
+import CampoEspecialidadeSaude from '@/components/inscricao/CampoEspecialidadeSaude';
+import { ehMenorDeIdade } from '@/utils/responsavelMenor';
 
 /**
  * Edicao dos dados cadastrais de uma inscricao (acampante ou equipante),
@@ -40,8 +45,28 @@ import VinculosDoAcampante from '@/components/gerenciar/VinculosAcampante';
  * aprovacao/decisao, escala e area de trabalho (equipante) -- cada um desses ja tem a
  * propria tela/acao que decide aquele dado, e editar por aqui destrancaria
  * esse controle. Tambem fora: consentimentos (autorizacao de imagem, termo
- * de responsabilidade) e o fluxo de autorizacao de menor de idade.
+ * de responsabilidade) e a liberacao do menor (tem a propria janela).
+ *
+ * 05/11/2026 (Patrick): os campos seguem o que o formulario de inscricao
+ * pergunta. Entraram o responsavel/acompanhante do menor e as areas de
+ * trabalho escolhidas (3 opcoes, especialidade da Saude e areas extra -- so
+ * a preferencia; a area escalada continua na tela de escala). Do equipante
+ * sairam telefone residencial, "E pastor?" e contato de emergencia, que o
+ * formulario nao pede: so aparecem em "Dados de fichas antigas" quando a
+ * ficha ja tem valor, para nada sumir de vista.
  */
+
+const CARGOS = ['NÃO TENHO CARGO', 'DANÇA', 'DIACONO / DIACONISA', 'LOUVOR', 'PASTOR(A)', 'PASTOR(A) AUXILIAR',
+  'PROFESSOR', 'SECRETARIA', 'TEATRO', 'TESOUREIRO', 'OUTRO'];
+const PARENTESCOS = ['NÃO TENHO', 'CÔNJUGE', 'PAI', 'MÃE', 'FILHO', 'TIO / TIA', 'CUNHADO / CUNHADA', 'IRMÃO / IRMÃ', 'OUTRO FAMILIAR (DESCREVA)'];
+const RADICAIS = ['Metanoia Radical MG', 'Metanoia Radical RJ (PIBSA)', 'Metanoia Radical Serra (Igreja Teresópolis)', 'Outros casos (favor descrever)'];
+const RADICAL_OUTRO = 'Outros casos (favor descrever)';
+const OPCOES_AREA = ['area_trabalho_opcao1', 'area_trabalho_opcao2', 'area_trabalho_opcao3'];
+const separarExtras = (v) => String(v || '').split(';').map((s) => s.trim()).filter(Boolean);
+const temValor = (v) => v !== undefined && v !== null && String(v).trim() !== '';
+// Opcoes da lista + o valor atual, se for de fora (ficha antiga) -- senao o
+// campo apareceria vazio e o organizador acharia que nao havia resposta.
+const comAtual = (lista, atual) => (temValor(atual) && !lista.includes(atual) ? [...lista, atual] : lista);
 
 const camposIguais = (a, b) => {
   const va = a === undefined || a === null ? '' : a;
@@ -70,6 +95,7 @@ const CAMPOS_TELEFONE = {
   telefone_residencial: { aceitaFixo: true },
   quem_indicou_telefone: { aceitaFixo: true },
   contato_emergencia_telefone: { aceitaFixo: true },
+  responsavel_whatsapp: { aceitaFixo: false },
 };
 
 const ehEstrangeiro = (form) => !String(form?.cpf || '').replace(/\D/g, '');
@@ -288,6 +314,59 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
       }
     }
 
+    // Responsavel / acompanhante do menor: mesmas regras do formulario. O
+    // banco confere de novo (validar_ficha) e nao deixa apagar de menor.
+    const menor = ehMenorDeIdade(form.data_nascimento, isEquipante ? 'equipante' : 'acampante');
+    const pessoasDoMenor = [
+      ['responsavel_nome', 'responsável'],
+      ...(isEquipante ? [['acompanhante_nome', 'acompanhante']] : []),
+    ];
+    for (const [campo, rotulo] of pessoasDoMenor) {
+      if (!(campo in alterados) && !('nome' in alterados)) continue;
+      const v = form[campo];
+      if (!temValor(v)) {
+        if (menor && campo in alterados) {
+          toast({ title: `Informe o nome do ${rotulo}`, description: 'A pessoa é menor de idade: este dado é obrigatório.', variant: 'destructive' });
+          return;
+        }
+        continue;
+      }
+      const problema = (campo in alterados ? problemaNomePessoa(v) : null)
+        || (mesmoNome(v, form.nome) ? `O ${rotulo} precisa ser outra pessoa — não pode ser o próprio inscrito.` : null);
+      if (problema) {
+        toast({ title: `Confira o nome do ${rotulo}`, description: problema, variant: 'destructive' });
+        return;
+      }
+    }
+    if ('responsavel_whatsapp' in alterados || 'whatsapp' in alterados) {
+      if (menor && 'responsavel_whatsapp' in alterados && !temValor(form.responsavel_whatsapp)) {
+        toast({ title: 'Informe o WhatsApp do responsável', description: 'A pessoa é menor de idade: este dado é obrigatório.', variant: 'destructive' });
+        return;
+      }
+      if (temValor(form.responsavel_whatsapp) && mesmoTelefone(form.responsavel_whatsapp, form.whatsapp)) {
+        toast({ title: 'Confira o WhatsApp do responsável', description: 'Precisa ser diferente do WhatsApp da inscrição.', variant: 'destructive' });
+        return;
+      }
+    }
+
+    // Areas de trabalho (equipante): sem repetir (salvo "Disponivel para
+    // qualquer area") e, com Saude, a especialidade e obrigatoria.
+    if (isEquipante && OPCOES_AREA.some((c) => c in alterados)) {
+      const escolhidas = OPCOES_AREA.map((c) => form[c]).filter((a) => temValor(a) && a !== AREA_DISPONIVEL_QUALQUER);
+      if (new Set(escolhidas).size !== escolhidas.length) {
+        toast({ title: 'Confira as áreas de trabalho', description: 'A mesma área não pode aparecer em duas opções (só "Disponível para qualquer área").', variant: 'destructive' });
+        return;
+      }
+    }
+    if (isEquipante && OPCOES_AREA.some((c) => form[c] === AREA_SAUDE)
+        && [...OPCOES_AREA, 'especialidade_saude', 'especialidade_saude_outro'].some((c) => c in alterados)) {
+      const problema = problemaEspecialidade(form.especialidade_saude, form.especialidade_saude_outro);
+      if (problema) {
+        toast({ title: 'Confira a especialidade da Saúde', description: problema, variant: 'destructive' });
+        return;
+      }
+    }
+
     setSalvando(true);
     const resultado = await onSave(inscricao.id, alterados);
     setSalvando(false);
@@ -408,7 +487,9 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
           <Secao titulo="Dados Pessoais">
             <CampoTexto label="Nome" valor={form.nome} onChange={(v) => set('nome')(limparNomePessoa(v))} placeholder="Só letras" />
             <CampoTexto label="CPF" valor={form.cpf} onChange={set('cpf')} />
-            <CampoTexto label="Nacionalidade (código ISO, só quem se inscreveu sem CPF)" valor={form.nacionalidade} onChange={set('nacionalidade')} placeholder="Ex: PT, US..." />
+            {(ehEstrangeiro(form) || temValor(inscricao.nacionalidade)) && (
+              <CampoTexto label="Nacionalidade (código ISO, só quem se inscreveu sem CPF)" valor={form.nacionalidade} onChange={set('nacionalidade')} placeholder="Ex: PT, US..." />
+            )}
             <CampoSelect label="Sexo" valor={form.sexo} onChange={set('sexo')} opcoes={SEXO_OPCOES} />
             <CampoTexto label="Data de Nascimento" tipo="date" valor={form.data_nascimento} onChange={set('data_nascimento')} />
             {!isEquipante && (
@@ -424,10 +505,28 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
               <CampoSelect label="Estado Civil" valor={form.estado_civil} onChange={set('estado_civil')} opcoes={ESTADOS_CIVIS} />
             )}
             <CampoTelefone label="WhatsApp" campo="whatsapp" form={form} onChange={set('whatsapp')} />
-            {isEquipante && (
-              <CampoTelefone label="Telefone Residencial" campo="telefone_residencial" form={form} onChange={set('telefone_residencial')} />
-            )}
           </Secao>
+
+          {/* Menor de idade (20261104d / 20261105a): como no formulario. Aparece
+              para menor ou para ficha que ja tem esses dados. */}
+          {(ehMenorDeIdade(form.data_nascimento, isEquipante ? 'equipante' : 'acampante')
+            || temValor(inscricao.responsavel_nome) || temValor(inscricao.responsavel_whatsapp)
+            || (isEquipante && temValor(inscricao.acompanhante_nome))) && (
+            <Secao titulo="Responsável (menor de idade)">
+              <CampoTexto label="Nome do responsável" valor={form.responsavel_nome}
+                onChange={(v) => set('responsavel_nome')(limparNomePessoa(v))} placeholder="Nome e sobrenome" />
+              <CampoTelefone label="WhatsApp do responsável" campo="responsavel_whatsapp" form={form} onChange={set('responsavel_whatsapp')} />
+              {isEquipante && (
+                <CampoTexto label="Quem vai acompanhar no projeto (nome completo)" valor={form.acompanhante_nome}
+                  onChange={(v) => set('acompanhante_nome')(limparNomePessoa(v))} placeholder="Equipante desta edição" />
+              )}
+              {isEquipante && inscricao.menor_liberado_em && (
+                <p className="text-xs text-amber-300 md:col-span-2">
+                  Este menor já foi liberado pelo pastor com estes dados. Mudar o responsável ou o acompanhante não refaz a liberação.
+                </p>
+              )}
+            </Secao>
+          )}
 
           {!isEquipante && (
             <Secao titulo="Endereço">
@@ -455,7 +554,7 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
             <CampoBooleano label="Tem restrição alimentar?" name="tem_restricao_alimentar" valor={form.tem_restricao_alimentar} onChange={set('tem_restricao_alimentar')} />
             <div />
             <CampoArea label="Restrições Alimentares" valor={form.restricoes_alimentares} onChange={set('restricoes_alimentares')} />
-            {!isEquipante && (
+            {!isEquipante && (form.sexo === 'Feminino' || toBoolean(inscricao.esta_gravida)) && (
               <CampoBooleano label="Está grávida?" name="esta_gravida" valor={form.esta_gravida} onChange={set('esta_gravida')} />
             )}
           </Secao>
@@ -488,8 +587,10 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
             ) : (
               <CampoTexto label="Pastor Responsável" valor={form.pastor} onChange={set('pastor')} />
             )}
-            <CampoTexto label="Cargo na Igreja" valor={form.cargo_igreja} onChange={set('cargo_igreja')} />
-            <CampoTexto label="Cargo na Igreja (Outro)" valor={form.cargo_igreja_outro} onChange={set('cargo_igreja_outro')} />
+            <CampoSelect label="Cargo na Igreja" valor={form.cargo_igreja} onChange={set('cargo_igreja')} opcoes={comAtual(CARGOS, inscricao.cargo_igreja)} />
+            {(form.cargo_igreja === 'OUTRO' || temValor(inscricao.cargo_igreja_outro)) && (
+              <CampoTexto label="Cargo na Igreja (Outro)" valor={form.cargo_igreja_outro} onChange={set('cargo_igreja_outro')} />
+            )}
             {/* Igreja 64 (20261026f): Grupo de Cuidado, lider e EBD em separado. */}
             {isEquipante && igrejaSeparaGrupoEEbd(form.igreja) ? (
               <>
@@ -502,12 +603,6 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
             ) : isEquipante && (
               <CampoBooleano label="Frequenta Grupo de Cuidado, Célula ou EBD?" name="frequenta_grupo_cuidado" valor={form.frequenta_grupo_cuidado} onChange={set('frequenta_grupo_cuidado')} />
             )}
-            {isEquipante && (
-              <CampoBooleano label="É Pastor?" name="e_pastor" valor={form.e_pastor} onChange={set('e_pastor')} />
-            )}
-            {isEquipante && (
-              <CampoTexto label="Pastor (Outro)" valor={form.e_pastor_outro} onChange={set('e_pastor_outro')} />
-            )}
           </Secao>
 
           {isEquipante && (
@@ -519,10 +614,76 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
 
           {isEquipante && (
             <Secao titulo="Familiar">
-              <CampoBooleano label="Familiar Trabalhando?" name="familiar_trabalhando" valor={form.familiar_trabalhando} onChange={set('familiar_trabalhando')} />
-              <CampoTexto label="Familiar Trabalhando (Outro)" valor={form.familiar_trabalhando_outro} onChange={set('familiar_trabalhando_outro')} />
-              <CampoTexto label="Parentesco" valor={form.parentesco} onChange={set('parentesco')} />
-              <CampoTexto label="Nome do Familiar" valor={form.familiar_nome} onChange={set('familiar_nome')} />
+              <CampoBooleano label="Tem familiar que vai trabalhar no projeto?" name="familiar_trabalhando" valor={form.familiar_trabalhando} onChange={set('familiar_trabalhando')} />
+              {(toBoolean(form.familiar_trabalhando) || temValor(inscricao.familiar_trabalhando_outro)) && (
+                <CampoTexto label="Familiar que vai trabalhar (descrição)" valor={form.familiar_trabalhando_outro} onChange={set('familiar_trabalhando_outro')} />
+              )}
+              <CampoSelect label="Conhecido / familiar que vai como ACAMPANTE" valor={form.parentesco} onChange={set('parentesco')} opcoes={comAtual(PARENTESCOS, inscricao.parentesco)} />
+              {((form.parentesco && form.parentesco !== 'NÃO TENHO') || temValor(inscricao.familiar_nome)) && (
+                <CampoTexto label="Nome do conhecido / familiar" valor={form.familiar_nome} onChange={(v) => set('familiar_nome')(limparNomePessoa(v))} />
+              )}
+            </Secao>
+          )}
+
+          {isEquipante && !form.so_domingo && (
+            <Secao titulo="Áreas de Trabalho (preferência da inscrição)">
+              <p className="text-xs text-gray-400 md:col-span-2">
+                São as opções que a pessoa escolheu. A área em que ela foi escalada continua sendo mudada na tela de escala.
+              </p>
+              {OPCOES_AREA.map((campo, i) => (
+                <CampoSelect
+                  key={campo}
+                  label={i === 0 ? 'Opção 1 (prioridade)' : `Opção ${i + 1}`}
+                  valor={form[campo]}
+                  onChange={set(campo)}
+                  opcoes={[
+                    ...AREAS_INSCRICAO.map(({ valor, rotulo }) => ({ value: valor, label: rotulo || valor })),
+                    // Area de fora da lista atual (ficha antiga): continua aparecendo.
+                    ...(temValor(form[campo]) && !AREAS_INSCRICAO.some((a) => a.valor === form[campo]) ? [{ value: form[campo], label: form[campo] }] : []),
+                  ]
+                    .filter((op) => op.value === AREA_DISPONIVEL_QUALQUER || op.value === form[campo]
+                      || !OPCOES_AREA.some((outro) => outro !== campo && form[outro] === op.value))}
+                />
+              ))}
+              {OPCOES_AREA.some((c) => form[c] === AREA_SAUDE) && (
+                <div className="md:col-span-2 p-3 rounded-md border border-emerald-500/30 bg-emerald-500/5">
+                  <CampoEspecialidadeSaude
+                    id="editar-especialidade"
+                    rotulo="Especialidade na área da saúde"
+                    multipla
+                    compacto
+                    valor={form.especialidade_saude}
+                    outro={form.especialidade_saude_outro}
+                    adicionais={form.especialidades_saude_adicionais || []}
+                    onChange={(v, o, a) => setForm((prev) => ({
+                      ...prev,
+                      especialidade_saude: v || null,
+                      especialidade_saude_outro: v === ESPECIALIDADE_OUTRO ? (o || '') : null,
+                      especialidades_saude_adicionais: Array.isArray(a) ? a : [],
+                    }))}
+                  />
+                </div>
+              )}
+              <div className="space-y-2 md:col-span-2">
+                <Label className="text-white text-sm block">Áreas de trabalho extra (opcional)</Label>
+                {[...FRASES_AREAS_EXTRA, ...separarExtras(inscricao.area_trabalho_extra).filter((x) => !FRASES_AREAS_EXTRA.includes(x))].map((op) => {
+                  const marcadas = separarExtras(form.area_trabalho_extra);
+                  return (
+                    <label key={op} className="flex items-start space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={marcadas.includes(op)}
+                        onChange={(e) => {
+                          const nova = e.target.checked ? [...marcadas, op] : marcadas.filter((x) => x !== op);
+                          set('area_trabalho_extra')(nova.join('; ') || null);
+                        }}
+                        className="w-4 h-4 mt-0.5 text-blue-600 bg-white/10 border-white/30 rounded"
+                      />
+                      <span className="text-white text-sm leading-tight">{op}</span>
+                    </label>
+                  );
+                })}
+              </div>
             </Secao>
           )}
 
@@ -537,19 +698,47 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
 
           {isEquipante && (
             <Secao titulo="Experiência">
-              <CampoTexto label="Qual Radical Acampante?" valor={form.qual_radical_acampante} onChange={set('qual_radical_acampante')} />
-              <CampoTexto label="Qual Radical Acampante (Outro)" valor={form.qual_radical_acampante_outro} onChange={set('qual_radical_acampante_outro')} />
-              <CampoTexto label="Número Edição Participou" valor={form.numero_edicao_participou} onChange={set('numero_edicao_participou')} />
-              <CampoBooleano label="Já Trabalhou na Equipe?" name="ja_trabalhou_equipe" valor={form.ja_trabalhou_equipe} onChange={set('ja_trabalhou_equipe')} />
-              <CampoTexto label="Edição que Trabalhou" valor={form.edicao_trabalhou} onChange={set('edicao_trabalhou')} />
+              <CampoSelect label="Fez qual Radical como acampante?" valor={form.qual_radical_acampante} onChange={set('qual_radical_acampante')} opcoes={comAtual(RADICAIS, inscricao.qual_radical_acampante)} />
+              {(form.qual_radical_acampante === RADICAL_OUTRO || temValor(inscricao.qual_radical_acampante_outro)) && (
+                <CampoTexto label="Outra bandeira Radical (descrição)" valor={form.qual_radical_acampante_outro} onChange={set('qual_radical_acampante_outro')} />
+              )}
+              <CampoTexto label="Número da edição em que participou" valor={form.numero_edicao_participou} onChange={set('numero_edicao_participou')} />
+              <CampoBooleano label="Já trabalhou em alguma edição?" name="ja_trabalhou_equipe" valor={form.ja_trabalhou_equipe} onChange={set('ja_trabalhou_equipe')} />
+              {(toBoolean(form.ja_trabalhou_equipe) || temValor(inscricao.edicao_trabalhou)) && (
+                <CampoTexto label="Última edição em que trabalhou" valor={form.edicao_trabalhou} onChange={set('edicao_trabalhou')} />
+              )}
             </Secao>
           )}
 
-          <Secao titulo="Contato de Emergência">
-            <CampoTexto label="Nome do Contato" valor={form.contato_emergencia_nome}
-              onChange={(v) => set('contato_emergencia_nome')(limparNomeContato(v))} placeholder="Só letras" />
-            <CampoTelefone label="Telefone do Contato" campo="contato_emergencia_telefone" form={form} onChange={set('contato_emergencia_telefone')} />
-          </Secao>
+          {!isEquipante && (
+            <Secao titulo="Contato de Emergência">
+              <CampoTexto label="Nome do Contato" valor={form.contato_emergencia_nome}
+                onChange={(v) => set('contato_emergencia_nome')(limparNomeContato(v))} placeholder="Só letras" />
+              <CampoTelefone label="Telefone do Contato" campo="contato_emergencia_telefone" form={form} onChange={set('contato_emergencia_telefone')} />
+            </Secao>
+          )}
+
+          {/* Equipante: o formulario nao pede mais estes campos. So aparecem
+              quando a ficha (antiga) ja tem valor. */}
+          {isEquipante && (temValor(inscricao.telefone_residencial) || temValor(inscricao.e_pastor_outro)
+            || temValor(inscricao.contato_emergencia_nome) || temValor(inscricao.contato_emergencia_telefone)) && (
+            <Secao titulo="Dados de fichas antigas">
+              <p className="text-xs text-gray-400 md:col-span-2">O formulário de inscrição não pede mais estes dados; aparecem só porque a ficha já tinha.</p>
+              {temValor(inscricao.telefone_residencial) && (
+                <CampoTelefone label="Telefone Residencial" campo="telefone_residencial" form={form} onChange={set('telefone_residencial')} />
+              )}
+              {temValor(inscricao.e_pastor_outro) && (
+                <CampoTexto label="Pastor (Outro)" valor={form.e_pastor_outro} onChange={set('e_pastor_outro')} />
+              )}
+              {(temValor(inscricao.contato_emergencia_nome) || temValor(inscricao.contato_emergencia_telefone)) && (
+                <>
+                  <CampoTexto label="Contato de emergência (nome)" valor={form.contato_emergencia_nome}
+                    onChange={(v) => set('contato_emergencia_nome')(limparNomeContato(v))} placeholder="Só letras" />
+                  <CampoTelefone label="Contato de emergência (telefone)" campo="contato_emergencia_telefone" form={form} onChange={set('contato_emergencia_telefone')} />
+                </>
+              )}
+            </Secao>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 p-4 border-t border-white/10 bg-zinc-900">

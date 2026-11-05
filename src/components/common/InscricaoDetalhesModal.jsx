@@ -211,7 +211,7 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
               <div className="bg-white/5 p-3 rounded-md">
                 <span className="text-sm text-gray-400 block mb-1">Nome:</span>
                 <p className="text-white font-medium">
-                  <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} soDomingo={inscricao.so_domingo} />
+                  <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} soDomingo={inscricao.so_domingo} pessoaId={inscricao.id} />
                 </p>
               </div>
               <div className="bg-white/5 p-3 rounded-md">

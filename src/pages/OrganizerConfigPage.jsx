@@ -33,6 +33,7 @@ import JanelaDomingoCard from '@/components/organizer/JanelaDomingoCard';
 import ExcluirCadastroCard from '@/components/organizer/ExcluirCadastroCard';
 import DesistentesCard from '@/components/organizer/DesistentesCard';
 import AcampanteUmaVezCard from '@/components/organizer/AcampanteUmaVezCard';
+import OcorrenciasCard from '@/components/organizer/OcorrenciasCard';
 import LocaisReuniaoCard from '@/components/organizer/LocaisReuniaoCard';
 import { usePermissoes } from '@/hooks/usePermissoes';
 import { Button } from '@/components/ui/button';
@@ -501,6 +502,7 @@ const OrganizerConfigPage = () => {
               </p>
             </div>
           </div>
+          {perm.pode('ocorrencias') && <OcorrenciasCard />}
           <SenhasOrganizadoresManager />
         </div>
       </Layout>
@@ -1037,6 +1039,11 @@ const OrganizerConfigPage = () => {
           {/* Acampante uma vez so: liberar CPF -- so Desenvolvedores (04/11/2026). */}
           <Recolhivel chave="cfg-acampante-uma-vez" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
             <AcampanteUmaVezCard />
+          </Recolhivel>
+
+          {/* Ocorrencias anteriores: comunicado + asterisco -- 05/11/2026. */}
+          <Recolhivel chave="cfg-ocorrencias" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
+            <OcorrenciasCard />
           </Recolhivel>
 
           {/* Excluir cadastro (duplicados) -- 18/10/2026. */}

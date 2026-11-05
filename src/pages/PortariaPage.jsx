@@ -17,6 +17,7 @@ import Layout from '@/components/Layout';
 import TagSoDomingo, { AREA_SO_DOMINGO } from '@/components/common/TagSoDomingo';
 import { SELOS } from '@/components/common/SeloPastor';
 import { getAuthToken } from '@/services/authToken';
+import MarcaOcorrencia from '@/components/common/MarcaOcorrencia';
 import {
   agendarPagamentoPortaria, darBaixaPortaria, desfazerAgendamentoPortaria, desfazerBaixaPortaria, desfazerEntradaPortaria, fetchPortariaLista, fetchPortariaVersao, fetchValorPrevisto,
   liberarEntradaPortaria, salvarObservacaoPortaria, receberCartaPortaria, desfazerCartaPortaria
@@ -380,6 +381,7 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
           <p className="font-semibold text-white break-words flex items-center gap-2">
             {entrou && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
             {p.nome}
+            <MarcaOcorrencia id={p.id} />
             {p.pastor && !selo?.cheio && (
               <span title={p.pastor} aria-label={p.pastor} role="button" tabIndex={0}
                 onClick={() => setLegenda((l) => (l === p.pastor ? '' : p.pastor))}

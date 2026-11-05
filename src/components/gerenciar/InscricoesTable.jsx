@@ -7,6 +7,8 @@ import { ordenarLista } from '@/utils/ordenacao';
 import { Badge } from '@/components/ui/badge';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import SeloPastor from '@/components/common/SeloPastor';
+import { FiltroOcorrencias } from '@/components/common/MarcaOcorrencia';
+import { useOcorrencias } from '@/hooks/useOcorrencias';
 import { useIndiceMenores } from '@/components/common/MenorNaFicha';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { casaBusca } from '@/utils/busca';
@@ -170,6 +172,8 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
   // Ordenacao pela seta do cabecalho (utils/ordenacao.js).
   const [ordem, setOrdem] = useState(null);
   const [visibleColumns, setVisibleColumns] = useState([]);
+  const ocorrencias = useOcorrencias();
+  const [soOcorrencias, setSoOcorrencias] = useState(false);
 
   const safeTipo = tipo === 'acampantes' ? 'acampantes' : 'equipantes';
   // Equipante menor e acompanhante de menor (20261105a): etiquetas no nome.
@@ -206,6 +210,8 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
 
   const filtrados = useMemo(() => {
     return dados.filter(item => {
+      if (soOcorrencias && !ocorrencias.temMarca(item.id)) return false;
+
       // Busca: sem diferenca de acento, CPF com ou sem pontos (utils/busca.js).
       const matchesSearch = casaBusca(searchTerm, [
         item.nome,
@@ -231,7 +237,8 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
         return selectedValues.includes(itemValue);
       });
     });
-  }, [dados, filters, searchTerm]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dados, filters, searchTerm, soOcorrencias, ocorrencias.total]);
 
   // A lista filtrada, na ordem escolhida na seta do cabecalho.
   const filteredData = useMemo(() => ordenarLista(filtrados, ordem, getColumnValue), [filtrados, ordem]);
@@ -336,6 +343,13 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                     Limpar Filtros
                   </Button>
                 )}
+                {ocorrencias.total > 0 && (
+                  <FiltroOcorrencias
+                    ativo={soOcorrencias}
+                    quantidade={dados.filter((i) => ocorrencias.temMarca(i.id)).length}
+                    onClick={() => setSoOcorrencias((v) => !v)}
+                  />
+                )}
                 {antesDeColunas}
                 <div className="hidden md:block">
                   <ColumnVisibilityDropdown
@@ -385,7 +399,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                 <div key={item.id} className="bg-white/5 border border-white/10 shadow-sm rounded-lg p-5 flex flex-col gap-4 relative overflow-hidden transition-all hover:bg-white/10">
                   <div className="flex justify-between items-start gap-3">
                     <h3 className="font-semibold text-white text-lg leading-tight break-words">
-                      <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} soDomingo={item.so_domingo} {...tagsMenor(item)} />
+                      <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} soDomingo={item.so_domingo} pessoaId={item.id} {...tagsMenor(item)} />
                       <SeloPastor pessoa={item} className="ml-1.5 align-[-1px]" />
                     </h3>
                     <div className="shrink-0 mt-0.5">
@@ -471,7 +485,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                     <TableRow key={item.id} className="hover:bg-white/5 transition-colors border-white/10 group">
                       <TableCell className="text-white font-medium sticky left-0 z-10 bg-black group-hover:bg-neutral-900">
                           <span className="inline-flex items-center gap-1.5">
-                            <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} soDomingo={item.so_domingo} {...tagsMenor(item)} />
+                            <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} soDomingo={item.so_domingo} pessoaId={item.id} {...tagsMenor(item)} />
                             <SeloPastor pessoa={item} />
                           </span>
                       </TableCell>

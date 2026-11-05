@@ -22,6 +22,8 @@ import InscricaoCard from '@/components/aprovacoes/InscricaoCard';
 import { naoCongrega, nomeDaIgreja } from '@/constants/igrejas';
 import { resumoGrupoEEbd } from '@/utils/grupoCuidadoEbd';
 import { casaBusca } from '@/utils/busca';
+import { FiltroOcorrencias } from '@/components/common/MarcaOcorrencia';
+import { useOcorrencias } from '@/hooks/useOcorrencias';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import SeloPastor from '@/components/common/SeloPastor';
 import {
@@ -158,6 +160,8 @@ const AprovacoesTable = ({
 }) => {
   const { isParceiro } = useAuth();
   const [filters, setFilters] = useState({});
+  const ocorrencias = useOcorrencias();
+  const [soOcorrencias, setSoOcorrencias] = useState(false);
   const [exportando, setExportando] = useState(false);
   const [aprovandoEmLote, setAprovandoEmLote] = useState(false);
   // Ordenacao pela seta do cabecalho (utils/ordenacao.js).
@@ -233,7 +237,7 @@ const AprovacoesTable = ({
   const hasActiveFilters = Object.values(filters).some(vals => vals && vals.length > 0);
 
   const filtrados = useMemo(() => {
-    let data = dados;
+    let data = soOcorrencias ? dados.filter((i) => ocorrencias.temMarca(i.id)) : dados;
 
     // Nome, CPF, e-mail, telefone e igreja (inclusive o nome escrito em
     // OUTRA), sem diferenca de acento -- ver utils/busca.js.
@@ -250,7 +254,8 @@ const AprovacoesTable = ({
         return selectedValues.includes(itemValue);
       });
     });
-  }, [dados, filters, searchTerm]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dados, filters, searchTerm, soOcorrencias, ocorrencias.total]);
 
   // A lista filtrada, na ordem escolhida na seta do cabecalho.
   const filteredData = useMemo(() => ordenarLista(filtrados, ordem, getColumnValue), [filtrados, ordem]);
@@ -275,6 +280,13 @@ const AprovacoesTable = ({
               </CardDescription>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+                 {ocorrencias.total > 0 && (
+                  <FiltroOcorrencias
+                    ativo={soOcorrencias}
+                    quantidade={dados.filter((i) => ocorrencias.temMarca(i.id)).length}
+                    onClick={() => setSoOcorrencias((v) => !v)}
+                  />
+                )}
                  {hasActiveFilters && (
                   <Button
                     variant="ghost"
@@ -450,7 +462,7 @@ const AprovacoesTable = ({
                                 title="Não congrega em nenhuma igreja — não há pastor ou igreja para responder por esta pessoa. Avaliem antes de aprovar."
                               />
                             )}
-                            <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} soDomingo={inscricao.so_domingo}
+                            <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} soDomingo={inscricao.so_domingo} pessoaId={inscricao.id}
                               menor={!!inscricao.menor} menorLiberado={!!inscricao.menorLiberado} acompanhanteDe={inscricao.acompanhanteDe} />
                             <SeloPastor pessoa={inscricao} />
                           </span>

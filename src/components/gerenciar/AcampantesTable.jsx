@@ -18,6 +18,8 @@ import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { cn } from "@/lib/utils";
 import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDropdown';
 import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
+import MarcaOcorrencia, { FiltroOcorrencias } from '@/components/common/MarcaOcorrencia';
+import { useOcorrencias } from '@/hooks/useOcorrencias';
 import { 
   getVisibleColumnsFromStorage, 
   saveVisibleColumnsToStorage,
@@ -126,6 +128,8 @@ const AcampantesTable = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [visibleColumns, setVisibleColumns] = useState([]);
   const [filters, setFilters] = useState({});
+  const ocorrencias = useOcorrencias();
+  const [soOcorrencias, setSoOcorrencias] = useState(false);
   // Ordenacao pela seta do cabecalho (utils/ordenacao.js).
   const [ordem, setOrdem] = useState(null);
 
@@ -155,6 +159,8 @@ const AcampantesTable = ({
 
   const filtrados = useMemo(() => {
     return data.filter(item => {
+      if (soOcorrencias && !ocorrencias.temMarca(item.id)) return false;
+
       // 1. Global Search
       const searchFields = [
         item.nome, item.cpf, item.email, item.whatsapp, 
@@ -175,7 +181,8 @@ const AcampantesTable = ({
         return selectedValues.includes(itemValue);
       });
     });
-  }, [data, searchTerm, filters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, searchTerm, filters, soOcorrencias, ocorrencias.total]);
 
   // A lista filtrada, na ordem escolhida na seta do cabecalho.
   const filteredData = useMemo(() => ordenarLista(filtrados, ordem, getColumnValue), [filtrados, ordem]);
@@ -257,6 +264,13 @@ const AcampantesTable = ({
             </CardDescription>
           </div>
           <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center gap-1 md:gap-2 w-full md:w-auto">
+              {ocorrencias.total > 0 && (
+                <FiltroOcorrencias
+                  ativo={soOcorrencias}
+                  quantidade={data.filter((i) => ocorrencias.temMarca(i.id)).length}
+                  onClick={() => setSoOcorrencias((v) => !v)}
+                />
+              )}
               {hasActiveFilters && (
                   <Button 
                     variant="ghost" 
@@ -327,7 +341,7 @@ const AcampantesTable = ({
                 <div key={item.id} className="bg-white/5 border border-white/10 rounded-lg overflow-hidden flex flex-col">
                   <div className="p-4 flex-1">
                     <h3 className="font-bold text-white text-lg leading-tight break-words mb-4">
-                      {item.nome}
+                      {item.nome}<MarcaOcorrencia id={item.id} />
                     </h3>
                     
                     <div className="space-y-2">
@@ -413,7 +427,7 @@ const AcampantesTable = ({
                   {paginacao.itensDaPagina.map((item) => (
                     <TableRow key={item.id} className="hover:bg-white/5 border-white/10 transition-colors group">
                       <TableCell className="font-medium text-white md:sticky md:left-0 md:z-10 md:bg-black md:group-hover:bg-neutral-900 p-2 md:p-4 text-xs md:text-sm">
-                        {item.nome}
+                        {item.nome}<MarcaOcorrencia id={item.id} />
                       </TableCell>
                       
                       {visibleColumns.map(colKey => {

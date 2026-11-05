@@ -42,6 +42,8 @@ import { criarInscricao } from '@/services/inscricoesService';
 import { problemaTelefone } from '@/utils/telefone';
 import { fetchLimitesIgrejas, fetchOcupacaoIgrejasAcampantes } from '@/services/limitesIgrejasService';
 import { fetchLimiteAcampantesPorIgrejaPadrao } from '@/services/organizerConfigService';
+import ComunicadoOcorrencia from '@/components/inscricao/ComunicadoOcorrencia';
+import { comunicadoDoCpf } from '@/services/ocorrenciasService';
 import { IGREJA_RADICAL_36, IGREJA_DIVERSOS } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { liberacaoDeTesteValida, acampanteTemFichaAnterior, fichaAcampanteParaReinscricao, acampanteJaParticipou } from '@/services/publicDataService';
@@ -79,6 +81,7 @@ const AcampantePage = () => {
   const podeCadastrar = (acampantesAbertos || sessaoDeTeste) && loteAcampanteHoje;
 
   const [currentStep, setCurrentStep] = useState('welcome');
+  const [comunicado, setComunicado] = useState(null);
   const [inscricaoData, setInscricaoData] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -154,7 +157,7 @@ const AcampantePage = () => {
     }
   };
 
-  const handleVerificationComplete = async (result) => {
+  const continuarVerificacao = async (result) => {
     if (result.cpf) setFormData(prev => ({ ...prev, cpf: result.cpf }));
     if (result.nome) setFormData(prev => ({ ...prev, nome: result.nome }));
     if (result.semCpf) setFormData(prev => ({ ...prev, semCpf: true }));
@@ -200,6 +203,25 @@ const AcampantePage = () => {
     } else {
       setCurrentStep(podeCadastrar ? 'formulario' : 'fechadas');
     }
+  };
+
+  // Ocorrencia anterior (20261105e): quem esta na lista le o comunicado e escreve
+  // a frase antes de qualquer outra coisa, com inscricoes abertas ou fechadas.
+  // Falha na consulta nao trava ninguem aqui: criar_inscricao tambem barra.
+  const handleVerificationComplete = async (result) => {
+    if (result.cpf && !result.semCpf) {
+      try {
+        const r = await comunicadoDoCpf(result.cpf);
+        if (r?.pendente) {
+          setComunicado({ cpf: result.cpf, texto: r.texto, resultado: result });
+          setCurrentStep('comunicado');
+          return;
+        }
+      } catch (err) {
+        console.error('comunicado_do_cpf', err?.message || err);
+      }
+    }
+    await continuarVerificacao(result);
   };
 
   // Mesmo comportamento do equipante: nome errado recebe a mesma mensagem de
@@ -423,6 +445,15 @@ const AcampantePage = () => {
             )}
             <VerificacaoCPF onVerificationComplete={handleVerificationComplete} tipo="acampante" />
           </div>
+        )}
+
+        {currentStep === 'comunicado' && comunicado && (
+          <ComunicadoOcorrencia
+            cpf={comunicado.cpf}
+            texto={comunicado.texto}
+            onDeclarou={() => continuarVerificacao(comunicado.resultado)}
+            onVoltar={() => setCurrentStep('verificacao')}
+          />
         )}
 
         {currentStep === 'reinscricao' && (

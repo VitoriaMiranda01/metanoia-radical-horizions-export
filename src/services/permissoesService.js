@@ -25,6 +25,8 @@ export const PERMISSOES = [
     descricao: 'Lançar e desfazer a escala provisória e a oficial.' },
   { chave: 'pagamentos', rotulo: 'Pagamentos',
     descricao: 'Confirmar e desfazer pagamentos, cobranças, agendamentos e débitos.' },
+  { chave: 'ocorrencias', rotulo: 'Ocorrências anteriores',
+    descricao: 'Módulo em Configurações: quem recebe o comunicado e o asterisco vermelho, e as declarações de ciência.' },
 ];
 
 // Telas da Escala: entra quem tem qualquer uma destas.

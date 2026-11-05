@@ -2,6 +2,7 @@ import React from 'react';
 import { bandeiraDoPais, nomeDoPais } from '@/constants/nacionalidades';
 import TagSoDomingo from '@/components/common/TagSoDomingo';
 import TagMenor, { TagAcompanhanteDe } from '@/components/common/TagMenor';
+import MarcaOcorrencia from '@/components/common/MarcaOcorrencia';
 
 /**
  * O nome da pessoa com a bandeira do país ao lado, quando ela é estrangeira.
@@ -17,12 +18,14 @@ import TagMenor, { TagAcompanhanteDe } from '@/components/common/TagMenor';
  */
 // soDomingo (20261025c): a etiqueta "Só Domingo" logo depois do nome.
 // menor / acompanhanteDe (20261105a): "Menor de idade" e "Acompanhante de ...".
+// pessoaId (20261105e): asterisco vermelho de ocorrencia anterior (so organizadores).
 const NomeComBandeira = ({
   nome, nacionalidade, soDomingo = false, menor = false, menorLiberado = false,
-  acompanhanteDe = null, className = '',
+  acompanhanteDe = null, className = '', pessoaId = null,
 }) => {
   const temAcompanhante = Array.isArray(acompanhanteDe) && acompanhanteDe.length > 0;
-  if (!nacionalidade && !soDomingo && !menor && !temAcompanhante) return <>{nome}</>;
+  const marca = pessoaId ? <MarcaOcorrencia id={pessoaId} /> : null;
+  if (!nacionalidade && !soDomingo && !menor && !temAcompanhante) return <>{nome}{marca}</>;
 
   const bandeira = nacionalidade ? bandeiraDoPais(nacionalidade) : null;
   const pais = nacionalidade ? nomeDoPais(nacionalidade) : null;
@@ -39,6 +42,7 @@ const NomeComBandeira = ({
         </span>
       )}
       <span>{nome}</span>
+      {marca}
       {menor && <TagMenor liberado={menorLiberado} />}
       {soDomingo && <TagSoDomingo />}
       {temAcompanhante && <TagAcompanhanteDe menores={acompanhanteDe} />}

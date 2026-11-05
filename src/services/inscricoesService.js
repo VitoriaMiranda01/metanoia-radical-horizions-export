@@ -309,6 +309,9 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     if (recusaDeDado) {
       return { success: false, error: recusaDeDado };
     }
+    if (error?.message?.includes('COMUNICADO_PENDENTE')) {
+      return { success: false, error: 'Há um comunicado da organização para este CPF. Volte ao início, informe o CPF e leia o comunicado para continuar.' };
+    }
     if (error?.message?.includes('DEBITO_PENDENTE')) {
       return { success: false, error: 'Você tem um pagamento pendente de uma edição anterior. Procure a organização para regularizar e liberar a sua inscrição.' };
     }

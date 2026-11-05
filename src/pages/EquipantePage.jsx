@@ -47,6 +47,8 @@ import { liberacaoDeTesteValida, fetchJanelaDomingo } from '@/services/publicDat
 import VerificacaoCPF from '@/components/common/VerificacaoCPF';
 import EscolherDiasEquipante from '@/components/inscricao/EscolherDiasEquipante';
 import TagSoDomingo from '@/components/common/TagSoDomingo';
+import ComunicadoOcorrencia from '@/components/inscricao/ComunicadoOcorrencia';
+import { comunicadoDoCpf } from '@/services/ocorrenciasService';
 import AcessoCadastro from '@/components/equipante/AcessoCadastro';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
 
@@ -322,6 +324,8 @@ const EquipantePage = () => {
     }
   };
 
+  const [comunicado, setComunicado] = useState(null);
+
   const sairDaInscricao = () => {
     limparSessao();
     setInscricaoData(null);
@@ -334,7 +338,7 @@ const EquipantePage = () => {
     setCurrentStep('verificacao');
   };
 
-  const handleVerificationComplete = async (result) => {
+  const continuarVerificacao = async (result) => {
     if (result.semCpf) setFormData(prev => ({ ...prev, semCpf: true }));
     // Preenche o Nome/CPF já com o que foi digitado na tela de verificação
     // anterior, pra não pedir a mesma informação de novo — mesmo padrão já
@@ -420,6 +424,25 @@ const EquipantePage = () => {
     } else {
       seguirParaCadastro(podeCadastrar ? 'formulario' : 'fechadas');
     }
+  };
+
+  // Ocorrencia anterior (20261105e): quem esta na lista le o comunicado e escreve
+  // a frase antes de qualquer outra coisa, com inscricoes abertas ou fechadas.
+  // Falha na consulta nao trava ninguem aqui: criar_inscricao tambem barra.
+  const handleVerificationComplete = async (result) => {
+    if (result.cpf && !result.semCpf) {
+      try {
+        const r = await comunicadoDoCpf(result.cpf);
+        if (r?.pendente) {
+          setComunicado({ cpf: result.cpf, texto: r.texto, resultado: result });
+          setCurrentStep('comunicado');
+          return;
+        }
+      } catch (err) {
+        console.error('comunicado_do_cpf', err?.message || err);
+      }
+    }
+    await continuarVerificacao(result);
   };
 
   // "Você já tem cadastro?" achou o CPF certo: segue o caminho normal da
@@ -785,6 +808,15 @@ const EquipantePage = () => {
             )}
             <VerificacaoCPF onVerificationComplete={handleVerificationComplete} tipo="equipante" />
           </>
+        )}
+
+        {currentStep === 'comunicado' && comunicado && (
+          <ComunicadoOcorrencia
+            cpf={comunicado.cpf}
+            texto={comunicado.texto}
+            onDeclarou={() => continuarVerificacao(comunicado.resultado)}
+            onVoltar={() => setCurrentStep('verificacao')}
+          />
         )}
 
         {currentStep === 'confirmar-nascimento' && (

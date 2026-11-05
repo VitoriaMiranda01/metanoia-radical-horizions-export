@@ -6,6 +6,7 @@ import { limparNomeSimples } from '@/utils/validacoesInscricao';
 import { igrejaEhOutra } from '@/constants/igrejas';
 import usePastorDoQuadro from '@/hooks/usePastorDoQuadro';
 import { cn } from '@/lib/utils';
+import Obrigatorio from './Obrigatorio';
 
 /**
  * "Nome do Pastor" que puxa o pastor da igreja (18/10/2026, Patrick).
@@ -21,7 +22,7 @@ import { cn } from '@/lib/utils';
  * igrejas cadastradas" tranca o campo com esse nome -- o banco grava o mesmo
  * de qualquer jeito (20261029e).
  */
-const CampoPastor = ({ igreja, value, onChange, esperar = 0, doQuadro = false }) => {
+const CampoPastor = ({ igreja, value, onChange, esperar = 0, doQuadro = false, obrigatorio = false }) => {
   const [pastores, setPastores] = useState([]);
   const automatico = useRef('');
   const valorAtual = useRef(value);
@@ -85,7 +86,7 @@ const CampoPastor = ({ igreja, value, onChange, esperar = 0, doQuadro = false })
   if (pastorQuadro) {
     return (
       <div className="space-y-2">
-        <Label htmlFor="pastor" className="text-white">Nome do Pastor</Label>
+        <Label htmlFor="pastor" className="text-white">Nome do Pastor{obrigatorio && <Obrigatorio />}</Label>
         <Input
           id="pastor" name="pastor" value={pastorQuadro} readOnly
           className="bg-white/5 border-white/15 text-white/80 cursor-not-allowed"
@@ -97,7 +98,7 @@ const CampoPastor = ({ igreja, value, onChange, esperar = 0, doQuadro = false })
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="pastor" className="text-white">Nome do Pastor</Label>
+      <Label htmlFor="pastor" className="text-white">Nome do Pastor{obrigatorio && <Obrigatorio />}</Label>
       <Input
         id="pastor"
         name="pastor"

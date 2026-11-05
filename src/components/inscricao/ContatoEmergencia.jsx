@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import FormSection from './FormSection';
 import TelefoneInput from './TelefoneInput';
+import Obrigatorio from './Obrigatorio';
 import { cn } from '@/lib/utils';
 import {
   limparNomeContato, problemaNomeContato, mesmoTelefone, AVISO_MESMO_TELEFONE, mesmoNome, AVISO_MESMO_NOME
@@ -19,7 +20,7 @@ const ContatoEmergencia = ({ formData, handleChange }) => {
     <FormSection title="Contato de Emergência">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="contatoEmergencia" className="text-white">Nome do Contato</Label>
+          <Label htmlFor="contatoEmergencia" className="text-white">Nome do Contato<Obrigatorio /></Label>
           <Input
             id="contatoEmergencia"
             name="contatoEmergencia"
@@ -35,7 +36,7 @@ const ContatoEmergencia = ({ formData, handleChange }) => {
           {problemaNome && <p className="text-xs text-red-300">{problemaNome}</p>}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="telefoneEmergencia" className="text-white">Telefone de Emergência</Label>
+          <Label htmlFor="telefoneEmergencia" className="text-white">Telefone de Emergência<Obrigatorio /></Label>
           {/* Aceita fixo: o contato de emergencia pode ser o telefone de casa. */}
           <TelefoneInput id="telefoneEmergencia" name="telefoneEmergencia" value={formData.telefoneEmergencia} onChange={handleChange} required aceitaFixo estrangeiro={!!formData.semCpf}
             className={repetido ? 'border-red-500/70' : undefined} />

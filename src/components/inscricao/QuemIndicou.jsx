@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
 import TelefoneInput from './TelefoneInput';
+import Obrigatorio from './Obrigatorio';
 import { limparNomeSimples } from '@/utils/validacoesInscricao';
 
 const QuemIndicou = ({ formData, handleChange, handleSelectChange }) => {
@@ -13,7 +14,7 @@ const QuemIndicou = ({ formData, handleChange, handleSelectChange }) => {
         
         {/* Nome de quem indicou */}
         <div className="space-y-2">
-          <Label htmlFor="nomeQuemIndicou" className="text-white">Nome de quem indicou</Label>
+          <Label htmlFor="nomeQuemIndicou" className="text-white">Nome de quem indicou<Obrigatorio /></Label>
           <Input 
             id="nomeQuemIndicou" 
             name="nomeQuemIndicou" 
@@ -70,7 +71,7 @@ const QuemIndicou = ({ formData, handleChange, handleSelectChange }) => {
         {/* Nome do familiar/conhecido (Condicional) */}
         {formData.conhecidoNoProjeto && formData.conhecidoNoProjeto !== 'NÃO TENHO' && (
           <div className="space-y-2">
-            <Label htmlFor="nomeFamiliarConhecido" className="text-white">Nome completo do familiar / conhecido</Label>
+            <Label htmlFor="nomeFamiliarConhecido" className="text-white">Nome completo do familiar / conhecido<Obrigatorio /></Label>
             <Input 
               id="nomeFamiliarConhecido" 
               name="nomeFamiliarConhecido" 

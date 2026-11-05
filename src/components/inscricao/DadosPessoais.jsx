@@ -15,6 +15,7 @@ import { limparNomePessoa, problemaNomePessoa } from '@/utils/nomePessoa';
 import { validateCPF } from '@/utils/validation';
 import { limparSemNumero, problemaEmail } from '@/utils/validacoesInscricao';
 import NotaPendencia from './NotaPendencia';
+import Obrigatorio from './Obrigatorio';
 
 const DadosPessoais = ({
   formData,
@@ -73,7 +74,7 @@ const DadosPessoais = ({
         {/* CPF - Primeiro campo */}
         <div className="space-y-2 relative flex flex-col h-full">
           <div className="flex justify-between items-center h-5 mb-1">
-            <Label htmlFor="cpf" className="text-white">CPF</Label>
+            <Label htmlFor="cpf" className="text-white">CPF{!formData.semCpf && <Obrigatorio />}</Label>
 
             <AnimatePresence>
               {showRecoveryMessage && (
@@ -132,7 +133,7 @@ const DadosPessoais = ({
         {/* Nome Completo - Segundo campo (Alinhado com CPF) */}
         <div className="space-y-2 relative flex flex-col h-full">
           <div className="flex items-center h-5 mb-1">
-            <Label htmlFor="nome" className="text-white">Nome completo <span className="text-white/60 font-normal">(igual ao seu documento)</span></Label>
+            <Label htmlFor="nome" className="text-white">Nome completo<Obrigatorio /> <span className="text-white/60 font-normal">(igual ao seu documento)</span></Label>
           </div>
           <div className="relative">
             <Input 
@@ -157,7 +158,7 @@ const DadosPessoais = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="sexo" className="text-white">Sexo</Label>
+          <Label htmlFor="sexo" className="text-white">Sexo<Obrigatorio /></Label>
           {/* O sexo decide os limites de homens e mulheres por area na escala
               (e o grupo de trilha do acampante): sem ele a pessoa entra na
               fila sem dar para contar. Quem barra o envio em branco e a
@@ -178,7 +179,7 @@ const DadosPessoais = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="whatsapp" className="text-white">WhatsApp</Label>
+          <Label htmlFor="whatsapp" className="text-white">WhatsApp<Obrigatorio /></Label>
           <TelefoneInput id="whatsapp" name="whatsapp" value={formData.whatsapp} onChange={handleChange} required estrangeiro={!!formData.semCpf} />
           <NotaPendencia pendencias={pendencias} campo="whatsapp" />
         </div>
@@ -187,7 +188,7 @@ const DadosPessoais = ({
             proposito: brasileiro entra pelo CPF (ver constants/nacionalidades). */}
         {formData.semCpf && (
           <div className="space-y-2">
-            <Label htmlFor="nacionalidade" className="text-white">Nacionalidade</Label>
+            <Label htmlFor="nacionalidade" className="text-white">Nacionalidade<Obrigatorio /></Label>
             <Select
               required
               value={formData.nacionalidade || ''}
@@ -211,7 +212,7 @@ const DadosPessoais = ({
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="dataNascimento" className="text-white">Data de Nascimento</Label>
+          <Label htmlFor="dataNascimento" className="text-white">Data de Nascimento<Obrigatorio /></Label>
           {/* Guardamos a data, nao a idade: um numero de idade envelhece e
               e ele que decide quem precisa de autorizacao dos pais. A idade
               ao lado e so conferencia para quem esta preenchendo. */}
@@ -233,7 +234,7 @@ const DadosPessoais = ({
 
         {!isEquipante && (
           <div className="space-y-2">
-            <Label htmlFor="tamanho_camisa" className="text-white">Tamanho da Camisa</Label>
+            <Label htmlFor="tamanho_camisa" className="text-white">Tamanho da Camisa<Obrigatorio /></Label>
             <Select required value={formData.tamanho_camisa || ''} onValueChange={(value) => handleSelectChange('tamanho_camisa', value)}>
               <SelectTrigger id="tamanho_camisa" className="bg-white/10 border-white/20 text-white">
                 <SelectValue placeholder="Selecione..." />

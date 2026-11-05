@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/services/supabaseClient';
 import { ESPECIALIDADES_SAUDE_PADRAO, ESPECIALIDADE_OUTRO } from '@/constants/especialidadesSaude';
 import { cn } from '@/lib/utils';
+import Obrigatorio from './Obrigatorio';
 
 // A lista vem do banco uma vez por carregamento da pagina (pode ter ganhado
 // opcoes novas pelo "Tornar fixa"); se falhar, usa a copia do codigo.
@@ -28,7 +29,7 @@ export const limparCacheEspecialidades = () => { cache = null; };
  * se estiver marcado, senao a primeira da lista) e as demais em `adicionais`;
  * onChange(valor, outro, adicionais). Sem multipla, adicionais nao muda.
  */
-const CampoEspecialidadeSaude = ({ id = 'especialidade-saude', valor, outro, adicionais = [], onChange, rotulo = 'Sua especialidade na área da saúde', compacto = false, multipla = false }) => {
+const CampoEspecialidadeSaude = ({ id = 'especialidade-saude', valor, outro, adicionais = [], onChange, rotulo = 'Sua especialidade na área da saúde', compacto = false, multipla = false, obrigatorio = false }) => {
   const [opcoes, setOpcoes] = useState(cache || ESPECIALIDADES_SAUDE_PADRAO);
   useEffect(() => {
     let vivo = true;
@@ -49,7 +50,7 @@ const CampoEspecialidadeSaude = ({ id = 'especialidade-saude', valor, outro, adi
 
   return (
     <div className="space-y-2">
-      {rotulo && <Label className="text-white">{rotulo}</Label>}
+      {rotulo && <Label className="text-white">{rotulo}{obrigatorio && <Obrigatorio />}</Label>}
       {multipla && <p className="text-xs text-gray-400">Pode marcar mais de uma.</p>}
       <div className={cn('grid gap-2', compacto ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3')} role={multipla ? 'group' : 'radiogroup'} aria-label={rotulo || 'Especialidade'}>
         {opcoes.map((op) => (

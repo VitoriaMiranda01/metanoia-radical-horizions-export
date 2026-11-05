@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FormSection from './FormSection';
+import Obrigatorio from './Obrigatorio';
 import { UFS, mascararCep, problemaCep, limparSemNumero } from '@/utils/validacoesInscricao';
 
 const Endereco = ({
@@ -67,21 +68,21 @@ const Endereco = ({
   return <FormSection title="Endereço">
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div className="space-y-2 md:col-span-1">
-        <Label htmlFor="cep" className="text-white">CEP</Label>
+        <Label htmlFor="cep" className="text-white">CEP<Obrigatorio /></Label>
         <Input id="cep" name="cep" value={formData.cep} onChange={(e) => handleChange({ target: { name: 'cep', value: formData.semCpf ? e.target.value : mascararCep(e.target.value) } })} required inputMode={formData.semCpf ? 'text' : 'numeric'} maxLength={formData.semCpf ? 20 : 9} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="00000-000" />
         {!formData.semCpf && formData.cep && formData.cep.replace(/\D/g, '').length < 8 && <p className="text-xs text-red-300 mt-1">{problemaCep(formData.cep)}</p>}
         {buscandoCep && <p className="text-xs text-white/70 mt-1">Buscando endereço...</p>}
         {cepNaoEncontrado && <p className="text-xs text-yellow-300 mt-1">CEP não encontrado, preencha o endereço manualmente.</p>}
       </div>
       <div className="space-y-2 md:col-span-3">
-        <Label htmlFor="endereco" className="text-white">Endereço</Label>
+        <Label htmlFor="endereco" className="text-white">Endereço<Obrigatorio /></Label>
         <Input id="endereco" name="endereco" value={formData.endereco} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Nome da rua" />
       </div>
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div className="space-y-2">
-        <Label htmlFor="numero" className="text-white">Número</Label>
+        <Label htmlFor="numero" className="text-white">Número<Obrigatorio /></Label>
         <Input id="numero" name="numero" value={formData.numero} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="123" />
       </div>
       <div className="space-y-2">
@@ -89,18 +90,21 @@ const Endereco = ({
         <Input id="complemento" name="complemento" value={formData.complemento} onChange={handleChange} className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Apto 101" />
       </div>
       <div className="space-y-2 md:col-span-2">
-        <Label htmlFor="bairro" className="text-white">Bairro</Label>
+        <Label htmlFor="bairro" className="text-white">Bairro<Obrigatorio /></Label>
         <Input id="bairro" name="bairro" value={formData.bairro} onChange={handleChange} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="Centro" />
       </div>
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-2">
-        <Label htmlFor="cidade" className="text-white">Cidade</Label>
+        <Label htmlFor="cidade" className="text-white">Cidade<Obrigatorio /></Label>
         <Input id="cidade" name="cidade" value={formData.cidade} onChange={(e) => handleChange({ target: { name: 'cidade', value: limparSemNumero(e.target.value) } })} required className="bg-white/10 border-white/20 text-white placeholder:text-white/50" placeholder="São Paulo" />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="estado" className="text-white">Estado</Label>
+        {/* Obrigatorio so para quem tem CPF: quem se inscreve sem CPF mora
+            fora do Brasil e este campo fica livre (ver conferirInscricao em
+            utils/validacoesInscricao.js). */}
+        <Label htmlFor="estado" className="text-white">Estado{!formData.semCpf && <Obrigatorio />}</Label>
         <Select value={formData.estado} onValueChange={value => handleSelectChange('estado', value)}>
           <SelectTrigger className="bg-white/10 border-white/20 text-white">
             <SelectValue placeholder="Selecione" />

@@ -10,11 +10,14 @@ import { OUTRA_IGREJA, igrejaEhOutra, igrejaSeparaGrupoEEbd } from '@/constants/
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { limparNomeSimples } from '@/utils/validacoesInscricao';
 import NotaPendencia from './NotaPendencia';
+import Obrigatorio from './Obrigatorio';
 
 // SIM / NAO em botoes de radio, sem nada marcado ate a pessoa escolher.
-const PerguntaSimNao = ({ id, label, valor, onChange }) => (
+// obrigatoria: todo uso atual e obrigatorio (ver EquipantePage.handleSubmit),
+// mas o parametro existe para nao prender isso aqui se um dia nao for.
+const PerguntaSimNao = ({ id, label, valor, onChange, obrigatoria = true }) => (
   <div className="space-y-2">
-    <Label className="text-white">{label}</Label>
+    <Label className="text-white">{label}{obrigatoria && <Obrigatorio />}</Label>
     <div className="flex gap-4 pt-2 h-10 items-center">
       {['SIM', 'NÃO'].map((opcao) => (
         <div key={opcao} className="flex items-center space-x-2">
@@ -47,7 +50,7 @@ const InfoEclesiasticas = ({
   // causa disso.
   // `novas` sao as criadas pela organizacao ("166 - NOME"); OUTRA so existe ate
   // a virada de edicao (permiteOutra).
-  const { parceiras, extras, permiteOutra } = useOpcoesDeIgreja();
+  const { parceiras, extras, permiteOutra, exigeFichaCompleta } = useOpcoesDeIgreja();
 
   // OUTRA fica no FIM da lista, depois das extras: e a saida para quem nao
   // achou a igreja, nao a primeira coisa a considerar.
@@ -64,7 +67,7 @@ const InfoEclesiasticas = ({
           {/* 1. Pergunta Principal - Sempre visível e no topo */}
           <div className="space-y-2 p-4 bg-white/5 rounded-lg border border-white/10">
             <Label htmlFor="estaAfastado" className="text-white text-lg font-medium">
-              Congrega em alguma igreja?
+              Congrega em alguma igreja?<Obrigatorio />
             </Label>
             {/* A resposta muda o que a Direcao precisa olhar na aprovacao:
                 quem nao congrega nao tem igreja nem pastor para responder por
@@ -99,7 +102,7 @@ const InfoEclesiasticas = ({
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 pb-2">
                   <div className="space-y-2">
-                    <Label htmlFor="igreja" className="text-white">Igreja que frequenta</Label>
+                    <Label htmlFor="igreja" className="text-white">Igreja que frequenta<Obrigatorio /></Label>
                     <IgrejaSelect
                       id="igreja"
                       value={formData.igreja}
@@ -120,7 +123,7 @@ const InfoEclesiasticas = ({
                       organizador, e nao duas. */}
                   {igrejaEhOutra(formData.igreja) && (
                     <div className="space-y-2">
-                      <Label htmlFor="igrejaOutra" className="text-white">Qual é a sua igreja?</Label>
+                      <Label htmlFor="igrejaOutra" className="text-white">Qual é a sua igreja?<Obrigatorio /></Label>
                       <Input
                         id="igrejaOutra"
                         name="igrejaOutra"
@@ -141,13 +144,14 @@ const InfoEclesiasticas = ({
                       value={formData.pastor}
                       onChange={(v) => handleChange({ target: { name: 'pastor', value: v } })}
                       doQuadro
+                      obrigatorio={exigeFichaCompleta}
                     />
                     <NotaPendencia pendencias={pendencias} campo="pastor" />
                   </div>
 
                   {/* Equipante specific Cargo options */}
                   <div className="space-y-2">
-                    <Label htmlFor="cargoIgreja" className="text-white">Cargo na Igreja</Label>
+                    <Label htmlFor="cargoIgreja" className="text-white">Cargo na Igreja{exigeFichaCompleta && <Obrigatorio />}</Label>
                     <Select value={formData.cargoIgreja} onValueChange={value => handleChange({ target: { name: 'cargoIgreja', value } })}>
                       <SelectTrigger className="bg-white/10 border-white/20 text-white">
                         <SelectValue placeholder="Selecione..." />
@@ -171,7 +175,7 @@ const InfoEclesiasticas = ({
 
                   {formData.cargoIgreja === 'OUTRO' && (
                     <div className="space-y-2">
-                      <Label htmlFor="cargoIgrejaOutro" className="text-white">OUTRO</Label>
+                      <Label htmlFor="cargoIgrejaOutro" className="text-white">OUTRO{exigeFichaCompleta && <Obrigatorio />}</Label>
                       <Input 
                         id="cargoIgrejaOutro" 
                         name="cargoIgrejaOutro" 
@@ -202,7 +206,7 @@ const InfoEclesiasticas = ({
                       />
                       {formData.grupoCuidado === 'SIM' && (
                         <div className="space-y-2">
-                          <Label htmlFor="liderGrupoCuidado" className="text-white">Nome do líder do grupo</Label>
+                          <Label htmlFor="liderGrupoCuidado" className="text-white">Nome do líder do grupo<Obrigatorio /></Label>
                           <Input
                             id="liderGrupoCuidado"
                             name="liderGrupoCuidado"

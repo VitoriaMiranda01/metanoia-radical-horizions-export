@@ -6,6 +6,7 @@ import { AREAS_INSCRICAO, AREA_DISPONIVEL_QUALQUER } from '@/constants/workAreas
 import { FRASES_AREAS_EXTRA, FRASES_AREAS_EXTRA_DOMINGO } from '@/constants/areasExtra';
 import { escolheuSaude } from '@/constants/especialidadesSaude';
 import CampoEspecialidadeSaude from './CampoEspecialidadeSaude';
+import Obrigatorio from './Obrigatorio';
 
 // A lista de areas NAO mora mais aqui: mora em src/constants/workAreas.js,
 // junto com a lista que a tela de Geracao de Escalas usa. Eram duas listas
@@ -56,7 +57,7 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange, semExtras
 
   const renderRadioGroup = (label, name, value) => (
     <div className="space-y-3">
-      <Label className="text-white block text-md font-medium">{label}</Label>
+      <Label className="text-white block text-md font-medium">{label}<Obrigatorio /></Label>
       <div className="bg-white/5 border border-white/10 rounded-md p-4 max-h-60 overflow-y-auto custom-scrollbar">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {AREAS.map(({ valor: area, rotulo }) => {
@@ -150,6 +151,7 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange, semExtras
             <CampoEspecialidadeSaude
               id="inscricao-especialidade"
               rotulo="Você escolheu Primeiros socorros – Saúde. Qual é a sua especialidade?"
+              obrigatorio
               multipla
               valor={formData.especialidadeSaude}
               outro={formData.especialidadeSaudeOutro}

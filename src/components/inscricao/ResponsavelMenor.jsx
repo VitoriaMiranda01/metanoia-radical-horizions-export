@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import FormSection from './FormSection';
 import TelefoneInput from './TelefoneInput';
+import Obrigatorio from './Obrigatorio';
 import { cn } from '@/lib/utils';
 import {
   definirInicioDoEvento, ehMenorDeIdade, limparNomeResponsavel, pessoasExigidas, precisaAcompanhante,
@@ -94,7 +95,7 @@ const ResponsavelMenor = ({ formData, handleChange, tipo }) => {
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor={p.campoNome} className="text-white">{t.nome}</Label>
+                <Label htmlFor={p.campoNome} className="text-white">{t.nome}<Obrigatorio /></Label>
                 <Input
                   id={p.campoNome}
                   name={p.campoNome}
@@ -110,7 +111,7 @@ const ResponsavelMenor = ({ formData, handleChange, tipo }) => {
               </div>
               {p.campoTel && (
                 <div className="space-y-2">
-                  <Label htmlFor={p.campoTel} className="text-white">{t.tel}</Label>
+                  <Label htmlFor={p.campoTel} className="text-white">{t.tel}<Obrigatorio /></Label>
                   <TelefoneInput
                     id={p.campoTel}
                     name={p.campoTel}

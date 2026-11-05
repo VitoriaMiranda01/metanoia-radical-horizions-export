@@ -374,6 +374,14 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
 
   const botaoSecundario = 'flex-1 sm:flex-none border-white/10 bg-transparent text-gray-300 hover:text-white hover:bg-white/10';
 
+  // As etiquetas (pastor, selo, lider, so domingo) abrem a legenda com
+  // role="button" + tabIndex, mas um <span> nao reage a Enter/Espaco por
+  // conta propria -- so um elemento nativo (button, a, input...) faz isso.
+  // Esta funcao devolve o onKeyDown que falta para quem usa so o teclado.
+  const aoAtivarPeloTeclado = (fn) => (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); }
+  };
+
   return (
     <div className={`rounded-xl border p-4 ${entrou ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-white/10 bg-white/[0.03]'}`}>
       <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
@@ -385,27 +393,31 @@ const CartaoPessoa = ({ p, onPagar, onAtualizado }) => {
             {p.pastor && !selo?.cheio && (
               <span title={p.pastor} aria-label={p.pastor} role="button" tabIndex={0}
                 onClick={() => setLegenda((l) => (l === p.pastor ? '' : p.pastor))}
-                className="inline-flex shrink-0 cursor-pointer text-sky-400">
+                onKeyDown={aoAtivarPeloTeclado(() => setLegenda((l) => (l === p.pastor ? '' : p.pastor)))}
+                className="inline-flex shrink-0 cursor-pointer text-sky-400 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
                 <Church className="h-4 w-4" />
               </span>
             )}
             {selo && (
               <span title={tituloSelo} aria-label={tituloSelo} role="button" tabIndex={0}
                 onClick={() => setLegenda((l) => (l === tituloSelo ? '' : tituloSelo))}
-                className={`inline-flex shrink-0 cursor-pointer ${selo.cor}`}>
+                onKeyDown={aoAtivarPeloTeclado(() => setLegenda((l) => (l === tituloSelo ? '' : tituloSelo)))}
+                className={`inline-flex shrink-0 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${selo.cor}`}>
                 <selo.Icone className="h-4 w-4" fill={selo.cheio ? 'currentColor' : 'none'} />
               </span>
             )}
             {p.lider_de && (
               <span title={`Líder · ${p.lider_de}`} aria-label={`Líder · ${p.lider_de}`} role="button" tabIndex={0}
                 onClick={() => setLegenda((l) => (l === `Líder · ${p.lider_de}` ? '' : `Líder · ${p.lider_de}`))}
-                className="inline-flex shrink-0 cursor-pointer text-yellow-300">
+                onKeyDown={aoAtivarPeloTeclado(() => setLegenda((l) => (l === `Líder · ${p.lider_de}` ? '' : `Líder · ${p.lider_de}`)))}
+                className="inline-flex shrink-0 cursor-pointer text-yellow-300 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
                 <UserCog className="h-4 w-4" />
               </span>
             )}
             {p.so_domingo && (
-              <span role="button" tabIndex={0} className="cursor-pointer"
-                onClick={() => setLegenda((l) => (l === 'sd' ? '' : 'sd'))}>
+              <span role="button" tabIndex={0} className="cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                onClick={() => setLegenda((l) => (l === 'sd' ? '' : 'sd'))}
+                onKeyDown={aoAtivarPeloTeclado(() => setLegenda((l) => (l === 'sd' ? '' : 'sd')))}>
                 <TagSoDomingo />
               </span>
             )}

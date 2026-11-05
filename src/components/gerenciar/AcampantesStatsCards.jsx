@@ -5,9 +5,12 @@ import { motion } from 'framer-motion';
 
 const StatCard = ({ title, count, icon: Icon, color, onClick, loading }) => (
   <motion.div whileHover={!loading ? { scale: 1.02 } : {}} whileTap={!loading ? { scale: 0.98 } : {}}>
-    <Card 
-      className={`cursor-pointer overflow-hidden backdrop-blur-sm border-l-4 ${color.border} bg-white/5 border-y-white/5 border-r-white/5 hover:bg-white/10 transition-all ${loading ? 'opacity-70 pointer-events-none' : ''}`}
+    <Card
+      className={`cursor-pointer overflow-hidden backdrop-blur-sm border-l-4 ${color.border} bg-white/5 border-y-white/5 border-r-white/5 hover:bg-white/10 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${loading ? 'opacity-70 pointer-events-none' : ''}`}
+      role={!loading ? 'button' : undefined}
+      tabIndex={!loading ? 0 : undefined}
       onClick={!loading ? onClick : undefined}
+      onKeyDown={!loading ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
       data-dica="Clique para ver a lista de quem está nesta contagem."
     >
       <CardContent className="p-4 flex items-center justify-between">
@@ -29,9 +32,12 @@ const StatCard = ({ title, count, icon: Icon, color, onClick, loading }) => (
 
 const ShirtCard = ({ size, count, onClick, loading }) => (
   <motion.div whileHover={!loading ? { scale: 1.05 } : {}} whileTap={!loading ? { scale: 0.95 } : {}}>
-    <div 
-      className={`cursor-pointer bg-white/5 border border-white/10 rounded-lg p-3 text-center hover:bg-white/10 transition-colors h-full flex flex-col justify-center items-center ${loading ? 'opacity-70 pointer-events-none' : ''}`}
+    <div
+      className={`cursor-pointer bg-white/5 border border-white/10 rounded-lg p-3 text-center hover:bg-white/10 transition-colors h-full flex flex-col justify-center items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${loading ? 'opacity-70 pointer-events-none' : ''}`}
+      role={!loading ? 'button' : undefined}
+      tabIndex={!loading ? 0 : undefined}
       onClick={!loading ? onClick : undefined}
+      onKeyDown={!loading ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
       data-dica="Clique para ver quem pediu camisa deste tamanho."
     >
       <div className="flex justify-center mb-1 text-purple-400 opacity-80">
@@ -53,8 +59,11 @@ const ShirtCard = ({ size, count, onClick, loading }) => (
 const TotalCamisasCard = ({ total, semTamanho, onClick, loading }) => (
   <motion.div whileHover={!loading ? { scale: 1.05 } : {}} whileTap={!loading ? { scale: 0.95 } : {}}>
     <div
-      className={`cursor-pointer bg-purple-500/10 border border-purple-500/40 rounded-lg p-3 text-center hover:bg-purple-500/20 transition-colors h-full flex flex-col justify-center items-center ${loading ? 'opacity-70 pointer-events-none' : ''}`}
+      className={`cursor-pointer bg-purple-500/10 border border-purple-500/40 rounded-lg p-3 text-center hover:bg-purple-500/20 transition-colors h-full flex flex-col justify-center items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 ${loading ? 'opacity-70 pointer-events-none' : ''}`}
+      role={!loading ? 'button' : undefined}
+      tabIndex={!loading ? 0 : undefined}
       onClick={!loading ? onClick : undefined}
+      onKeyDown={!loading ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
       data-dica="Total de camisas pedidas, somando todos os tamanhos. Clique para ver a lista."
     >
       <div className="flex justify-center mb-1 text-purple-300">

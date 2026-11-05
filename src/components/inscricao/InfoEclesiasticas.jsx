@@ -189,6 +189,12 @@ const InfoEclesiasticas = ({
                   {igrejaSeparaGrupoEEbd(formData.igreja) ? (
                     <>
                       <PerguntaSimNao
+                        id="frequentaEbd"
+                        label="Frequenta a Escola Bíblica (EBD)?"
+                        valor={formData.frequentaEbd}
+                        onChange={handleChange}
+                      />
+                      <PerguntaSimNao
                         id="grupoCuidado"
                         label="Frequenta Grupo de Cuidado?"
                         valor={formData.grupoCuidado}
@@ -211,12 +217,6 @@ const InfoEclesiasticas = ({
                           />
                         </div>
                       )}
-                      <PerguntaSimNao
-                        id="frequentaEbd"
-                        label="Frequenta a Escola Bíblica (EBD)?"
-                        valor={formData.frequentaEbd}
-                        onChange={handleChange}
-                      />
                     </>
                   ) : (
                   <div className="space-y-2">

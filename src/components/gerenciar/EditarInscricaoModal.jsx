@@ -493,11 +493,11 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
             {/* Igreja 64 (20261026f): Grupo de Cuidado, lider e EBD em separado. */}
             {isEquipante && igrejaSeparaGrupoEEbd(form.igreja) ? (
               <>
+                <CampoBooleano label="Frequenta a Escola Bíblica (EBD)?" name="frequenta_ebd" valor={form.frequenta_ebd} onChange={set('frequenta_ebd')} />
                 <CampoBooleano label="Frequenta Grupo de Cuidado?" name="frequenta_grupo_cuidado" valor={form.frequenta_grupo_cuidado} onChange={set('frequenta_grupo_cuidado')} />
                 {toBoolean(form.frequenta_grupo_cuidado) && (
                   <CampoTexto label="Nome do líder do grupo" valor={form.lider_grupo_cuidado} onChange={set('lider_grupo_cuidado')} />
                 )}
-                <CampoBooleano label="Frequenta a Escola Bíblica (EBD)?" name="frequenta_ebd" valor={form.frequenta_ebd} onChange={set('frequenta_ebd')} />
               </>
             ) : isEquipante && (
               <CampoBooleano label="Frequenta Grupo de Cuidado, Célula ou EBD?" name="frequenta_grupo_cuidado" valor={form.frequenta_grupo_cuidado} onChange={set('frequenta_grupo_cuidado')} />

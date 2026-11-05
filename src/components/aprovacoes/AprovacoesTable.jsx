@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Eye, CheckCircle, XCircle, Clock, Search, Filter, X, AlertTriangle, Download, CheckCheck, CalendarDays } from 'lucide-react';
+import { Users, Eye, CheckCircle, XCircle, Clock, Search, Filter, X, AlertTriangle, Download, CheckCheck, CalendarDays, Baby } from 'lucide-react';
 import ExportarAprovacoesDialog from '@/components/aprovacoes/ExportarAprovacoesDialog';
 import AprovacaoEmLoteDialog from '@/components/aprovacoes/AprovacaoEmLoteDialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,8 +24,8 @@ import { resumoGrupoEEbd } from '@/utils/grupoCuidadoEbd';
 import { casaBusca } from '@/utils/busca';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import SeloPastor from '@/components/common/SeloPastor';
-import { 
-  getVisibleColumnsFromStorage, 
+import {
+  getVisibleColumnsFromStorage,
   saveVisibleColumnsToStorage,
   COLUMN_DEFINITIONS,
   COLUNAS_DATA_HORA,
@@ -45,7 +45,7 @@ export const getStatusBadge = (status) => {
     aprovado: 'Aprovado',
     rejeitado: 'Rejeitado'
   };
-  
+
   const className = `border ${variants[status?.toLowerCase()] || 'bg-slate-500/20 text-slate-400 border-slate-500/50'}`;
   return <Badge className={className} variant="outline">{labels[status?.toLowerCase()] || status}</Badge>;
 };
@@ -99,13 +99,13 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data, ord
       <span className="text-white font-medium whitespace-nowrap">{title}</span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button data-dica={`Filtrar a lista por ${title}.`} 
-            variant="ghost" 
-            size="sm" 
+          <Button data-dica={`Filtrar a lista por ${title}.`}
+            variant="ghost"
+            size="sm"
             className={cn(
-              "h-8 w-8 p-0 ml-2 relative transition-colors", 
-              isActive 
-                ? "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 opacity-100" 
+              "h-8 w-8 p-0 ml-2 relative transition-colors",
+              isActive
+                ? "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 opacity-100"
                 : "text-slate-400 hover:text-white hover:bg-white/10 opacity-100"
             )}
           >
@@ -132,16 +132,16 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data, ord
   );
 };
 
-const AprovacoesTable = ({ 
-  dados, 
-  titulo, 
-  onSelect, 
-  onAprovar, 
-  onRejeitar, 
-  showActions = false, 
-  onCancelar, 
-  showCancelAction = false, 
-  showApproveOnly = false, 
+const AprovacoesTable = ({
+  dados,
+  titulo,
+  onSelect,
+  onAprovar,
+  onRejeitar,
+  showActions = false,
+  onCancelar,
+  showCancelAction = false,
+  showApproveOnly = false,
   searchTerm,
   onSearchChange,
   buscaRef,
@@ -150,7 +150,10 @@ const AprovacoesTable = ({
   podeAprovarEmLote = false,
   onLoteConcluido,
   // So organizador, so na aba de pendentes: passar para "Só Domingo" e voltar.
-  onMudarDomingo
+  onMudarDomingo,
+  // Menor de idade aprovado sem a liberacao (20261105a).
+  onLiberarMenor,
+  contextoMenores
 }) => {
   const { isParceiro } = useAuth();
   const [filters, setFilters] = useState({});
@@ -159,8 +162,8 @@ const AprovacoesTable = ({
   // Ordenacao pela seta do cabecalho (utils/ordenacao.js).
   const [ordem, setOrdem] = useState(null);
   const [visibleColumns, setVisibleColumns] = useState([]);
-  
-  const tableType = 'equipantes'; 
+
+  const tableType = 'equipantes';
 
   // Load columns preference
   useEffect(() => {
@@ -224,7 +227,7 @@ const AprovacoesTable = ({
 
   const filtrados = useMemo(() => {
     let data = dados;
-    
+
     // Nome, CPF, e-mail, telefone e igreja (inclusive o nome escrito em
     // OUTRA), sem diferenca de acento -- ver utils/busca.js.
     if (searchTerm) {
@@ -247,7 +250,7 @@ const AprovacoesTable = ({
 
   // Pagina a lista JA filtrada -- busca e filtros seguem valendo sobre tudo.
   const paginacao = usePaginacao(filteredData, 10);
-  
+
   const getColDef = (key) => COLUMN_DEFINITIONS[tableType].find(c => c.key === key);
 
   return (
@@ -266,10 +269,10 @@ const AprovacoesTable = ({
             </div>
             <div className="flex items-center gap-2 flex-wrap">
                  {hasActiveFilters && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={clearAllFilters} 
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearAllFilters}
                     data-dica="Tira todos os filtros e volta a mostrar a lista inteira."
                     className="text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20"
                   >
@@ -278,7 +281,7 @@ const AprovacoesTable = ({
                   </Button>
                 )}
                 <div className="hidden md:block">
-                  <ColumnVisibilityDropdown 
+                  <ColumnVisibilityDropdown
                     type={tableType}
                     currentColumns={visibleColumns}
                     onApply={handleSaveColumns}
@@ -350,7 +353,7 @@ const AprovacoesTable = ({
                 </div>
               ) : (
                 paginacao.itensDaPagina.map((inscricao) => (
-                  <InscricaoCard 
+                  <InscricaoCard
                     key={inscricao.id}
                     inscricao={inscricao}
                     statusBadge={getStatusBadge(inscricao.status)}
@@ -362,6 +365,7 @@ const AprovacoesTable = ({
                     showCancelAction={showCancelAction}
                     showApproveOnly={showApproveOnly}
                     onMudarDomingo={onMudarDomingo}
+                    onLiberarMenor={onLiberarMenor}
                   />
                 ))
               )}
@@ -379,30 +383,30 @@ const AprovacoesTable = ({
                   <TableRow className="hover:bg-transparent border-white/10">
                     <TableHead className="min-w-[200px] h-12 sticky left-0 z-20 bg-neutral-900">
                        <ColumnHeader ordem={ordem} onOrdenar={setOrdem}
-                        title="Nome" 
-                        filterKey="nome" 
-                        filters={filters} 
-                        handleFilterChange={handleFilterChange} 
-                        data={dados} 
+                        title="Nome"
+                        filterKey="nome"
+                        filters={filters}
+                        handleFilterChange={handleFilterChange}
+                        data={dados}
                       />
                     </TableHead>
-                    
+
                     {visibleColumns.map(colKey => {
                       if (colKey === 'nome') return null;
                       const def = getColDef(colKey);
                       return (
                         <TableHead key={colKey} data-coluna={colKey} className="min-w-[150px] h-12 bg-zinc-900">
                           <ColumnHeader ordem={ordem} onOrdenar={setOrdem}
-                              title={def ? def.label : colKey} 
-                              filterKey={colKey} 
-                              filters={filters} 
-                              handleFilterChange={handleFilterChange} 
-                              data={dados} 
+                              title={def ? def.label : colKey}
+                              filterKey={colKey}
+                              filters={filters}
+                              handleFilterChange={handleFilterChange}
+                              data={dados}
                             />
                         </TableHead>
                       );
                     })}
-                    
+
                     <TableHead className="text-white text-right h-12 sticky right-0 z-20 bg-neutral-900">
                       Ações
                     </TableHead>
@@ -438,7 +442,8 @@ const AprovacoesTable = ({
                                 title="Não congrega em nenhuma igreja — não há pastor ou igreja para responder por esta pessoa. Avaliem antes de aprovar."
                               />
                             )}
-                            <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} soDomingo={inscricao.so_domingo} />
+                            <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} soDomingo={inscricao.so_domingo}
+                              menor={!!inscricao.menor} menorLiberado={!!inscricao.menorLiberado} acompanhanteDe={inscricao.acompanhanteDe} />
                             <SeloPastor pessoa={inscricao} />
                           </span>
                           {/* Igreja 64 (20261026f): Grupo de Cuidado e EBD a vista. */}
@@ -448,7 +453,7 @@ const AprovacoesTable = ({
                             </span>
                           )}
                         </TableCell>
-                        
+
                         {visibleColumns.map(colKey => {
                           if (colKey === 'nome') return null;
                           return (
@@ -501,6 +506,11 @@ const AprovacoesTable = ({
                                 <CheckCircle className="w-4 h-4" />
                               </Button>
                             )}
+                            {onLiberarMenor && inscricao.menor && !inscricao.menorLiberado && inscricao.status !== 'rejeitado' && (
+                              <Button variant="ghost" size="sm" onClick={() => onLiberarMenor(inscricao.id)} className="bg-pink-500/15 hover:bg-pink-500/30 text-pink-200 transition-colors" aria-label="Liberar menor de idade" data-dica="Menor de idade sem a autorização confirmada: falar com o responsável e liberar (o pagamento só abre depois).">
+                                <Baby className="w-4 h-4" />
+                              </Button>
+                            )}
                             {showCancelAction && (
                               <Button variant="ghost" size="sm" onClick={() => onCancelar(inscricao.id)} className="hover:bg-red-500/20 text-red-300 transition-colors" aria-label="Cancelar aprovação" data-dica="Desfazer a aprovação: a inscrição vai para Rejeitadas (pede confirmação).">
                                 <XCircle className="w-4 h-4" />
@@ -531,6 +541,7 @@ const AprovacoesTable = ({
           onFechar={() => setAprovandoEmLote(false)}
           dados={dados}
           onConcluido={onLoteConcluido}
+          contextoMenores={contextoMenores}
         />
       )}
     </Card>

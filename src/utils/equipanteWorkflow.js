@@ -1,5 +1,5 @@
 // Deriva o estágio atual do equipante a partir dos campos reais (idade,
-// parental_auth_file_url, status), em vez de depender de uma coluna separada
+// menor_liberado_em, status), em vez de depender de uma coluna separada
 // (current_stage) que precisava ser mantida em sincronia manualmente em
 // vários pontos do código e ficava desatualizada sempre que os campos reais
 // eram alterados por outro caminho (painel de workflow do organizador,
@@ -12,22 +12,12 @@
 export const getEquipanteStageLabel = (equipante) => {
   if (!equipante || equipante.tipo !== 'equipante') return null;
 
+  // Menor (20261105a): sem carta. A autorizacao do responsavel e confirmada
+  // pelo pastor (ou organizador) na aprovacao -- menor_liberado_em.
   const idade = Number(equipante.idade);
   const isMinor = !Number.isNaN(idade) && idade < 18;
-
-  // Dois caminhos concluem a autorizacao: o arquivo anexado, ou a carta
-  // entregue em maos (declarada pelo proprio menor). A conferencia da igreja
-  // vem depois e nao trava nada -- por isso ela so muda o texto.
-  if (isMinor) {
-    if (equipante.autorizacao_conferida_em) {
-      return 'Autorização dos pais conferida';
-    }
-    if (equipante.autorizacao_entregue_em) {
-      return 'Autorização entregue em mãos — a conferir';
-    }
-    if (!equipante.parental_auth_file_url) {
-      return 'Aguardando autorização dos pais';
-    }
+  if (isMinor && equipante.status === 'aprovado' && !equipante.menor_liberado_em) {
+    return 'Aprovado — falta confirmar a autorização do responsável (menor)';
   }
   if (equipante.status === 'rejeitado') {
     return 'Inscrição rejeitada';

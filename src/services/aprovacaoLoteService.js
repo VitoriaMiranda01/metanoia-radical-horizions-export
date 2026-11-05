@@ -14,10 +14,14 @@ const resposta = ({ data, error }, padrao) => {
   return { success: true, ...data };
 };
 
-/** ids: as inscricoes pendentes que o organizador viu e confirmou. */
-export const aprovarEmLote = async (ids, senha, descricao) =>
+/**
+ * ids: as inscricoes pendentes que o organizador viu e confirmou.
+ * menores (20261105a): os menores de idade que ele marcou, com a declaracao;
+ * menor sem liberacao que nao esta aqui fica pendente.
+ */
+export const aprovarEmLote = async (ids, senha, descricao, menores = []) =>
   resposta(
-    await supabase.rpc('aprovar_em_lote', { p_ids: ids, p_senha: senha, p_descricao: descricao }),
+    await supabase.rpc('aprovar_em_lote', { p_ids: ids, p_senha: senha, p_descricao: descricao, p_menores: menores }),
     'Não foi possível aprovar o lote.'
   );
 

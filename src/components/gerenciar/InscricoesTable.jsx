@@ -7,6 +7,7 @@ import { ordenarLista } from '@/utils/ordenacao';
 import { Badge } from '@/components/ui/badge';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import SeloPastor from '@/components/common/SeloPastor';
+import { useIndiceMenores } from '@/components/common/MenorNaFicha';
 import { nomeDaIgreja } from '@/constants/igrejas';
 import { casaBusca } from '@/utils/busca';
 import { Button } from '@/components/ui/button';
@@ -22,8 +23,8 @@ import { useToast } from '@/components/ui/use-toast';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { exportEquipantesToExcel } from '@/utils/excelExport';
 import ColumnVisibilityDropdown from '@/components/gerenciar/ColumnVisibilityDropdown';
-import { 
-  getVisibleColumnsFromStorage, 
+import {
+  getVisibleColumnsFromStorage,
   saveVisibleColumnsToStorage,
   COLUMN_DEFINITIONS,
   formatarDataHora,
@@ -42,7 +43,7 @@ const getStatusBadge = (status) => {
     aprovado: 'Aprovado',
     rejeitado: 'Rejeitado',
   };
-  
+
   const className = `border ${variants[status] || variants.pendente}`;
   return <Badge className={className} variant="outline">{labels[status] || status}</Badge>;
 };
@@ -118,13 +119,13 @@ const ColumnHeader = ({ title, filterKey, filters, handleFilterChange, data, ord
       <span className="text-white font-medium whitespace-nowrap">{title}</span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button data-dica={`Filtrar a lista por ${title}.`} 
-            variant="ghost" 
-            size="sm" 
+          <Button data-dica={`Filtrar a lista por ${title}.`}
+            variant="ghost"
+            size="sm"
             className={cn(
-              "h-8 w-8 p-0 ml-2 relative transition-colors", 
-              isActive 
-                ? "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 opacity-100" 
+              "h-8 w-8 p-0 ml-2 relative transition-colors",
+              isActive
+                ? "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 opacity-100"
                 : "text-slate-400 hover:text-white hover:bg-white/10 opacity-100"
             )}
           >
@@ -169,8 +170,19 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
   // Ordenacao pela seta do cabecalho (utils/ordenacao.js).
   const [ordem, setOrdem] = useState(null);
   const [visibleColumns, setVisibleColumns] = useState([]);
-  
+
   const safeTipo = tipo === 'acampantes' ? 'acampantes' : 'equipantes';
+  // Equipante menor e acompanhante de menor (20261105a): etiquetas no nome.
+  const indiceMenores = useIndiceMenores(safeTipo === 'equipantes');
+  const tagsMenor = (item) => {
+    if (!indiceMenores) return {};
+    const m = indiceMenores.porId.get(item.id);
+    return {
+      menor: !!m,
+      menorLiberado: !!m?.menor_liberado_em,
+      acompanhanteDe: indiceMenores.acompanhanteDe.get(item.id) || null,
+    };
+  };
 
   useEffect(() => {
     const loadedColumns = getVisibleColumnsFromStorage(safeTipo);
@@ -226,7 +238,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
 
   // Pagina a lista JA filtrada -- busca e filtros seguem valendo sobre tudo.
   const paginacao = usePaginacao(filteredData, 10);
-  
+
   const getColDef = (key) => {
     const defs = COLUMN_DEFINITIONS[safeTipo] || [];
     return defs.find(c => c.key === key);
@@ -313,10 +325,10 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
             )}
             <div className="flex items-center gap-2 flex-wrap">
                 {hasActiveFilters && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={clearAllFilters} 
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearAllFilters}
                     data-dica="Tira todos os filtros e volta a mostrar a lista inteira."
                     className="text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20"
                   >
@@ -326,7 +338,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                 )}
                 {antesDeColunas}
                 <div className="hidden md:block">
-                  <ColumnVisibilityDropdown 
+                  <ColumnVisibilityDropdown
                     type={safeTipo}
                     currentColumns={visibleColumns}
                     onApply={handleSaveColumns}
@@ -373,7 +385,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                 <div key={item.id} className="bg-white/5 border border-white/10 shadow-sm rounded-lg p-5 flex flex-col gap-4 relative overflow-hidden transition-all hover:bg-white/10">
                   <div className="flex justify-between items-start gap-3">
                     <h3 className="font-semibold text-white text-lg leading-tight break-words">
-                      <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} soDomingo={item.so_domingo} />
+                      <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} soDomingo={item.so_domingo} {...tagsMenor(item)} />
                       <SeloPastor pessoa={item} className="ml-1.5 align-[-1px]" />
                     </h3>
                     <div className="shrink-0 mt-0.5">
@@ -424,11 +436,11 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                     {/* Fixed Name Column */}
                     <TableHead className="min-w-[200px] h-12 sticky left-0 z-20 bg-neutral-900">
                       <ColumnHeader ordem={ordem} onOrdenar={setOrdem}
-                        title="Nome" 
-                        filterKey="nome" 
-                        filters={filters} 
-                        handleFilterChange={handleFilterChange} 
-                        data={dados} 
+                        title="Nome"
+                        filterKey="nome"
+                        filters={filters}
+                        handleFilterChange={handleFilterChange}
+                        data={dados}
                       />
                     </TableHead>
 
@@ -439,11 +451,11 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                       return (
                         <TableHead key={colKey} className="min-w-[150px] h-12">
                             <ColumnHeader ordem={ordem} onOrdenar={setOrdem}
-                              title={def ? def.label : colKey} 
-                              filterKey={colKey} 
-                              filters={filters} 
-                              handleFilterChange={handleFilterChange} 
-                              data={dados} 
+                              title={def ? def.label : colKey}
+                              filterKey={colKey}
+                              filters={filters}
+                              handleFilterChange={handleFilterChange}
+                              data={dados}
                             />
                         </TableHead>
                       );
@@ -459,7 +471,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                     <TableRow key={item.id} className="hover:bg-white/5 transition-colors border-white/10 group">
                       <TableCell className="text-white font-medium sticky left-0 z-10 bg-black group-hover:bg-neutral-900">
                           <span className="inline-flex items-center gap-1.5">
-                            <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} soDomingo={item.so_domingo} />
+                            <NomeComBandeira nome={item.nome} nacionalidade={item.nacionalidade} soDomingo={item.so_domingo} {...tagsMenor(item)} />
                             <SeloPastor pessoa={item} />
                           </span>
                       </TableCell>
@@ -472,7 +484,7 @@ const InscricoesTable = ({ dados, tipo = 'equipantes', onSelect, onEdit, searchT
                           </TableCell>
                         );
                       })}
-                      
+
                       <TableCell className="sticky right-0 z-10 bg-black group-hover:bg-neutral-900">
                         <div className="flex justify-end space-x-2">
                           <Button data-dica="Ver a ficha completa." variant="ghost" size="sm" onClick={() => onSelect(item)} className="hover:bg-blue-500/20 text-blue-300 transition-colors">

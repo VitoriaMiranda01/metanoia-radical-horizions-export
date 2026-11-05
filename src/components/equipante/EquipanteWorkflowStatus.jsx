@@ -2,9 +2,8 @@ import { listaDeResponsaveis } from '@/utils/formatters';
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEquipanteWorkflow } from '@/hooks/useEquipanteWorkflow';
-import { CheckCircle2, Clock, AlertCircle, XCircle, ArrowRight, Hand, Undo2, Sparkles, ChevronUp, Eye, CalendarClock, BadgeCheck } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, XCircle, ArrowRight, Sparkles, ChevronUp, Eye, CalendarClock, BadgeCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import ParentalAuthUpload from './ParentalAuthUpload';
 import { Button } from '@/components/ui/button';
 import CorrecaoCadastroDialog from './CorrecaoCadastroDialog';
 import RevelarAreaDialog from './RevelarAreaDialog';
@@ -26,7 +25,6 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     isMinor,
     workflowStages,
     isLoading,
-    uploadFile,
     workflowData,
     podePagar,
     soDomingo,
@@ -34,10 +32,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     naoSeraEscalado,
     pago,
     aprovacao,
-    entregueEmMaos,
-    autorizacaoConferida,
-    conferidaPor,
-    declararEntrega,
+    menorLiberado,
     pendencias,
     areaVista,
     escalaOficial,
@@ -192,7 +187,8 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     }
   };
 
-  const hasUploadedAuth = workflowData?.autorizacao_pais_enviada;
+  // Menor (20261105a): liberado pelo pastor na aprovacao, sem carta.
+  const hasUploadedAuth = menorLiberado;
 
   // NAO se calcula mais "todas as etapas estao ok" aqui: com a lista vazia
   // (consulta que falhou), [].every() e true em JavaScript e o botao abria
@@ -230,7 +226,7 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
     if (naoSeraEscalado) return null;
     if (aprovacao === 'rejeitado') return 'Sua inscrição não foi aprovada pela sua igreja. Procure a organização.';
     if (aprovacao !== 'aprovado') return 'Sua igreja ainda precisa aprovar a sua inscrição. Assim que isso acontecer, esta tela avisa.';
-    if (isMinor && !hasUploadedAuth) return 'Falta a autorização dos seus responsáveis: anexe o arquivo aqui embaixo, ou marque que você já entregou a carta na sua igreja.';
+    if (isMinor && !hasUploadedAuth) return 'Como você é menor de idade, falta a sua igreja confirmar a autorização do seu responsável. O pastor fala com ele e libera aqui; depois disso o pagamento abre.';
     if (soDomingo) return pago ? null : 'Tudo certo! Você vai somente no domingo. Agora falta só a taxa de alimentação (50% do valor do dia), no botão abaixo.';
     // Oficial lancada e a pessoa fora dela: nao ha mais escala para aguardar.
     if (!escalado && escalaOficial) return 'Seu nome não saiu na escala oficial. Procure a coordenação do projeto.';
@@ -359,86 +355,17 @@ const EquipanteWorkflowStatus = ({ equipanteId, age, dono, onProceedToPayment, o
           )}
         </div>
 
-        {isMinor && !hasUploadedAuth && (
+        {/* Menor sem liberacao (20261105a): nao ha nada a anexar; so avisa
+            que o pastor fala com o responsavel. */}
+        {isMinor && !hasUploadedAuth && aprovacao !== 'rejeitado' && (
           <div className="mt-8">
-            <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-lg mb-4">
-              <p className="text-red-400 text-sm flex items-start">
+            <div className="bg-amber-500/10 border border-amber-500/25 p-4 rounded-lg">
+              <p className="text-amber-200 text-sm flex items-start">
                 <AlertCircle className="w-5 h-5 mr-2 shrink-0" />
-                Como você tem menos de 18 anos, é obrigatório entregar a autorização dos
-                responsáveis antes de prosseguir para o pagamento. Escolha um dos dois
-                caminhos abaixo.
+                Como você ainda não terá 18 anos no primeiro dia do projeto, o pastor da sua igreja
+                vai falar com o seu responsável pelo WhatsApp que você informou. Quando ele confirmar
+                a autorização, esta etapa fica concluída e o pagamento abre. Não precisa entregar carta.
               </p>
-            </div>
-
-            {/* Caminho 2: a carta em papel, entregue na igreja. A maioria faz
-                assim -- entrega o papel assinado ao lider e nao tem como
-                anexar arquivo nenhum. Marcar aqui conclui a etapa na hora; a
-                igreja confere depois. */}
-            <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex-1">
-                  <p className="text-white text-sm font-medium">
-                    Já entreguei a carta na minha igreja
-                  </p>
-                  <p className="text-gray-400 text-xs mt-0.5">
-                    Se você entregou o papel assinado em mãos, marque aqui — não
-                    precisa anexar nada. Sua igreja confere depois.
-                  </p>
-                </div>
-                <Button
-                  onClick={() => declararEntrega(true)}
-                  disabled={isLoading}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
-                >
-                  <Hand className="w-4 h-4 mr-2" /> Já entregue
-                </Button>
-              </div>
-            </div>
-
-            <ParentalAuthUpload
-              equipanteId={equipanteId}
-              onUploadSuccess={uploadFile}
-            />
-          </div>
-        )}
-
-        {/* Etapa concluida pela entrega em maos: mostra em que pe esta a
-            conferencia da igreja, e deixa desfazer enquanto ninguem conferiu
-            (marcou sem querer, ou vai anexar o arquivo em vez disso). */}
-        {isMinor && entregueEmMaos && !autorizacaoConferida && (
-          <div className="mt-8">
-            <div className={`p-4 rounded-lg border ${autorizacaoConferida
-              ? 'bg-green-500/10 border-green-500/25'
-              : 'bg-emerald-500/5 border-emerald-500/20'}`}>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <p className="text-sm flex items-start flex-1 text-gray-200">
-                  <CheckCircle2 className={`w-5 h-5 mr-2 shrink-0 ${autorizacaoConferida ? 'text-green-400' : 'text-emerald-400'}`} />
-                  <span>
-                    {autorizacaoConferida ? (
-                      <>
-                        <strong className="text-white">Autorização conferida</strong>
-                        {conferidaPor ? ` por ${conferidaPor}` : ''}. Não precisa fazer mais nada.
-                      </>
-                    ) : (
-                      <>
-                        <strong className="text-white">Autorização entregue em mãos.</strong>{' '}
-                        Esta etapa está concluída. Sua igreja ainda vai conferir a carta —
-                        se ela não encontrar, esta etapa volta a ficar pendente.
-                      </>
-                    )}
-                  </span>
-                </p>
-                {!autorizacaoConferida && (
-                  <Button
-                    variant="outline" size="sm"
-                    onClick={() => declararEntrega(false)}
-                    disabled={isLoading}
-                    className="border-white/20 bg-transparent text-gray-300 hover:bg-white/10 hover:text-white shrink-0"
-                  >
-                    <Undo2 className="w-4 h-4 mr-2" /> Não entreguei ainda
-                  </Button>
-                )}
-              </div>
             </div>
           </div>
         )}

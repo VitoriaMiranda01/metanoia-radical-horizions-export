@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   getEquipanteWorkflow,
-  uploadParentalAuthFile,
-  updateWorkflowStage,
-  declararAutorizacaoEntregue
+  updateWorkflowStage
 } from '@/services/equipantesService';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -65,45 +63,6 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
   const refresh = useCallback(() => fetchWorkflow(false), [fetchWorkflow]);
   const refreshSilencioso = useCallback(() => fetchWorkflow(true), [fetchWorkflow]);
 
-  const uploadFile = async (file) => {
-    try {
-      setIsLoading(true);
-      const updated = await uploadParentalAuthFile(equipante_id, file, dono);
-      setWorkflowData(updated);
-      toast({ title: 'Sucesso', description: 'Arquivo enviado com sucesso.' });
-      return updated;
-    } catch (err) {
-      setError(err.message);
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // "Já entregue" / desfazer. Mesma forma do uploadFile: a tela nao decide
-  // nada, so avisa o servidor e recarrega a situacao que ele devolver.
-  const declararEntrega = async (entregue = true) => {
-    try {
-      setIsLoading(true);
-      const updated = await declararAutorizacaoEntregue(equipante_id, entregue, dono);
-      setWorkflowData(updated);
-      toast({
-        title: entregue ? 'Anotado' : 'Desfeito',
-        description: entregue
-          ? 'Registramos que você entregou a autorização em mãos.'
-          : 'A entrega da autorização foi desmarcada.'
-      });
-      return updated;
-    } catch (err) {
-      setError(err.message);
-      toast({ title: 'Não deu certo', description: err.message, variant: 'destructive' });
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const updateStage = async (updates) => {
     try {
       setIsLoading(true);
@@ -143,17 +102,14 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     });
 
     if (workflowData.menor_de_idade) {
-      // Concluida por qualquer um dos dois caminhos: arquivo anexado ou
-      // carta entregue em maos. O rotulo conta em que pe esta a conferencia
-      // da igreja -- que acontece DEPOIS e nao trava o pagamento.
+      // Sem carta (20261105a): o pastor da igreja (ou a organizacao) fala com
+      // o responsavel e libera o menor na aprovacao. Sem isso nao paga.
       stages.push({
         id: 'parental_auth',
-        label: workflowData.autorizacao_conferida
-          ? `Autorização dos pais conferida${workflowData.autorizacao_conferida_por ? ` por ${workflowData.autorizacao_conferida_por}` : ' pela igreja'}`
-          : workflowData.autorizacao_entregue_maos
-            ? 'Autorização dos pais (entregue em mãos)'
-            : 'Autorização dos pais',
-        status: workflowData.autorizacao_pais_enviada ? 'ok' : 'em_processo',
+        label: workflowData.menor_liberado
+          ? `Autorização do responsável confirmada${workflowData.menor_liberado_por ? ` por ${workflowData.menor_liberado_por}` : ' pela igreja'}`
+          : 'Autorização do responsável (o pastor da sua igreja confirma com ele)',
+        status: workflowData.menor_liberado ? 'ok' : 'pendente',
       });
     }
 
@@ -260,14 +216,11 @@ export const useEquipanteWorkflow = (equipante_id, age, dono = {}) => {
     areaVista: !!workflowData?.area_vista,
     aprovacao: workflowData?.aprovacao ?? null,
     workflowStages: getWorkflowStages(),
-    entregueEmMaos: !!workflowData?.autorizacao_entregue_maos,
-    autorizacaoConferida: !!workflowData?.autorizacao_conferida,
-    conferidaPor: workflowData?.autorizacao_conferida_por ?? null,
-    declararEntrega,
+    menorLiberado: !!workflowData?.menor_liberado,
+    menorLiberadoPor: workflowData?.menor_liberado_por ?? null,
     isLoading,
     error,
     updateStage,
-    uploadFile,
     refresh,
     refreshSilencioso
   };

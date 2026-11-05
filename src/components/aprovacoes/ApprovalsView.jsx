@@ -2,22 +2,21 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { minhasIgrejasParceiro } from '@/services/senhasParceirosService';
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { ShieldCheck } from 'lucide-react';
-import ConferenciaMenoresDialog from '@/components/aprovacoes/ConferenciaMenoresDialog';
+import { Baby } from 'lucide-react';
+import MenorAprovacaoDialog from '@/components/aprovacoes/MenorAprovacaoDialog';
 import AprovacoesStatsCards from '@/components/aprovacoes/AprovacoesStatsCards';
 import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
 import AprovacoesTable from '@/components/aprovacoes/AprovacoesTable';
-import { fetchEquipantesRaw, updateEquipanteStatus, fetchMenoresParaConferencia, definirSoDomingoPendente } from '@/services/equipantesService';
+import { fetchEquipantesRaw, updateEquipanteStatus, fetchMenoresDaAprovacao, liberarMenor, definirSoDomingoPendente } from '@/services/equipantesService';
+import { indexarMenores } from '@/utils/menorAprovacao';
 import { useAuth } from '@/contexts/AuthContext';
 import { liberarVagaERealocar } from '@/services/equipanteAllocationService';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
-const ApprovalsView = ({ 
-  pageTitle = "Aprovações de Equipantes", 
+const ApprovalsView = ({
+  pageTitle = "Aprovações de Equipantes",
   pageDescription = "Aprove ou rejeite as inscrições de equipantes",
-  showStatistics = true 
+  showStatistics = true
 }) => {
   const { toast } = useToast();
   const { isParceiro, isOrganizador, igrejaUser } = useAuth();
@@ -27,7 +26,7 @@ const ApprovalsView = ({
   // Pendente que vai mudar para "Só Domingo" (ou voltar para todos os dias).
   const [inscricaoParaDomingo, setInscricaoParaDomingo] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Global Search states
   // Aba aberta. Precisa ser estado (e nao defaultValue) porque os cartoes de
   // cima tambem trocam de aba.
@@ -47,23 +46,22 @@ const ApprovalsView = ({
     requestAnimationFrame(() => buscaPendentesRef.current?.focus());
   };
 
-  // Conferencia das cartas dos menores. O numero no botao conta so quem JA
-  // entregou (arquivo ou declaracao) e ainda espera o visto -- e essa a fila
-  // de trabalho. Quem nao entregou nada aparece na lista, mas nao no contador:
-  // ali nao ha o que conferir ainda.
-  const [verMenores, setVerMenores] = useState(false);
-  const [menoresAConferir, setMenoresAConferir] = useState(0);
+  // Menores de idade (20261105a): sem carta. Aprovar um menor abre a
+  // declaracao (MenorAprovacaoDialog); a lista vem do servidor, que sabe a
+  // idade no primeiro dia do projeto e acha o acompanhante pelo nome.
+  const [menores, setMenores] = useState({ itens: [], ctx: {} });
+  const [menorEmAprovacao, setMenorEmAprovacao] = useState(null); // { id, modo }
 
   const carregarMenores = async () => {
-    const r = await fetchMenoresParaConferencia();
+    const r = await fetchMenoresDaAprovacao();
     if (!r.success) return;
-    setMenoresAConferir(r.itens.filter(
-      (i) => !i.autorizacao_conferida_em
-        && (i.parental_auth_file_url || i.autorizacao_entregue_em)
-    ).length);
+    setMenores({
+      itens: r.itens,
+      ctx: { quem: r.quem, edicao: r.edicao, eventoInicio: r.eventoInicio, eventoFim: r.eventoFim },
+    });
   };
 
-  useEffect(() => { carregarMenores(); }, []);
+  const { porId: menorPorId, acompanhanteDe } = useMemo(() => indexarMenores(menores.itens), [menores.itens]);
 
   useEffect(() => {
     carregarInscricoes();
@@ -82,7 +80,7 @@ const ApprovalsView = ({
       // Esta tela é só para inscrições de equipante: acampante já nasce com
       // status 'aprovado' (não passa por aprovação manual) e vai direto pra
       // tabela geral em Gerenciar Inscrições.
-      const { data, error } = await fetchEquipantesRaw();
+      const [{ data, error }] = await Promise.all([fetchEquipantesRaw(), carregarMenores()]);
 
       if (error) throw error;
 
@@ -134,13 +132,13 @@ const ApprovalsView = ({
       if (showLoading) setLoading(false);
     }
   };
-  
+
   // Devolve a DECISAO (quem assinou, quando) em vez de um true/false, para
   // quem chamou poder dizer na hora "Aprovado por Fulano". Devolve null se
   // deu errado.
-  const updateInscricaoStatus = async (id, tipo, newStatus) => {
+  const updateInscricaoStatus = async (id, tipo, newStatus, declaracaoMenor = false) => {
     try {
-      const { data, error } = await updateEquipanteStatus(id, newStatus);
+      const { data, error } = await updateEquipanteStatus(id, newStatus, declaracaoMenor);
 
       if (error) throw error;
 
@@ -175,22 +173,30 @@ const ApprovalsView = ({
     }
   };
 
-  const aprovarInscricao = async (id) => {
+  const aprovarInscricao = async (id, declaracaoMenor = false) => {
     // Find the inscription to get its type and CPF
     const inscricao = inscricoes.find(i => i.id === id);
-    
+
     if (!inscricao) {
-      toast({ 
-        title: "Erro", 
-        description: "Inscrição não encontrada.", 
-        variant: "destructive" 
+      toast({
+        title: "Erro",
+        description: "Inscrição não encontrada.",
+        variant: "destructive"
       });
       return;
     }
 
-    const decisao = await updateInscricaoStatus(id, inscricao.tipo, 'aprovado');
+    // Menor sem liberacao: primeiro a declaracao (20261105a).
+    const menor = menorPorId.get(id);
+    if (menor && !menor.menor_liberado_em && !declaracaoMenor) {
+      setMenorEmAprovacao({ id, modo: 'aprovar' });
+      return false;
+    }
 
-    if (!decisao) return;
+    const decisao = await updateInscricaoStatus(id, inscricao.tipo, 'aprovado', declaracaoMenor);
+
+    if (!decisao) return false;
+    if (menor) carregarMenores();
 
     voltarParaBuscaPendentes(inscricao);
 
@@ -207,16 +213,39 @@ const ApprovalsView = ({
       description: `${inscricao.nome} entrou na fila para ser escalado em Geração de Escalas.`,
       className: "bg-green-600 text-white"
     });
+    return true;
+  };
+
+  // Menor ja aprovado (ou Só Domingo pendente) sem a liberacao.
+  const solicitarLiberacaoMenor = (id) => setMenorEmAprovacao({ id, modo: 'liberar' });
+
+  const confirmarMenor = async () => {
+    if (!menorEmAprovacao) return false;
+    const { id, modo } = menorEmAprovacao;
+    if (modo === 'aprovar') return aprovarInscricao(id, true);
+    const r = await liberarMenor(id, true);
+    if (!r.success) {
+      toast({ title: 'Não deu para liberar', description: r.error, variant: 'destructive' });
+      return false;
+    }
+    toast({
+      title: 'Menor liberado',
+      description: `A autorização ficou registrada${r.por ? ` por ${r.por}` : ''}. O pagamento já pode abrir para ${menorPorId.get(id)?.nome || 'o menor'}.`,
+      className: 'bg-green-600 text-white'
+    });
+    carregarMenores();
+    carregarInscricoes(false);
+    return true;
   };
 
   const rejeitarInscricao = async (id) => {
     const inscricao = inscricoes.find(i => i.id === id);
-    
+
     if (!inscricao) {
-      toast({ 
-        title: "Erro", 
-        description: "Inscrição não encontrada.", 
-        variant: "destructive" 
+      toast({
+        title: "Erro",
+        description: "Inscrição não encontrada.",
+        variant: "destructive"
       });
       return;
     }
@@ -225,11 +254,11 @@ const ApprovalsView = ({
 
     if (decisao) {
       voltarParaBuscaPendentes(inscricao);
-      toast({ 
+      toast({
         title: decisao.decidido_por
           ? `Rejeitada por ${decisao.decidido_por}`
-          : "Inscrição rejeitada", 
-        variant: "destructive" 
+          : "Inscrição rejeitada",
+        variant: "destructive"
       });
     }
   };
@@ -334,23 +363,42 @@ const ApprovalsView = ({
   // igreja (04/10/2026). A lista vai inteira.
   const filterInscricoes = (inscricoes) => inscricoes;
 
-  const { 
+  // Etiquetas do menor e do acompanhante (20261105a).
+  const linhas = useMemo(() => inscricoes.map((i) => {
+    const m = menorPorId.get(i.id);
+    const de = acompanhanteDe.get(i.id);
+    if (!m && !de) return i;
+    return {
+      ...i,
+      menor: !!m,
+      menorLiberado: !!m?.menor_liberado_em,
+      menorInfo: m || null,
+      acompanhanteDe: de || null,
+    };
+  }), [inscricoes, menorPorId, acompanhanteDe]);
+
+  const menoresSemLiberacao = useMemo(
+    () => menores.itens.filter((m) => !m.menor_liberado_em && m.status !== 'rejeitado').length,
+    [menores.itens]
+  );
+
+  const {
     pendentes, aprovadas, rejeitadas,
     pendentesFiltered, aprovadasFiltered, rejeitadasFiltered
   } = useMemo(() => {
     // Categorize by Status
-    const pendentes = inscricoes.filter(i => i.status === 'pendente');
-    const aprovadas = inscricoes.filter(i => i.status === 'aprovado'); 
-    const rejeitadas = inscricoes.filter(i => i.status === 'rejeitado'); 
+    const pendentes = linhas.filter(i => i.status === 'pendente');
+    const aprovadas = linhas.filter(i => i.status === 'aprovado');
+    const rejeitadas = linhas.filter(i => i.status === 'rejeitado');
 
     // Apply Global Search Logic
-    return { 
+    return {
       pendentes, aprovadas, rejeitadas,
       pendentesFiltered: filterInscricoes(pendentes, searchTermPendentes),
       aprovadasFiltered: filterInscricoes(aprovadas, searchTermAprovadas),
       rejeitadasFiltered: filterInscricoes(rejeitadas, searchTermRejeitadas),
     };
-  }, [inscricoes, searchTermPendentes, searchTermAprovadas, searchTermRejeitadas]);
+  }, [linhas, searchTermPendentes, searchTermAprovadas, searchTermRejeitadas]);
 
   return (
     <div className="space-y-6">
@@ -360,26 +408,18 @@ const ApprovalsView = ({
           <p className="text-blue-200">{pageDescription}</p>
         </div>
 
-        {/* A conferencia das cartas dos menores. Fica a parte da aprovacao da
-            inscricao de proposito: sao duas decisoes diferentes, e a carta
-            costuma chegar em outro momento. O numero e so dos menores que ja
-            entregaram e esperam o visto. */}
-        <Button
-          onClick={() => setVerMenores(true)}
-          data-dica="Conferir as cartas de autorização dos menores de idade e vincular cartas recebidas em mãos."
-          variant="outline"
-          className="bg-amber-600/20 text-amber-300 border-amber-600/50 hover:bg-amber-600/40 hover:text-amber-200 shrink-0"
-        >
-          <ShieldCheck className="mr-2 h-4 w-4" />
-          Autorizações dos menores{menoresAConferir > 0 ? ` (${menoresAConferir})` : ''}
-        </Button>
       </div>
 
-      <AnimatePresence>
-        {verMenores && (
-          <ConferenciaMenoresDialog onClose={() => { setVerMenores(false); carregarMenores(); }} />
-        )}
-      </AnimatePresence>
+      {menoresSemLiberacao > 0 && (
+        <p className="flex items-start gap-2 rounded-md border border-pink-500/30 bg-pink-500/10 p-3 text-sm text-pink-100">
+          <Baby className="mt-0.5 h-4 w-4 shrink-0 text-pink-300" />
+          <span>
+            {menoresSemLiberacao === 1 ? '1 menor de idade espera' : `${menoresSemLiberacao} menores de idade esperam`} a confirmação da
+            autorização do responsável. Procure a etiqueta <strong>Menor de idade</strong>: ao aprovar, aparece a mensagem
+            pronta para mandar ao responsável pelo WhatsApp.
+          </span>
+        </p>
+      )}
 
       {showStatistics && (
         <AprovacoesStatsCards
@@ -399,16 +439,17 @@ const ApprovalsView = ({
         </TabsList>
 
         <TabsContent value="pendentes">
-          <AprovacoesTable 
-            dados={pendentesFiltered} 
-            titulo="Inscrições Pendentes" 
-            onSelect={setSelectedInscricao} 
-            onAprovar={aprovarInscricao} 
-            onRejeitar={rejeitarInscricao} 
+          <AprovacoesTable
+            dados={pendentesFiltered}
+            titulo="Inscrições Pendentes"
+            onSelect={setSelectedInscricao}
+            onAprovar={aprovarInscricao}
+            onRejeitar={rejeitarInscricao}
             showActions={true}
             situacao="pendente"
             podeAprovarEmLote={isOrganizador && !isParceiro}
             onLoteConcluido={() => carregarInscricoes(false)}
+            contextoMenores={menores.ctx}
             onMudarDomingo={isOrganizador && !isParceiro ? solicitarMudancaDomingo : undefined}
             searchTerm={searchTermPendentes}
             onSearchChange={setSearchTermPendentes}
@@ -416,27 +457,28 @@ const ApprovalsView = ({
           />
         </TabsContent>
         <TabsContent value="aprovadas">
-           <AprovacoesTable 
-            dados={aprovadasFiltered} 
-            titulo="Inscrições Aprovadas" 
-            onSelect={setSelectedInscricao} 
-            onAprovar={aprovarInscricao} 
-            onRejeitar={rejeitarInscricao} 
+           <AprovacoesTable
+            dados={aprovadasFiltered}
+            titulo="Inscrições Aprovadas"
+            onSelect={setSelectedInscricao}
+            onAprovar={aprovarInscricao}
+            onRejeitar={rejeitarInscricao}
             showActions={false}
             showCancelAction={true}
             onCancelar={solicitarCancelamento}
+            onLiberarMenor={solicitarLiberacaoMenor}
             situacao="aprovado"
             searchTerm={searchTermAprovadas}
             onSearchChange={setSearchTermAprovadas}
           />
         </TabsContent>
         <TabsContent value="rejeitadas">
-          <AprovacoesTable 
-            dados={rejeitadasFiltered} 
-            titulo="Inscrições Negadas" 
-            onSelect={setSelectedInscricao} 
-            onAprovar={aprovarInscricao} 
-            onRejeitar={rejeitarInscricao} 
+          <AprovacoesTable
+            dados={rejeitadasFiltered}
+            titulo="Inscrições Negadas"
+            onSelect={setSelectedInscricao}
+            onAprovar={aprovarInscricao}
+            onRejeitar={rejeitarInscricao}
             showActions={false}
             showApproveOnly={true}
             situacao="rejeitado"
@@ -446,9 +488,19 @@ const ApprovalsView = ({
         </TabsContent>
       </Tabs>
 
+      <MenorAprovacaoDialog
+        aberto={!!menorEmAprovacao}
+        menor={menorEmAprovacao ? menorPorId.get(menorEmAprovacao.id) : null}
+        ctx={menores.ctx}
+        modo={menorEmAprovacao?.modo}
+        onConfirmar={confirmarMenor}
+        onFechar={() => setMenorEmAprovacao(null)}
+        onAcompanhanteMudou={carregarMenores}
+      />
+
       {selectedInscricao && (
         <InscricaoDetalhesModal
-          inscricao={selectedInscricao}
+          inscricao={linhas.find((l) => l.id === selectedInscricao.id) || selectedInscricao}
           onClose={() => setSelectedInscricao(null)}
           onAprovar={aprovarInscricao}
           onRejeitar={rejeitarInscricao}

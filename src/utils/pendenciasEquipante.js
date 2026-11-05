@@ -39,7 +39,7 @@ export const TIPOS_PENDENCIA = [
   { chave: 'areas', rotulo: 'Opções de área incompletas', gravidade: 'obrigatoria' },
   { chave: 'radical', rotulo: 'Não disse qual Radical fez', gravidade: 'conferir' },
   { chave: 'edicao_trabalhou', rotulo: 'Já trabalhou, sem dizer a edição', gravidade: 'conferir' },
-  { chave: 'autorizacao', rotulo: 'Menor sem autorização dos pais', gravidade: 'conferir' },
+  { chave: 'autorizacao', rotulo: 'Menor sem a autorização do responsável confirmada', gravidade: 'conferir' },
   { chave: 'especialidade', rotulo: 'Saúde sem especialidade', gravidade: 'conferir' },
 ];
 
@@ -100,7 +100,8 @@ export const pendenciasDaFicha = (e, { whatsRepetidos } = {}) => {
   if (e.ja_trabalhou_equipe === true && vazio(e.edicao_trabalhou)) add('edicao_trabalhou');
 
   const idade = e.idade ?? calcularIdade(e.data_nascimento);
-  if (idade != null && idade < 18 && !e.parental_auth_file_url && !e.autorizacao_entregue_em) add('autorizacao', `${idade} anos`);
+  // Sem carta desde 20261105a: o pastor confirma na aprovacao.
+  if (idade != null && idade < 18 && e.status === 'aprovado' && !e.menor_liberado_em) add('autorizacao', `${idade} anos`);
 
   if ([e.area_trabalho_opcao1, e.area_trabalho_opcao2, e.area_trabalho_opcao3].includes(AREA_SAUDE)
       && problemaEspecialidade(e.especialidade_saude, e.especialidade_saude_outro)) add('especialidade');

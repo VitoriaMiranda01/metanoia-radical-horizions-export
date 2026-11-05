@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowLeft, CheckCheck, History, Loader2, Undo2 } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Baby, CheckCheck, History, Loader2, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { aprovarEmLote, desfazerLoteAprovacao, listarLotesAprovacao } from '@/services/aprovacaoLoteService';
 import { igrejaDaLinha, igrejasComInscritos } from '@/utils/exportAprovacoes';
 import SeletorIgrejas from './SeletorIgrejas';
+import { DECLARACAO_MENOR_PEDIDO, DECLARACAO_MENOR_TEXTO, DECLARACAO_MENOR_TITULO } from '@/utils/menorAprovacao';
 
 const quando = (iso) =>
   iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
@@ -26,6 +27,10 @@ const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
  * A tela manda os IDs que o organizador viu e confirmou: inscricao que chegou
  * depois nao entra de carona, e quem ja foi decidido nesse meio-tempo e
  * ignorado pelo servidor.
+ *
+ * Menores de idade (20261105a): ficam no lote, mas aparecem separados, com a
+ * declaracao, todos desmarcados. So os que o organizador marcar entram (o
+ * servidor confere: menor sem liberacao fora de p_menores fica pendente).
  */
 const AprovacaoEmLoteDialog = ({ aberto, onFechar, dados, onConcluido }) => {
   const { toast } = useToast();
@@ -34,6 +39,7 @@ const AprovacaoEmLoteDialog = ({ aberto, onFechar, dados, onConcluido }) => {
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [menoresMarcados, setMenoresMarcados] = useState([]);
 
   const [lotes, setLotes] = useState(null); // null = carregando
   const [aDesfazer, setADesfazer] = useState(null); // id do lote esperando o segundo clique
@@ -42,7 +48,7 @@ const AprovacaoEmLoteDialog = ({ aberto, onFechar, dados, onConcluido }) => {
 
   useEffect(() => {
     if (!aberto) return;
-    setTela('escolher'); setEscolhidas([]); setSenha(''); setErro('');
+    setTela('escolher'); setEscolhidas([]); setSenha(''); setErro(''); setMenoresMarcados([]);
     setEnviando(false); setADesfazer(null); setDesfazendo(null); setResultado(null); setLotes(null);
   }, [aberto]);
 
@@ -51,6 +57,13 @@ const AprovacaoEmLoteDialog = ({ aberto, onFechar, dados, onConcluido }) => {
   const todas = igrejas.length > 0 && igrejas.every((i) => marcadas.has(i.igreja));
   const selecionados = useMemo(() => dados.filter((i) => marcadas.has(igrejaDaLinha(i))), [dados, marcadas]);
   const igrejasDoLote = useMemo(() => igrejas.filter((i) => marcadas.has(i.igreja)), [igrejas, marcadas]);
+  const menoresDoLote = useMemo(() => selecionados.filter((i) => i.menor && !i.menorLiberado), [selecionados]);
+  const menoresOk = useMemo(() => {
+    const ids = new Set(menoresDoLote.map((m) => m.id));
+    return menoresMarcados.filter((id) => ids.has(id));
+  }, [menoresDoLote, menoresMarcados]);
+  const totalAprovar = selecionados.length - menoresDoLote.length + menoresOk.length;
+  const alternarMenor = (id) => setMenoresMarcados((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id]));
 
   const descricao = todas
     ? `Todas as igrejas (${plural(selecionados.length, 'inscrição', 'inscrições')})`
@@ -69,9 +82,9 @@ const AprovacaoEmLoteDialog = ({ aberto, onFechar, dados, onConcluido }) => {
   };
 
   const aprovar = async () => {
-    if (!senha || enviando || selecionados.length === 0) return;
+    if (!senha || enviando || totalAprovar === 0) return;
     setEnviando(true); setErro('');
-    const r = await aprovarEmLote(selecionados.map((i) => i.id), senha, descricao);
+    const r = await aprovarEmLote(selecionados.map((i) => i.id), senha, descricao, menoresOk);
     setEnviando(false);
     if (!r.success) {
       setErro(r.error);
@@ -83,7 +96,7 @@ const AprovacaoEmLoteDialog = ({ aberto, onFechar, dados, onConcluido }) => {
       title: r.aprovados === 0 ? 'Nada foi aprovado' : 'Lote aprovado',
       description: r.aprovados === 0
         ? 'Essas inscrições já tinham sido decididas por outra pessoa.'
-        : `${plural(r.aprovados, 'inscrição aprovada', 'inscrições aprovadas')}${r.ignorados ? ` (${plural(r.ignorados, 'já estava decidida e ficou', 'já estavam decididas e ficaram')} de fora)` : ''}. Se foi sem querer, desfaça em Aprovação em lote > Lotes anteriores.`,
+        : `${plural(r.aprovados, 'inscrição aprovada', 'inscrições aprovadas')}${(r.ignorados - (r.menores_fora || 0)) > 0 ? ` (${plural(r.ignorados - (r.menores_fora || 0), 'já estava decidida e ficou', 'já estavam decididas e ficaram')} de fora)` : ''}${r.menores_fora ? `. ${plural(r.menores_fora, 'menor de idade não marcado ficou', 'menores de idade não marcados ficaram')} pendente${r.menores_fora === 1 ? '' : 's'}` : ''}. Se foi sem querer, desfaça em Aprovação em lote > Lotes anteriores.`,
       className: r.aprovados === 0 ? undefined : 'bg-green-600 text-white',
     });
     onConcluido?.();
@@ -154,7 +167,7 @@ const AprovacaoEmLoteDialog = ({ aberto, onFechar, dados, onConcluido }) => {
                 <p className="flex items-start gap-2 font-medium">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
                   <span>
-                    Você vai aprovar {plural(selecionados.length, 'inscrição pendente', 'inscrições pendentes')}
+                    Você vai aprovar {plural(totalAprovar, 'inscrição pendente', 'inscrições pendentes')}
                     {todas ? ', de todas as igrejas' : ` de ${plural(igrejasDoLote.length, 'igreja', 'igrejas')}`}.
                   </span>
                 </p>
@@ -173,6 +186,48 @@ const AprovacaoEmLoteDialog = ({ aberto, onFechar, dados, onConcluido }) => {
                   </div>
                 ))}
               </div>
+
+              {menoresDoLote.length > 0 && (
+                <div className="rounded-md border border-pink-500/40 bg-pink-500/10 p-3 text-sm text-pink-50">
+                  <p className="flex items-start gap-2 font-medium">
+                    <Baby className="mt-0.5 h-4 w-4 shrink-0 text-pink-300" />
+                    <span>
+                      {menoresDoLote.length === 1 ? 'Há 1 menor de idade' : `Há ${menoresDoLote.length} menores de idade`} neste lote.
+                      Só entram os que você marcar; os outros continuam pendentes.
+                    </span>
+                  </p>
+                  <div className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-100">
+                    <p className="font-semibold text-amber-200">{DECLARACAO_MENOR_TITULO}</p>
+                    <p className="mt-1">{DECLARACAO_MENOR_TEXTO}</p>
+                    <p className="mt-1 font-medium">{DECLARACAO_MENOR_PEDIDO}</p>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2 text-xs">
+                    <span className="text-pink-100/80">{menoresOk.length} de {menoresDoLote.length} marcados</span>
+                    <button type="button" className="text-pink-200 underline underline-offset-2 hover:text-white"
+                      onClick={() => setMenoresMarcados(menoresOk.length === menoresDoLote.length ? [] : menoresDoLote.map((m) => m.id))}>
+                      {menoresOk.length === menoresDoLote.length ? 'Desmarcar todos' : 'Marcar todos'}
+                    </button>
+                  </div>
+                  <div className="mt-1.5 max-h-40 space-y-1 overflow-y-auto">
+                    {menoresDoLote.map((m) => (
+                      <label key={m.id} className="flex cursor-pointer items-start gap-2 rounded px-1.5 py-1 hover:bg-white/5">
+                        <input type="checkbox" checked={menoresOk.includes(m.id)} onChange={() => alternarMenor(m.id)}
+                          className="mt-0.5 h-4 w-4 shrink-0 accent-green-600" />
+                        <span className="min-w-0">
+                          <span className="block truncate text-white">{m.nome}</span>
+                          <span className="block truncate text-[11px] text-pink-100/70">
+                            {igrejaDaLinha(m)}{m.menorInfo?.responsavel_nome ? ` · responsável: ${m.menorInfo.responsavel_nome}` : ''}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[11px] text-pink-100/70">
+                    Marque só quem teve a autorização confirmada com o responsável. A mensagem pronta para o WhatsApp
+                    aparece ao aprovar um a um.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="senha-lote" className="text-gray-200">Digite a sua senha de organizador para confirmar</Label>
@@ -194,9 +249,9 @@ const AprovacaoEmLoteDialog = ({ aberto, onFechar, dados, onConcluido }) => {
               <Button variant="ghost" onClick={() => setTela('escolher')} disabled={enviando} className="text-gray-300 hover:text-white hover:bg-white/10">
                 <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
               </Button>
-              <Button onClick={aprovar} disabled={!senha || enviando} className="bg-green-600 hover:bg-green-700 text-white">
+              <Button onClick={aprovar} disabled={!senha || enviando || totalAprovar === 0} className="bg-green-600 hover:bg-green-700 text-white">
                 {enviando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCheck className="w-4 h-4 mr-2" />}
-                Aprovar {plural(selecionados.length, 'inscrição', 'inscrições')}
+                Aprovar {plural(totalAprovar, 'inscrição', 'inscrições')}
               </Button>
             </DialogFooter>
           </>

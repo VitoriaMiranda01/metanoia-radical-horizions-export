@@ -12,6 +12,7 @@ import { bandeiraENome } from '@/constants/nacionalidades';
 import { getEquipanteStageLabel } from '@/utils/equipanteWorkflow';
 import { ehPastorTexto } from '@/utils/pastor';
 import { respostasGrupoEEbd } from '@/utils/grupoCuidadoEbd';
+import MenorNaFicha from '@/components/common/MenorNaFicha';
 
 const getStatusBadge = (status) => {
   const variants = {
@@ -543,7 +544,8 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
             </div>
           </div>
 
-          {/* Menor de 18 (20261104d): responsavel; no equipante, tambem quem acompanha. */}
+          {/* Menor de 18 (20261104d): responsavel; no equipante, tambem quem acompanha
+              (so o nome desde 20261105a) e se a autorizacao ja foi confirmada. */}
           {(inscricao.responsavel_nome || inscricao.acompanhante_nome) && (
             <div className="space-y-3">
               <h4 className="text-lg font-semibold text-blue-400 border-b border-blue-400/30 pb-2">
@@ -560,19 +562,17 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
                 </div>
                 {isEquipante && (
                   <>
-                    <div className="bg-white/5 p-3 rounded-md">
-                      <span className="text-sm text-gray-400 block mb-1">Acompanha no projeto:</span>
+                    <div className="bg-white/5 p-3 rounded-md md:col-span-2">
+                      <span className="text-sm text-gray-400 block mb-1">Acompanhante informado pelo menor:</span>
                       <p className="text-white font-medium">{displayValue(inscricao.acompanhante_nome)}</p>
-                    </div>
-                    <div className="bg-white/5 p-3 rounded-md">
-                      <span className="text-sm text-gray-400 block mb-1">WhatsApp de quem acompanha:</span>
-                      <p className="text-white font-medium">{displayValue(inscricao.acompanhante_whatsapp)}</p>
                     </div>
                   </>
                 )}
               </div>
             </div>
           )}
+
+          {isEquipante && <MenorNaFicha inscricao={inscricao} />}
 
           {/* Áreas de Trabalho (só equipante — não existe em acampantes) */}
           {isEquipante && (
@@ -683,12 +683,6 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
                 <div className="bg-white/5 p-3 rounded-md">
                   <span className="text-sm text-gray-400 block mb-1">Estágio Atual:</span>
                   <p className="text-white font-medium">{displayValue(getEquipanteStageLabel(inscricao))}</p>
-                </div>
-              )}
-              {isEquipante && (
-                <div className="bg-white/5 p-3 rounded-md">
-                  <span className="text-sm text-gray-400 block mb-1">Arquivo Autorização Parental:</span>
-                  <p className="text-white font-medium text-xs break-all">{displayValue(inscricao.parental_auth_file_url)}</p>
                 </div>
               )}
               {isEquipante && (

@@ -120,84 +120,6 @@ export const updateWorkflowStage = async (equipante_id, updates) => {
   }
 };
 
-// Mesmo bucket usado para o modelo de autorizacao para download
-// (autorizacao-menor-idade-equipante), so que os arquivos enviados pelos
-// responsaveis ficam dentro da pasta "envios/" para nao se misturar com o
-// arquivo-modelo fixo que fica na raiz do bucket.
-const PARENTAL_AUTH_BUCKET = 'autorizacao-menor-idade-equipante';
-
-export const uploadParentalAuthFile = async (equipante_id, file, dono = {}) => {
-  if (!equipante_id || !file) throw new Error("Parâmetros inválidos para upload");
-
-  try {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `envios/${equipante_id}-${Math.random()}.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from(PARENTAL_AUTH_BUCKET)
-      .upload(fileName, file);
-
-    // O erro cru do Storage chegava inteiro na tela da pessoa -- ela via
-    // "new row violates row-level security policy" e nao tinha o que fazer
-    // com aquilo. A causa real fica no console, para quem for investigar.
-    if (uploadError) {
-      console.error('equipanteApi - upload no Storage', uploadError);
-      throw new Error(
-        'Não conseguimos guardar o arquivo. Tente de novo; se continuar, '
-        + 'avise a organização.'
-      );
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from(PARENTAL_AUTH_BUCKET)
-      .getPublicUrl(fileName);
-
-    // O endereco do arquivo e gravado pelo servidor: quem envia a
-    // autorizacao e um menor de idade que NAO esta logado, e escrever
-    // direto na tabela leva 401 desde o travamento.
-    const { data, error } = await supabase.rpc('registrar_autorizacao_pais', {
-      p_id: equipante_id,
-      p_url: publicUrlData?.publicUrl,
-      p_cpf: dono.cpf ?? null,
-      p_nome: dono.nome ?? null,
-      p_nascimento: dono.nascimento ?? null,
-    });
-
-    if (error) throw error;
-    if (!data?.ok) throw new Error(data?.erro || 'Não foi possível registrar a autorização.');
-
-    return await getEquipanteWorkflow(equipante_id, dono);
-  } catch (err) {
-    console.error('equipanteApi - uploadParentalAuthFile', err, { equipante_id });
-    throw new Error(err.message || 'Falha ao enviar a autorização');
-  }
-};
-
-/**
- * "Já entregue": o menor declara que entregou a carta assinada em MAOS na
- * igreja, em vez de anexar o arquivo.
- *
- * Conclui a etapa na hora e libera o pagamento -- foi decisao explicita, para
- * nao travar o menor esperando a igreja. A conferencia do parceiro vem depois
- * e, se ele disser que nao recebeu, a declaracao cai e o pagamento volta a
- * travar (ver conferir_autorizacao_menor no banco).
- *
- * `entregue = false` desfaz, e so funciona enquanto ninguem conferiu.
- */
-export const declararAutorizacaoEntregue = async (equipante_id, entregue, dono = {}) => {
-  const { data, error } = await supabase.rpc('declarar_autorizacao_entregue', {
-    p_id: equipante_id,
-    p_entregue: entregue,
-    p_cpf: dono.cpf ?? null,
-    p_nome: dono.nome ?? null,
-    p_nascimento: dono.nascimento ?? null,
-  });
-
-  if (error) throw new Error(error.message || 'Não foi possível registrar a entrega.');
-  if (!data?.ok) throw new Error(data?.erro || 'Não foi possível registrar a entrega.');
-  return await getEquipanteWorkflow(equipante_id, dono);
-};
-
 export const getEquipanteWorkflow = async (equipante_id, dono = {}) => {
   if (!equipante_id) return null;
   try {
@@ -362,7 +284,7 @@ export const getEquipantesByWorkflowStage = async () => {
   try {
     const { data, error } = await supabase
       .from('equipantes')
-      .select('id, nome, cpf, data_nascimento, idade, parental_auth_file_url, status, scale_status, status_pagamento')
+      .select('id, nome, cpf, data_nascimento, idade, menor_liberado_em, menor_liberado_por, status, scale_status, status_pagamento')
       .eq('tipo', 'equipante')
 
     if (error) throw error;
@@ -487,10 +409,13 @@ export const fetchEquipantesParaPreEscala = async () =>
  * Devolve { data: { status, decidido_por, decidido_por_tipo,
  * decidido_por_igreja, decidido_em } } para a tela mostrar na hora.
  */
-export const updateEquipanteStatus = async (id, newStatus) => {
+// declaracaoMenor (20261105a): quem aprova um menor confirma a declaracao
+// sobre a autorizacao do responsavel; sem ela o servidor recusa.
+export const updateEquipanteStatus = async (id, newStatus, declaracaoMenor = false) => {
   const { data, error } = await supabase.rpc('decidir_inscricao', {
     p_id: id,
-    p_status: newStatus
+    p_status: newStatus,
+    p_declaracao_menor: !!declaracaoMenor
   });
   if (error) return { error };
   if (!data?.ok) return { error: new Error(data?.erro || 'Não foi possível registrar a decisão.') };
@@ -559,48 +484,53 @@ export const countEquipantesInscritos = async () =>
 // organizerConfigService.resetarParaNovaEdicao -> resetar_para_nova_edicao.
 
 // ---------------------------------------------------------------------------
-// Conferencia das autorizacoes de menores.
-//
-// O menor conclui a etapa sozinho -- anexando o arquivo ou marcando "Já
-// entregue". Depois a igreja (ou a organizacao) confirma que tem a carta em
-// maos. Parceiro so enxerga os menores da propria igreja; organizador ve
-// todos, inclusive quem escolheu OUTRA ou nao congrega e por isso nao tem
-// parceiro nenhum para conferir.
+// Equipante menor de idade (20261105a): sem carta. O pastor parceiro (ou o
+// organizador, nas igrejas sem parceiro) fala com o responsavel e libera o
+// menor na aprovacao. Menor = sem 18 anos completos no 1o dia do projeto.
 // ---------------------------------------------------------------------------
 
-export const fetchMenoresParaConferencia = async () => {
+/** Menores visiveis para quem esta logado, com responsavel e acompanhante. */
+export const fetchMenoresDaAprovacao = async () => {
   const { data, error } = await comReenvio(
-    () => supabase.rpc('menores_para_conferencia'),
-    { rotulo: 'autorizações de menores' }
+    () => supabase.rpc('menores_da_aprovacao'),
+    { rotulo: 'menores de idade' }
   );
-  if (error) {
-    console.error('equipanteApi - menores para conferência', error?.message || error);
-    return { success: false, error: error.message || 'Erro ao carregar', itens: [] };
-  }
+  if (error) return { success: false, error: error.message || 'Erro ao carregar', itens: [] };
   if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível carregar', itens: [] };
-  return { success: true, itens: data.itens || [], papel: data.papel };
-};
-
-// conferida = false não é só tirar o visto: quando a autorização veio por
-// declaração (sem arquivo), significa "não recebi esta carta" -- a declaração
-// cai junto e o pagamento do menor volta a travar. Quem decide isso é o
-// servidor; aqui só relatamos o que ele respondeu.
-export const conferirAutorizacaoMenor = async (equipanteId, conferida) => {
-  const { data, error } = await comReenvio(
-    () => supabase.rpc('conferir_autorizacao_menor', {
-      p_id: equipanteId,
-      p_conferida: conferida
-    }),
-    { rotulo: 'conferência da autorização' }
-  );
-  if (error) return { success: false, error: error.message || 'Erro ao salvar' };
-  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar' };
   return {
     success: true,
-    conferida: !!data.conferida,
-    declaracaoRemovida: !!data.declaracao_removida,
-    por: data.por || null
+    itens: data.itens || [],
+    quem: data.quem || null,
+    edicao: data.edicao ?? null,
+    eventoInicio: data.evento_inicio || null,
+    eventoFim: data.evento_fim || null,
   };
+};
+
+/** Libera (ou tira a liberacao) sem mexer na aprovacao. */
+export const liberarMenor = async (id, liberar = true) => {
+  const { data, error } = await supabase.rpc('liberar_menor', { p_id: id, p_liberar: liberar });
+  if (error) return { success: false, error: error.message || 'Erro ao salvar' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar' };
+  return { success: true, por: data.por || null };
+};
+
+/** Escolhe quem e o acompanhante do menor (null = volta a procurar pelo nome). */
+export const definirAcompanhanteMenor = async (menorId, acompanhanteId) => {
+  const { data, error } = await supabase.rpc('definir_acompanhante_menor', {
+    p_menor: menorId, p_acompanhante: acompanhanteId || null
+  });
+  if (error) return { success: false, error: error.message || 'Erro ao salvar' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar' };
+  return { success: true };
+};
+
+/** Procura equipantes inscritos pelo nome, para escolher o acompanhante. */
+export const buscarAcompanhante = async (menorId, termo) => {
+  const { data, error } = await supabase.rpc('buscar_acompanhante', { p_menor: menorId, p_termo: termo });
+  if (error) return { success: false, error: error.message || 'Erro ao buscar', itens: [] };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível buscar', itens: [] };
+  return { success: true, itens: data.itens || [] };
 };
 
 /**

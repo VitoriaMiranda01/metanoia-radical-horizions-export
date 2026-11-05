@@ -1,6 +1,7 @@
 import React from 'react';
 import { bandeiraDoPais, nomeDoPais } from '@/constants/nacionalidades';
 import TagSoDomingo from '@/components/common/TagSoDomingo';
+import TagMenor, { TagAcompanhanteDe } from '@/components/common/TagMenor';
 
 /**
  * O nome da pessoa com a bandeira do país ao lado, quando ela é estrangeira.
@@ -15,8 +16,13 @@ import TagSoDomingo from '@/components/common/TagSoDomingo';
  * por extenso.
  */
 // soDomingo (20261025c): a etiqueta "Só Domingo" logo depois do nome.
-const NomeComBandeira = ({ nome, nacionalidade, soDomingo = false, className = '' }) => {
-  if (!nacionalidade && !soDomingo) return <>{nome}</>;
+// menor / acompanhanteDe (20261105a): "Menor de idade" e "Acompanhante de ...".
+const NomeComBandeira = ({
+  nome, nacionalidade, soDomingo = false, menor = false, menorLiberado = false,
+  acompanhanteDe = null, className = '',
+}) => {
+  const temAcompanhante = Array.isArray(acompanhanteDe) && acompanhanteDe.length > 0;
+  if (!nacionalidade && !soDomingo && !menor && !temAcompanhante) return <>{nome}</>;
 
   const bandeira = nacionalidade ? bandeiraDoPais(nacionalidade) : null;
   const pais = nacionalidade ? nomeDoPais(nacionalidade) : null;
@@ -33,7 +39,9 @@ const NomeComBandeira = ({ nome, nacionalidade, soDomingo = false, className = '
         </span>
       )}
       <span>{nome}</span>
+      {menor && <TagMenor liberado={menorLiberado} />}
       {soDomingo && <TagSoDomingo />}
+      {temAcompanhante && <TagAcompanhanteDe menores={acompanhanteDe} />}
     </span>
   );
 };

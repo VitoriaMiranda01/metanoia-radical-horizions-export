@@ -14,7 +14,7 @@ export const PERMISSOES = [
   { chave: 'inscricao_manual', rotulo: 'Inscrição manual',
     descricao: 'Cadastrar na hora o equipante que chegou sem inscrição.' },
   { chave: 'aprovacao_equipe', rotulo: 'Aprovação da equipe',
-    descricao: 'Aprovar ou recusar equipantes, aprovação em lote e autorizações dos menores.' },
+    descricao: 'Aprovar ou recusar equipantes, aprovação em lote e liberação dos menores de idade.' },
   { chave: 'geracao_escala', rotulo: 'Geração de escala',
     descricao: 'Montar a escala: alocar, tirar, fixos, áreas especiais, cores, chamada e ausentes.' },
   { chave: 'responsavel_reuniao', rotulo: 'Responsável pela reunião',

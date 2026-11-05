@@ -59,7 +59,7 @@ const LISTA_CORES = Object.keys(CORES);
 const TEXTO_PENDENCIA = {
   telefone: 'WhatsApp fora do padrão',
   igreja: 'falta a igreja',
-  autorizacao: 'falta a autorização dos pais (menor de idade)'
+  autorizacao: 'menor de idade: falta a igreja confirmar a autorização do responsável'
 };
 
 // 18/10/2026 (dia de ~1000 acessos): o celular pergunta so a ASSINATURA das

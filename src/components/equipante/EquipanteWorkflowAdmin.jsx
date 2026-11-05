@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Loader2, Download } from 'lucide-react';
+import { Loader2, Download } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import * as XLSX from 'xlsx';
 
@@ -44,7 +44,7 @@ const EquipanteWorkflowAdmin = () => {
       Nome: w.nome,
       CPF: w.cpf,
       'Grupo (Idade)': (Number(w.idade) < 18) ? 'Menor' : 'Adulto',
-      'Autorização Pais': w.parental_auth_file_url ? 'Enviado' : 'Pendente',
+      'Autorização Responsável': w.menor_liberado_em ? 'Confirmada' : 'Pendente',
       'Status Aprovação': w.status,
       Pagamento: w.status_pagamento,
       Escala: w.scale_status
@@ -74,7 +74,7 @@ const EquipanteWorkflowAdmin = () => {
             <TableRow>
               <TableHead className="text-gray-300 md:sticky md:left-0 md:bg-slate-900 md:z-10 md:shadow-[2px_0_5px_rgba(0,0,0,0.3)]">Equipante</TableHead>
               <TableHead className="text-gray-300">Faixa Etária</TableHead>
-              <TableHead className="text-gray-300">Autorização Pais</TableHead>
+              <TableHead className="text-gray-300">Autorização do responsável</TableHead>
               <TableHead className="text-gray-300">Status Aprovação</TableHead>
               <TableHead className="text-gray-300">Pagamento</TableHead>
               <TableHead className="text-gray-300">Escala</TableHead>
@@ -96,10 +96,8 @@ const EquipanteWorkflowAdmin = () => {
                 </TableCell>
                 <TableCell>
                   {isMinor ? (
-                    w.parental_auth_file_url ? (
-                      <a href={w.parental_auth_file_url} target="_blank" rel="noreferrer" className="flex items-center text-blue-400 hover:underline">
-                        <FileText className="w-4 h-4 mr-1" /> Ver Arquivo
-                      </a>
+                    w.menor_liberado_em ? (
+                      <span className="text-green-400 text-sm">Confirmada{w.menor_liberado_por ? ` por ${w.menor_liberado_por}` : ''}</span>
                     ) : (
                       <Badge className="workflow-badge-pendente">Pendente</Badge>
                     )
@@ -122,8 +120,8 @@ const EquipanteWorkflowAdmin = () => {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Select 
-                    value={w.scale_status || 'pendente'} 
+                  <Select
+                    value={w.scale_status || 'pendente'}
                     onValueChange={(val) => handleUpdateStatus(w.id, 'scale_status', val)}
                   >
                     <SelectTrigger className="h-8 w-[130px] bg-transparent border-white/20 text-white text-xs">

@@ -23,6 +23,9 @@ const MENSAGENS = {
   ACOMPANHANTE_MESMO_NOME: 'Quem vai acompanhar você precisa ser outra pessoa — não pode ser o próprio inscrito.',
   ACOMPANHANTE_WHATSAPP_OBRIGATORIO: 'Você é menor de 18 anos: informe o WhatsApp de quem vai acompanhar você no projeto.',
   ACOMPANHANTE_MESMO_TELEFONE: 'O WhatsApp de quem vai acompanhar você precisa ser diferente do seu.',
+  // Equipante menor (20261105a): o responsavel nao pode ser outro menor.
+  RESPONSAVEL_TELEFONE_DE_MENOR: 'Este WhatsApp está cadastrado para outro inscrito menor de idade. Informe o WhatsApp do seu pai, mãe ou responsável legal.',
+  RESPONSAVEL_NOME_DE_MENOR: 'Este nome é de outro inscrito menor de idade. O responsável precisa ser o seu pai, mãe ou responsável legal.',
   CPF_INVALIDO: 'CPF inválido: confira os números do CPF.',
   CPF_OBRIGATORIO: 'Informe o CPF (quem é estrangeiro informa a nacionalidade).',
   SEXO_INVALIDO: 'Escolha o sexo.',

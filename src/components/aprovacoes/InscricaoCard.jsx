@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, CheckCircle, XCircle, AlertTriangle, UserCheck, CalendarDays } from 'lucide-react';
+import { Eye, CheckCircle, XCircle, AlertTriangle, UserCheck, CalendarDays, Baby } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { naoCongrega, nomeDaIgreja } from '@/constants/igrejas';
 import { decisaoDaInscricao } from '@/utils/decisaoInscricao';
@@ -8,24 +8,26 @@ import NomeComBandeira from '@/components/common/NomeComBandeira';
 import SeloPastor from '@/components/common/SeloPastor';
 import { respondeuGrupoEEbd, respostasGrupoEEbd } from '@/utils/grupoCuidadoEbd';
 
-const InscricaoCard = ({ 
-  inscricao, 
-  statusBadge, 
-  onSelect, 
-  onAprovar, 
-  onRejeitar, 
-  showActions, 
-  onCancelar, 
-  showCancelAction, 
+const InscricaoCard = ({
+  inscricao,
+  statusBadge,
+  onSelect,
+  onAprovar,
+  onRejeitar,
+  showActions,
+  onCancelar,
+  showCancelAction,
   showApproveOnly,
-  onMudarDomingo
+  onMudarDomingo,
+  onLiberarMenor
 }) => {
   return (
     <div className="bg-white/5 border border-white/10 rounded-lg p-4 flex flex-col gap-4 relative overflow-hidden transition-all hover:bg-white/10">
       {/* Header: Name and Status */}
       <div className="flex justify-between items-start gap-3">
         <h3 className="font-semibold text-white text-lg leading-tight break-words">
-          <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} soDomingo={inscricao.so_domingo} />
+          <NomeComBandeira nome={inscricao.nome} nacionalidade={inscricao.nacionalidade} soDomingo={inscricao.so_domingo}
+                              menor={!!inscricao.menor} menorLiberado={!!inscricao.menorLiberado} acompanhanteDe={inscricao.acompanhanteDe} />
           <SeloPastor pessoa={inscricao} className="ml-1.5 align-[-1px]" />
         </h3>
         <div className="shrink-0 mt-0.5">
@@ -77,6 +79,17 @@ const InscricaoCard = ({
         </div>
       )}
 
+      {/* Menor de idade (20261105a): aprovar pede a declaracao do pastor. */}
+      {inscricao.menor && !inscricao.menorLiberado && inscricao.status !== 'rejeitado' && (
+        <div className="flex items-start gap-2 rounded-md border border-pink-500/40 bg-pink-500/10 px-3 py-2">
+          <Baby className="w-4 h-4 text-pink-300 shrink-0 mt-0.5" />
+          <span className="text-pink-100 text-xs leading-snug">
+            Menor de idade: antes de {inscricao.status === 'aprovado' ? 'liberar' : 'aprovar'}, fale com o responsável.
+            A mensagem pronta para o WhatsApp aparece ao {inscricao.status === 'aprovado' ? 'liberar' : 'aprovar'}.
+          </span>
+        </div>
+      )}
+
       {naoCongrega(inscricao) && (
         <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2">
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
@@ -89,15 +102,15 @@ const InscricaoCard = ({
 
       {/* Actions */}
       <div className="pt-4 border-t border-white/10 flex gap-2 mt-auto">
-        <Button 
-          variant="outline" 
-          onClick={() => onSelect(inscricao)} 
+        <Button
+          variant="outline"
+          onClick={() => onSelect(inscricao)}
           className="flex-1 min-w-0 h-11 bg-transparent border-white/10 text-blue-300 hover:text-white hover:bg-blue-500/20 transition-colors"
         >
-          <Eye className="w-4 h-4 mr-2" /> 
+          <Eye className="w-4 h-4 mr-2" />
           Detalhes
         </Button>
-        
+
         {onMudarDomingo && (
           <Button
             onClick={() => onMudarDomingo(inscricao.id)}
@@ -116,8 +129,8 @@ const InscricaoCard = ({
             >
               <CheckCircle className="w-5 h-5" />
             </Button>
-            <Button 
-              onClick={() => onRejeitar(inscricao.id)} 
+            <Button
+              onClick={() => onRejeitar(inscricao.id)}
               className="h-11 px-3 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 transition-colors"
               aria-label="Rejeitar"
             >
@@ -126,17 +139,26 @@ const InscricaoCard = ({
           </>
         )}
         {showApproveOnly && (
-          <Button 
-            onClick={() => onAprovar(inscricao.id)} 
+          <Button
+            onClick={() => onAprovar(inscricao.id)}
             className="h-11 px-3 bg-green-500/20 hover:bg-green-500/40 text-green-400 border border-green-500/30 transition-colors"
             aria-label="Aprovar"
           >
             <CheckCircle className="w-5 h-5" />
           </Button>
         )}
+        {onLiberarMenor && inscricao.menor && !inscricao.menorLiberado && inscricao.status !== 'rejeitado' && (
+          <Button
+            onClick={() => onLiberarMenor(inscricao.id)}
+            className="h-11 px-3 bg-pink-500/20 hover:bg-pink-500/40 text-pink-200 border border-pink-500/30 transition-colors"
+            aria-label="Liberar menor de idade"
+          >
+            <Baby className="w-5 h-5" />
+          </Button>
+        )}
         {showCancelAction && (
-          <Button 
-            onClick={() => onCancelar(inscricao.id)} 
+          <Button
+            onClick={() => onCancelar(inscricao.id)}
             className="h-11 px-3 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 transition-colors"
             aria-label="Cancelar aprovação"
           >

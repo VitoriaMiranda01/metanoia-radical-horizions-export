@@ -65,7 +65,7 @@ const Layout = ({ children, largo = false }) => {
     logout();
     navigate('/login');
   };
-  
+
   const getRoleDisplayName = (role) => {
     switch (role) {
       case 'organizador':
@@ -90,7 +90,7 @@ const Layout = ({ children, largo = false }) => {
     { path: '/gerenciar', label: 'Gerenciar Inscrições', icon: Users, roles: ['organizador'], permissao: 'gerenciar_inscricoes',
       dica: 'Lista de acampantes e equipantes inscritos: ver, editar e exportar.' },
     { path: '/aprovacoes', label: 'Aprovações Equipe', icon: UserCheck, roles: ['organizador', 'organizador-aprovador'], contador: 'aprovacoes', permissao: 'aprovacao_equipe',
-      dica: 'Aprovar ou recusar as inscrições de equipantes e conferir as autorizações dos menores.' }
+      dica: 'Aprovar ou recusar as inscrições de equipantes e liberar os menores de idade.' }
   ];
 
   // Organizer specific navigation (Settings/Scales)
@@ -116,7 +116,7 @@ const Layout = ({ children, largo = false }) => {
   // Enquanto as permissoes nao chegam, os itens com caixa ficam escondidos.
   const liberado = (item) => !item.permissao || (!perm.carregando && temPermissao(perm, item.permissao));
 
-  const availableItems = user ? navigationItems.filter(item => 
+  const availableItems = user ? navigationItems.filter(item =>
     item.roles.includes(user.role) && (user.role === 'organizador-aprovador' || liberado(item))
   ) : [];
 
@@ -140,16 +140,16 @@ const Layout = ({ children, largo = false }) => {
       <nav className="glass-effect border-b border-white/10 sticky top-0 z-50 bg-black/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            <motion.div 
+            <motion.div
               className="flex items-center space-x-4"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
             >
               <Link to="/" className="flex items-center gap-3 cursor-pointer">
-                 <img 
-                    src="/images/logo.png" 
-                    alt="Metanoia Radical Logo" 
+                 <img
+                    src="/images/logo.png"
+                    alt="Metanoia Radical Logo"
                     className="h-12 w-auto object-contain"
                   />
                   <div className="hidden md:block">
@@ -168,7 +168,7 @@ const Layout = ({ children, largo = false }) => {
               {availableItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
-                
+
                 return (
                   <Button
                     key={item.path}
@@ -195,7 +195,7 @@ const Layout = ({ children, largo = false }) => {
                   data-dica="As inscrições da sua igreja: aprovar equipantes e acompanhar os inscritos."
                   className={`flex items-center space-x-2 transition-all duration-300 ${
                     location.pathname === '/parceiros'
-                      ? 'bg-red-700 hover:bg-red-800 text-white shadow-lg shadow-red-900/20' 
+                      ? 'bg-red-700 hover:bg-red-800 text-white shadow-lg shadow-red-900/20'
                       : 'hover:bg-white/5 text-gray-300 hover:text-white'
                   }`}
                 >

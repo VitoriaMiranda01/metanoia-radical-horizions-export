@@ -164,7 +164,8 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
       ...form,
       cpf,
       igreja_outra: igrejaEhOutra(form.igreja) ? form.igreja_outra : '',
-      carta_recebida: podeSerMenor && form.carta_recebida,
+      // Sem carta desde 20261105a: o menor e liberado na Aprovacao Equipe.
+      carta_recebida: false,
       confirmar_mesmo_nome: confirmarMesmoNome,
     });
     setSalvando(false);
@@ -371,9 +372,8 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
                 {mesmoNome.nascimento ? ` · nascimento ${mesmoNome.nascimento.split('-').reverse().join('/')}` : ''}
               </p>
               <p className="text-xs text-red-200/80">
-                Se for a mesma pessoa, não precisa inscrever de novo: cancele e procure por ela
-                (no módulo das autorizações, use “Vincular carta”). Se for outra pessoa com o mesmo nome,
-                confirme abaixo.
+                Se for a mesma pessoa, não precisa inscrever de novo: cancele e procure por ela.
+                Se for outra pessoa com o mesmo nome, confirme abaixo.
               </p>
               <Button
                 size="sm" variant="outline" disabled={salvando} onClick={() => salvar(true)}
@@ -385,21 +385,10 @@ const InscricaoManualDialog = ({ onClose, onCriado, nomeInicial = '' }) => {
           )}
 
           {podeSerMenor && (
-            <label className="md:col-span-2 flex items-start gap-3 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.carta_recebida}
-                onChange={(e) => set('carta_recebida')(e.target.checked)}
-                className="mt-1 h-4 w-4"
-              />
-              <span className="text-sm text-gray-200">
-                <strong className="text-white">A carta de autorização dos responsáveis está comigo.</strong>
-                <span className="block text-gray-400">
-                  Para menor de idade: a carta fica vinculada a esta inscrição como entregue e conferida
-                  {idade === null ? ' (sem data de nascimento, só vale se for menor).' : '.'}
-                </span>
-              </span>
-            </label>
+            <p className="md:col-span-2 rounded-md border border-pink-500/30 bg-pink-500/10 p-3 text-sm text-pink-100">
+              <strong className="text-white">Menor de idade?</strong> Não há mais carta. Depois de inscrever, fale com o
+              responsável e libere o menor em Aprovação Equipe (botão rosa do menor) — sem isso ele não consegue pagar.
+            </p>
           )}
         </div>
 

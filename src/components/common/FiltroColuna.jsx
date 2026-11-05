@@ -146,7 +146,7 @@ export const CabecalhoFiltro = ({ coluna, f, alinharDireita = false }) => {
           <div className="flex items-center gap-2 border-b border-white/10 px-2.5 py-1.5">
             <Search className="h-3.5 w-3.5 text-white/45 shrink-0" />
             <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nesta coluna..."
-              className="flex-1 bg-transparent text-xs text-white placeholder:text-white/40 outline-none py-1" />
+              className="flex-1 bg-transparent text-xs text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400 py-1" />
           </div>
           <div className="px-1.5 pt-1.5">
             <label className="flex items-center gap-2 rounded px-2 py-1 text-xs text-gray-300 hover:bg-white/10 cursor-pointer">

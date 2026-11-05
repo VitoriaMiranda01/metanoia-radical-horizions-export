@@ -67,7 +67,7 @@ const SeletorIgrejas = ({
             onChange={(e) => setBusca(e.target.value)}
             placeholder={opcoes.length ? 'Buscar por código ou nome da igreja...' : 'Nenhuma inscrição nesta aba'}
             disabled={opcoes.length === 0}
-            className="flex-1 bg-transparent py-1 text-sm text-white outline-none placeholder:text-white/40"
+            className="flex-1 bg-transparent py-1 text-sm text-white outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400 placeholder:text-white/40"
           />
           {buscando && (
             <button type="button" onClick={() => setBusca('')} aria-label="Limpar a busca" className="text-white/50 hover:text-white">

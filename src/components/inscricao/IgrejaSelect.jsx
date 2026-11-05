@@ -104,7 +104,7 @@ const IgrejaSelect = ({
             value={busca}
             onChange={e => setBusca(e.target.value)}
             placeholder="Buscar por código ou nome..."
-            className="flex-1 bg-transparent text-sm text-white placeholder:text-white/40 outline-none py-1"
+            className="flex-1 bg-transparent text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400 py-1"
           />
         </div>
         <div className="max-h-[260px] overflow-y-auto p-1.5">

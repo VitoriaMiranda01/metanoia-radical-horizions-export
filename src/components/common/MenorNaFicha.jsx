@@ -71,7 +71,9 @@ const MenorNaFicha = ({ inscricao }) => {
       {menor && menor.precisa_acompanhante === false && (
         <div className="bg-white/5 p-3 rounded-md">
           <span className="text-sm text-gray-400 block mb-1">Acompanhante:</span>
-          <p className="text-xs text-gray-300">Não precisa (16 ou 17 anos no 1º dia do projeto).</p>
+          <p className="text-xs text-gray-300">
+            Não precisa ({menor.idade_no_projeto != null ? `${menor.idade_no_projeto} anos` : '16 ou 17 anos'} no 1º dia do projeto).
+          </p>
         </div>
       )}
       {menor && menor.precisa_acompanhante !== false && (

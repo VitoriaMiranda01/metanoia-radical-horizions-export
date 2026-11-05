@@ -157,6 +157,10 @@ const MenorAprovacaoDialog = ({ aberto, menor, ctx, modo = 'aprovar', onConfirma
             <p className="flex flex-wrap items-center gap-2 font-medium">
               {menor.nome} <TagMenor />
               {menor.idade != null && <span className="text-sm font-normal text-gray-400">{menor.idade} anos</span>}
+              {/* A regra usa a idade no 1o dia do projeto (20261105d). */}
+              {menor.idade_no_projeto != null && menor.idade_no_projeto !== menor.idade && (
+                <span className="text-sm font-normal text-amber-200">· {menor.idade_no_projeto} no 1º dia do projeto</span>
+              )}
             </p>
             <p className="mt-0.5 text-xs text-gray-400">
               {semCodigo(menor.igreja) || 'sem igreja'}
@@ -209,7 +213,9 @@ const MenorAprovacaoDialog = ({ aberto, menor, ctx, modo = 'aprovar', onConfirma
           {/* Acompanhante: so menor de 16 (20261105c) */}
           {!precisaAcomp ? (
             <p className="rounded-md border border-white/10 bg-white/5 p-3 text-xs text-gray-300">
-              Com 16 ou 17 anos não precisa de acompanhante no projeto: basta a autorização do responsável.
+              {menor.idade_no_projeto != null && menor.idade_no_projeto !== menor.idade
+                ? `Terá ${menor.idade_no_projeto} anos no 1º dia do projeto: com 16 ou 17 anos não precisa de acompanhante, basta a autorização do responsável.`
+                : 'Com 16 ou 17 anos não precisa de acompanhante no projeto: basta a autorização do responsável.'}
             </p>
           ) : (
           <div className="space-y-2">

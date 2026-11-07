@@ -41,11 +41,33 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { fetchCoupons, createCoupon, toggleCouponStatus, deleteCoupon } from '@/services/couponsService';
 
+const ABAS_CONFIG = [
+  { id: 'edicao', rotulo: 'Edição e inscrições', Icone: CalendarDays },
+  { id: 'valores', rotulo: 'Valores e cupons', Icone: DollarSign },
+  { id: 'igrejas', rotulo: 'Igrejas e pastores', Icone: Church },
+  { id: 'cadastros', rotulo: 'Cadastros e ocorrências', Icone: Users },
+  { id: 'acesso', rotulo: 'Acesso e segurança', Icone: Lock },
+  { id: 'risco', rotulo: 'Ambiente e risco', Icone: AlertCircle },
+];
+const CHAVE_ABA = 'config_aba_ativa';
+
 const OrganizerConfigPage = () => {
   const { organizadorId, organizadorUser, user, isAuthenticated } = useAuth();
   // Configuracoes e so da conta Desenvolvedores (03/11/2026); os outros
   // organizadores so trocam a propria senha aqui.
   const perm = usePermissoes();
+
+  // Aba aberta: lembrada neste navegador (so conveniencia).
+  const [abaAtiva, setAbaAtiva] = useState(() => {
+    try {
+      const salva = localStorage.getItem(CHAVE_ABA);
+      return ABAS_CONFIG.some(a => a.id === salva) ? salva : 'edicao';
+    } catch { return 'edicao'; }
+  });
+  const escolherAba = (id) => {
+    setAbaAtiva(id);
+    try { localStorage.setItem(CHAVE_ABA, id); } catch { /* sem armazenamento */ }
+  };
   
   const [config, setConfig] = useState({
     edicao_numero: '',
@@ -572,7 +594,20 @@ const OrganizerConfigPage = () => {
           </div>
         )}
 
-        <div className="space-y-8">
+        {/* Abas (07/11/2026): os quadros sao os mesmos, so agrupados. Todos ficam
+            montados (so escondidos) para o Salvar do quadro Geral seguir valendo. */}
+        <div role="tablist" aria-label="Seções das configurações" className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {ABAS_CONFIG.map(({ id, rotulo, Icone }) => (
+            <button key={id} type="button" role="tab" id={`aba-${id}`} aria-selected={abaAtiva === id}
+              aria-controls={`painel-${id}`} onClick={() => escolherAba(id)}
+              data-dica={`Abrir a seção ${rotulo}.`}
+              className={`flex shrink-0 items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${abaAtiva === id ? 'border-blue-400/60 bg-blue-500/20 text-white' : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white'}`}>
+              <Icone className="w-4 h-4" />{rotulo}
+            </button>
+          ))}
+        </div>
+
+        <div role="tabpanel" id="painel-edicao" aria-labelledby="aba-edicao" className={abaAtiva === 'edicao' ? 'space-y-8' : 'hidden'}>
           <Recolhivel chave="cfg-geral" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
@@ -700,54 +735,48 @@ const OrganizerConfigPage = () => {
             <LocaisReuniaoCard />
           </Recolhivel>
 
-          <Recolhivel chave="cfg-valores" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <Recolhivel chave="cfg-abertura" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
-                  <DollarSign className="w-5 h-5 text-emerald-400" />
-                  <span>Valores por Lote</span>
+                  <FileText className="w-5 h-5 text-orange-400" />
+                  <span>Controle de Abertura das Inscrições</span>
                 </CardTitle>
-                <CardDescription className="text-gray-400">Gerencie os períodos e valores cobrados de cada tipo de inscrito.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-10">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-white border-b border-white/10 pb-2">Taxa de Alimentação Equipante</h3>
-                  <PricingPeriodsManager 
-                    type="equipante" 
-                    periods={config.equipante_pricing_periods} 
-                    onSave={(periods) => handleSavePricingPeriods('equipante', periods)} 
-                  />
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
+                  <div className="flex items-center space-x-3">
+                    {statusControl.equipantes ? <Unlock className="text-emerald-500 w-6 h-6" /> : <Lock className="text-red-500 w-6 h-6" />}
+                    <div>
+                      <p className="font-semibold text-white">Equipantes</p>
+                      <p className="text-sm text-gray-400">{statusControl.equipantes ? 'Inscrições abertas' : 'Inscrições fechadas'}</p>
+                      {!loteEquipanteHoje && (
+                        <p className="text-xs text-amber-400 mt-1">Sem lote de preço para hoje: o site fica fechado até haver um lote cobrindo a data.</p>
+                      )}
+                    </div>
+                  </div>
+                  <Switch data-dica="Abrir ou fechar o formulário de inscrição de equipantes no site." checked={statusControl.equipantes} onCheckedChange={c => handleToggleInscriptionStatus('equipantes', c)} disabled={savingStatus} />
                 </div>
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-white border-b border-white/10 pb-2">Taxa de Inscrição Acampante</h3>
-                  <PricingPeriodsManager 
-                    type="acampante" 
-                    periods={config.acampante_pricing_periods} 
-                    onSave={(periods) => handleSavePricingPeriods('acampante', periods)} 
-                  />
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
+                  <div className="flex items-center space-x-3">
+                    {statusControl.acampantes ? <Unlock className="text-emerald-500 w-6 h-6" /> : <Lock className="text-red-500 w-6 h-6" />}
+                    <div>
+                      <p className="font-semibold text-white">Acampantes</p>
+                      <p className="text-sm text-gray-400">{statusControl.acampantes ? 'Inscrições abertas' : 'Inscrições fechadas'}</p>
+                      {!loteAcampanteHoje && (
+                        <p className="text-xs text-amber-400 mt-1">Sem lote de preço para hoje: o site fica fechado até haver um lote cobrindo a data.</p>
+                      )}
+                    </div>
+                  </div>
+                  <Switch data-dica="Abrir ou fechar o formulário de inscrição de acampantes no site." checked={statusControl.acampantes} onCheckedChange={c => handleToggleInscriptionStatus('acampantes', c)} disabled={savingStatus} />
                 </div>
               </CardContent>
             </Card>
           </Recolhivel>
 
-          <Recolhivel chave="cfg-limite" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-            <Card className="glass-effect border-white/10 bg-black/40">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-white">
-                  <Users className="w-5 h-5 text-orange-400" />
-                  <span>Limite de Inscrições por Igreja</span>
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Controla quantos acampantes cada igreja pode inscrever.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <LimiteIgrejasManager
-                  limiteGeral={config.limite_acampantes_por_igreja}
-                  onSaveLimiteGeral={handleSaveLimiteAcampantesPorIgreja}
-                />
-              </CardContent>
-            </Card>
+          {/* Codigo de inscricao do equipante -- 07/11/2026. */}
+          <Recolhivel chave="cfg-codigo-inscricao" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.42 }}>
+            <CodigosInscricaoCard />
           </Recolhivel>
 
           {/* Pre-cadastro sem CPF (14/10/2026): as listas das Areas Especiais e
@@ -785,69 +814,35 @@ const OrganizerConfigPage = () => {
               </CardContent>
             </Card>
           </Recolhivel>
+        </div>
 
-          {/* Guia, Inimigo e Espirito Santo: o cadastro por CPF desses 3
-              papeis morava aqui e mudou pra tela de Geracao de Escalas, a
-              pedido -- so faz sentido perto de quem aplica ("Aplicar CPFs
-              cadastrados", dentro do dialogo Areas Especiais). Ver
-              CpfsAreaEspecialManager.jsx e OrganizerScalesPage.jsx. */}
-
-          {/* Todas as igrejas cadastradas (lista do formulario), com busca,
-              barra de rolagem e a planilha. */}
-          <Recolhivel chave="cfg-igrejas" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.21 }}>
+        <div role="tabpanel" id="painel-valores" aria-labelledby="aba-valores" className={abaAtiva === 'valores' ? 'space-y-8' : 'hidden'}>
+          <Recolhivel chave="cfg-valores" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
-                  <Church className="w-5 h-5 text-blue-400" />
-                  <span>Todas as igrejas cadastradas</span>
+                  <DollarSign className="w-5 h-5 text-emerald-400" />
+                  <span>Valores por Lote</span>
                 </CardTitle>
-                <CardDescription className="text-gray-400">
-                  As igrejas que aparecem no formulário: as parceiras e as adicionadas pela organização,
-                  com o responsável de cada uma e quantos inscritos tem.
-                </CardDescription>
+                <CardDescription className="text-gray-400">Gerencie os períodos e valores cobrados de cada tipo de inscrito.</CardDescription>
               </CardHeader>
-              <CardContent>
-                <IgrejasCadastradasManager />
-              </CardContent>
-            </Card>
-          </Recolhivel>
-
-          {/* Pastores Parceiros (08/10/2026): todos os pastores de cada igreja,
-              para a automacao futura. Ver PastoresParceirosManager.jsx. */}
-          <Recolhivel chave="cfg-pastores" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.215 }}>
-            <Card className="glass-effect border-white/10 bg-black/40">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-white">
-                  <BookUser className="w-5 h-5 text-sky-400" />
-                  <span>Pastores Parceiros</span>
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Todos os pastores de cada igreja parceira, com contato. Uma igreja pode ter mais de um pastor.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <PastoresParceirosManager />
-              </CardContent>
-            </Card>
-          </Recolhivel>
-
-          {/* A relacao das igrejas "OUTRA": nomes que os equipantes digitaram
-              porque a igreja deles nao esta nas 145 da lista. Daqui o
-              organizador promove um nome para dentro do formulario. */}
-          <Recolhivel chave="cfg-outra" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
-            <Card className="glass-effect border-white/10 bg-black/40">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-white">
-                  <Church className="w-5 h-5 text-emerald-400" />
-                  <span>Igrejas “OUTRA”</span>
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Quem não achou a própria igreja na lista escolhe “OUTRA” e escreve o nome.
-                  Aqui você decide quais desses nomes entram na lista do formulário.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <OutrasIgrejasManager />
+              <CardContent className="space-y-10">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-white border-b border-white/10 pb-2">Taxa de Alimentação Equipante</h3>
+                  <PricingPeriodsManager 
+                    type="equipante" 
+                    periods={config.equipante_pricing_periods} 
+                    onSave={(periods) => handleSavePricingPeriods('equipante', periods)} 
+                  />
+                </div>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-white border-b border-white/10 pb-2">Taxa de Inscrição Acampante</h3>
+                  <PricingPeriodsManager 
+                    type="acampante" 
+                    periods={config.acampante_pricing_periods} 
+                    onSave={(periods) => handleSavePricingPeriods('acampante', periods)} 
+                  />
+                </div>
               </CardContent>
             </Card>
           </Recolhivel>
@@ -973,51 +968,119 @@ const OrganizerConfigPage = () => {
               </CardContent>
             </Card>
           </Recolhivel>
+        </div>
 
-          <Recolhivel chave="cfg-abertura" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+        <div role="tabpanel" id="painel-igrejas" aria-labelledby="aba-igrejas" className={abaAtiva === 'igrejas' ? 'space-y-8' : 'hidden'}>
+          {/* Guia, Inimigo e Espirito Santo: o cadastro por CPF desses 3
+              papeis morava aqui e mudou pra tela de Geracao de Escalas, a
+              pedido -- so faz sentido perto de quem aplica ("Aplicar CPFs
+              cadastrados", dentro do dialogo Areas Especiais). Ver
+              CpfsAreaEspecialManager.jsx e OrganizerScalesPage.jsx. */}
+
+          <Recolhivel chave="cfg-limite" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
-                  <FileText className="w-5 h-5 text-orange-400" />
-                  <span>Controle de Abertura das Inscrições</span>
+                  <Users className="w-5 h-5 text-orange-400" />
+                  <span>Limite de Inscrições por Igreja</span>
                 </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Controla quantos acampantes cada igreja pode inscrever.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
-                  <div className="flex items-center space-x-3">
-                    {statusControl.equipantes ? <Unlock className="text-emerald-500 w-6 h-6" /> : <Lock className="text-red-500 w-6 h-6" />}
-                    <div>
-                      <p className="font-semibold text-white">Equipantes</p>
-                      <p className="text-sm text-gray-400">{statusControl.equipantes ? 'Inscrições abertas' : 'Inscrições fechadas'}</p>
-                      {!loteEquipanteHoje && (
-                        <p className="text-xs text-amber-400 mt-1">Sem lote de preço para hoje: o site fica fechado até haver um lote cobrindo a data.</p>
-                      )}
-                    </div>
-                  </div>
-                  <Switch data-dica="Abrir ou fechar o formulário de inscrição de equipantes no site." checked={statusControl.equipantes} onCheckedChange={c => handleToggleInscriptionStatus('equipantes', c)} disabled={savingStatus} />
-                </div>
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
-                  <div className="flex items-center space-x-3">
-                    {statusControl.acampantes ? <Unlock className="text-emerald-500 w-6 h-6" /> : <Lock className="text-red-500 w-6 h-6" />}
-                    <div>
-                      <p className="font-semibold text-white">Acampantes</p>
-                      <p className="text-sm text-gray-400">{statusControl.acampantes ? 'Inscrições abertas' : 'Inscrições fechadas'}</p>
-                      {!loteAcampanteHoje && (
-                        <p className="text-xs text-amber-400 mt-1">Sem lote de preço para hoje: o site fica fechado até haver um lote cobrindo a data.</p>
-                      )}
-                    </div>
-                  </div>
-                  <Switch data-dica="Abrir ou fechar o formulário de inscrição de acampantes no site." checked={statusControl.acampantes} onCheckedChange={c => handleToggleInscriptionStatus('acampantes', c)} disabled={savingStatus} />
-                </div>
+              <CardContent>
+                <LimiteIgrejasManager
+                  limiteGeral={config.limite_acampantes_por_igreja}
+                  onSaveLimiteGeral={handleSaveLimiteAcampantesPorIgreja}
+                />
               </CardContent>
             </Card>
           </Recolhivel>
 
-          {/* Codigo de inscricao do equipante -- 07/11/2026. */}
-          <Recolhivel chave="cfg-codigo-inscricao" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.42 }}>
-            <CodigosInscricaoCard />
+          {/* Todas as igrejas cadastradas (lista do formulario), com busca,
+              barra de rolagem e a planilha. */}
+          <Recolhivel chave="cfg-igrejas" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.21 }}>
+            <Card className="glass-effect border-white/10 bg-black/40">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-white">
+                  <Church className="w-5 h-5 text-blue-400" />
+                  <span>Todas as igrejas cadastradas</span>
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  As igrejas que aparecem no formulário: as parceiras e as adicionadas pela organização,
+                  com o responsável de cada uma e quantos inscritos tem.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <IgrejasCadastradasManager />
+              </CardContent>
+            </Card>
           </Recolhivel>
 
+          {/* Pastores Parceiros (08/10/2026): todos os pastores de cada igreja,
+              para a automacao futura. Ver PastoresParceirosManager.jsx. */}
+          <Recolhivel chave="cfg-pastores" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.215 }}>
+            <Card className="glass-effect border-white/10 bg-black/40">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-white">
+                  <BookUser className="w-5 h-5 text-sky-400" />
+                  <span>Pastores Parceiros</span>
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Todos os pastores de cada igreja parceira, com contato. Uma igreja pode ter mais de um pastor.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PastoresParceirosManager />
+              </CardContent>
+            </Card>
+          </Recolhivel>
+
+          {/* A relacao das igrejas "OUTRA": nomes que os equipantes digitaram
+              porque a igreja deles nao esta nas 145 da lista. Daqui o
+              organizador promove um nome para dentro do formulario. */}
+          <Recolhivel chave="cfg-outra" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+            <Card className="glass-effect border-white/10 bg-black/40">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-white">
+                  <Church className="w-5 h-5 text-emerald-400" />
+                  <span>Igrejas “OUTRA”</span>
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Quem não achou a própria igreja na lista escolhe “OUTRA” e escreve o nome.
+                  Aqui você decide quais desses nomes entram na lista do formulário.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <OutrasIgrejasManager />
+              </CardContent>
+            </Card>
+          </Recolhivel>
+        </div>
+
+        <div role="tabpanel" id="painel-cadastros" aria-labelledby="aba-cadastros" className={abaAtiva === 'cadastros' ? 'space-y-8' : 'hidden'}>
+          {/* Acampantes que desistiram -- 20/10/2026. */}
+          <Recolhivel chave="cfg-desistentes" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
+            <DesistentesCard />
+          </Recolhivel>
+
+          {/* Acampante uma vez so: liberar CPF -- so Desenvolvedores (04/11/2026). */}
+          <Recolhivel chave="cfg-acampante-uma-vez" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
+            <AcampanteUmaVezCard />
+          </Recolhivel>
+
+          {/* Ocorrencias anteriores: comunicado + asterisco -- 05/11/2026. */}
+          <Recolhivel chave="cfg-ocorrencias" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
+            <OcorrenciasCard />
+          </Recolhivel>
+
+          {/* Excluir cadastro (duplicados) -- 18/10/2026. */}
+          <Recolhivel chave="cfg-excluir" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
+            <ExcluirCadastroCard />
+          </Recolhivel>
+        </div>
+
+        <div role="tabpanel" id="painel-acesso" aria-labelledby="aba-acesso" className={abaAtiva === 'acesso' ? 'space-y-8' : 'hidden'}>
           {/* Senhas dos organizadores: troca da propria e, para a conta de
               permissao maxima, geracao de senha para os outros. */}
           <Recolhivel chave="cfg-senhas" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
@@ -1038,27 +1101,9 @@ const OrganizerConfigPage = () => {
           <Recolhivel chave="cfg-lgpd" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
             <LgpdApagamentosCard />
           </Recolhivel>
+        </div>
 
-          {/* Acampantes que desistiram -- 20/10/2026. */}
-          <Recolhivel chave="cfg-desistentes" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
-            <DesistentesCard />
-          </Recolhivel>
-
-          {/* Acampante uma vez so: liberar CPF -- so Desenvolvedores (04/11/2026). */}
-          <Recolhivel chave="cfg-acampante-uma-vez" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
-            <AcampanteUmaVezCard />
-          </Recolhivel>
-
-          {/* Ocorrencias anteriores: comunicado + asterisco -- 05/11/2026. */}
-          <Recolhivel chave="cfg-ocorrencias" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
-            <OcorrenciasCard />
-          </Recolhivel>
-
-          {/* Excluir cadastro (duplicados) -- 18/10/2026. */}
-          <Recolhivel chave="cfg-excluir" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.49 }}>
-            <ExcluirCadastroCard />
-          </Recolhivel>
-
+        <div role="tabpanel" id="painel-risco" aria-labelledby="aba-risco" className={abaAtiva === 'risco' ? 'space-y-8' : 'hidden'}>
           {/* Atalho para o ambiente de teste (12/10/2026). */}
           <Recolhivel chave="cfg-teste" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.495 }}>
             <AmbienteTesteCard />

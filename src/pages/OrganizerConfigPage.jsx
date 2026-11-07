@@ -596,12 +596,12 @@ const OrganizerConfigPage = () => {
 
         {/* Abas (07/11/2026): os quadros sao os mesmos, so agrupados. Todos ficam
             montados (so escondidos) para o Salvar do quadro Geral seguir valendo. */}
-        <div role="tablist" aria-label="Seções das configurações" className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+        <div role="tablist" aria-label="Seções das configurações" className="flex gap-2 overflow-x-auto pb-1">
           {ABAS_CONFIG.map(({ id, rotulo, Icone }) => (
             <button key={id} type="button" role="tab" id={`aba-${id}`} aria-selected={abaAtiva === id}
               aria-controls={`painel-${id}`} onClick={() => escolherAba(id)}
               data-dica={`Abrir a seção ${rotulo}.`}
-              className={`flex shrink-0 items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${abaAtiva === id ? 'border-blue-400/60 bg-blue-500/20 text-white' : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white'}`}>
+              className={`flex flex-1 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${abaAtiva === id ? 'border-blue-400/60 bg-blue-500/20 text-white' : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white'}`}>
               <Icone className="w-4 h-4" />{rotulo}
             </button>
           ))}

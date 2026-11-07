@@ -48,6 +48,7 @@ import VerificacaoCPF from '@/components/common/VerificacaoCPF';
 import EscolherDiasEquipante from '@/components/inscricao/EscolherDiasEquipante';
 import TagSoDomingo from '@/components/common/TagSoDomingo';
 import ComunicadoOcorrencia from '@/components/inscricao/ComunicadoOcorrencia';
+import CodigoInscricao from '@/components/inscricao/CodigoInscricao';
 import { comunicadoDoCpf } from '@/services/ocorrenciasService';
 import AcessoCadastro from '@/components/equipante/AcessoCadastro';
 import EquipanteWorkflowStatus from '@/components/equipante/EquipanteWorkflowStatus';
@@ -255,12 +256,22 @@ const EquipantePage = () => {
     especialidadeSaude: '', especialidadeSaudeOutro: '', especialidadesSaudeAdicionais: [],
     metodoPagamento: '',
     soDomingo: false,
+    codigoInscricao: '',
   });
+
+  // Codigo de inscricao (07/11/2026, migration 20261107a): todo equipante de
+  // todos os dias informa o codigo que a organizacao passa na reuniao. Quem nao
+  // tem pendencia na ficha informa logo depois do CPF (passo 'codigo'); quem
+  // tem, so no fim do formulario, depois de corrigir tudo (codigoNoFim).
+  // So Domingo nao pede codigo.
+  const [codigoNoFim, setCodigoNoFim] = useState(false);
 
   // Antes do formulario (novo ou reinscricao): na janela do domingo, pergunta
   // os dias; fora dela, segue direto para `todos` (que ja vem resolvido com as
   // inscricoes abertas ou fechadas).
-  const seguirParaCadastro = (todos, domingo = 'formulario') => {
+  const seguirParaCadastro = (todos, domingo = 'formulario', { codigoDepois = false } = {}) => {
+    setCodigoNoFim(codigoDepois);
+    if (todos === 'formulario' && !codigoDepois) todos = 'codigo';
     if (podeDomingo) {
       setDestinosDias({ todos, domingo });
       setCurrentStep('escolher-dias');
@@ -273,7 +284,9 @@ const EquipantePage = () => {
   const escolherDias = (escolha) => {
     const soDomingo = escolha === 'domingo';
     setFormData(prev => ({ ...prev, soDomingo }));
-    setCurrentStep(soDomingo ? destinosDias.domingo : destinosDias.todos);
+    // Ja conferiu o codigo e so trocou os dias: nao pede de novo.
+    const todos = destinosDias.todos === 'codigo' && formData.codigoInscricao ? 'formulario' : destinosDias.todos;
+    setCurrentStep(soDomingo ? destinosDias.domingo : todos);
   };
 
   const [loading, setLoading] = useState(false);
@@ -332,8 +345,9 @@ const EquipantePage = () => {
     setNascimentoConfirmado('');
     setNascimentoDigitado('');
     setVerificacao(null);
-    setFormData(prev => ({ ...prev, cpf: '', nome: '', semCpf: false, soDomingo: false }));
+    setFormData(prev => ({ ...prev, cpf: '', nome: '', semCpf: false, soDomingo: false, codigoInscricao: '' }));
     setFichaAnterior(false);
+    setCodigoNoFim(false);
     setDestinosDias(null);
     setCurrentStep('verificacao');
   };
@@ -402,14 +416,20 @@ const EquipantePage = () => {
         // Ficha de uma edicao anterior (04/11/2026, Patrick): com o CPF a
         // ficha ja vem inteira, sem pedir o nome completo. O formulario abre
         // preenchido; as pendencias da ficha aparecem nos proprios campos.
+        // Com pendencia que trava, o codigo da inscricao so aparece no fim do
+        // formulario, depois de corrigir (Patrick, 07/11/2026).
+        let codigoDepois = false;
         if (result.cpf) {
           const r = await buscarFichaAnterior(result.cpf, null);
           if (r.ok) {
-            setFormData(prev => ({ ...prev, ...mapDbToFormData(r.ficha) }));
+            const ficha = mapDbToFormData(r.ficha);
+            setFormData(prev => ({ ...prev, ...ficha }));
             setFichaAnterior(true);
+            codigoDepois = (pendenciasDoFormulario({ ...formData, ...mapDbToFormData(loadedData), ...ficha }) || [])
+              .some((p) => p.bloqueia);
           }
         }
-        seguirParaCadastro(podeCadastrar ? 'formulario' : 'fechadas');
+        seguirParaCadastro(podeCadastrar ? 'formulario' : 'fechadas', 'formulario', { codigoDepois });
       } else {
         if (hasPaid) {
           setCurrentStep('sucesso');
@@ -589,6 +609,16 @@ const EquipantePage = () => {
       irParaCampo(travando[0].campo);
       return;
     }
+    if (!formData.soDomingo && !formData.codigoInscricao) {
+      toast({
+        title: 'Falta o código da inscrição',
+        description: 'Informe o código que a organização passou e toque em "Conferir código".',
+        variant: 'destructive'
+      });
+      setCodigoNoFim(true);
+      setTimeout(() => irParaCampo('codigo-inscricao'), 50);
+      return;
+    }
     const problemaCampo = conferirInscricao(formData, 'equipante');
     if (problemaCampo) {
       toast({ title: problemaCampo.titulo, description: problemaCampo.descricao, variant: 'destructive' });
@@ -704,6 +734,12 @@ const EquipantePage = () => {
       }
       
       const result = await criarInscricao(submissionData, 'equipante', chaveTeste);
+      if (result.codigoInvalido) {
+        // O codigo foi desligado no meio do caminho: pede de novo no fim.
+        setFormData(prev => ({ ...prev, codigoInscricao: '' }));
+        setCodigoNoFim(true);
+        setTimeout(() => irParaCampo('codigo-inscricao'), 50);
+      }
       
       if (result.success) {
         setInscricaoData(result.data);
@@ -816,6 +852,16 @@ const EquipantePage = () => {
             texto={comunicado.texto}
             onDeclarou={() => continuarVerificacao(comunicado.resultado)}
             onVoltar={() => setCurrentStep('verificacao')}
+          />
+        )}
+
+        {currentStep === 'codigo' && (
+          <CodigoInscricao
+            onConferido={(codigo) => {
+              setFormData(prev => ({ ...prev, codigoInscricao: codigo }));
+              setCurrentStep('formulario');
+            }}
+            onVoltar={sairDaInscricao}
           />
         )}
 
@@ -953,6 +999,16 @@ const EquipantePage = () => {
                   <AreasDeTrabalho formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
                 )}
                 <AvisoPrivacidadeEquipante />
+                {/* Codigo no fim: so para quem tinha pendencia, e so depois de
+                    corrigir todas as que travam. */}
+                {!formData.soDomingo && codigoNoFim
+                  && !(pendencias || []).some((p) => p.bloqueia) && (
+                  <CodigoInscricao
+                    noFormulario
+                    conferido={formData.codigoInscricao}
+                    onConferido={(codigo) => setFormData(prev => ({ ...prev, codigoInscricao: codigo }))}
+                  />
+                )}
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg" disabled={loading}>
                   {loading ? <RefreshCw className="animate-spin mr-2" /> : formData.soDomingo ? 'Enviar inscrição para Domingo' : 'Enviar Inscrição'}
                 </Button>

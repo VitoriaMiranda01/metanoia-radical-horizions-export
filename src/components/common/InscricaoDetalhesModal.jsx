@@ -719,9 +719,22 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
 
           {/* Status e Data */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-4 border-t border-white/10">
-            <div className="bg-white/5 p-3 rounded-md">
-              <span className="text-sm text-gray-400 block mb-1">Status:</span>
-              <div className="mt-1">{getStatusBadge(inscricao.status)}</div>
+            <div className="flex flex-wrap gap-3">
+              <div className="bg-white/5 p-3 rounded-md">
+                <span className="text-sm text-gray-400 block mb-1">Status:</span>
+                <div className="mt-1">{getStatusBadge(inscricao.status)}</div>
+              </div>
+              {/* Codigo de inscricao usado (20261107a). Vazio: inscricao manual
+                  da organizacao, So Domingo ou feita antes do codigo existir. */}
+              {isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md">
+                  <span className="text-sm text-gray-400 block mb-1">Código de inscrição:</span>
+                  <p className="text-white font-medium font-mono break-all">
+                    {inscricao.codigo_inscricao
+                      || (inscricao.so_domingo === true ? 'Só Domingo (sem código)' : '-')}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Quem assinou a decisão. Vem carimbado pelo servidor a partir

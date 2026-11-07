@@ -34,6 +34,7 @@ import ExcluirCadastroCard from '@/components/organizer/ExcluirCadastroCard';
 import DesistentesCard from '@/components/organizer/DesistentesCard';
 import AcampanteUmaVezCard from '@/components/organizer/AcampanteUmaVezCard';
 import OcorrenciasCard from '@/components/organizer/OcorrenciasCard';
+import CodigosInscricaoCard from '@/components/organizer/CodigosInscricaoCard';
 import LocaisReuniaoCard from '@/components/organizer/LocaisReuniaoCard';
 import { usePermissoes } from '@/hooks/usePermissoes';
 import { Button } from '@/components/ui/button';
@@ -502,6 +503,8 @@ const OrganizerConfigPage = () => {
               </p>
             </div>
           </div>
+          {/* Codigo de inscricao: qualquer organizador (07/11/2026). */}
+          <CodigosInscricaoCard />
           {perm.pode('ocorrencias') && <OcorrenciasCard />}
           <SenhasOrganizadoresManager />
         </div>
@@ -1008,6 +1011,11 @@ const OrganizerConfigPage = () => {
                 </div>
               </CardContent>
             </Card>
+          </Recolhivel>
+
+          {/* Codigo de inscricao do equipante -- 07/11/2026. */}
+          <Recolhivel chave="cfg-codigo-inscricao" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.42 }}>
+            <CodigosInscricaoCard />
           </Recolhivel>
 
           {/* Senhas dos organizadores: troca da propria e, para a conta de

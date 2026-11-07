@@ -274,6 +274,10 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     ...mappedData,
     metodo_pagamento: processedMethod,
   };
+  // Codigo de inscricao (20261107a): o servidor confere e grava qual foi usado.
+  if (tipo === 'equipante' && formData.codigoInscricao) {
+    payload.codigo_inscricao = formData.codigoInscricao;
+  }
 
   try {
     // O insert direto virou chamada à função criar_inscricao: o servidor é que
@@ -308,6 +312,9 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     const recusaDeDado = mensagemDeErro(error?.message);
     if (recusaDeDado) {
       return { success: false, error: recusaDeDado };
+    }
+    if (error?.message?.includes('CODIGO_INSCRICAO_INVALIDO')) {
+      return { success: false, codigoInvalido: true, error: 'O código da inscrição não vale mais (ou não foi informado). Confira o código com a organização e informe de novo.' };
     }
     if (error?.message?.includes('COMUNICADO_PENDENTE')) {
       return { success: false, error: 'Há um comunicado da organização para este CPF. Volte ao início, informe o CPF e leia o comunicado para continuar.' };

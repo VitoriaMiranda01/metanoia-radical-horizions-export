@@ -731,8 +731,32 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
                   <span className="text-sm text-gray-400 block mb-1">Código de inscrição:</span>
                   <p className="text-white font-medium font-mono break-all">
                     {inscricao.codigo_inscricao
-                      || (inscricao.so_domingo === true ? 'Só Domingo (sem código)' : '-')}
+                      || (inscricao.presente_reuniao_inscricao === false ? 'Sem código (ausente)'
+                        : inscricao.so_domingo === true ? 'Só Domingo (sem código)' : '-')}
                   </p>
+                </div>
+              )}
+              {/* Presenca na reuniao de inscricao (20261108b). Vazio: inscricao
+                  manual da organizacao ou feita antes da pergunta existir. */}
+              {isEquipante && (
+                <div className="bg-white/5 p-3 rounded-md max-w-md">
+                  <span className="text-sm text-gray-400 block mb-1">Reunião de inscrição:</span>
+                  {inscricao.presente_reuniao_inscricao === true && (
+                    <p className="text-emerald-300 font-medium">Presente</p>
+                  )}
+                  {inscricao.presente_reuniao_inscricao === false && (
+                    <>
+                      <p className="text-orange-300 font-medium">Ausente</p>
+                      {inscricao.justificativa_ausencia_reuniao && (
+                        <p className="text-sm text-gray-200 mt-1 whitespace-pre-wrap break-words">
+                          “{inscricao.justificativa_ausencia_reuniao}”
+                        </p>
+                      )}
+                    </>
+                  )}
+                  {inscricao.presente_reuniao_inscricao == null && (
+                    <p className="text-white font-medium">-</p>
+                  )}
                 </div>
               )}
             </div>

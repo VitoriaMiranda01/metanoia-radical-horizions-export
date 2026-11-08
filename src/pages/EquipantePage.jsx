@@ -258,14 +258,28 @@ const EquipantePage = () => {
     metodoPagamento: '',
     soDomingo: false,
     codigoInscricao: '',
+    presenteReuniao: null,
+    justificativaAusencia: '',
   });
 
-  // Codigo de inscricao (07/11/2026, migration 20261107a): todo equipante de
-  // todos os dias informa o codigo que a organizacao passa na reuniao. Quem nao
-  // tem pendencia na ficha informa logo depois do CPF (passo 'codigo'); quem
-  // tem, so no fim do formulario, depois de corrigir tudo (codigoNoFim).
-  // So Domingo nao pede codigo.
+  // Presenca na reuniao de inscricao (08/11/2026, migration 20261108b; antes
+  // so o codigo, 20261107a): todo equipante (todos os dias e So Domingo)
+  // responde se esta na reuniao. Sim = codigo; Nao = justificativa (50+).
+  // Quem nao tem pendencia na ficha responde logo depois do CPF (passo
+  // 'codigo'); quem tem, so no fim do formulario, depois de corrigir tudo
+  // (codigoNoFim).
   const [codigoNoFim, setCodigoNoFim] = useState(false);
+  const presencaRespondida = formData.presenteReuniao === true
+    ? !!formData.codigoInscricao
+    : formData.presenteReuniao === false && !!formData.justificativaAusencia;
+  const registrarPresenca = ({ presente, codigo, justificativa }) =>
+    setFormData(prev => ({
+      ...prev,
+      presenteReuniao: presente,
+      codigoInscricao: presente ? codigo : '',
+      justificativaAusencia: presente ? '' : justificativa,
+    }));
+  const limparPresenca = { codigoInscricao: '', presenteReuniao: null, justificativaAusencia: '' };
 
   // Antes do formulario (novo ou reinscricao): na janela do domingo, pergunta
   // os dias; fora dela, segue direto para `todos` (que ja vem resolvido com as
@@ -273,6 +287,7 @@ const EquipantePage = () => {
   const seguirParaCadastro = (todos, domingo = 'formulario', { codigoDepois = false } = {}) => {
     setCodigoNoFim(codigoDepois);
     if (todos === 'formulario' && !codigoDepois) todos = 'codigo';
+    if (domingo === 'formulario' && !codigoDepois) domingo = 'codigo';
     if (podeDomingo) {
       setDestinosDias({ todos, domingo });
       setCurrentStep('escolher-dias');
@@ -285,9 +300,9 @@ const EquipantePage = () => {
   const escolherDias = (escolha) => {
     const soDomingo = escolha === 'domingo';
     setFormData(prev => ({ ...prev, soDomingo }));
-    // Ja conferiu o codigo e so trocou os dias: nao pede de novo.
-    const todos = destinosDias.todos === 'codigo' && formData.codigoInscricao ? 'formulario' : destinosDias.todos;
-    setCurrentStep(soDomingo ? destinosDias.domingo : todos);
+    // Ja respondeu a presenca e so trocou os dias: nao pergunta de novo.
+    const destino = soDomingo ? destinosDias.domingo : destinosDias.todos;
+    setCurrentStep(destino === 'codigo' && presencaRespondida ? 'formulario' : destino);
   };
 
   const [loading, setLoading] = useState(false);
@@ -346,7 +361,7 @@ const EquipantePage = () => {
     setNascimentoConfirmado('');
     setNascimentoDigitado('');
     setVerificacao(null);
-    setFormData(prev => ({ ...prev, cpf: '', nome: '', semCpf: false, soDomingo: false, codigoInscricao: '' }));
+    setFormData(prev => ({ ...prev, cpf: '', nome: '', semCpf: false, soDomingo: false, ...limparPresenca }));
     setFichaAnterior(false);
     setCodigoNoFim(false);
     setDestinosDias(null);
@@ -610,10 +625,10 @@ const EquipantePage = () => {
       irParaCampo(travando[0].campo);
       return;
     }
-    if (!formData.soDomingo && !formData.codigoInscricao) {
+    if (!presencaRespondida) {
       toast({
-        title: 'Falta o código da inscrição',
-        description: 'Informe o código que a organização passou e toque em "Conferir código".',
+        title: 'Falta responder sobre a reunião',
+        description: 'Diga se está presente na reunião: com o código (Sim) ou com a justificativa da ausência (Não).',
         variant: 'destructive'
       });
       setCodigoNoFim(true);
@@ -738,8 +753,9 @@ const EquipantePage = () => {
       
       const result = await criarInscricao(submissionData, 'equipante', chaveTeste);
       if (result.codigoInvalido) {
-        // O codigo foi desligado no meio do caminho: pede de novo no fim.
-        setFormData(prev => ({ ...prev, codigoInscricao: '' }));
+        // O codigo foi desligado no meio do caminho (ou faltou a resposta da
+        // presenca): pergunta de novo no fim.
+        setFormData(prev => ({ ...prev, ...limparPresenca }));
         setCodigoNoFim(true);
         setTimeout(() => irParaCampo('codigo-inscricao'), 50);
       }
@@ -859,8 +875,8 @@ const EquipantePage = () => {
 
         {currentStep === 'codigo' && (
           <CodigoInscricao
-            onConferido={(codigo) => {
-              setFormData(prev => ({ ...prev, codigoInscricao: codigo }));
+            onConcluido={(resposta) => {
+              registrarPresenca(resposta);
               setCurrentStep('formulario');
             }}
             onVoltar={sairDaInscricao}
@@ -1001,14 +1017,14 @@ const EquipantePage = () => {
                 <AreasDeTrabalho formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange}
                   soExtras={formData.soDomingo} />
                 <AvisoPrivacidadeEquipante />
-                {/* Codigo no fim: so para quem tinha pendencia, e so depois de
-                    corrigir todas as que travam. */}
-                {!formData.soDomingo && codigoNoFim
+                {/* Presenca na reuniao no fim: so para quem tinha pendencia, e
+                    so depois de corrigir todas as que travam. */}
+                {codigoNoFim
                   && !(pendencias || []).some((p) => p.bloqueia) && (
                   <CodigoInscricao
                     noFormulario
-                    conferido={formData.codigoInscricao}
-                    onConferido={(codigo) => setFormData(prev => ({ ...prev, codigoInscricao: codigo }))}
+                    concluido={presencaRespondida ? { presente: formData.presenteReuniao } : null}
+                    onConcluido={registrarPresenca}
                   />
                 )}
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg" disabled={loading}>

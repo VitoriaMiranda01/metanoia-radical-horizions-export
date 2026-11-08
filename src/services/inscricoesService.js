@@ -274,9 +274,16 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     ...mappedData,
     metodo_pagamento: processedMethod,
   };
-  // Codigo de inscricao (20261107a): o servidor confere e grava qual foi usado.
-  if (tipo === 'equipante' && formData.codigoInscricao) {
-    payload.codigo_inscricao = formData.codigoInscricao;
+  // Presenca na reuniao de inscricao (20261108b): presente manda o codigo
+  // (20261107a); ausente manda a justificativa. O servidor confere e grava.
+  if (tipo === 'equipante') {
+    payload.presente_reuniao = formData.presenteReuniao;
+    payload.codigo_inscricao = formData.presenteReuniao ? (formData.codigoInscricao || null) : null;
+    payload.justificativa_ausencia_reuniao = formData.presenteReuniao === false
+      ? (formData.justificativaAusencia || null) : null;
+    // Quem grava a resposta e a hora e o servidor.
+    delete payload.presente_reuniao_inscricao;
+    delete payload.presenca_reuniao_em;
   }
 
   try {
@@ -315,6 +322,12 @@ export const criarInscricao = async (formData, tipo, chaveTeste = null) => {
     }
     if (error?.message?.includes('CODIGO_INSCRICAO_INVALIDO')) {
       return { success: false, codigoInvalido: true, error: 'O código da inscrição não vale mais (ou não foi informado). Confira o código com a organização e informe de novo.' };
+    }
+    if (error?.message?.includes('PRESENCA_REUNIAO_PENDENTE')) {
+      return { success: false, codigoInvalido: true, error: 'Falta responder se você está presente na reunião de inscrição. Responda no fim do formulário e envie de novo.' };
+    }
+    if (error?.message?.includes('JUSTIFICATIVA_AUSENCIA_INVALIDA')) {
+      return { success: false, codigoInvalido: true, error: 'A justificativa da ausência na reunião precisa ter de 50 a 1000 caracteres. Escreva de novo no fim do formulário.' };
     }
     if (error?.message?.includes('COMUNICADO_PENDENTE')) {
       return { success: false, error: 'Há um comunicado da organização para este CPF. Volte ao início, informe o CPF e leia o comunicado para continuar.' };

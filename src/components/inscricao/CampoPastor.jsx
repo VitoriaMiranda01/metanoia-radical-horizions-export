@@ -27,6 +27,12 @@ const CampoPastor = ({ igreja, value, onChange, esperar = 0, doQuadro = false })
   const valorAtual = useRef(value);
   valorAtual.current = value;
   const pastorQuadro = usePastorDoQuadro(doQuadro ? igreja : null, esperar);
+  // A busca dos parceiros (abaixo) volta em paralelo com a do quadro. Se ela
+  // chegasse depois e com lista vazia, apagava o pastor que o quadro tinha
+  // posto: o campo trancado mostrava o nome, mas o formulario enviava vazio
+  // ("Nome do Pastor" faltando, 08/11/2026). Com pastor do quadro, ela nao mexe.
+  const quadroAtual = useRef(pastorQuadro);
+  quadroAtual.current = pastorQuadro;
 
   useEffect(() => {
     if (!pastorQuadro) return;
@@ -53,6 +59,11 @@ const CampoPastor = ({ igreja, value, onChange, esperar = 0, doQuadro = false })
       if (!vivo) return;
       const lista = !error && Array.isArray(data) ? data.map((n) => limparNomeSimples(String(n))).filter(Boolean) : [];
       setPastores(lista);
+      if (quadroAtual.current) {
+        // Garante o nome do quadro mesmo que algo o tenha limpado antes.
+        if (valorAtual.current !== quadroAtual.current) onChange(quadroAtual.current);
+        return;
+      }
       const atual = valorAtual.current || '';
       const podePreencher = !atual.trim() || atual === automatico.current;
       if (lista.length === 1 && podePreencher) {

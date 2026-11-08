@@ -95,8 +95,13 @@ const CodigoInscricao = ({ onConferido, onVoltar, noFormulario = false, conferid
           <p className="text-sm text-gray-300 mt-1">
             {noFormulario
               ? 'Sua ficha está completa. Para enviar a inscrição, informe o código que a organização passou.'
-              : 'A inscrição de equipante só é feita com o código que a organização passa na reunião de inscrição.'}
+              : 'A inscrição de equipante só é feita com o código que a organização passa na reunião de cadastro.'}
           </p>
+          {!noFormulario && (
+            <p className="text-sm font-semibold text-yellow-300 mt-2">
+              “Atenção!! A participação da reunião é obrigatória para equipe de trabalho.”
+            </p>
+          )}
         </div>
       </div>
       {campo}

@@ -166,7 +166,7 @@ const EquipantePage = () => {
   // OUTRA so existe ate a virada de edicao.
   const { permiteOutra, exigeFichaCompleta } = useOpcoesDeIgreja();
   const navigate = useNavigate();
-  const { equipantesAbertos, loteEquipanteHoje, avisoEncerradasLiberado, loading: loadingStatus } = useInscricoesStatus();
+  const { equipantesAbertos, loteEquipanteHoje, loading: loadingStatus } = useInscricoesStatus();
 
   // SESSAO DE TESTE
   // ---------------
@@ -823,13 +823,11 @@ const EquipantePage = () => {
                 escalado, pagar a taxa de alimentacao -- o que acontece
                 justamente depois de as inscricoes fecharem. So o cadastro
                 novo e que fica barrado. */}
-            {/* So aparece 1 dia depois da Reuniao de Inscricao (Patrick, 07/11/2026). */}
-            {!podeCadastrar && !podeDomingo && avisoEncerradasLiberado && (
+            {!podeCadastrar && !podeDomingo && (
               <div className="mb-6 bg-amber-500/10 border border-amber-500/25 p-4 rounded-lg flex items-start gap-3">
                 <Lock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-amber-200 text-sm">
-                  As inscrições de equipante estão <strong>encerradas</strong>. Se você já se
-                  inscreveu, informe seu CPF abaixo para acompanhar a situação da sua inscrição.
+                  As inscrições de equipante estão <strong>encerradas</strong>.
                 </p>
               </div>
             )}

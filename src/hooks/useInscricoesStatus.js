@@ -7,8 +7,7 @@ const TUDO_ABERTO = {
   equipantesLigados: true,
   acampantesLigados: true,
   loteEquipanteHoje: true,
-  loteAcampanteHoje: true,
-  avisoEncerradasLiberado: false
+  loteAcampanteHoje: true
 };
 
 export const useInscricoesStatus = () => {
@@ -33,8 +32,7 @@ export const useInscricoesStatus = () => {
           equipantesLigados: eqLigado,
           acampantesLigados: acLigado,
           loteEquipanteHoje: eqLote,
-          loteAcampanteHoje: acLote,
-          avisoEncerradasLiberado: data.aviso_encerradas_liberado === true
+          loteAcampanteHoje: acLote
         });
         setError(null);
       }

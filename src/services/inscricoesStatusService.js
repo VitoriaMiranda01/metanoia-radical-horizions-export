@@ -19,8 +19,6 @@ export const fetchInscricoesStatus = async () => {
         inscricoes_acampantes: config.inscricoes_acampantes,
         lote_equipante_hoje: config.lote_equipante_hoje !== false,
         lote_acampante_hoje: config.lote_acampante_hoje !== false,
-        // 20261107a: so a partir de 1 dia depois da Reuniao de Inscricao.
-        aviso_encerradas_liberado: config.aviso_encerradas_liberado === true,
         updated_at: config.updated_at
       };
     } catch (error) {

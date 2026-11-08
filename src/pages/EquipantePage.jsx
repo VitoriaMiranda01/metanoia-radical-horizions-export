@@ -824,9 +824,9 @@ const EquipantePage = () => {
                 justamente depois de as inscricoes fecharem. So o cadastro
                 novo e que fica barrado. */}
             {!podeCadastrar && !podeDomingo && (
-              <div className="mb-6 bg-amber-500/10 border border-amber-500/25 p-4 rounded-lg flex items-start gap-3">
-                <Lock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                <p className="text-amber-200 text-sm">
+              <div className="max-w-md mx-auto mb-6 bg-amber-500/10 border border-amber-500/25 p-4 rounded-lg flex items-center justify-center gap-3">
+                <Lock className="w-5 h-5 text-amber-400 shrink-0" />
+                <p className="text-amber-200 text-sm text-center">
                   As inscrições de equipante estão <strong>encerradas</strong>.
                 </p>
               </div>

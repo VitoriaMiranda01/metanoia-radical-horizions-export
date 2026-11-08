@@ -1486,7 +1486,7 @@ const IncluirNaEquipe = ({ area, ocupado, onBuscar, onIncluir }) => {
   );
 };
 
-// Area extra (caminhao, cozinha, limpeza): os aprovados pela organizacao e
+// Area extra (caminhao, cozinha, descarga): os aprovados pela organizacao e
 // quem os lideres puxaram. Os lideres so tiram quem algum lider incluiu
 // (a area pode ter varios lideres desde 23/10/2026).
 const EquipeExtra = ({ extra, equipanteId, dono, onMudou }) => {

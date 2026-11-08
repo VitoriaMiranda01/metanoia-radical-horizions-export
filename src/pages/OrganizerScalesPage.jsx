@@ -2153,7 +2153,7 @@ const OrganizerScalesPage = () => {
                   <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />
                 </Button>
                 )}
-                <Button data-dica="Listas dos mutirões (caminhão, cozinha, limpeza). Não mexe na escala." onClick={() => setVerAreasExtra(true)} variant="outline"
+                <Button data-dica="Listas dos mutirões (caminhão, cozinha, descarga do domingo). Não mexe na escala." onClick={() => setVerAreasExtra(true)} variant="outline"
                   className="bg-blue-600/20 text-blue-300 border-blue-600/50 hover:bg-blue-600/40 hover:text-blue-200">
                   <Truck className="mr-2 h-4 w-4" /> Áreas Extras
                   <ChevronRight className="ml-1.5 h-4 w-4 opacity-50" />

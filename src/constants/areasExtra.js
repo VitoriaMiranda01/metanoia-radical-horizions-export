@@ -1,4 +1,4 @@
-// As 3 disponibilidades opcionais do fim do formulario de equipante.
+// As disponibilidades opcionais do fim do formulario de equipante.
 //
 // Ate agora a lista morava dentro de AreasDeTrabalho.jsx e nao existia em
 // nenhum outro lugar -- a informacao era gravada numa unica coluna de texto
@@ -24,15 +24,22 @@ export const AREAS_EXTRA = [
     detalhe: 'Preparar o lanche dos acampantes na Centenário',
     frase: 'Disponível para cozinha da Centenario na Sexta-Feira a tarde preparando o lanche dos ACAMPANTES.'
   },
+  // Limpeza da Centenario (sexta) saiu em 08/11/2026 (migration 20261108a).
+  // A descarga e casada no servidor por "descarreg"/"Teresopolis" ANTES de
+  // "caminh" (_area_extra_da_frase): mudar a frase precisa manter uma dessas.
   {
-    chave: 'limpeza',
-    rotulo: 'Limpeza — sexta, após a saída',
-    detalhe: 'Limpar a Centenário depois que os acampantes saírem',
-    frase: 'Disponível para ajudar na limpeza da Centenario após a saída dos ACAMPANTES na Sexta-Feira.'
+    chave: 'descarga',
+    rotulo: 'Descarga do caminhão — domingo, ~13h',
+    detalhe: 'Descarregar o caminhão em Teresópolis após o evento',
+    frase: 'Disponível para ajudar a descarregar o caminhão em Teresópolis no Domingo após o evento, por volta das 13h.',
+    soDomingo: true
   }
 ];
 
 export const FRASES_AREAS_EXTRA = AREAS_EXTRA.map((a) => a.frase);
+
+// Quem se inscreve so no domingo ve (e o servidor guarda) so estas.
+export const FRASES_AREAS_EXTRA_DOMINGO = AREAS_EXTRA.filter((a) => a.soDomingo).map((a) => a.frase);
 
 export const areaExtraPorChave = (chave) =>
   AREAS_EXTRA.find((a) => a.chave === chave) || null;

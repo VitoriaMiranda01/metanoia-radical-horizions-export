@@ -255,7 +255,7 @@ export const exportRelacaoPagamentos = (linhas) => {
 };
 
 /**
- * Áreas de Trabalho Extra: uma aba por mutirão (Caminhão, Cozinha, Limpeza).
+ * Áreas de Trabalho Extra: uma aba por mutirão (Caminhão, Cozinha, Descarga).
  *
  * É a lista que o organizador leva no dia — quem se ofereceu, o telefone, e
  * se a disponibilidade foi aceita. Recebe as linhas já vindas do servidor

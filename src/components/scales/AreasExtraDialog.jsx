@@ -15,9 +15,9 @@ import { cn } from '@/lib/utils';
 import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 /**
- * Áreas de Trabalho Extra — quem se ofereceu para os três mutirões da
- * Centenário (carregar o caminhão na quinta, cozinha na sexta à tarde,
- * limpeza depois que os acampantes saem).
+ * Áreas de Trabalho Extra — quem se ofereceu para os mutirões (carregar o
+ * caminhão na Centenário na quinta, cozinha na sexta à tarde, descarregar o
+ * caminhão em Teresópolis no domingo ~13h). Limpeza saiu em 08/11/2026.
  *
  * ISTO NÃO É ESCALA. Nada aqui entra em `escalas`, nada aqui conta para
  * "faltam N" e nada aqui impede ou libera o lançamento da escala. É uma

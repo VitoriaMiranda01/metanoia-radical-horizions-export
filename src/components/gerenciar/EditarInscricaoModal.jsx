@@ -24,7 +24,7 @@ import { GROUPS } from '@/utils/gruposTrailha';
 import GrupoTrilhaTag from '@/components/common/GrupoTrilhaTag';
 import VinculosDoAcampante from '@/components/gerenciar/VinculosAcampante';
 import { AREAS_INSCRICAO, AREA_DISPONIVEL_QUALQUER } from '@/constants/workAreas';
-import { FRASES_AREAS_EXTRA } from '@/constants/areasExtra';
+import { FRASES_AREAS_EXTRA, FRASES_AREAS_EXTRA_DOMINGO } from '@/constants/areasExtra';
 import { AREA_SAUDE, ESPECIALIDADE_OUTRO, problemaEspecialidade } from '@/constants/especialidadesSaude';
 import CampoEspecialidadeSaude from '@/components/inscricao/CampoEspecialidadeSaude';
 import { ehMenorDeIdade, precisaAcompanhante } from '@/utils/responsavelMenor';
@@ -218,6 +218,31 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
   );
 
   const set = (campo) => (valor) => setForm((prev) => ({ ...prev, [campo]: valor }));
+
+  // Caixas das areas extra; frase antiga fora da lista (ex.: limpeza) continua
+  // aparecendo para poder ser desmarcada.
+  const caixasExtras = (frases) => (
+    <div className="space-y-2 md:col-span-2">
+      <Label className="text-white text-sm block">Áreas de trabalho extra (opcional)</Label>
+      {[...frases, ...separarExtras(inscricao.area_trabalho_extra).filter((x) => !frases.includes(x))].map((op) => {
+        const marcadas = separarExtras(form.area_trabalho_extra);
+        return (
+          <label key={op} className="flex items-start space-x-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={marcadas.includes(op)}
+              onChange={(e) => {
+                const nova = e.target.checked ? [...marcadas, op] : marcadas.filter((x) => x !== op);
+                set('area_trabalho_extra')(nova.join('; ') || null);
+              }}
+              className="w-4 h-4 mt-0.5 text-blue-600 bg-white/10 border-white/30 rounded"
+            />
+            <span className="text-white text-sm leading-tight">{op}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
 
   // Igreja com pastor no quadro: o nome dele vale na ficha (20261029e).
   const pastorQuadro = usePastorDoQuadro(isEquipante ? form.igreja : null);
@@ -672,26 +697,14 @@ const EditarInscricaoModal = ({ inscricao, onClose, onSave, avisoDoGrupo, vinc, 
                   />
                 </div>
               )}
-              <div className="space-y-2 md:col-span-2">
-                <Label className="text-white text-sm block">Áreas de trabalho extra (opcional)</Label>
-                {[...FRASES_AREAS_EXTRA, ...separarExtras(inscricao.area_trabalho_extra).filter((x) => !FRASES_AREAS_EXTRA.includes(x))].map((op) => {
-                  const marcadas = separarExtras(form.area_trabalho_extra);
-                  return (
-                    <label key={op} className="flex items-start space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={marcadas.includes(op)}
-                        onChange={(e) => {
-                          const nova = e.target.checked ? [...marcadas, op] : marcadas.filter((x) => x !== op);
-                          set('area_trabalho_extra')(nova.join('; ') || null);
-                        }}
-                        className="w-4 h-4 mt-0.5 text-blue-600 bg-white/10 border-white/30 rounded"
-                      />
-                      <span className="text-white text-sm leading-tight">{op}</span>
-                    </label>
-                  );
-                })}
-              </div>
+              {caixasExtras(FRASES_AREAS_EXTRA)}
+            </Secao>
+          )}
+
+          {/* Só Domingo: das areas extra, so a descarga do domingo (20261108a). */}
+          {isEquipante && form.so_domingo && (
+            <Secao titulo="Áreas de Trabalho Extra">
+              {caixasExtras(FRASES_AREAS_EXTRA_DOMINGO)}
             </Secao>
           )}
 

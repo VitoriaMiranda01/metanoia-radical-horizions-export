@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import FormSection from './FormSection';
 import { cn } from '@/lib/utils';
 import { AREAS_INSCRICAO, AREA_DISPONIVEL_QUALQUER } from '@/constants/workAreas';
-import { FRASES_AREAS_EXTRA } from '@/constants/areasExtra';
+import { FRASES_AREAS_EXTRA, FRASES_AREAS_EXTRA_DOMINGO } from '@/constants/areasExtra';
 import { escolheuSaude } from '@/constants/especialidadesSaude';
 import CampoEspecialidadeSaude from './CampoEspecialidadeSaude';
 
@@ -22,12 +22,13 @@ import CampoEspecialidadeSaude from './CampoEspecialidadeSaude';
 
 // semExtras: so as 3 opcoes (usado ao completar o cadastro, onde as areas
 // extra nao fazem parte do que falta).
-const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange, semExtras = false }) => {
+// soExtras: so as areas extra do domingo (inscricao Só Domingo, 08/11/2026).
+const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange, semExtras = false, soExtras = false }) => {
   const AREAS = AREAS_INSCRICAO;
 
   // As frases vivem em src/constants/areasExtra.js: a tela de Geracao de
   // Escalas precisa da mesma lista para montar a relacao de quem se ofereceu.
-  const EXTRA_OPTIONS = FRASES_AREAS_EXTRA;
+  const EXTRA_OPTIONS = soExtras ? FRASES_AREAS_EXTRA_DOMINGO : FRASES_AREAS_EXTRA;
 
   // Helper to check if an area is selected in other fields
   const isAreaDisabled = (area, currentFieldName) => {
@@ -98,6 +99,35 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange, semExtras
     </div>
   );
 
+  const caixasExtras = (
+    <div className="flex flex-col space-y-3">
+      {EXTRA_OPTIONS.map((option) => {
+        const isSelected = (formData.areasTrabalhoExtra || []).includes(option);
+        return (
+          <label key={option} className="flex items-start space-x-2 cursor-pointer hover:bg-white/5 p-2 rounded transition-colors">
+            <input
+              type="checkbox"
+              name="areasTrabalhoExtra"
+              value={option}
+              checked={isSelected}
+              onChange={(e) => handleExtraChange(option, e.target.checked)}
+              className="w-4 h-4 mt-1 text-blue-600 focus:ring-blue-500 bg-white/10 border-white/30 rounded"
+            />
+            <span className="text-white text-sm leading-tight">{option}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+
+  if (soExtras) {
+    return (
+      <FormSection title="Áreas de Trabalho Extra (opcional)">
+        {caixasExtras}
+      </FormSection>
+    );
+  }
+
   return (
     <FormSection title="Áreas de Trabalho">
       <div className="space-y-8">
@@ -135,24 +165,7 @@ const AreasDeTrabalho = ({ formData, handleChange, handleSelectChange, semExtras
 
         {!semExtras && <div className="pt-6 border-t border-white/10 mt-6">
            <Label className="text-white block mb-4 text-md font-medium">Áreas de Trabalho Extra (opcional)</Label>
-            <div className="flex flex-col space-y-3">
-              {EXTRA_OPTIONS.map((option) => {
-                const isSelected = (formData.areasTrabalhoExtra || []).includes(option);
-                return (
-                  <label key={option} className="flex items-start space-x-2 cursor-pointer hover:bg-white/5 p-2 rounded transition-colors">
-                    <input
-                      type="checkbox"
-                      name="areasTrabalhoExtra"
-                      value={option}
-                      checked={isSelected}
-                      onChange={(e) => handleExtraChange(option, e.target.checked)}
-                      className="w-4 h-4 mt-1 text-blue-600 focus:ring-blue-500 bg-white/10 border-white/30 rounded"
-                    />
-                    <span className="text-white text-sm leading-tight">{option}</span>
-                  </label>
-                );
-              })}
-            </div>
+            {caixasExtras}
         </div>}
       </div>
     </FormSection>

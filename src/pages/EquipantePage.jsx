@@ -30,6 +30,7 @@ import AvisoPrivacidadeEquipante from '@/components/inscricao/AvisoPrivacidadeEq
 import QuadroPendencias from '@/components/inscricao/QuadroPendencias';
 import ResponsavelMenor from '@/components/inscricao/ResponsavelMenor';
 import { escolheuSaude, problemaEspecialidade } from '@/constants/especialidadesSaude';
+import { FRASES_AREAS_EXTRA_DOMINGO } from '@/constants/areasExtra';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao, buscarFichaAnterior, verificarCPF } from '@/services/inscricoesService';
 import { problemaTelefone } from '@/utils/telefone';
@@ -726,7 +727,9 @@ const EquipantePage = () => {
         // Ficha antiga pode ter vindo com areas da edicao passada.
         submissionData = {
           ...submissionData,
-          areaTrabalhoOpcao1: '', areaTrabalhoOpcao2: '', areaTrabalhoOpcao3: '', areasTrabalhoExtra: [],
+          areaTrabalhoOpcao1: '', areaTrabalhoOpcao2: '', areaTrabalhoOpcao3: '',
+          areasTrabalhoExtra: (Array.isArray(submissionData.areasTrabalhoExtra) ? submissionData.areasTrabalhoExtra : [])
+            .filter((f) => FRASES_AREAS_EXTRA_DOMINGO.includes(f)),
         };
       }
       if (submissionData.estaAfastado === 'NÃO') {
@@ -993,10 +996,10 @@ const EquipantePage = () => {
                 <InfoSaude formData={formData} handleChange={handleChange} isEquipante={true} />
                 <InfoEclesiasticas formData={formData} handleChange={handleChange} isEquipante={true} pendencias={pendencias} />
                 <DadosComplementaresEquipante formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} pendencias={pendencias} />
-                {/* Quem vai so no domingo nao escolhe area nem area extra (20261025c). */}
-                {!formData.soDomingo && (
-                  <AreasDeTrabalho formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} />
-                )}
+                {/* Quem vai so no domingo nao escolhe area (20261025c); das
+                    areas extra, so ve a descarga do domingo (20261108a). */}
+                <AreasDeTrabalho formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange}
+                  soExtras={formData.soDomingo} />
                 <AvisoPrivacidadeEquipante />
                 {/* Codigo no fim: so para quem tinha pendencia, e so depois de
                     corrigir todas as que travam. */}

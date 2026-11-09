@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/components/ui/use-toast';
 import { Eye, EyeOff, Heart, HeartPulse, Shield, Users, AlertCircle, CheckCircle2, KeyRound, MailCheck, UserPlus } from 'lucide-react';
+import { WHATSAPP_ORGANIZACAO } from '@/constants/contato';
 import { buscarIgrejaPorCodigo, IGREJAS_TESTE } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import IgrejaSelect from '@/components/inscricao/IgrejaSelect';
@@ -566,6 +567,19 @@ const LoginPage = () => {
                   Por segurança, a senha é enviada para o contato que a organização já tem
                   registrado — e não para quem fez o pedido.
                 </p>
+                <p className="text-sm text-gray-300">
+                  Para agilizar, avise a organização pelo WhatsApp que você pediu a nova senha:
+                </p>
+                <a
+                  href={`${WHATSAPP_ORGANIZACAO}?text=${encodeURIComponent(
+                    `Olá! Acabei de pedir uma nova senha no site do Metanoia para a igreja de código ${formData.identifier.trim()}${igrejaDoCodigo?.nome ? ` (${igrejaDoCodigo.nome})` : ''}.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full rounded-md bg-[#25D366] hover:bg-[#20bd5a] text-white font-medium py-2.5 transition-colors"
+                >
+                  Avisar a organização no WhatsApp
+                </a>
                 <Button type="button" onClick={voltarParaLogin} className="w-full bg-white/5 border border-white/20 hover:bg-white/10 text-white">
                   Voltar ao login
                 </Button>
@@ -574,7 +588,7 @@ const LoginPage = () => {
           )}
 
           {/* ------------------------------------------------------------- */}
-          {/* Login normal                                                   */}
+          {/* Login normal                                                 */}
           {/* ------------------------------------------------------------- */}
           {etapa === 'login' && (
           <Card className="glass-effect border-white/10 shadow-2xl bg-black/60">

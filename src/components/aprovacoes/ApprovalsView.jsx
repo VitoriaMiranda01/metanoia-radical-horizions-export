@@ -402,6 +402,12 @@ const ApprovalsView = ({
     });
   };
 
+  // Observacao da aprovacao (20261109b): o servidor devolve o texto e o
+  // carimbo; a linha muda na hora, sem esperar a recarga.
+  const aplicarObservacao = (id, dados) => {
+    setInscricoes(lista => lista.map(i => (i.id === id ? { ...i, ...dados } : i)));
+  };
+
   // A busca em si fica na tabela (AprovacoesTable, utils/busca.js): filtrar
   // aqui e de novo la, com campos diferentes, fazia sumir quem casava pela
   // igreja (04/10/2026). A lista vai inteira.
@@ -547,6 +553,7 @@ const ApprovalsView = ({
             contextoMenores={menores.ctx}
             onMudarDomingo={isOrganizador && !isParceiro ? solicitarMudancaDomingo : undefined}
             searchTerm={searchTermPendentes}
+            onObservacao={aplicarObservacao}
             onSearchChange={setSearchTermPendentes}
             buscaRef={buscaPendentesRef}
           />
@@ -564,6 +571,7 @@ const ApprovalsView = ({
             onLiberarMenor={solicitarLiberacaoMenor}
             situacao="aprovado"
             searchTerm={searchTermAprovadas}
+            onObservacao={aplicarObservacao}
             onSearchChange={setSearchTermAprovadas}
           />
         </TabsContent>
@@ -578,6 +586,7 @@ const ApprovalsView = ({
             showApproveOnly={true}
             situacao="rejeitado"
             searchTerm={searchTermRejeitadas}
+            onObservacao={aplicarObservacao}
             onSearchChange={setSearchTermRejeitadas}
           />
         </TabsContent>
@@ -601,6 +610,7 @@ const ApprovalsView = ({
           onClose={() => setSelectedInscricao(null)}
           onAprovar={aprovarInscricao}
           onRejeitar={rejeitarInscricao}
+          onObservacao={aplicarObservacao}
         />
       )}
 

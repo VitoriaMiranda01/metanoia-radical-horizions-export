@@ -13,6 +13,7 @@ import { getEquipanteStageLabel } from '@/utils/equipanteWorkflow';
 import { ehPastorTexto } from '@/utils/pastor';
 import { respostasGrupoEEbd } from '@/utils/grupoCuidadoEbd';
 import MenorNaFicha from '@/components/common/MenorNaFicha';
+import ObservacaoAprovacao from '@/components/aprovacoes/ObservacaoAprovacao';
 import { useModalAcessivel } from '@/hooks/useModalAcessivel';
 
 const getStatusBadge = (status) => {
@@ -138,7 +139,9 @@ const formatBoolean = (value) => {
 // questao (checado direto contra o schema real das duas tabelas).
 // onEditar (opcional): mostra o botao "Editar" no topo (ex.: Pagamentos abre
 // a ficha e edita na mesma janela -- FichaInscricaoDialog.jsx).
-const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
+// onObservacao (20261109b): so a tela de Aprovacao passa; sem ele a
+// observacao aparece so para leitura.
+const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar, onObservacao }) => {
   const refModal = useModalAcessivel(onClose);
   const isEquipante = inscricao?.tipo === 'equipante';
   const { isOrganizador, isParceiro } = useAuth();
@@ -777,6 +780,14 @@ const InscricaoDetalhesModal = ({ inscricao, onClose, onEditar }) => {
                     : ''}
                 </p>
               </div>
+            )}
+
+            {/* Observacao da aprovacao (20261109b), junto do "Aprovado por". */}
+            {isEquipante && (
+              <ObservacaoAprovacao
+                inscricao={inscricao}
+                onSalvo={onObservacao ? (dados) => onObservacao(inscricao.id, dados) : undefined}
+              />
             )}
           </div>
         </div>

@@ -7,6 +7,7 @@ import { formatarDataHora } from '@/utils/columnVisibility';
 import NomeComBandeira from '@/components/common/NomeComBandeira';
 import SeloPastor from '@/components/common/SeloPastor';
 import { respondeuGrupoEEbd, respostasGrupoEEbd } from '@/utils/grupoCuidadoEbd';
+import ObservacaoAprovacao from '@/components/aprovacoes/ObservacaoAprovacao';
 
 const InscricaoCard = ({
   inscricao,
@@ -19,7 +20,8 @@ const InscricaoCard = ({
   showCancelAction,
   showApproveOnly,
   onMudarDomingo,
-  onLiberarMenor
+  onLiberarMenor,
+  onObservacao
 }) => {
   return (
     <div className="bg-white/5 border border-white/10 rounded-lg p-4 flex flex-col gap-4 relative overflow-hidden transition-all hover:bg-white/10">
@@ -78,6 +80,13 @@ const InscricaoCard = ({
           </span>
         </div>
       )}
+
+      {/* Observacao da aprovacao (20261109b): opcional, editavel sempre. */}
+      <ObservacaoAprovacao
+        compacto
+        inscricao={inscricao}
+        onSalvo={onObservacao ? (dados) => onObservacao(inscricao.id, dados) : undefined}
+      />
 
       {/* Menor de idade (20261105a): aprovar pede a declaracao do pastor. */}
       {inscricao.menor && !inscricao.menorLiberado && inscricao.status !== 'rejeitado' && (

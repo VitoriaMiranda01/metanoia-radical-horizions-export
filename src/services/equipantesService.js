@@ -442,6 +442,19 @@ export const updateEquipanteStatus = async (id, newStatus, declaracaoMenor = fal
   return { data };
 };
 
+// Observacao da aprovacao (20261109b). Opcional: nao e exigida para aprovar
+// nem para rejeitar. Organizador (aprovacao_equipe) ou parceiro da igreja da
+// ficha; o servidor carimba quem gravou e quando. Texto vazio apaga.
+export const salvarObservacaoAprovacao = async (id, texto) => {
+  const { data, error } = await supabase.rpc('salvar_observacao_aprovacao', {
+    p_id: id,
+    p_texto: texto ?? ''
+  });
+  if (error) return { error };
+  if (!data?.ok) return { error: new Error(data?.erro || 'Não foi possível salvar a observação.') };
+  return { data };
+};
+
 // Organizador passa uma inscricao PENDENTE para "Só Domingo" (ou de volta
 // para todos os dias). As travas ficam no servidor (20261029d).
 export const definirSoDomingoPendente = async (id, soDomingo) => {

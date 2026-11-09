@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import Paginacao, { usePaginacao } from '@/components/common/Paginacao';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Eye, CheckCircle, XCircle, Clock, Search, Filter, X, AlertTriangle, Download, CheckCheck, CalendarDays, Baby } from 'lucide-react';
+import { Users, Eye, CheckCircle, XCircle, Clock, Search, Filter, X, AlertTriangle, Download, CheckCheck, CalendarDays, Baby, StickyNote } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ObservacaoAprovacao from '@/components/aprovacoes/ObservacaoAprovacao';
 import ExportarAprovacoesDialog from '@/components/aprovacoes/ExportarAprovacoesDialog';
 import AprovacaoEmLoteDialog from '@/components/aprovacoes/AprovacaoEmLoteDialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -156,9 +158,12 @@ const AprovacoesTable = ({
   onMudarDomingo,
   // Menor de idade aprovado sem a liberacao (20261105a).
   onLiberarMenor,
-  contextoMenores
+  contextoMenores,
+  // Observacao da aprovacao (20261109b): (id, dados) depois de salvar.
+  onObservacao
 }) => {
   const { isParceiro } = useAuth();
+  const [observacaoDe, setObservacaoDe] = useState(null); // id da linha
   const [filters, setFilters] = useState({});
   const ocorrencias = useOcorrencias();
   const [soOcorrencias, setSoOcorrencias] = useState(false);
@@ -386,6 +391,7 @@ const AprovacoesTable = ({
                     showApproveOnly={showApproveOnly}
                     onMudarDomingo={onMudarDomingo}
                     onLiberarMenor={onLiberarMenor}
+                    onObservacao={onObservacao}
                   />
                 ))
               )}
@@ -495,6 +501,22 @@ const AprovacoesTable = ({
                             <Button data-dica="Ver a ficha completa." variant="ghost" size="sm" onClick={() => onSelect(inscricao)} className="hover:bg-blue-500/20 text-blue-300 transition-colors">
                               <Eye className="w-4 h-4" />
                             </Button>
+                            {onObservacao && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setObservacaoDe(inscricao.id)}
+                                aria-label={inscricao.observacao_aprovacao ? 'Ver ou editar a observação' : 'Adicionar observação'}
+                                data-dica={inscricao.observacao_aprovacao
+                                  ? `Observação: ${inscricao.observacao_aprovacao}`
+                                  : 'Adicionar observação (opcional, não é preciso para aprovar).'}
+                                className={cn('transition-colors', inscricao.observacao_aprovacao
+                                  ? 'bg-sky-500/20 text-sky-200 hover:bg-sky-500/30'
+                                  : 'text-sky-300/70 hover:bg-sky-500/20')}
+                              >
+                                <StickyNote className="w-4 h-4" />
+                              </Button>
+                            )}
                             {onMudarDomingo && (
                               <Button
                                 variant="ghost"
@@ -546,6 +568,35 @@ const AprovacoesTable = ({
             </div>
 
             <Paginacao {...paginacao} />
+
+            {/* Observacao da aprovacao na tabela (20261109b). */}
+            {(() => {
+              const alvo = observacaoDe ? dados.find((d) => d.id === observacaoDe) : null;
+              return (
+                <Dialog open={!!alvo} onOpenChange={(abrir) => { if (!abrir) setObservacaoDe(null); }}>
+                  <DialogContent className="bg-zinc-900 border border-white/10 text-white sm:max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <StickyNote className="w-5 h-5 text-sky-300" />
+                        Observação
+                      </DialogTitle>
+                      <DialogDescription className="text-gray-400">
+                        {alvo?.nome} · opcional, não é preciso para aprovar ou rejeitar.
+                      </DialogDescription>
+                    </DialogHeader>
+                    {alvo && (
+                      <ObservacaoAprovacao
+                        key={alvo.id}
+                        inscricao={alvo}
+                        abrirEditando={!alvo.observacao_aprovacao}
+                        onSalvo={(d) => onObservacao(alvo.id, d)}
+                        onFechar={() => setObservacaoDe(null)}
+                      />
+                    )}
+                  </DialogContent>
+                </Dialog>
+              );
+            })()}
           </>
         )}
       </CardContent>

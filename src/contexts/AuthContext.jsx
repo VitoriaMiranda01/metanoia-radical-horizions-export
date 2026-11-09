@@ -128,6 +128,7 @@ export const AuthProvider = ({ children }) => {
 
         const sessionUser = { ...result.user, role: 'parceiro' };
         setAuthToken(result.token);
+        try { localStorage.setItem('metanoia_ultima_atividade', String(Date.now())); } catch (_) { /* ignora */ }
         setIgrejaUser(sessionUser);
         setUser(sessionUser);
         localStorage.setItem('metanoia_igreja_user', JSON.stringify(sessionUser));
@@ -187,8 +188,60 @@ export const AuthProvider = ({ children }) => {
     if (user?.role === 'parceiro') setUser(null);
     localStorage.removeItem('metanoia_igreja_user');
     localStorage.removeItem('metanoia_user');
+    try { localStorage.removeItem('metanoia_ultima_atividade'); } catch (_) { /* ignora */ }
     clearAuthToken();
   };
+
+  // Inatividade do PARCEIRO (09/11/2026): 2 h sem tocar na tela encerram a
+  // sessao. Celular compartilhado com aba esquecida aberta (caso da Casa do
+  // Abba) nao fica logado o dia todo. Vale so para parceiros; organizador e
+  // apoio nao entram (Portaria/Recepcao ficam horas so olhando a lista).
+  // O horario do ultimo toque fica no aparelho, e a conferencia roda tambem
+  // quando a aba volta ao primeiro plano, porque o celular congela o relogio
+  // de abas em segundo plano.
+  const ehParceiroLogado = !!igrejaUser || user?.role === 'parceiro';
+  useEffect(() => {
+    if (!ehParceiroLogado) return undefined;
+    const CHAVE = 'metanoia_ultima_atividade';
+    const LIMITE_MS = 2 * 60 * 60 * 1000;
+    const ler = () => { try { return Number(localStorage.getItem(CHAVE)) || 0; } catch (_) { return 0; } };
+    const gravar = () => { try { localStorage.setItem(CHAVE, String(Date.now())); } catch (_) { /* ignora */ } };
+
+    const conferir = () => {
+      const ultima = ler();
+      if (ultima && Date.now() - ultima > LIMITE_MS) {
+        try { localStorage.removeItem(CHAVE); } catch (_) { /* ignora */ }
+        logoutIgreja();
+        return true;
+      }
+      return false;
+    };
+
+    if (conferir()) return undefined;
+    if (!ler()) gravar();
+
+    let ultimaGravacao = Date.now();
+    const aoMexer = () => {
+      const agora = Date.now();
+      if (agora - ultimaGravacao > 30000) { // grava no maximo a cada 30 s
+        ultimaGravacao = agora;
+        gravar();
+      }
+    };
+    const aoVoltar = () => { if (document.visibilityState === 'visible') conferir(); };
+    const eventos = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
+    eventos.forEach((e) => window.addEventListener(e, aoMexer, { passive: true, capture: true }));
+    document.addEventListener('visibilitychange', aoVoltar);
+    window.addEventListener('focus', aoVoltar);
+    const intervalo = setInterval(conferir, 60000);
+    return () => {
+      eventos.forEach((e) => window.removeEventListener(e, aoMexer, { capture: true }));
+      document.removeEventListener('visibilitychange', aoVoltar);
+      window.removeEventListener('focus', aoVoltar);
+      clearInterval(intervalo);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ehParceiroLogado]);
 
   const logout = async () => {
     logoutOrganizador();

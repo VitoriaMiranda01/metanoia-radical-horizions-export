@@ -282,10 +282,15 @@ export const grupoTrilhaAcao = (equipante_id, dono, escalaId, acao) =>
 
 export const getEquipantesByWorkflowStage = async () => {
   try {
-    const { data, error } = await supabase
-      .from('equipantes')
-      .select('id, nome, cpf, data_nascimento, idade, menor_liberado_em, menor_liberado_por, status, scale_status, status_pagamento')
-      .eq('tipo', 'equipante')
+    // De 1000 em 1000 (09/11/2026): a tabela ja passa de 1300 linhas.
+    const { data, error } = await lerTodasAsLinhas(
+      () => supabase
+        .from('equipantes')
+        .select('id, nome, cpf, data_nascimento, idade, menor_liberado_em, menor_liberado_por, status, scale_status, status_pagamento')
+        .eq('tipo', 'equipante')
+        .order('id', { ascending: true }),
+      { rotulo: 'equipantes do fluxo' }
+    );
 
     if (error) throw error;
     return data;
@@ -347,8 +352,13 @@ export const updateEquipante = async (equipanteId, dados) => {
 // So quem se inscreveu na edicao (03/11/2026): depois da virada as fichas da
 // edicao anterior ficam com status 'pendente' e inscrito = false, e nao sao
 // inscricoes para aprovar.
+// De 1000 em 1000 (09/11/2026): acima de 1000 inscritos o PostgREST cortaria
+// a lista da Aprovacao calado. Ordem por id para as paginas nao repetirem.
 export const fetchEquipantesRaw = async () =>
-  comReenvio(() => supabase.from('equipantes').select('*, idade').eq('inscrito', true), { rotulo: 'equipantes' });
+  lerTodasAsLinhas(
+    () => supabase.from('equipantes').select('*, idade').eq('inscrito', true).order('id', { ascending: true }),
+    { rotulo: 'equipantes' }
+  );
 
 /**
  * Lista enxuta para o organizador ESCOLHER pessoas pelo nome (ex.: as areas
@@ -364,12 +374,16 @@ export const fetchEquipantesRaw = async () =>
  * alguem para uma area especial antes mesmo da aprovacao (a tela mostra a
  * situacao ao lado do nome).
  */
+// De 1000 em 1000 (09/11/2026): com 1307 fichas, quem vinha depois de
+// "Pedro Lucas..." na ordem alfabetica nao aparecia para ser escolhido.
+// Desempate por id para as paginas nao repetirem nem pularem nomes iguais.
 export const fetchEquipantesParaSelecao = async () =>
-  comReenvio(
+  lerTodasAsLinhas(
     () => supabase
       .from('equipantes')
       .select('id, nome, cpf, igreja, status')
-      .order('nome', { ascending: true }),
+      .order('nome', { ascending: true })
+      .order('id', { ascending: true }),
     { rotulo: 'equipantes para seleção' }
   );
 
@@ -385,13 +399,14 @@ export const fetchEquipantesParaSelecao = async () =>
  * verdade" (ver fetchEquipantesInscritos, searchEquipanteByCPF).
  */
 export const fetchEquipantesParaPreEscala = async () =>
-  comReenvio(
+  lerTodasAsLinhas(
     () => supabase
       .from('equipantes')
       .select('id, nome, cpf, whatsapp, igreja, igreja_outra, status, area_trabalho_opcao1, area_trabalho_opcao2, area_trabalho_opcao3, inscrito_em')
       .eq('tipo', 'equipante')
       .eq('inscrito', true)
-      .order('nome', { ascending: true }),
+      .order('nome', { ascending: true })
+      .order('id', { ascending: true }),
     { rotulo: 'equipantes para pré-escala' }
   );
 
@@ -443,8 +458,8 @@ export const definirSoDomingoPendente = async (id, soDomingo) => {
 // aprovada (pelo pastor/organizador, na tela de Aprovações). Inscrições
 // pendentes ou rejeitadas ficam visíveis apenas na tela de Aprovações.
 export const fetchEquipantesInscritos = async () =>
-  comReenvio(
-    () => supabase.from('equipantes').select('*, idade').eq('inscrito', true).eq('status', 'aprovado'),
+  lerTodasAsLinhas(
+    () => supabase.from('equipantes').select('*, idade').eq('inscrito', true).eq('status', 'aprovado').order('id', { ascending: true }),
     { rotulo: 'equipantes inscritos' }
   );
 

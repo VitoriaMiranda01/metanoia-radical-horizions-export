@@ -317,20 +317,54 @@ const EquipantePage = () => {
   // Sem isto, sair para o aplicativo do banco e voltar jogava a pessoa na
   // tela inicial — o celular descarta a aba em segundo plano, e com ela some
   // tudo que estava só na memória. Relatado no primeiro pagamento real.
+  //
+  // So retoma no acompanhamento quem JA SE INSCREVEU nesta edicao (09/11/2026).
+  // Antes a sessao era gravada logo depois do CPF, para quem tinha ficha de
+  // edicao anterior: quem saia no meio do formulario (o celular descarta a aba)
+  // voltava direto no acompanhamento, como se a inscricao estivesse feita, e o
+  // que tinha digitado sumia. Agora a sessao so e gravada depois do envio, e a
+  // volta ainda confere no servidor -- vale tambem para as sessoes antigas que
+  // ja estavam gravadas nos aparelhos.
+  const [retomandoSessao, setRetomandoSessao] = useState(() => !!lerSessao()?.id);
   useEffect(() => {
     const sessao = lerSessao();
     if (!sessao?.id) return;
+    let vivo = true;
 
-    setInscricaoData({ id: sessao.id, nome: sessao.nome, cpf: sessao.cpf });
-    setFormData(prev => ({
-      ...prev,
-      nome: sessao.nome || prev.nome,
-      cpf: sessao.cpf || prev.cpf,
-      semCpf: !sessao.cpf,
-      dataNascimento: sessao.nascimento || prev.dataNascimento
-    }));
-    if (sessao.nascimento) setNascimentoConfirmado(sessao.nascimento);
-    setCurrentStep('workflow');
+    const retomar = () => {
+      setInscricaoData({ id: sessao.id, nome: sessao.nome, cpf: sessao.cpf });
+      setFormData(prev => ({
+        ...prev,
+        nome: sessao.nome || prev.nome,
+        cpf: sessao.cpf || prev.cpf,
+        semCpf: !sessao.cpf,
+        dataNascimento: sessao.nascimento || prev.dataNascimento
+      }));
+      if (sessao.nascimento) setNascimentoConfirmado(sessao.nascimento);
+      setCurrentStep('workflow');
+    };
+
+    (async () => {
+      // Sem CPF (nome + nascimento) a sessao so e gravada para quem ja esta
+      // inscrito; nao ha como conferir pelo CPF, entao retoma como antes.
+      if (!sessao.cpf) { retomar(); return; }
+      try {
+        const r = await verificarCPF(sessao.cpf, 'equipante');
+        if (!vivo) return;
+        if (r?.existe && r.inscrito) {
+          retomar();
+        } else {
+          // Nao terminou a inscricao: recomeca do CPF.
+          limparSessao();
+        }
+      } catch (err) {
+        // Falha na consulta nao pode prender ninguem fora: retoma como antes.
+        console.error('retomar sessao', err?.message || err);
+        if (vivo) retomar();
+      }
+    })().finally(() => { if (vivo) setRetomandoSessao(false); });
+
+    return () => { vivo = false; };
   }, []);
 
   // Guarda quem é a pessoa para a volta. Só o necessário para retomar, e por
@@ -416,7 +450,12 @@ const EquipantePage = () => {
     } else if (isFound && loadedData) {
       setInscricaoData(loadedData);
 
-      guardarSessao({ id: loadedData.id, nome: loadedData.nome, cpf: result.cpf || null });
+      // So guarda a sessao de quem ja esta inscrito nesta edicao. Quem tem
+      // ficha anterior ainda vai preencher o formulario: guardar agora fazia a
+      // volta cair no acompanhamento sem a inscricao feita (09/11/2026).
+      if (isEnrolled) {
+        guardarSessao({ id: loadedData.id, nome: loadedData.nome, cpf: result.cpf || null });
+      }
 
       if (!isEnrolled && result.debito) {
         // Pagamento agendado de edicao anterior sem pagar (20261025e): nem
@@ -535,17 +574,18 @@ const EquipantePage = () => {
 
       setNascimentoConfirmado(nascimentoDigitado);
       setFormData(prev => ({ ...prev, dataNascimento: nascimentoDigitado }));
-      guardarSessao({
-        id: inscricaoData.id,
-        nome: inscricaoData?.nome || formData.nome,
-        cpf: null,
-        nascimento: nascimentoDigitado
-      });
 
       // Quem concluiu tambem vai para o acompanhamento: e la que fica o botao
       // da confirmacao da portaria (21/10/2026). A situacao acima so serve
       // para conferir a data de nascimento.
       if (situacao?.ok && verificacao?.inscrito) {
+        // Sessao so para quem ja esta inscrito (09/11/2026).
+        guardarSessao({
+          id: inscricaoData.id,
+          nome: inscricaoData?.nome || formData.nome,
+          cpf: null,
+          nascimento: nascimentoDigitado
+        });
         setCurrentStep('workflow');
       } else {
         // Ficha de uma edição anterior. Sem CPF não dá para trazer a ficha
@@ -763,6 +803,21 @@ const EquipantePage = () => {
       if (result.success) {
         setInscricaoData(result.data);
 
+        // A inscricao existe agora: daqui em diante a volta ao site (ex.: do
+        // aplicativo do banco) retoma no acompanhamento.
+        if (result.data?.id) {
+          // salvarSessao mescla com o que ja estava gravado: limpa antes para
+          // nao herdar cobranca de outra pessoa no mesmo aparelho.
+          limparSessao();
+          const semCpf = !(result.data.cpf || formData.cpf);
+          guardarSessao({
+            id: result.data.id,
+            nome: result.data.nome || formData.nome,
+            cpf: result.data.cpf || formData.cpf || null,
+            nascimento: semCpf ? (nascimentoConfirmado || formData.dataNascimento || null) : (nascimentoConfirmado || null),
+          });
+        }
+
         // A marca de "ja se inscreveu" NAO e mais gravada daqui: quem grava
         // e criar_inscricao, no servidor, junto com a propria inscricao.
         // Antes era um update direto na tabela -- e como quem se inscreve
@@ -799,7 +854,7 @@ const EquipantePage = () => {
     });
   };
 
-  if (loadingStatus || janelaDomingo === null) {
+  if (loadingStatus || janelaDomingo === null || retomandoSessao) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-[50vh]">

@@ -58,6 +58,20 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Cracha vencido com a aba aberta (ver authToken.js): limpa o usuario em
+  // memoria para a rota protegida levar ao login em vez de mostrar telas
+  // que falham com "permission denied".
+  useEffect(() => {
+    const aoVencer = () => {
+      setUser(null);
+      setOrganizadorUser(null);
+      setIgrejaUser(null);
+      setApoioUser(null);
+    };
+    window.addEventListener('metanoia:sessao-vencida', aoVencer);
+    return () => window.removeEventListener('metanoia:sessao-vencida', aoVencer);
+  }, []);
+
   const login = async (identifier, password, type) => {
     return { success: false, error: 'Use os novos métodos de login' };
   };

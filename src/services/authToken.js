@@ -71,6 +71,12 @@ export const getAuthToken = () => {
       CHAVES_DE_SESSAO.forEach((chave) => {
         try { localStorage.removeItem(chave); } catch (_) { /* ignora */ }
       });
+      // Aba que ficou aberta alem das 8 h: o AuthContext ainda guarda o
+      // usuario em memoria, entao a tela continuaria "logada" e as consultas
+      // iriam como visitante ("permission denied for table ...", caso da
+      // parceira da Casa do Abba, 09/11/2026). Avisa para derrubar a sessao
+      // em memoria tambem e mandar a pessoa ao login.
+      try { window.dispatchEvent(new Event('metanoia:sessao-vencida')); } catch (_) { /* ignora */ }
       return null;
     }
 

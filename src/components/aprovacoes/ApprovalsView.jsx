@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { minhasIgrejasParceiro } from '@/services/senhasParceirosService';
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Baby } from 'lucide-react';
+import { Baby, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import MenorAprovacaoDialog from '@/components/aprovacoes/MenorAprovacaoDialog';
 import AprovacoesStatsCards from '@/components/aprovacoes/AprovacoesStatsCards';
 import InscricaoDetalhesModal from '@/components/common/InscricaoDetalhesModal';
@@ -75,13 +76,31 @@ const ApprovalsView = ({
     return () => clearInterval(intervalId);
   }, []);
 
+  // Estado da carga da lista (09/11/2026). Antes, enquanto carregava ou
+  // quando a busca falhava, a tela mostrava "0 pendentes" -- igual a uma
+  // igreja sem ninguem inscrito. Agora: primeira carga mostra "Carregando",
+  // falha mostra um aviso fixo com "Tentar de novo", e uma lista ja carregada
+  // NUNCA e zerada por uma atualizacao que deu errado.
+  const [carregouUmaVez, setCarregouUmaVez] = useState(false);
+  const [atualizando, setAtualizando] = useState(false);
+  const [erroCarga, setErroCarga] = useState(null);
+  const [ultimaAtualizacao, setUltimaAtualizacao] = useState(null);
+  // Atualizacao automatica (30 s) e o botao podem se cruzar: so vale a
+  // resposta da chamada mais recente.
+  const cargaAtualRef = useRef(0);
+
   const carregarInscricoes = async (showLoading = true) => {
+    const minhaCarga = ++cargaAtualRef.current;
     if (showLoading) setLoading(true);
+    setAtualizando(true);
+    // A lista dos menores (etiquetas e declaracao) vem a parte: a lista das
+    // inscricoes nao espera por ela.
+    carregarMenores().catch(() => {});
     try {
       // Esta tela é só para inscrições de equipante: acampante já nasce com
       // status 'aprovado' (não passa por aprovação manual) e vai direto pra
       // tabela geral em Gerenciar Inscrições.
-      const [{ data, error }] = await Promise.all([fetchEquipantesRaw(), carregarMenores()]);
+      const { data, error } = await fetchEquipantesRaw();
 
       if (error) throw error;
 
@@ -128,20 +147,26 @@ const ApprovalsView = ({
         }));
       }
 
+      if (minhaCarga !== cargaAtualRef.current) return;
       setInscricoes(mappedEquipantes);
+      setCarregouUmaVez(true);
+      setErroCarga(null);
+      setUltimaAtualizacao(new Date());
     } catch (error) {
       console.error("Erro ao carregar inscrições:", error);
-      if (showLoading) {
-        toast({
-          title: "Erro ao carregar dados",
-          description: "Não foi possível buscar as inscrições do servidor.",
-          variant: "destructive"
-        });
-      }
+      if (minhaCarga !== cargaAtualRef.current) return;
+      // A lista que ja estava na tela fica como esta; o aviso fixo diz que
+      // ela pode estar desatualizada.
+      setErroCarga(String(error?.message || error?.details || error || 'erro desconhecido'));
     } finally {
-      if (showLoading) setLoading(false);
+      if (minhaCarga === cargaAtualRef.current) {
+        if (showLoading) setLoading(false);
+        setAtualizando(false);
+      }
     }
   };
+
+  const horaCurta = (d) => (d ? d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '');
 
   // Devolve a DECISAO (quem assinou, quando) em vez de um true/false, para
   // quem chamou poder dizer na hora "Aprovado por Fulano". Devolve null se
@@ -427,7 +452,58 @@ const ApprovalsView = ({
           <p className="text-blue-200">{pageDescription}</p>
         </div>
 
+        {/* Atualiza so a lista, sem recarregar a pagina (09/11/2026). */}
+        <div className="flex flex-col items-center md:items-end gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => carregarInscricoes(false)}
+            disabled={atualizando}
+            className="border-white/20 bg-white/5 text-white hover:bg-white/15"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${atualizando ? 'animate-spin' : ''}`} />
+            {atualizando ? 'Atualizando...' : 'Atualizar'}
+          </Button>
+          {ultimaAtualizacao && (
+            <span className="text-xs text-gray-400">Atualizado às {horaCurta(ultimaAtualizacao)}</span>
+          )}
+        </div>
       </div>
+
+      {erroCarga && (
+        <div role="alert" className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-100">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-red-300" />
+          <div className="flex-1">
+            <p className="font-semibold">Não foi possível carregar as inscrições.</p>
+            <p className="text-red-200/90">
+              {carregouUmaVez
+                ? `A lista abaixo é a da última atualização que deu certo (${horaCurta(ultimaAtualizacao)}) e pode estar desatualizada.`
+                : 'Verifique a internet e tente de novo.'}
+            </p>
+            <p className="mt-1 text-xs text-red-300/70 break-words">Detalhe: {erroCarga}</p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => carregarInscricoes(false)}
+            disabled={atualizando}
+            className="bg-red-600 text-white hover:bg-red-700"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${atualizando ? 'animate-spin' : ''}`} />
+            Tentar de novo
+          </Button>
+        </div>
+      )}
+
+      {!carregouUmaVez ? (
+        !erroCarga && (
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-white">
+            <Loader2 className="h-10 w-10 animate-spin text-blue-400" />
+            <p>Carregando inscrições...</p>
+          </div>
+        )
+      ) : (
+      <>
 
       {menoresSemLiberacao > 0 && (
         <p className="flex items-start gap-2 rounded-md border border-pink-500/30 bg-pink-500/10 p-3 text-sm text-pink-100">
@@ -506,6 +582,8 @@ const ApprovalsView = ({
           />
         </TabsContent>
       </Tabs>
+      </>
+      )}
 
       <MenorAprovacaoDialog
         aberto={!!menorEmAprovacao}

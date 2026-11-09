@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +42,7 @@ import { calcularIdade } from '@/utils/formatters';
 import { getEquipanteWorkflow, getConfirmacaoPortaria } from '@/services/equipantesService';
 import ConfirmacaoPortaria from '@/components/equipante/ConfirmacaoPortaria';
 import { lerSessao, salvarSessao, limparSessao } from '@/utils/sessaoInscricao';
+import { lerRascunho, salvarRascunho, apagarRascunho, aplicarRascunho } from '@/utils/rascunhoInscricao';
 import { igrejaEhOutra, igrejaSeparaGrupoEEbd } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { liberacaoDeTesteValida, fetchJanelaDomingo } from '@/services/publicDataService';
@@ -305,6 +306,77 @@ const EquipantePage = () => {
     setCurrentStep(destino === 'codigo' && presencaRespondida ? 'formulario' : destino);
   };
 
+  // RASCUNHO DO FORMULARIO (09/11/2026, ver utils/rascunhoInscricao)
+  // Ao abrir o formulario, procura o rascunho deste CPF e preenche com ele.
+  // So depois disso comeca a gravar -- senao a primeira gravacao apagaria o
+  // rascunho com o formulario ainda vazio.
+  const cpfDigitos = String(formData.cpf || '').replace(/\D/g, '');
+  const rascunhoConferidoPara = useRef(null);
+  const rascunhoProntoPara = useRef(null);
+  const formAntesDoRascunho = useRef(null);
+  const ultimoFormData = useRef(formData);
+  ultimoFormData.current = formData;
+  const [rascunhoRecuperado, setRascunhoRecuperado] = useState(null);
+
+  useEffect(() => {
+    if (currentStep !== 'formulario' || cpfDigitos.length !== 11) return undefined;
+    if (rascunhoConferidoPara.current === cpfDigitos) return undefined;
+    rascunhoConferidoPara.current = cpfDigitos;
+    let vivo = true;
+    lerRascunho(cpfDigitos)
+      .then((r) => {
+        if (!vivo || !r) return;
+        setFormData((prev) => {
+          formAntesDoRascunho.current = prev;
+          return aplicarRascunho(prev, r);
+        });
+        setRascunhoRecuperado({ salvoEm: r.salvoEm });
+      })
+      .catch(() => {})
+      .finally(() => { if (vivo) rascunhoProntoPara.current = cpfDigitos; });
+    return () => {
+      vivo = false;
+      // Saiu antes de terminar a leitura: confere de novo na proxima vez.
+      if (rascunhoProntoPara.current !== cpfDigitos) rascunhoConferidoPara.current = null;
+    };
+  }, [currentStep, cpfDigitos]);
+
+  useEffect(() => {
+    if (currentStep !== 'formulario' || rascunhoProntoPara.current !== cpfDigitos) return undefined;
+    const t = setTimeout(() => { salvarRascunho(cpfDigitos, formData); }, 400);
+    return () => clearTimeout(t);
+  }, [formData, currentStep, cpfDigitos]);
+
+  // O celular pode matar a aba logo depois de ela sair da tela: grava na hora.
+  useEffect(() => {
+    if (currentStep !== 'formulario') return undefined;
+    const gravarJa = () => {
+      const f = ultimoFormData.current;
+      const d = String(f.cpf || '').replace(/\D/g, '');
+      if (document.visibilityState === 'hidden' && rascunhoProntoPara.current === d) salvarRascunho(d, f);
+    };
+    document.addEventListener('visibilitychange', gravarJa);
+    window.addEventListener('pagehide', gravarJa);
+    return () => {
+      document.removeEventListener('visibilitychange', gravarJa);
+      window.removeEventListener('pagehide', gravarJa);
+    };
+  }, [currentStep]);
+
+  const comecarDoZero = () => {
+    const base = formAntesDoRascunho.current;
+    if (base) {
+      setFormData((prev) => ({
+        ...base,
+        cpf: prev.cpf, semCpf: prev.semCpf, soDomingo: prev.soDomingo,
+        codigoInscricao: prev.codigoInscricao, presenteReuniao: prev.presenteReuniao,
+        justificativaAusencia: prev.justificativaAusencia,
+      }));
+    }
+    apagarRascunho();
+    setRascunhoRecuperado(null);
+  };
+
   const [loading, setLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   // Nome completo para a tela "Inscrição Confirmada!" (portaria). O servidor so
@@ -391,6 +463,10 @@ const EquipantePage = () => {
 
   const sairDaInscricao = () => {
     limparSessao();
+    apagarRascunho();
+    setRascunhoRecuperado(null);
+    rascunhoConferidoPara.current = null;
+    rascunhoProntoPara.current = null;
     setInscricaoData(null);
     setNascimentoConfirmado('');
     setNascimentoDigitado('');
@@ -802,6 +878,10 @@ const EquipantePage = () => {
       
       if (result.success) {
         setInscricaoData(result.data);
+        // Inscricao enviada: o rascunho nao serve mais.
+        rascunhoProntoPara.current = null;
+        apagarRascunho();
+        setRascunhoRecuperado(null);
 
         // A inscricao existe agora: daqui em diante a volta ao site (ex.: do
         // aplicativo do banco) retoma no acompanhamento.
@@ -1059,6 +1139,23 @@ const EquipantePage = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
+                {rascunhoRecuperado && (
+                  <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-100">
+                    <p>
+                      Recuperamos o que você já tinha preenchido
+                      {rascunhoRecuperado.salvoEm
+                        ? ` (salvo às ${new Date(rascunhoRecuperado.salvoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})`
+                        : ''}. Confira e continue de onde parou.
+                    </p>
+                    <p className="mt-1 text-emerald-200/80">
+                      O que você preenche fica salvo neste aparelho por até 2 horas e é apagado quando a inscrição é enviada.
+                    </p>
+                    <button type="button" onClick={comecarDoZero}
+                      className="mt-2 underline text-emerald-200 hover:text-white">
+                      Começar do zero
+                    </button>
+                  </div>
+                )}
                 {fichaAnterior && (
                   <QuadroPendencias pendencias={pendencias} soDomingo={formData.soDomingo} onIr={irParaCampo} />
                 )}

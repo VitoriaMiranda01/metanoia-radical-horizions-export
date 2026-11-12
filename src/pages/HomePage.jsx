@@ -154,7 +154,7 @@ const HomePage = () => {
             <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-emerald-900/20 blur-[120px]" />
           </div>
 
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
               <div className="space-y-6 text-center lg:text-left">
@@ -245,7 +245,7 @@ const HomePage = () => {
         </section>
 
         <section className="py-20 bg-neutral-900 overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
               <FadeIn className="space-y-8">
@@ -278,7 +278,7 @@ const HomePage = () => {
         </section>
 
         <section className="py-20 bg-neutral-900">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn>
               <div className="relative group rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black">
                 <img src="/images/agenda-2027.jpg" alt="Agenda 2027 Metanoia Radical" className="w-full h-auto object-contain transform transition-transform duration-500 group-hover:scale-[1.01]" />
@@ -288,7 +288,7 @@ const HomePage = () => {
         </section>
 
         <section className="py-20 bg-black">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
               <FadeIn className="order-2 lg:order-1">
@@ -340,7 +340,7 @@ const HomePage = () => {
         </section>
 
         <footer className="bg-neutral-950 border-t border-white/10 py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="text-center md:text-left">
               <p className="text-gray-400 text-sm">© 2026 Metanoia Radical Serra. Todos os direitos reservados.</p>
             </div>

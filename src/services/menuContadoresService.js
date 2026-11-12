@@ -20,5 +20,6 @@ export const fetchContadoresDoMenu = async () => {
     aprovacoes: Number(data?.aprovacoes) || 0,
     pagamentos: Number(data?.pagamentos) || 0,
     senhas: Number(data?.senhas) || 0,
+    fichas: Number(data?.fichas) || 0,
   };
 };

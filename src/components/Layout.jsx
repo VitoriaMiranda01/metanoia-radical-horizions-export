@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganizerAuth } from '@/hooks/useOrganizerAuth';
 import { Button } from '@/components/ui/button';
-import { LogOut, Users, UserCheck, Tent, Wrench, Settings, Grid, HeartHandshake, Banknote, KeyRound } from 'lucide-react';
+import { LogOut, Users, UserCheck, Tent, Wrench, Settings, Grid, HeartHandshake, Banknote, KeyRound, FileText } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { fetchContadoresDoMenu } from '@/services/menuContadoresService';
@@ -39,7 +39,7 @@ const Layout = ({ children, largo = false }) => {
 
   // Numeros dos selos. Comecam zerados: melhor nao mostrar nada do que
   // mostrar um numero errado enquanto a resposta nao chega.
-  const [contadores, setContadores] = useState({ aprovacoes: 0, pagamentos: 0, senhas: 0 });
+  const [contadores, setContadores] = useState({ aprovacoes: 0, pagamentos: 0, senhas: 0, fichas: 0 });
 
   useEffect(() => {
     if (!isOrganizer && !isAprovador) return undefined;
@@ -105,6 +105,8 @@ const Layout = ({ children, largo = false }) => {
       dica: 'Montar a escala: distribuir os equipantes aprovados pelas áreas e lançar para eles verem.' },
     { path: '/pagamentos-pendentes', label: 'Pagamentos Pendentes', icon: Banknote, contador: 'pagamentos', permissao: 'pagamentos',
       dica: 'Confirmar pagamentos em dinheiro/isentos, liberar PIX travado e ver a relação de quem pagou.' },
+    { path: '/solicitacoes-fichas', label: 'Solicitações de Fichas', icon: FileText, contador: 'fichas', permissao: 'solicitacoes_fichas',
+      dica: 'Pedidos de fichas das igrejas parceiras: aprovar (soma ao limite da igreja), recusar e mandar a mensagem no WhatsApp.' },
     { path: '/senhas-parceiros', label: 'Senhas dos Parceiros', icon: KeyRound, contador: 'senhas', permissao: 'maximo',
       dica: 'Senhas das igrejas parceiras: primeiro acesso, pedidos de nova senha e logins bloqueados.' },
     { path: '/organizer/configuracoes', label: 'Configurações', icon: Settings,

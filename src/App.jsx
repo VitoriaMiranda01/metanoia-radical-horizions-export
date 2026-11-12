@@ -45,6 +45,7 @@ const OrganizerScalesPage = carregarPagina(() => import('@/pages/OrganizerScales
 const AdminWorkflowsPage = carregarPagina(() => import('@/pages/AdminWorkflowsPage'));
 const PagamentosPendentesPage = carregarPagina(() => import('@/pages/PagamentosPendentesPage'));
 const SenhasParceirosPage = carregarPagina(() => import('@/pages/SenhasParceirosPage'));
+const SolicitacoesFichasPage = carregarPagina(() => import('@/pages/SolicitacoesFichasPage'));
 const SaudePage = carregarPagina(() => import('@/pages/SaudePage'));
 const PortariaPage = carregarPagina(() => import('@/pages/PortariaPage'));
 const RecepcaoPage = carregarPagina(() => import('@/pages/RecepcaoPage'));
@@ -165,8 +166,17 @@ function App() {
               } 
             />
 
-            <Route 
-              path="/senhas-parceiros" 
+            <Route
+              path="/solicitacoes-fichas"
+              element={
+                <OrganizerProtectedRoute permissao="solicitacoes_fichas">
+                  <SolicitacoesFichasPage />
+                </OrganizerProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/senhas-parceiros"
               element={
                 <OrganizerProtectedRoute permissao="maximo">
                   <SenhasParceirosPage />

@@ -27,6 +27,8 @@ export const PERMISSOES = [
     descricao: 'Confirmar e desfazer pagamentos, cobranças, agendamentos e débitos.' },
   { chave: 'ocorrencias', rotulo: 'Ocorrências anteriores',
     descricao: 'Módulo em Configurações: quem recebe o comunicado e o asterisco vermelho, e as declarações de ciência.' },
+  { chave: 'solicitacoes_fichas', rotulo: 'Solicitações de fichas',
+    descricao: 'Aprovar ou recusar os pedidos de fichas das igrejas parceiras (aprovar soma ao limite da igreja) e mandar a mensagem no WhatsApp.' },
 ];
 
 // Telas da Escala: entra quem tem qualquer uma destas.

@@ -5,9 +5,10 @@ import Layout from '@/components/Layout';
 import ApprovalsView from '@/components/aprovacoes/ApprovalsView';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
+import SolicitarFichasCard from '@/components/parceiro/SolicitarFichasCard';
 
 const ParceirosPage = () => {
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
 
   if (loading) {
     return (
@@ -34,7 +35,9 @@ const ParceirosPage = () => {
           animate={{ opacity: 1, y: 0 }} 
           transition={{ duration: 0.6 }}
         >
-          {/* 
+          {/* Pedido de fichas de acampante (12/11/2026): so a conta do parceiro. */}
+          {user?.role === 'parceiro' && <SolicitarFichasCard />}
+          {/*
             ApprovalsView was refactored in previous tasks to NOT rely on email parameters. 
             It strictly fetches all general partner data without doing queries on `email=undefined`.
           */}

@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabaseClient';
 import { ehFalhaPassageira } from '@/services/serviceHelpers';
+import { emTeste } from '@/services/ambiente';
 
 /**
  * Acesso publico ao banco, via funcoes controladas (RPC).
@@ -77,7 +78,40 @@ const chamar = async (funcao, args = undefined, { tentativas = 3, esperaBase = 6
  * inteira de configuracoes, levando junto listas internas de CPF (hoje
  * obsoletas) para o navegador de qualquer visitante.
  */
-export const fetchConfigPublica = async () => chamar('config_publica');
+// Duas coisas para a pagina inicial abrir rapido no celular (12/11/2026):
+//  1) a home pedia a mesma configuracao duas vezes (datas e valor); enquanto
+//     uma chamada esta em andamento, a outra espera por ela em vez de pedir de
+//     novo. So dura ate a resposta chegar -- depois disso pede de novo, entao
+//     ninguem recebe dado velho por causa disto.
+//  2) a ultima resposta fica guardada no aparelho (sem CPF, e a mesma que
+//     qualquer visitante ja le). A home mostra o cartao da edicao na hora com
+//     ela e atualiza assim que o servidor responde. Teste e oficial usam
+//     chaves separadas.
+const CHAVE_CONFIG_SALVA = emTeste() ? 'metanoia_config_publica_teste' : 'metanoia_config_publica';
+let configEmAndamento = null;
+
+export const configPublicaSalva = () => {
+  try {
+    const bruto = localStorage.getItem(CHAVE_CONFIG_SALVA);
+    return bruto ? JSON.parse(bruto) : null;
+  } catch {
+    return null;
+  }
+};
+
+export const fetchConfigPublica = () => {
+  if (configEmAndamento) return configEmAndamento;
+  const pedido = chamar('config_publica').then((config) => {
+    try {
+      if (config) localStorage.setItem(CHAVE_CONFIG_SALVA, JSON.stringify(config));
+    } catch { /* sem storage: so perde o atalho */ }
+    return config;
+  });
+  const liberar = () => { if (configEmAndamento === pedido) configEmAndamento = null; };
+  pedido.then(liberar, liberar);
+  configEmAndamento = pedido;
+  return pedido;
+};
 
 /**
  * O que o formulario precisa saber sobre igrejas alem da lista do site: as

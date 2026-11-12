@@ -55,4 +55,11 @@
   <If "%{REQUEST_URI} =~ m#^/assets/.*$#">
     Header set Cache-Control "public, max-age=604800"
   </If>
+
+  # Imagens e fontes (12/11/2026): ficavam com max-age=0 e o celular
+  # reconferia tudo a cada visita. Um dia no aparelho; se uma arte for trocada
+  # com o mesmo nome, aparece para todos em ate 24 h.
+  <If "%{REQUEST_URI} =~ m#^/(images|fonts)/.*$#">
+    Header set Cache-Control "public, max-age=86400"
+  </If>
 </IfModule>

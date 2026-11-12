@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import LandingNav from '@/components/landing/LandingNav';
 import { useCurrentPrice } from '@/hooks/useCurrentPrice';
 import { fetchEventoDatas } from '@/services/organizerConfigService';
+import { configPublicaSalva } from '@/services/publicDataService';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatEventDateRange } from '@/utils/eventDateFormat';
@@ -58,23 +59,47 @@ const FaqItem = ({
         </motion.div>}
     </AnimatePresence>
   </motion.div>;
+// Datas do cartao da edicao a partir da configuracao publica (a resposta do
+// servidor ou a ultima guardada no aparelho).
+const datasDaConfig = (data) => {
+  let limite = null;
+  if (data.data_limite_inscricao_pagamento) {
+    try {
+      limite = format(parseISO(data.data_limite_inscricao_pagamento), "d 'de' MMMM 'de' yyyy", { locale: ptBR });
+    } catch {
+      limite = null;
+    }
+  }
+  return {
+    edicao: data.edicao_numero || null,
+    limite,
+    // Depois da virada as datas ficam vazias ate a organizacao preencher.
+    datas: formatEventDateRange(data.data_evento_inicio, data.data_evento_fim) || "Datas a definir"
+  };
+};
 const HomePage = () => {
   const navigate = useNavigate();
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
-  const [formattedDate, setFormattedDate] = useState("Data não configurada");
-  const [dateLoading, setDateLoading] = useState(true);
-  const [edicaoNumero, setEdicaoNumero] = useState(null);
-  const [formattedLimitDate, setFormattedLimitDate] = useState(null);
+  // Mostra na hora a ultima configuracao guardada no aparelho; o servidor
+  // confirma em seguida (ver publicDataService.js).
+  const [salva] = useState(() => {
+    const c = configPublicaSalva();
+    return c ? datasDaConfig(c) : null;
+  });
+  const [formattedDate, setFormattedDate] = useState(salva ? salva.datas : "Data não configurada");
+  const [dateLoading, setDateLoading] = useState(!salva);
+  const [edicaoNumero, setEdicaoNumero] = useState(salva ? salva.edicao : null);
+  const [formattedLimitDate, setFormattedLimitDate] = useState(salva ? salva.limite : null);
   // true quando a resposta do servidor não veio, mesmo depois dos reenvios.
   const [falhaAoCarregar, setFalhaAoCarregar] = useState(false);
   const {
     currentPrice,
     loading: priceLoading
-  } = useCurrentPrice();
+  } = useCurrentPrice('acampante', null, true);
   useEffect(() => {
     const fetchDates = async () => {
       try {
-        setDateLoading(true);
+        if (!salva) setDateLoading(true);
         setFalhaAoCarregar(false);
         const {
           data,
@@ -89,19 +114,10 @@ const HomePage = () => {
           throw error;
         }
         if (data) {
-          setEdicaoNumero(data.edicao_numero || null);
-          if (data.data_limite_inscricao_pagamento) {
-            try {
-              setFormattedLimitDate(format(parseISO(data.data_limite_inscricao_pagamento), "d 'de' MMMM 'de' yyyy", { locale: ptBR }));
-            } catch {
-              setFormattedLimitDate(null);
-            }
-          } else {
-            setFormattedLimitDate(null);
-          }
-          const eventDateRange = formatEventDateRange(data.data_evento_inicio, data.data_evento_fim);
-          // Depois da virada as datas ficam vazias ate a organizacao preencher.
-          setFormattedDate(eventDateRange || "Datas a definir");
+          const d = datasDaConfig(data);
+          setEdicaoNumero(d.edicao);
+          setFormattedLimitDate(d.limite);
+          setFormattedDate(d.datas);
         }
       } catch (error) {
         // Chegar aqui significa que nem depois das tentativas de reenvio a
@@ -111,9 +127,13 @@ const HomePage = () => {
         // ele poderia desistir. O problema é de conexão, e recarregar
         // resolve -- então é isso que a tela diz.
         console.error("Erro ao buscar configurações:", error);
-        setFalhaAoCarregar(true);
-        setEdicaoNumero(null);
-        setFormattedLimitDate(null);
+        // Com a configuracao guardada no aparelho na tela, mantem o que ja esta
+        // sendo mostrado em vez de trocar por aviso de erro.
+        if (!salva) {
+          setFalhaAoCarregar(true);
+          setEdicaoNumero(null);
+          setFormattedLimitDate(null);
+        }
       } finally {
         setDateLoading(false);
       }
@@ -270,8 +290,8 @@ const HomePage = () => {
 
               <FadeIn delay={0.3} className="relative">
                 <div className="relative z-10 grid grid-cols-2 gap-4">
-                  <img src="/images/serving-hands-bracelets.jpg" alt="Serving Hands with Bracelets" className="rounded-2xl shadow-2xl object-cover h-64 w-full transform translate-y-8" />
-                  <img src="/images/serving-2.jpg" alt="Serving 2" className="rounded-2xl shadow-2xl object-cover h-64 w-full" />
+                  <img loading="lazy" decoding="async" src="/images/serving-hands-bracelets.jpg" alt="Serving Hands with Bracelets" className="rounded-2xl shadow-2xl object-cover h-64 w-full transform translate-y-8" />
+                  <img loading="lazy" decoding="async" src="/images/serving-2.jpg" alt="Serving 2" className="rounded-2xl shadow-2xl object-cover h-64 w-full" />
                 </div>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-green-600/20 rounded-full blur-3xl z-0"></div>
               </FadeIn>
@@ -284,7 +304,7 @@ const HomePage = () => {
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn>
               <div className="relative group rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black">
-                <img src="/images/agenda-2027.jpg" alt="Agenda 2027 Metanoia Radical" className="w-full h-auto object-contain transform transition-transform duration-500 group-hover:scale-[1.01]" />
+                <img loading="lazy" decoding="async" src="/images/agenda-2027.jpg" alt="Agenda 2027 Metanoia Radical" className="w-full h-auto object-contain transform transition-transform duration-500 group-hover:scale-[1.01]" />
               </div>
             </FadeIn>
           </div>
@@ -297,12 +317,12 @@ const HomePage = () => {
               <FadeIn className="order-2 lg:order-1">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-4 mt-8">
-                    <img src="/images/gallery-1.jpg" alt="Gallery 1" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-48 w-full" />
-                    <img src="/images/gallery-2.jpg" alt="Gallery 2" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-64 w-full" />
+                    <img loading="lazy" decoding="async" src="/images/gallery-1.jpg" alt="Gallery 1" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-48 w-full" />
+                    <img loading="lazy" decoding="async" src="/images/gallery-2.jpg" alt="Gallery 2" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-64 w-full" />
                   </div>
                   <div className="space-y-4">
-                    <img src="/images/gallery-3.jpg" alt="Gallery 3" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-64 w-full" />
-                    <img src="/images/gallery-4.jpg" alt="Gallery 4" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-48 w-full" />
+                    <img loading="lazy" decoding="async" src="/images/gallery-3.jpg" alt="Gallery 3" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-64 w-full" />
+                    <img loading="lazy" decoding="async" src="/images/gallery-4.jpg" alt="Gallery 4" className="rounded-xl shadow-lg hover:scale-105 transition-transform duration-500 object-cover h-48 w-full" />
                   </div>
                 </div>
               </FadeIn>

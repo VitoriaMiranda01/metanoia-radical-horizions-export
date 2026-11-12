@@ -146,6 +146,14 @@ const HomePage = () => {
         <LandingNav />
 
         <section className="relative h-screen flex items-center justify-center overflow-hidden">
+          {/* Atmosfera da secao (sem foto, 12/11/2026): dois brilhos bem
+              desfocados nos cantos opostos, nas duas cores da marca, so pra
+              o preto nao ficar chapado depois que a foto de fundo saiu. */}
+          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
+            <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-red-900/25 blur-[120px]" />
+            <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-emerald-900/20 blur-[120px]" />
+          </div>
+
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
@@ -178,8 +186,15 @@ const HomePage = () => {
             }} transition={{
               duration: 0.8,
               delay: 0.2
-            }} className="flex justify-center lg:justify-end">
-                <div className="bg-black/80 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-3xl shadow-2xl max-w-md w-full relative group">
+            }} className="relative flex justify-center lg:justify-end">
+                {/* Brilho vermelho atras do cartao (12/11/2026): sem foto no
+                    fundo da secao, o cartao em vidro fosco quase sumia no
+                    preto -- isto da um halo sutil por tras dele. */}
+                <div className="absolute inset-0 -z-10 flex items-center justify-center" aria-hidden="true">
+                  <div className="h-72 w-72 md:h-96 md:w-96 rounded-full bg-red-600/25 blur-[100px]" />
+                </div>
+
+                <div className="bg-zinc-900 border border-white/10 p-6 md:p-8 rounded-3xl shadow-2xl max-w-md w-full relative group">
                   <div className="absolute -top-4 -left-4 bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg">
                     PRÓXIMA EDIÇÃO
                   </div>

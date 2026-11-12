@@ -138,7 +138,7 @@ const HomePage = () => {
   }];
   return <>
       <Helmet>
-        <title>Metanoia Radical Serra - Home</title>
+        <title>Metanoia Radical Serra</title>
         <meta name="description" content="Bem-vindo ao Metanoia Radical Serra. Amar com o amor de Jesus!" />
       </Helmet>
 

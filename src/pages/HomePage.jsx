@@ -146,12 +146,6 @@ const HomePage = () => {
         <LandingNav />
 
         <section className="relative h-screen flex items-center justify-center overflow-hidden">
-          <div className="absolute inset-0 z-0">
-            <img src="/images/background.jpg" alt="Metanoia Radical Background" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/60" />
-            <div className="absolute inset-0 bg-red-900/10 mix-blend-overlay" />
-          </div>
-
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 

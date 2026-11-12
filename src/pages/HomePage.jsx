@@ -266,7 +266,7 @@ const HomePage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn>
               <div className="relative group rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black">
-                <img src="/images/agenda-2026.jpg" alt="Agenda 2026 Metanoia Radical" className="w-full h-auto object-contain transform transition-transform duration-500 group-hover:scale-[1.01]" />
+                <img src="/images/agenda-2027.jpg" alt="Agenda 2027 Metanoia Radical" className="w-full h-auto object-contain transform transition-transform duration-500 group-hover:scale-[1.01]" />
               </div>
             </FadeIn>
           </div>

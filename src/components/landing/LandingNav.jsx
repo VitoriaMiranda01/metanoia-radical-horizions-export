@@ -29,7 +29,7 @@ const LandingNav = () => {
           {/* The Link wrapper already exists, just added cursor-pointer class */}
           <Link to="/" className="flex items-center space-x-3 group cursor-pointer"> 
             <img 
-              src="/images/logo.png" 
+              src="/images/logo-transparente.png" 
               alt="Metanoia Radical Logo" 
               className="h-10 md:h-12 w-auto object-contain transition-transform group-hover:scale-105"
             />

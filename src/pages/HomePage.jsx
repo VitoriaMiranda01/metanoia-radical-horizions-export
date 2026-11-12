@@ -146,12 +146,13 @@ const HomePage = () => {
         <LandingNav />
 
         <section className="relative h-screen flex items-center justify-center overflow-hidden">
-          {/* Atmosfera da secao (sem foto, 12/11/2026): dois brilhos bem
-              desfocados nos cantos opostos, nas duas cores da marca, so pra
-              o preto nao ficar chapado depois que a foto de fundo saiu. */}
+          {/* Atmosfera da secao (12/11/2026, ajustada em seguida: as cores
+              estavam escuras (red-900/emerald-900) e quase somem com o blur
+              -- subiu pra red-600/emerald-500, mais saturadas, pra realmente
+              aparecer como um brilho vermelho e verde, nao so sumir no preto. */}
           <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
-            <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-red-900/25 blur-[120px]" />
-            <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-emerald-900/20 blur-[120px]" />
+            <div className="absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-red-600/30 blur-[120px]" />
+            <div className="absolute -bottom-32 -right-32 h-[28rem] w-[28rem] rounded-full bg-emerald-500/25 blur-[120px]" />
           </div>
 
           <div className="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -187,14 +188,16 @@ const HomePage = () => {
               duration: 0.8,
               delay: 0.2
             }} className="relative flex justify-center lg:justify-end">
-                {/* Brilho vermelho atras do cartao (12/11/2026): sem foto no
-                    fundo da secao, o cartao em vidro fosco quase sumia no
-                    preto -- isto da um halo sutil por tras dele. */}
-                <div className="absolute inset-0 -z-10 flex items-center justify-center" aria-hidden="true">
-                  <div className="h-72 w-72 md:h-96 md:w-96 rounded-full bg-red-600/25 blur-[100px]" />
+                {/* Brilho atras do cartao (12/11/2026, ajustado em seguida: um
+                    unico halo vermelho e centralizado quase nao aparecia --
+                    agora sao dois, vermelho e verde, nos cantos opostos do
+                    cartao, pra mostrar as duas cores da marca junto com ele. */}
+                <div className="absolute inset-0 -z-10" aria-hidden="true">
+                  <div className="absolute top-0 left-0 h-64 w-64 md:h-80 md:w-80 -translate-x-1/4 -translate-y-1/4 rounded-full bg-red-600/45 blur-[90px]" />
+                  <div className="absolute bottom-0 right-0 h-64 w-64 md:h-80 md:w-80 translate-x-1/4 translate-y-1/4 rounded-full bg-emerald-500/40 blur-[90px]" />
                 </div>
 
-                <div className="bg-zinc-900 border border-white/10 p-6 md:p-8 rounded-3xl shadow-2xl max-w-md w-full relative group">
+                <div className="bg-neutral-900 border border-white/10 p-6 md:p-8 rounded-3xl shadow-2xl max-w-md w-full relative group">
                   <div className="absolute -top-4 -left-4 bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg">
                     PRÓXIMA EDIÇÃO
                   </div>

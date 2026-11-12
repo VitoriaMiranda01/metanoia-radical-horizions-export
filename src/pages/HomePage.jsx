@@ -11,25 +11,16 @@ import { configPublicaSalva } from '@/services/publicDataService';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatEventDateRange } from '@/utils/eventDateFormat';
+// Sem animacao de entrada por rolagem (12/11/2026): no iPhone o gatilho
+// "entrou na tela" chegava segundos depois de parar de rolar e a secao ficava
+// invisivel. O conteudo agora ja nasce visivel. (delay fica aceito so para nao
+// mexer nos usos.)
 const FadeIn = ({
   children,
-  delay = 0,
   className = ""
-}) => <motion.div initial={{
-  opacity: 0,
-  y: 30
-}} whileInView={{
-  opacity: 1,
-  y: 0
-}} viewport={{
-  once: true,
-  margin: "-100px"
-}} transition={{
-  duration: 0.6,
-  delay
-}} className={className}>
+}) => <div className={className}>
     {children}
-  </motion.div>;
+  </div>;
 const FaqItem = ({
   question,
   answer,
@@ -171,23 +162,15 @@ const HomePage = () => {
               -- subiu pra red-600/emerald-500, mais saturadas, pra realmente
               aparecer como um brilho vermelho e verde, nao so sumir no preto. */}
           <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
-            <div className="absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-red-600/30 blur-[120px]" />
-            <div className="absolute -bottom-32 -right-32 h-[28rem] w-[28rem] rounded-full bg-emerald-500/25 blur-[120px]" />
+            <div className="absolute -top-56 -left-56 h-[40rem] w-[40rem] [background:radial-gradient(closest-side,rgba(220,38,38,0.3),transparent)]" />
+            <div className="absolute -bottom-56 -right-56 h-[40rem] w-[40rem] [background:radial-gradient(closest-side,rgba(16,185,129,0.25),transparent)]" />
           </div>
 
           <div className="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
               <div className="space-y-6 text-center lg:text-left">
-                <motion.div initial={{
-                opacity: 0,
-                x: -50
-              }} animate={{
-                opacity: 1,
-                x: 0
-              }} transition={{
-                duration: 0.8
-              }}>
+                <div>
                   <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-4">
                     Bem-vindo ao <br />
                     <span className="text-white">Metanoia</span>{' '}
@@ -195,26 +178,17 @@ const HomePage = () => {
                     <span className="text-green-600">Serra</span>
                   </h1>
                   <p className="text-xl md:text-2xl text-gray-300 font-light italic border-l-4 border-red-500 pl-4 py-1">"Amar com o amor de Jesus!"</p>
-                </motion.div>
+                </div>
               </div>
 
-              <motion.div initial={{
-              opacity: 0,
-              y: 50
-            }} animate={{
-              opacity: 1,
-              y: 0
-            }} transition={{
-              duration: 0.8,
-              delay: 0.2
-            }} className="relative flex justify-center lg:justify-end">
+              <div className="relative flex justify-center lg:justify-end">
                 {/* Brilho atras do cartao (12/11/2026, ajustado em seguida: um
                     unico halo vermelho e centralizado quase nao aparecia --
                     agora sao dois, vermelho e verde, nos cantos opostos do
                     cartao, pra mostrar as duas cores da marca junto com ele. */}
                 <div className="absolute inset-0 -z-10" aria-hidden="true">
-                  <div className="absolute top-0 left-0 h-64 w-64 md:h-80 md:w-80 -translate-x-1/4 -translate-y-1/4 rounded-full bg-red-600/45 blur-[90px]" />
-                  <div className="absolute bottom-0 right-0 h-64 w-64 md:h-80 md:w-80 translate-x-1/4 translate-y-1/4 rounded-full bg-emerald-500/40 blur-[90px]" />
+                  <div className="absolute -top-32 -left-32 md:-top-40 md:-left-40 h-96 w-96 md:h-[30rem] md:w-[30rem] [background:radial-gradient(closest-side,rgba(220,38,38,0.45),transparent)]" />
+                  <div className="absolute -bottom-32 -right-32 md:-bottom-40 md:-right-40 h-96 w-96 md:h-[30rem] md:w-[30rem] [background:radial-gradient(closest-side,rgba(16,185,129,0.4),transparent)]" />
                 </div>
 
                 <div className="bg-neutral-900 border border-white/10 p-6 md:p-8 rounded-3xl shadow-2xl max-w-md w-full relative group">
@@ -253,7 +227,7 @@ const HomePage = () => {
                     <p className="text-xs text-center text-gray-400 mt-2">*Vagas limitadas</p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </div>
 
@@ -293,7 +267,7 @@ const HomePage = () => {
                   <img loading="lazy" decoding="async" src="/images/serving-hands-bracelets.jpg" alt="Serving Hands with Bracelets" className="rounded-2xl shadow-2xl object-cover h-64 w-full transform translate-y-8" />
                   <img loading="lazy" decoding="async" src="/images/serving-2.jpg" alt="Serving 2" className="rounded-2xl shadow-2xl object-cover h-64 w-full" />
                 </div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-green-600/20 rounded-full blur-3xl z-0"></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[30rem] h-[30rem] [background:radial-gradient(closest-side,rgba(22,163,74,0.2),transparent)] z-0"></div>
               </FadeIn>
 
             </div>

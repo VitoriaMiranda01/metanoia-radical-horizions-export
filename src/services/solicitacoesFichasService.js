@@ -65,16 +65,12 @@ const dataBR = (iso) => {
   const [a, m, d] = String(iso).slice(0, 10).split('-');
   return a && m && d ? `${d}/${m}/${a}` : null;
 };
-const reais = (v) => (v == null || v === '' ? null
-  : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
 
 export const mensagemFichasAprovadas = (item, config = {}, site = 'https://metanoiaradicalserra.com.br') => {
   const qtd = Number(item?.quantidade_aprovada) || 0;
   const codigo = String(item?.igreja || '').split(' - ')[0];
   const nomeIgreja = String(item?.igreja || '').replace(/^\s*\d+\s*-\s*/, '');
   const primeiro = String(item?.contato_nome || '').trim().split(/\s+/)[0] || '';
-  const valor = reais(config.valor_hoje);
-  const total = config.valor_hoje != null ? reais(Number(config.valor_hoje) * qtd) : null;
   const limite = dataBR(config.data_limite);
   const linhas = [
     `Olá${primeiro ? `, ${primeiro}` : ''}! Aqui é da organização do Metanoia Radical Serra${config.edicao ? ` (${config.edicao}ª edição)` : ''}.`,
@@ -82,12 +78,11 @@ export const mensagemFichasAprovadas = (item, config = {}, site = 'https://metan
     `A solicitação de *${qtd} ${qtd === 1 ? 'ficha' : 'fichas'}* da igreja *${nomeIgreja}* foi *aprovada*.`,
     '',
     'Para fazer a inscrição dos acampantes:',
-    `1. Entre no site ${site} e clique em inscrição de acampante;`,
+    `1. Entre no link de inscrição de acampante: ${site}/acampante ;`,
     `2. Na "Igreja responsável pela inscrição", informe o código *${codigo}* (${nomeIgreja});`,
     '3. Preencha a ficha e faça o pagamento.',
   ];
-  if (valor) linhas.push('', `Valor por ficha: ${valor}${total && qtd > 1 ? ` (total ${total} para as ${qtd} fichas)` : ''}.`);
-  if (limite) linhas.push(`Data limite para inscrição e pagamento: *${limite}*.`);
+  if (limite) linhas.push('', `Data limite para inscrição e pagamento: *${limite}*.`);
   linhas.push('', 'Qualquer dúvida, estamos à disposição. Deus abençoe!');
   return linhas.join('\n');
 };

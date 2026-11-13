@@ -41,15 +41,18 @@ import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
 import { criarInscricao } from '@/services/inscricoesService';
 import { problemaTelefone } from '@/utils/telefone';
 import { fetchLimitesIgrejas, fetchOcupacaoIgrejasAcampantes } from '@/services/limitesIgrejasService';
-import { fetchLimiteAcampantesPorIgrejaPadrao } from '@/services/organizerConfigService';
 import ComunicadoOcorrencia from '@/components/inscricao/ComunicadoOcorrencia';
 import { comunicadoDoCpf } from '@/services/ocorrenciasService';
 import { IGREJA_RADICAL_36, IGREJA_DIVERSOS } from '@/constants/igrejas';
 import { useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import { liberacaoDeTesteValida, acampanteTemFichaAnterior, fichaAcampanteParaReinscricao, acampanteJaParticipou } from '@/services/publicDataService';
 
+// Organizador logado inscreve mesmo com a igreja sem fichas (13/11/2026); o
+// servidor deixa passar so para ele.
+const SEM_ESGOTADAS = new Set();
+
 const AcampantePage = () => {
-  const { user } = useAuth();
+  const { user, isOrganizador } = useAuth();
   // As igrejas do banco e se "84 - DIVERSOS" ainda vale.
   const { parceiras: igrejasDoBanco, permiteDiversos } = useOpcoesDeIgreja();
   const { toast } = useToast();
@@ -116,24 +119,25 @@ const AcampantePage = () => {
   const [igrejasEsgotadas, setIgrejasEsgotadas] = useState(new Set());
 
   // Desabilita, no seletor de "Igreja Responsável pela Inscrição", as
-  // igrejas que ja bateram o limite de acampantes configurado em
-  // Configuracoes (excecao especifica em limites_igrejas, ou o limite
-  // padrao geral). Calculado uma vez ao carregar a pagina -- e so uma
+  // igrejas que ja usaram as fichas liberadas (limites_igrejas; desde
+  // 13/11/2026 igreja cadastrada sem numero = 0 fichas, e RADICAL 36, que
+  // nao e igreja, so tem limite se houver linha para ela). Calculado uma vez ao carregar a pagina -- e so uma
   // cortesia de UX (evita a pessoa preencher tudo e so descobrir no envio);
   // a garantia de verdade contra ultrapassar o limite fica no banco (ver
   // migration schema-update-20260907-limite-acampantes-por-igreja.sql).
   useEffect(() => {
     const carregarLimitesIgrejas = async () => {
       try {
-        const [excecoes, ocupacao, limitePadrao] = await Promise.all([
+        const [excecoes, ocupacao] = await Promise.all([
           fetchLimitesIgrejas(),
-          fetchOcupacaoIgrejasAcampantes(),
-          fetchLimiteAcampantesPorIgrejaPadrao()
+          fetchOcupacaoIgrejasAcampantes()
         ]);
 
         const esgotadas = new Set();
         [...igrejasDoBanco, IGREJA_RADICAL_36].forEach(igreja => {
-          const limite = excecoes[igreja] !== undefined ? excecoes[igreja] : limitePadrao;
+          const limite = excecoes[igreja] !== undefined
+            ? excecoes[igreja]
+            : (igreja === IGREJA_RADICAL_36 ? null : 0);
           if (limite === null || limite === undefined) return;
           const ocupados = ocupacao[igreja] || 0;
           if (ocupados >= limite) esgotadas.add(igreja);
@@ -537,7 +541,7 @@ const AcampantePage = () => {
             <Card className="glass-effect border-white/10 bg-black/40">
               <CardContent className="pt-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <AdminResponsavel formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} igrejasEsgotadas={igrejasEsgotadas} />
+                  <AdminResponsavel formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} igrejasEsgotadas={isOrganizador ? SEM_ESGOTADAS : igrejasEsgotadas} />
                   <DadosPessoais formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} handleCheckboxChange={handleCheckboxChange} isEquipante={false} setFormData={setFormData} />
                   <ResponsavelMenor formData={formData} handleChange={handleChange} tipo="acampante" />
                   <Endereco formData={formData} handleChange={handleChange} handleSelectChange={handleSelectChange} setFormData={setFormData} />

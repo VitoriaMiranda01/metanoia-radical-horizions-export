@@ -146,14 +146,28 @@ export const editarIgreja = async (codigo, { codigoNovo, nome, pastor }) => {
 };
 
 /**
- * Cadastra a igreja (com conta de parceiro trancada, como as outras) e o
- * limite de inscricoes dela.
+ * Cadastra a igreja (com conta de parceiro trancada, como as outras). As
+ * fichas sao opcionais desde 13/11/2026: sem numero a igreja comeca com 0
+ * (as fichas vao depois, por salvarFichasIgreja).
  */
-export const cadastrarIgreja = async ({ codigo, nome, pastor, limite }) => {
+export const cadastrarIgreja = async ({ codigo, nome, pastor }) => {
   const { data, error } = await supabase.rpc('cadastrar_igreja', {
-    p_codigo: String(codigo ?? '').trim(), p_nome: nome, p_pastor: pastor, p_limite: limite,
+    p_codigo: String(codigo ?? '').trim(), p_nome: nome, p_pastor: pastor, p_limite: null,
   });
   if (error) return { success: false, error: error.message || 'Erro ao cadastrar a igreja' };
   if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível cadastrar a igreja' };
-  return { success: true, igreja: data.igreja, codigo: data.codigo, limite: data.limite };
+  return { success: true, igreja: data.igreja, codigo: data.codigo };
+};
+
+/**
+ * Fichas de acampante liberadas para a igreja (13/11/2026) e se o numero e
+ * fixo (nao zera na virada de edicao). So organizador. Sem reenvio: gravacao.
+ */
+export const salvarFichasIgreja = async (codigo, fichas, fixo) => {
+  const { data, error } = await supabase.rpc('salvar_fichas_igreja', {
+    p_codigo: String(codigo ?? '').trim(), p_fichas: fichas, p_fixo: !!fixo,
+  });
+  if (error) return { success: false, error: error.message || 'Erro ao salvar as fichas' };
+  if (!data?.ok) return { success: false, error: data?.erro || 'Não foi possível salvar as fichas' };
+  return { success: true, fichas: data.fichas, fixo: !!data.fixo, inscritos: data.inscritos || 0 };
 };

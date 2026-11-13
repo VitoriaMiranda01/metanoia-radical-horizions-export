@@ -338,6 +338,8 @@ export const exportListaIgrejas = (lista, relatorio, contas = [], cadastro = {})
     'Equipantes inscritos': l.equipantesInscritos,
     'Equipantes aprovados': l.equipantesAprovados,
     'Acampantes': l.acampantes,
+    'Fichas liberadas': l.fichas ?? '',
+    'Fichas fixas': l.fichasFixas ? 'Sim' : '',
   }));
   const soma = (campo) => linhas.reduce((t, l) => t + (Number(l[campo]) || 0), 0);
   linhas.push({
@@ -346,6 +348,7 @@ export const exportListaIgrejas = (lista, relatorio, contas = [], cadastro = {})
     'Equipantes inscritos': soma('Equipantes inscritos'),
     'Equipantes aprovados': soma('Equipantes aprovados'),
     'Acampantes': soma('Acampantes'),
+    'Fichas liberadas': soma('Fichas liberadas'), 'Fichas fixas': '',
   });
 
   const wb = XLSX.utils.book_new();

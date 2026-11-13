@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updateLimiteAcampantesPorIgreja, updatePreCadastroSemCpf, resetarParaNovaEdicao, fetchDesfazerViradaStatus, desfazerVirada } from '@/services/organizerConfigService';
+import { fetchConfiguracoes, saveConfiguracoes, updatePricingPeriods, updatePreCadastroSemCpf, resetarParaNovaEdicao, fetchDesfazerViradaStatus, desfazerVirada } from '@/services/organizerConfigService';
 import { updateInscricoesStatus } from '@/services/inscricoesStatusService';
 import { verifyDatabaseSchema } from '@/services/databaseVerification';
 import { useInscricoesStatus } from '@/hooks/useInscricoesStatus';
@@ -18,7 +18,6 @@ import { Settings, Loader2, Calendar, Lock, Unlock, AlertCircle, FileText, Dolla
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import PricingPeriodsManager from '@/components/organizer/PricingPeriodsManager';
-import LimiteIgrejasManager from '@/components/organizer/LimiteIgrejasManager';
 import OutrasIgrejasManager from '@/components/organizer/OutrasIgrejasManager';
 import IgrejasCadastradasManager from '@/components/organizer/IgrejasCadastradasManager';
 import PastoresParceirosManager from '@/components/organizer/PastoresParceirosManager';
@@ -251,14 +250,6 @@ const OrganizerConfigPage = () => {
     } finally {
       setSalvandoSemCpf(false);
     }
-  };
-
-  const handleSaveLimiteAcampantesPorIgreja = async (valor) => {
-    await updateLimiteAcampantesPorIgreja(valor);
-    setConfig(prev => ({
-      ...prev,
-      limite_acampantes_por_igreja: valor === '' ? null : parseInt(valor, 10)
-    }));
   };
 
   const salvarReunioesRef = useRef(null);
@@ -977,25 +968,9 @@ const OrganizerConfigPage = () => {
               cadastrados", dentro do dialogo Areas Especiais). Ver
               CpfsAreaEspecialManager.jsx e OrganizerScalesPage.jsx. */}
 
-          <Recolhivel chave="cfg-limite" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-            <Card className="glass-effect border-white/10 bg-black/40">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-white">
-                  <Users className="w-5 h-5 text-orange-400" />
-                  <span>Limite de Inscrições por Igreja</span>
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Controla quantos acampantes cada igreja pode inscrever.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <LimiteIgrejasManager
-                  limiteGeral={config.limite_acampantes_por_igreja}
-                  onSaveLimiteGeral={handleSaveLimiteAcampantesPorIgreja}
-                />
-              </CardContent>
-            </Card>
-          </Recolhivel>
+          {/* "Limite de Inscricoes por Igreja" (limite padrao + excecoes) saiu
+              em 13/11/2026: as fichas liberadas de cada igreja agora ficam em
+              "Todas as igrejas cadastradas" (Editar), sem numero = 0. */}
 
           {/* Todas as igrejas cadastradas (lista do formulario), com busca,
               barra de rolagem e a planilha. */}

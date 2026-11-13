@@ -20,23 +20,21 @@ import {
 
 /**
  * Solicitacoes de fichas dos parceiros (12/11/2026, migration 20261112a).
- * Caixa de permissao 'solicitacoes_fichas'. Aprovar soma a quantidade
- * aprovada ao limite da igreja (Configuracoes > limites por igreja); o envio
- * da mensagem no WhatsApp e manual.
+ * Caixa de permissao 'solicitacoes_fichas'. Aprovar SUBSTITUI as fichas
+ * liberadas da igreja pela quantidade aprovada (13/11/2026; antes somava) --
+ * Configuracoes > Todas as igrejas cadastradas. Igreja fixa (📌) continua
+ * fixa com o numero novo. O envio da mensagem no WhatsApp e manual.
  */
 
 const dataHora = (iso) => (iso ? new Date(iso).toLocaleString('pt-BR', {
   day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
 }) : '');
 
-const textoLimite = (lim) => (lim == null ? 'sem limite' : String(lim));
+// Sem numero = 0 fichas (13/11/2026). Pedidos antigos podem ter null.
+const textoLimite = (lim) => String(lim ?? 0);
 
-// Mesma conta do servidor (aprovar_solicitacao_fichas), so para mostrar antes.
-const limiteDepois = (sit, qtd) => {
-  const ocup = Number(sit?.ocupadas) || 0;
-  const base = sit?.limite == null ? ocup : Math.max(Number(sit.limite), ocup);
-  return base + (Number(qtd) || 0);
-};
+// Mesma conta do servidor (aprovar_solicitacao_fichas): substitui.
+const limiteDepois = (_sit, qtd) => Number(qtd) || 0;
 
 const SolicitacoesFichasPage = () => {
   const { toast } = useToast();
@@ -91,7 +89,7 @@ const SolicitacoesFichasPage = () => {
       const r = await aprovarSolicitacaoFichas(aprovando.id, qtd);
       toast({
         title: 'Solicitação aprovada',
-        description: `Limite da igreja: ${textoLimite(r.limite_antes)} → ${r.limite_depois}. Agora envie a mensagem no WhatsApp.`,
+        description: `Fichas da igreja: ${textoLimite(r.limite_antes)} → ${r.limite_depois}. Agora envie a mensagem no WhatsApp.`,
       });
       setAprovando(null);
       setAba('aprovada');
@@ -155,8 +153,8 @@ const SolicitacoesFichasPage = () => {
                 <FileText className="w-6 h-6 text-blue-400" /> Solicitações de fichas
               </h1>
               <p className="text-sm text-gray-400">
-                Pedidos das igrejas parceiras{config.edicao ? ` (${config.edicao}ª edição)` : ''}. Aprovar soma a
-                quantidade ao limite de acampantes da igreja.
+                Pedidos das igrejas parceiras{config.edicao ? ` (${config.edicao}ª edição)` : ''}. Aprovar troca as
+                fichas liberadas da igreja pela quantidade aprovada.
                 {config.valor_hoje != null ? ` Lote de hoje: ${Number(config.valor_hoje).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.` : ' Sem lote de acampante hoje.'}
               </p>
             </div>
@@ -204,12 +202,12 @@ const SolicitacoesFichasPage = () => {
                       {i.observacao && <p className="text-sm text-gray-400 break-words">Obs.: {i.observacao}</p>}
                       {i.status === 'pendente' && (
                         <p className="text-xs text-gray-500">
-                          Limite atual: {textoLimite(sit.limite)} · inscritos: {sit.ocupadas ?? 0}
+                          Fichas liberadas hoje: {textoLimite(sit.limite)}{sit.fixo ? ' 📌 fixo' : ''} · inscritos: {sit.ocupadas ?? 0}
                         </p>
                       )}
                       {i.status === 'aprovada' && (
                         <p className="text-xs text-gray-500">
-                          Aprovada por {i.decidido_por} em {dataHora(i.decidido_em)} · limite {textoLimite(i.limite_antes)} → {i.limite_depois}
+                          Aprovada por {i.decidido_por} em {dataHora(i.decidido_em)} · fichas {textoLimite(i.limite_antes)} → {i.limite_depois}
                           {i.mensagem_enviada_em
                             ? ` · mensagem aberta por ${i.mensagem_enviada_por} em ${dataHora(i.mensagem_enviada_em)}`
                             : ' · mensagem ainda não enviada'}
@@ -271,15 +269,18 @@ const SolicitacoesFichasPage = () => {
                   className="mt-1 bg-black/40 border-white/10 text-white" />
               </div>
               <p className="text-sm text-gray-300">
-                Limite da igreja: <strong>{textoLimite(aprovando?.situacao?.limite)}</strong> →{' '}
+                Fichas da igreja: <strong>{textoLimite(aprovando?.situacao?.limite)}</strong> →{' '}
                 <strong className="text-emerald-300">{limiteDepois(aprovando?.situacao, qtdAprovada)}</strong>
                 <span className="text-gray-500"> (inscritos hoje: {aprovando?.situacao?.ocupadas ?? 0})</span>
               </p>
-              {aprovando?.situacao?.limite != null
-                && Number(aprovando.situacao.limite) > Number(aprovando.situacao.ocupadas || 0) && (
+              <p className="text-xs text-gray-400">
+                O número aprovado substitui as fichas que a igreja tem hoje (não soma).
+                {aprovando?.situacao?.fixo ? ' Ela é fixa (📌) e continua fixa com o número novo.' : ''}
+              </p>
+              {Number(qtdAprovada) > 0 && Number(aprovando?.situacao?.ocupadas || 0) > Number(qtdAprovada) && (
                 <p className="text-xs text-amber-300">
-                  A igreja ainda tem {Number(aprovando.situacao.limite) - Number(aprovando.situacao.ocupadas || 0)} vaga(s)
-                  do limite atual; a aprovação soma em cima delas.
+                  A igreja já tem {aprovando.situacao.ocupadas} acampantes, mais que {qtdAprovada}: ninguém é apagado,
+                  só não entram novos.
                 </p>
               )}
             </div>

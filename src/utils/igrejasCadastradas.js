@@ -33,6 +33,10 @@ export const montarLinhasIgrejas = (lista, relatorio, contas = [], cadastro = {}
     equipantesInscritos: eq[chave]?.inscritos || 0,
     equipantesAprovados: eq[chave]?.aprovados || 0,
     acampantes: ac[chave] || 0,
+    // Fichas de acampante liberadas para a igreja (13/11/2026): sem numero = 0.
+    // fichasFixas = nao zera na virada de edicao.
+    fichas: codigo ? (cadastro[codigo]?.limite ?? 0) : null,
+    fichasFixas: !!(codigo && cadastro[codigo]?.fichas_fixas),
   });
 
   const parceiras = lista.map((completo) => {

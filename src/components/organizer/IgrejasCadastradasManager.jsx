@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { recarregarOpcoesDeIgreja, useOpcoesDeIgreja } from '@/hooks/useOpcoesDeIgreja';
 import {
-  cadastrarIgreja, editarIgreja, fetchIgrejasCadastro, fetchRelatorioIgrejas,
+  cadastrarIgreja, editarIgreja, fetchIgrejasCadastro, fetchRelatorioIgrejas, salvarFichasIgreja,
 } from '@/services/igrejasExtrasService';
 import { listarContasParceiros } from '@/services/senhasParceirosService';
 import { montarLinhasIgrejas } from '@/utils/igrejasCadastradas';
@@ -23,6 +23,10 @@ import IgrejaDialog from '@/components/organizer/IgrejaDialog';
  * 08/10/2026: cada igreja com codigo tem "Editar" (codigo, nome e pastor) e o
  * fim do quadro tem "Adicionar nova igreja" (codigo, nome, limite e pastor).
  * O nome do pastor sera usado numa automacao futura.
+ *
+ * 13/11/2026: coluna "Fichas" (acampantes que a igreja pode inscrever; sem
+ * numero = 0) com 📌 nas fixas, que nao zeram na virada. Edita-se na janela
+ * da igreja. Aviso em ambar quando ha mais acampantes que fichas.
  */
 
 const semAcento = (t) => (t || '')
@@ -36,6 +40,7 @@ const COLUNAS_IGREJAS = [
   { chave: 'responsavel', rotulo: 'Responsável', valor: (l) => l.responsavel || null },
   { chave: 'equip', rotulo: 'Equip.', valor: (l) => l.equipantesInscritos, numerica: true },
   { chave: 'acamp', rotulo: 'Acamp.', valor: (l) => l.acampantes, numerica: true },
+  { chave: 'fichas', rotulo: 'Fichas', valor: (l) => l.fichas, numerica: true },
 ];
 const COL_IGREJA = Object.fromEntries(COLUNAS_IGREJAS.map((c) => [c.chave, c]));
 
@@ -94,15 +99,27 @@ const IgrejasCadastradasManager = () => {
       ? await editarIgreja(editando.codigo, { codigoNovo: dados.codigo, nome: dados.nome, pastor: dados.pastor })
       : await cadastrarIgreja(dados);
     if (!r.success) return r;
+    // Fichas depois (o codigo pode ter mudado). So grava se mudou algo.
+    const fichasMudaram = editando
+      ? (Number(editando.limite ?? 0) !== dados.fichas || !!editando.fichas_fixas !== !!dados.fichasFixas)
+      : (dados.fichas > 0 || dados.fichasFixas);
+    if (fichasMudaram) {
+      const rf = await salvarFichasIgreja(dados.codigo, dados.fichas, dados.fichasFixas);
+      if (!rf.success) {
+        await recarregarOpcoesDeIgreja();
+        await carregar();
+        return { success: false, error: `${editando ? 'Igreja salva' : 'Igreja cadastrada'}, mas as fichas não: ${rf.error}` };
+      }
+    }
     setJanela(null);
     toast({
       title: editando ? 'Igreja salva' : 'Igreja adicionada',
       description: editando
         ? (r.igreja !== r.antes
           ? `${r.antes} agora é ${r.igreja}${r.fichas ? ` (${r.fichas} ${r.fichas === 1 ? 'ficha atualizada' : 'fichas atualizadas'})` : ''}.${r.codigoMudou ? ' O parceiro passa a entrar com o código novo.' : ''}`
-          : `${r.igreja}: pastor atualizado.`)
+          : `${r.igreja} salva.`)
           + (r.fichasPastor ? ` Pastor levado para ${r.fichasPastor} ${r.fichasPastor === 1 ? 'ficha' : 'fichas'}.` : '')
-        : `${r.igreja}, com limite de ${r.limite} ${r.limite === 1 ? 'inscrição' : 'inscrições'}.`,
+        : `${r.igreja}, com ${dados.fichas} ${dados.fichas === 1 ? 'ficha liberada' : 'fichas liberadas'}${dados.fichasFixas ? ' (fixo)' : ''}.`,
       className: 'bg-emerald-600 text-white border-none',
     });
     await recarregarOpcoesDeIgreja();
@@ -195,6 +212,7 @@ const IgrejasCadastradasManager = () => {
                 <th className="text-left font-medium px-3 py-2 hidden lg:table-cell"><CabecalhoFiltro coluna={COL_IGREJA.responsavel} f={f} /></th>
                 <th className="text-right font-medium px-3 py-2 whitespace-nowrap" title="Equipantes inscritos (aprovados)"><CabecalhoFiltro coluna={COL_IGREJA.equip} f={f} alinharDireita /></th>
                 <th className="text-right font-medium px-3 py-2 whitespace-nowrap"><CabecalhoFiltro coluna={COL_IGREJA.acamp} f={f} alinharDireita /></th>
+                <th className="text-right font-medium px-3 py-2 whitespace-nowrap" title="Fichas de acampante liberadas (📌 = fixo, não zera na virada)"><CabecalhoFiltro coluna={COL_IGREJA.fichas} f={f} alinharDireita /></th>
                 <th className="w-px px-2 py-2"><span className="sr-only">Editar</span></th>
               </tr>
             </thead>
@@ -219,12 +237,28 @@ const IgrejasCadastradasManager = () => {
                     )}
                   </td>
                   <td className="px-3 py-1.5 text-right tabular-nums text-gray-200">{l.acampantes}</td>
+                  <td
+                    className={cn('px-3 py-1.5 text-right tabular-nums whitespace-nowrap',
+                      l.fichas == null ? 'text-gray-600'
+                        : l.acampantes > l.fichas ? 'text-amber-300'
+                          : l.fichas === 0 ? 'text-gray-500' : 'text-white')}
+                    title={l.fichas != null && l.acampantes > l.fichas
+                      ? `${l.acampantes} inscritos / ${l.fichas} liberadas` : undefined}
+                  >
+                    {l.fichas == null ? '—' : (
+                      <>
+                        {l.fichasFixas && <span className="mr-1" aria-label="fixo">📌</span>}
+                        {l.fichas}
+                        {l.acampantes > l.fichas && <span className="ml-1">⚠</span>}
+                      </>
+                    )}
+                  </td>
                   <td className="px-2 py-1">
                     {l.codigo && porCodigo[l.codigo] && (
                       <Button
                         type="button" variant="ghost" size="sm"
                         onClick={() => setJanela({ igreja: porCodigo[l.codigo] })}
-                        data-dica="Editar código, nome e pastor desta igreja."
+                        data-dica="Editar código, nome, pastor e fichas liberadas desta igreja."
                         aria-label={`Editar ${l.nome}`}
                         className="h-7 px-2 text-xs text-gray-400 hover:text-white hover:bg-white/10"
                       >
@@ -236,7 +270,7 @@ const IgrejasCadastradasManager = () => {
               ))}
               {f.linhas.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-gray-400">Nenhuma igreja bate com a busca e os filtros.</td>
+                  <td colSpan={8} className="px-3 py-6 text-center text-gray-400">Nenhuma igreja bate com a busca e os filtros.</td>
                 </tr>
               )}
             </tbody>
@@ -244,11 +278,11 @@ const IgrejasCadastradasManager = () => {
         </div>
       )}
       <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
-        <p className="text-[11px] text-gray-400">Equip. = equipantes inscritos (entre parênteses, os aprovados).</p>
+        <p className="text-[11px] text-gray-400">Equip. = equipantes inscritos (entre parênteses, os aprovados). Fichas = acampantes liberados (📌 fixo, não zera na virada; ⚠ mais inscritos que fichas).</p>
         <Button
           type="button" size="sm" onClick={() => setJanela({ igreja: null })}
           disabled={loading || !!erro || !cadastro.proximoCodigo}
-          data-dica="Cadastrar uma igreja nova, já com o limite de inscrições e o pastor."
+          data-dica="Cadastrar uma igreja nova, com o pastor e, se quiser, as fichas liberadas."
           className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
         >
           <Plus className="w-4 h-4 mr-1.5" /> Adicionar nova igreja

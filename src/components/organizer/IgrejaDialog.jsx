@@ -11,11 +11,13 @@ import { Label } from '@/components/ui/label';
  *
  *  - Editar: codigo, nome e pastor. O codigo nao pode ser de outra igreja
  *    (o servidor confere de novo). A 84 - DIVERSOS so muda o pastor.
- *  - Cadastrar: codigo (ja vem o proximo livre), nome, limite de inscricoes e
- *    pastor -- os quatro obrigatorios. O limite vai para "Limite de inscricoes
- *    por igreja".
+ *  - Cadastrar: codigo (ja vem o proximo livre), nome e pastor obrigatorios.
+ *  - Nos dois: "Fichas liberadas" (acampantes que a igreja pode inscrever;
+ *    vazio = 0, opcional desde 13/11/2026) e "Fixo" (o numero nao zera na
+ *    virada de edicao). Pedido do Patrick, 13/11/2026.
  *
- * igreja: { codigo, nome, pastor, fixa } para editar; null para cadastrar.
+ * igreja: { codigo, nome, pastor, fixa, limite, fichas_fixas } para editar;
+ * null para cadastrar. (fixa = a 84 - DIVERSOS, que e do sistema.)
  * codigosEmUso: Map(numero -> "NN - NOME") de todas as igrejas, para avisar
  * na hora que o codigo ja e de outra.
  */
@@ -25,6 +27,7 @@ const IgrejaDialog = ({ aberto, igreja, proximoCodigo, codigosEmUso, onSalvar, o
   const [nome, setNome] = useState('');
   const [pastor, setPastor] = useState('');
   const [limite, setLimite] = useState('');
+  const [fichasFixas, setFichasFixas] = useState(false);
   const [erro, setErro] = useState('');
   const [salvando, setSalvando] = useState(false);
 
@@ -33,7 +36,8 @@ const IgrejaDialog = ({ aberto, igreja, proximoCodigo, codigosEmUso, onSalvar, o
     setCodigo(editando ? igreja.codigo : String(proximoCodigo || ''));
     setNome(editando ? igreja.nome : '');
     setPastor(editando ? igreja.pastor || '' : '');
-    setLimite('');
+    setLimite(editando && igreja.limite != null ? String(igreja.limite) : '');
+    setFichasFixas(editando ? !!igreja.fichas_fixas : false);
     setErro('');
     setSalvando(false);
   }, [aberto]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -62,12 +66,12 @@ const IgrejaDialog = ({ aberto, igreja, proximoCodigo, codigosEmUso, onSalvar, o
       setErro('Escreva o nome da igreja.');
       return;
     }
+    const lim = limite === '' ? 0 : Number(limite);
+    if (!Number.isInteger(lim) || lim < 0 || lim > 1000) {
+      setErro('Fichas liberadas: de 0 a 1000 (vazio = 0).');
+      return;
+    }
     if (!editando) {
-      const lim = Number(limite);
-      if (!Number.isInteger(lim) || lim < 1) {
-        setErro('Informe o limite de inscrições (1 ou mais).');
-        return;
-      }
       if (pastor.trim().length < 3) {
         setErro('Escreva o nome do pastor.');
         return;
@@ -75,7 +79,7 @@ const IgrejaDialog = ({ aberto, igreja, proximoCodigo, codigosEmUso, onSalvar, o
     }
     setSalvando(true);
     setErro('');
-    const r = await onSalvar({ codigo: cod, nome: nome.trim(), pastor: pastor.trim(), limite: Number(limite) });
+    const r = await onSalvar({ codigo: cod, nome: nome.trim(), pastor: pastor.trim(), fichas: lim, fichasFixas });
     if (!r?.success) {
       setErro(r?.error || 'Não foi possível salvar.');
       setSalvando(false);
@@ -93,7 +97,7 @@ const IgrejaDialog = ({ aberto, igreja, proximoCodigo, codigosEmUso, onSalvar, o
           <DialogDescription className="text-gray-400">
             {editando
               ? `${igreja.codigo} - ${igreja.nome}`
-              : 'A igreja entra na lista dos formulários na hora, com o limite de inscrições dela. O acesso do parceiro fica trancado até ser liberado em Senhas dos Parceiros.'}
+              : 'A igreja entra na lista dos formulários na hora. O acesso do parceiro fica trancado até ser liberado em Senhas dos Parceiros.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -126,37 +130,55 @@ const IgrejaDialog = ({ aberto, igreja, proximoCodigo, codigosEmUso, onSalvar, o
             </p>
           )}
 
-          <div className={editando ? '' : 'grid grid-cols-[6.5rem_1fr] gap-3'}>
-            {!editando && (
-              <div className="space-y-1.5">
-                <Label htmlFor="ig-limite" className="text-gray-300">Limite</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="ig-pastor" className="text-gray-300">
+              Nome do pastor{editando && <span className="text-gray-400 font-normal"> (opcional)</span>}
+            </Label>
+            <Input
+              id="ig-pastor" value={pastor} disabled={salvando} autoFocus={editando && fixa}
+              onChange={(e) => { setPastor(e.target.value); setErro(''); }}
+              onKeyDown={enter}
+              placeholder="Ex.: Pr. João da Silva"
+              className={campo}
+            />
+          </div>
+
+          <div className="rounded-md border border-white/10 bg-white/[0.03] p-3 space-y-2">
+            <div className="flex items-end gap-3">
+              <div className="space-y-1.5 w-32 shrink-0">
+                <Label htmlFor="ig-limite" className="text-gray-300">Fichas liberadas</Label>
                 <Input
                   id="ig-limite" inputMode="numeric" value={limite} disabled={salvando}
                   onChange={(e) => { setLimite(e.target.value.replace(/\D/g, '').slice(0, 4)); setErro(''); }}
                   onKeyDown={enter}
-                  placeholder="Ex.: 10"
-                  data-dica="Quantos acampantes esta igreja pode inscrever. Vai para Limite de inscrições por igreja."
+                  placeholder="0"
+                  data-dica="Quantos acampantes esta igreja pode inscrever. Vazio = 0 (o formulário não aceita acampante desta igreja)."
                   className={`${campo} tabular-nums`}
                 />
               </div>
-            )}
-            <div className="space-y-1.5">
-              <Label htmlFor="ig-pastor" className="text-gray-300">
-                Nome do pastor{editando && <span className="text-gray-400 font-normal"> (opcional)</span>}
-              </Label>
-              <Input
-                id="ig-pastor" value={pastor} disabled={salvando} autoFocus={editando && fixa}
-                onChange={(e) => { setPastor(e.target.value); setErro(''); }}
-                onKeyDown={enter}
-                placeholder="Ex.: Pr. João da Silva"
-                className={campo}
-              />
+              <label className="flex items-center gap-2 pb-2 text-sm text-gray-200 cursor-pointer select-none">
+                <input
+                  type="checkbox" checked={fichasFixas} disabled={salvando}
+                  onChange={(e) => setFichasFixas(e.target.checked)}
+                  className="h-4 w-4 accent-emerald-500"
+                />
+                📌 Fixo (não zera na virada de edição)
+              </label>
             </div>
+            <p className="text-[11px] text-gray-400">
+              Sem marcar "Fixo", as fichas voltam a 0 na mudança de edição e o parceiro pede de novo.
+              Aprovar uma solicitação de fichas troca este número pelo aprovado.
+            </p>
+            {editando && Number.isInteger(igreja.inscritos) && limite !== '' && igreja.inscritos > Number(limite) && (
+              <p className="text-[11px] text-amber-300">
+                A igreja já tem {igreja.inscritos} acampantes: ninguém é apagado, só não entram novos.
+              </p>
+            )}
           </div>
 
           {editando && !fixa && (
             <p className="text-xs text-gray-400">
-              Trocar o código ou o nome atualiza as fichas, o limite de inscrições e a conta do parceiro.
+              Trocar o código ou o nome atualiza as inscrições, as fichas liberadas e a conta do parceiro.
               Se o código mudar, o parceiro passa a entrar com o código novo.
             </p>
           )}
